@@ -82,14 +82,7 @@ include("head.inc");
                   </td>
                 </tr>
                 <?php endif; ?>
-                <tr>
-                  <td colspan="2">
-                    <form id="clearform" name="clearform" action="<? $_SERVER['REQUEST_URI'] ?>" method="post">
-                      <input id="filtertext" name="filtertext" value="<?=$filtertext;?>"/>
-                      <input id="filtersubmit" name="filtersubmit" type="submit" class="btn btn-primary" value="<?=gettext("Filter");?>" />
-                    </form>
-                  </td>
-                </tr>
+
                 <?php
                   if ($logclog) {
                       dump_clog($logfile, $nentries, $filtertext);
