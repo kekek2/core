@@ -1,11 +1,4 @@
 
-      <footer class="page-foot col-sm-push-3 col-lg-push-2">
-        <div class="container-fluid">
-          <a target="_blank" href="<?=$g['product_website']?>" class="redlnk"><?=$g['product_name']?></a> (c)
-            <?=$g['product_copyright_years']?> <a href="<?=$g['product_copyright_url']?>" class="tblnk"><?=$g['product_copyright_owner']?></a>
-        </div>
-      </footer>
-
   </div>
   <!-- /row-->
 </main>
