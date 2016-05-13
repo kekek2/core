@@ -81,6 +81,10 @@ if [ ! -f /conf/config.xml ]; then
 	echo "done."
 fi
 
+# Check VPN CA cert
+/usr/local/sbin/ovpn-certs check-config || /usr/local/sbin/ovpn-certs create-keys
+
+
 # Bootstrap openssl.cnf for port if necessary
 if [ ! -f /usr/local/openssl/openssl.cnf ]; then
 	echo -n "Bootstrapping openssl.cnf..."
