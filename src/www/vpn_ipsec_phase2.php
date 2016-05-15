@@ -189,7 +189,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         idinfo_to_pconfig("local", $config['ipsec']['phase2'][$p2index]['localid'], $pconfig);
         idinfo_to_pconfig("remote", $config['ipsec']['phase2'][$p2index]['remoteid'], $pconfig);
-        ealgos_to_pconfig($config['ipsec']['phase2'][$p2index]['encryption-algorithm-option'], $pconfig);
+        if (!empty($config['ipsec']['phase2'][$p2index]['encryption-algorithm-option'])) {
+            ealgos_to_pconfig($config['ipsec']['phase2'][$p2index]['encryption-algorithm-option'], $pconfig);
+        } else {
+            $pconfig['ealgos'] = array();
+        }
+
         if (isset($config['ipsec']['phase2'][$p2index]['mobile'])) {
             $pconfig['mobile'] = true;
         }
@@ -645,7 +650,7 @@ if (isset($input_errors) && count($input_errors) > 0) {
     <div class="row">
         <section class="col-xs-12">
         <div class="tab-content content-box col-xs-12">
-          <form action="vpn_ipsec_phase2.php" method="post" name="iform" id="iform">
+          <form method="post" name="iform" id="iform">
             <div class="table-responsive">
               <table class="table table-striped">
                 <tr>
