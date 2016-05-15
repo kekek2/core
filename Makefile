@@ -73,10 +73,10 @@ CORE_REPOSITORY?=	${FLAVOUR}
 
 CORE_PACKAGESITE?=	http://pkg.opnsense.org
 
-CORE_NAME?=		opnsense-devel
+CORE_NAME?=		ting
 CORE_FAMILY?=		development
-CORE_ORIGIN?=		opnsense/${CORE_NAME}
-CORE_COMMENT?=		OPNsense ${CORE_FAMILY} package
+CORE_ORIGIN?=		${CORE_NAME}
+CORE_COMMENT?=		TING ${CORE_FAMILY} package
 CORE_MAINTAINER?=	franco@opnsense.org
 CORE_WWW?=		https://opnsense.org/
 CORE_MESSAGE?=		ACME delivery for the crafty coyote!
@@ -110,7 +110,6 @@ CORE_DEPENDS?=		apinger \
 			openssh-portable \
 			openvpn \
 			opnsense-lang \
-			opnsense-update \
 			p7zip \
 			pecl-radius \
 			pftop \
@@ -153,7 +152,9 @@ CORE_DEPENDS?=		apinger \
 			syslogd \
 			unbound \
 			wol \
-			zip
+			zip \
+			os-ndpi \
+			os-pkg-redirect
 
 manifest: force
 	@echo "name: \"${CORE_NAME}\""
