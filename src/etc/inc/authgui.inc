@@ -409,11 +409,6 @@ function display_login_form($Login_Error = '')
 
 
     <main class="login-modal-container">
-      <header class="login-modal-head" style="height:55px;">
-        <div class="navbar-brand">
-          <img src="/ui/themes/<?= $themename ?>/build/images/default-logo.png" height="30" alt="logo"/>
-        </div>
-      </header>
 
       <div class="login-modal-content">
         <div id="inputerrors" class="text-danger"><?= !empty($Login_Error) ? $Login_Error : '&nbsp;' ?></div><br />
@@ -430,7 +425,9 @@ function display_login_form($Login_Error = '')
           <input id="passwordfld" type="password" name="passwordfld" class="form-control pwd" tabindex="2" />
         </div>
 
-        <button type="submit" name="login" value="1" class="btn btn-primary pull-right"><?=gettext("Login"); ?></button>
+        <div class="form-group text-center">
+          <button type="submit" name="login" value="1" class="btn btn-primary"><?=gettext("Login"); ?></button>
+        </div>
 
       </form>
 
@@ -444,10 +441,6 @@ function display_login_form($Login_Error = '')
           </div>
 
       </main>
-      <div class="login-foot text-center">
-        <a target="_blank" href="<?=$g['product_website']?>" class="redlnk"><?=$g['product_name']?></a> (c) <?=$g['product_copyright_years']?>
-        <a href="<?=$g['product_copyright_url']?>" class="tblnk"><?=$g['product_copyright_owner']?></a>
-      </div>
 
     </div>
 

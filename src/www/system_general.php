@@ -307,7 +307,7 @@ include("head.inc");
 ?>
     <section class="col-xs-12">
       <div class="content-box tab-content">
-        <form action="system_general.php" method="post">
+        <form method="post">
           <table class="table table-striped">
             <tr>
               <td width="22%"><strong><?=gettext("System");?></strong></td>
@@ -344,7 +344,7 @@ include("head.inc");
                 <table class="table table-striped table-condensed">
                   <thead>
                     <tr>
-                      <th><?=gettext("DNS Server"); ?></th>
+                      <th style="width:350px;"><?=gettext("DNS Server"); ?></th>
                       <th><?=gettext("Use gateway"); ?></th>
                     </tr>
                   </thead>
