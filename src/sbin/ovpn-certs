@@ -35,7 +35,7 @@ generate_ca_cert()
     
     openssl genrsa  -out ${CA_KEY_FILE} 2048
     CA_KEY=`cat ${CA_KEY_FILE}`
-    CA_CERT=`openssl req -new -x509 -days 365 -key ${CA_KEY_FILE} -subj "/C=RU/ST=./L=./O=./CN=${CA_DESCR}"`
+    CA_CERT=`openssl req -new -x509 -days 3650 -key ${CA_KEY_FILE} -subj "/C=RU/ST=-/L=-/O=-/CN=${CA_DESCR}"`
     rm ${CA_KEY_FILE}
 
     SERIAL=`grep '<serial>' ${CONFIG_XML} | sed 's/<[\/]*serial>//g' | tr -d ' ' | sort -g | tail -n 1`
@@ -44,8 +44,8 @@ generate_ca_cert()
     fi
     SERIAL=$((SERIAL+1))
     CA_REF=`jot -r 1 1111111111111 9999999999999`
-    CRT=`echo ${CA_CERT} | openssl enc -base64 | tr -d '\n'`
-    PRV=`echo ${CA_KEY} | openssl enc -base64 | tr -d '\n'`
+    CRT=`echo "${CA_CERT}" | openssl enc -base64 | tr -d '\n'`
+    PRV=`echo "${CA_KEY}" | openssl enc -base64 | tr -d '\n'`
     CA_NODE="
   <ca>
     <refid>${CA_REF}</refid>
@@ -77,7 +77,7 @@ generate_server_cert()
     
     openssl genrsa  -out ${KEY_FILE} 2048
     KEY=`cat ${KEY_FILE}`
-    openssl req -new -key ${KEY_FILE} -out ${REQ_FILE} -subj "/C=RU/ST=./L=./O=./CN=${SERVER_DESCR}"
+    openssl req -new -key ${KEY_FILE} -out ${REQ_FILE} -subj "/C=RU/ST=-/L=-/O=-/CN=${SERVER_DESCR}"
     CERT=`openssl x509 -req -days 365 -in ${REQ_FILE} -CA ${CA_CRT_FILE} -CAkey ${CA_KEY_FILE} -set_serial ${SERIAL}`
     rm ${KEY_FILE}
     rm ${CA_KEY_FILE}
@@ -85,8 +85,8 @@ generate_server_cert()
     rm ${REQ_FILE}
 
     REF=`jot -r 1 1111111111111 9999999999999`
-    CRT=`echo ${CERT} | openssl enc -base64 | tr -d '\n'`
-    PRV=`echo ${KEY} | openssl enc -base64 | tr -d '\n'`
+    CRT=`echo "${CERT}" | openssl enc -base64 | tr -d '\n'`
+    PRV=`echo "${KEY}" | openssl enc -base64 | tr -d '\n'`
     CERT_NODE="
   <cert>
     <refid>${REF}</refid>
