@@ -36,7 +36,7 @@ global $g;	/* XXX make this a getter function for traceability */
 
 $g = array(
 	"factory_shipped_username" => "root",
-	"factory_shipped_password" => "opnsense",
+	"factory_shipped_password" => "ting",
 	"dhcpd_chroot_path" => "/var/dhcpd",
 	"unbound_chroot_path" => "/var/unbound",
 	"product_name" => "TING",
