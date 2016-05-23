@@ -18,13 +18,13 @@
 
 @font-face {
   font-family: 'SourceSansProBold';
-  src: url("/ui/themes/opnsense/build/fonts/SourceSansPro-Bold/SourceSansPro-Bold.woff") format("woff"), url("/ui/themes/opnsense/build/fonts/SourceSansPro-Bold/SourceSansPro-Bold.ttf") format("truetype"); }
+  src: url("/ui/themes/opnsense/build/fonts/SourceSansPro-Bold.woff") format("woff"); }
 @font-face {
   font-family: 'SourceSansProSemibold';
-  src: url("/ui/themes/opnsense/build/fonts/SourceSansPro-Semibold/SourceSansPro-Semibold.woff") format("woff"), url("/ui/themes/opnsense/build/fonts/SourceSansPro-Semibold/SourceSansPro-Semibold.ttf") format("truetype"); }
+  src: url("/ui/themes/opnsense/build/fonts/SourceSansPro-Bold.woff") format("woff"); }
 @font-face {
   font-family: 'SourceSansProRegular';
-  src: url("/ui/themes/opnsense/build/fonts/SourceSansPro-Regular/SourceSansPro-Regular.woff") format("woff"), url("/ui/themes/opnsense/build/fonts/SourceSansPro-Regular/SourceSansPro-Regular.ttf") format("truetype"); }
+  src: url("/ui/themes/opnsense/build/fonts/SourceSansPro-Regular.woff") format("woff"); }
 /*! normalize.css v3.0.1 | MIT License | git.io/normalize */
 html {
   font-family: sans-serif;
