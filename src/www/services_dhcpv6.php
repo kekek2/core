@@ -309,7 +309,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
             // router advertisement data lives in the same spot, copy
             foreach (array_keys($config['dhcpdv6'][$if]) as $fieldname) {
-                if (substr($fieldname,0 ,2) == 'ra') {
+                if (substr($fieldname,0 ,2) == 'ra' && !in_array($fieldname, array_keys($dhcpdconf))) {
                     $dhcpdconf[$fieldname] = $config['dhcpdv6'][$if][$fieldname];
                 }
             }
@@ -468,7 +468,7 @@ include("head.inc");
               <?php print_content_box(gettext('No interfaces found with a static IPv6 address.')); ?>
               <?php else: ?>
                 <div class="table-responsive">
-                  <table class="table table-striped">
+                  <table class="table table-striped opnsense_standard_table_form">
                     <tr>
                       <td width="22%" valign="top"></td>
                       <td width="78%" align="right">

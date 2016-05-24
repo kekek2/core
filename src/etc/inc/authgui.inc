@@ -182,14 +182,31 @@ function session_auth(&$Login_Error)
 
     /* Validate incoming login request */
     if (isset($_POST['login']) && !empty($_POST['usernamefld']) && !empty($_POST['passwordfld'])) {
+        $authcfg = auth_get_authserver("Local Database");
+        $authcfg_fallback = auth_get_authserver("Local Database");
+
         if (isset($config['system']['webgui']['authmode'])) {
             $authcfg = auth_get_authserver($config['system']['webgui']['authmode']);
-        } else {
-            $authcfg = null;
         }
+
+        if (!empty($config['system']['webgui']['authmode_fallback'])) {
+            if ($config['system']['webgui']['authmode_fallback'] == "__NO_FALLBACK__") {
+                // no fallback
+                $authcfg_fallback = false;
+            } else {
+                $authcfg_fallback = auth_get_authserver($config['system']['webgui']['authmode_fallback']);
+            }
+        }
+
+        if ($authcfg == $authcfg_fallback) {
+            // it doesn't make sense to fallback to the same authenticator
+            $authcfg_fallback = false;
+        }
+
         // authenticate using config settings, or local if failed
         if (authenticate_user($_POST['usernamefld'], $_POST['passwordfld'], $authcfg) ||
-          authenticate_user($_POST['usernamefld'], $_POST['passwordfld'])) {
+            ($authcfg_fallback !== false && authenticate_user($_POST['usernamefld'], $_POST['passwordfld'], $authcfg_fallback))
+            ) {
             // Generate a new id to avoid session fixation
             session_regenerate_id();
             $_SESSION['Logged_In'] = "True";
@@ -197,7 +214,7 @@ function session_auth(&$Login_Error)
             $_SESSION['last_access'] = time();
             $_SESSION['protocol'] = $config['system']['webgui']['protocol'];
             if (!isset($config['system']['webgui']['quietlogin'])) {
-              log_error(sprintf(gettext("Successful login for user '%1\$s' from: %2\$s"), $_POST['usernamefld'], $_SERVER['REMOTE_ADDR']));
+              log_error(sprintf("Successful login for user '%s' from: %s", $_POST['usernamefld'], $_SERVER['REMOTE_ADDR']));
             }
             header("Location: {$_SERVER['REQUEST_URI']}");
             exit;
@@ -238,9 +255,9 @@ function session_auth(&$Login_Error)
     /* user hit the logout button */
     if (isset($_GET['logout'])) {
         if (isset($_SESSION['Logout'])) {
-            log_error(sprintf(gettext("Session timed out for user '%1\$s' from: %2\$s"), $_SESSION['Username'], $_SERVER['REMOTE_ADDR']));
+            log_error(sprintf("Session timed out for user '%s' from: %s", $_SESSION['Username'], $_SERVER['REMOTE_ADDR']));
         } else {
-            log_error(sprintf(gettext("User logged out for user '%1\$s' from: %2\$s"), $_SESSION['Username'], $_SERVER['REMOTE_ADDR']));
+            log_error(sprintf("User logged out for user '%s' from: %s", $_SESSION['Username'], $_SERVER['REMOTE_ADDR']));
         }
 
         /* wipe out $_SESSION */

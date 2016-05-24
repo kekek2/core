@@ -1,4 +1,5 @@
 <?php
+
 /**
  *    Copyright (C) 2015 Deciso B.V.
  *
@@ -29,7 +30,7 @@
 
 namespace OPNsense\Auth;
 
-require_once("Base32.php");
+require_once 'base32/Base32.php';
 
 /**
  * RFC 6238 TOTP: Time-Based One-Time Password Authenticator
@@ -66,7 +67,7 @@ class LocalTOTP extends Local
             $this->otpLength = $config['otpLength'];
         }
         if (!empty($config['graceperiod'])) {
-            $this->otpLength = $config['graceperiod'];
+            $this->graceperiod = $config['graceperiod'];
         }
     }
 
@@ -85,7 +86,7 @@ class LocalTOTP extends Local
             $start = -1 * $this->graceperiod;
         }
         $now = time();
-        for ($count = $start ; $count <= $this->graceperiod ; $count += $step) {
+        for ($count = $start; $count <= $this->graceperiod; $count += $step) {
             $result[] = $now + $count;
             if ($this->graceperiod == 0) {
                 // special case, we expect the clocks to match 100%, so step and target are both 0
@@ -104,10 +105,10 @@ class LocalTOTP extends Local
     {
         // calculate binary 8 character time for provided window
         $binary_time = pack("N", (int)($moment/$this->timeWindow));
-        $binary_time = str_pad($binary_time,8, chr(0), STR_PAD_LEFT);
+        $binary_time = str_pad($binary_time, 8, chr(0), STR_PAD_LEFT);
 
         // Generate the hash using the SHA1 algorithm
-        $hash = hash_hmac ('sha1', $binary_time, $secret, true);
+        $hash = hash_hmac('sha1', $binary_time, $secret, true);
         $offset = ord($hash[19]) & 0xf;
         $otp = (
                 ((ord($hash[$offset+0]) & 0x7f) << 24 ) |
@@ -119,6 +120,17 @@ class LocalTOTP extends Local
 
         $otp = str_pad($otp, $this->otpLength, "0", STR_PAD_LEFT);
         return $otp;
+    }
+
+    /**
+     * return current token code
+     * @param $base32seed secret to use
+     * @return string token code
+     */
+    public function testToken($base32seed)
+    {
+        $otp_seed = \Base32\Base32::decode($base32seed);
+        return $this->calculateToken(time(), $otp_seed);
     }
 
     /**

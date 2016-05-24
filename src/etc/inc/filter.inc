@@ -620,7 +620,7 @@ function filter_generate_aliases(&$FilterIflist, &$after_filter_configure_run)
                     $aliases .= "{$aliased['name']} = \"{ {$addrlist} }\"\n";
                     break;
                 default:
-                    $aliases .= "{$aliased['name']} = \"{ {$aliased['address']}\"\n";
+                    $aliases .= "{$aliased['name']} = \"{ {$aliased['address']} }\"\n";
                     break;
             }
         }
@@ -682,7 +682,7 @@ function filter_generate_gateways()
                         }
                         $foundlb++;
                     } else {
-                        log_error(sprintf(gettext("An error occurred while trying to find the interface got %s .  The rule has not been added."), $gatewayip));
+                        log_error(sprintf('An error occurred while trying to find the interface got %s. The rule has not been added.', $gatewayip));
                     }
                 }
                 $route = "";
@@ -1525,6 +1525,8 @@ function filter_nat_rules_generate_if(&$FilterIflist, $if, $src = "any", $srcpor
             $tgt = $natip;
         } elseif (is_alias($natip)) {
             $tgt = "\${$natip}";
+        } elseif (is_ipaddrv6($natip)) {
+            $tgt = "{$natip}/128";
         } else {
             $tgt = "{$natip}/32";
         }
@@ -1545,13 +1547,6 @@ function filter_nat_rules_generate_if(&$FilterIflist, $if, $src = "any", $srcpor
         }
     } else {
         $protocol = "";
-    }
-    /* Set tgt for IPv6 */
-    if ($proto == "ipv6") {
-        $natip = get_interface_ipv6($if);
-        if (is_ipaddrv6($natip)) {
-            $tgt = "{$natip}/128";
-        }
     }
     /* Add the hard set source port (useful for ISAKMP) */
     if ($natport != "") {
@@ -1707,7 +1702,7 @@ function filter_nat_rules_generate(&$FilterIflist)
             $natif = $FilterIflist[$natif]['descr'];
 
             $natrules .= "binat on \${$natif} from {$srcaddr} to any -> {$dstaddr}\n";
-            $natrules .= "binat on \${$natif} from any to {$dstaddr} -> {$srcaddr}\n";
+            $natrules .= "binat on \${$natif} from {$dstaddr} to any -> {$srcaddr}\n";
         }
     }
 
@@ -1932,6 +1927,7 @@ function filter_nat_rules_generate(&$FilterIflist)
                 $localport = " port {$localport}";
             }
 
+            $address_family = !empty($rule['ipprotocol']) ? $rule['ipprotocol'] : "";
             switch(strtolower($rule['protocol'])) {
                 case "tcp/udp":
                     $protocol = "{ tcp udp }";
@@ -1939,6 +1935,10 @@ function filter_nat_rules_generate(&$FilterIflist)
                 case "tcp":
                 case "udp":
                     $protocol = strtolower($rule['protocol']);
+                    break;
+                case "icmp":
+                    $protocol = $address_family == 'inet6' ? "ipv6-icmp" : $protocol;
+                    $localport = "";
                     break;
                 default:
                     $protocol = strtolower($rule['protocol']);
@@ -2045,8 +2045,7 @@ function filter_nat_rules_generate(&$FilterIflist)
 
 
             if ($srcaddr <> "" && $dstaddr <> "" && $natif) {
-                $natrules .= "{$nordr}rdr {$rdrpass}on {$natif} proto {$protocol} from {$srcaddr} to {$dstaddr}" . ($nordr == "" ? " -> {$target}{$localport}" : "");
-
+                $natrules .= "{$nordr}rdr {$rdrpass}on {$natif} {$address_family} proto {$protocol} from {$srcaddr} to {$dstaddr}" . ($nordr == "" ? " -> {$target}{$localport}" : "");
                 /* Does this rule redirect back to a internal host? */
                 if (isset($rule['destination']['any']) && !isset($rule['nordr']) && !isset($config['system']['enablenatreflectionhelper']) && !interface_has_gateway($rule['interface'])) {
                     $rule_interface_ip = find_interface_ip($natif);
@@ -2072,7 +2071,7 @@ function filter_nat_rules_generate(&$FilterIflist)
                             $rdr_if_list = "{ {$rdr_if_list} }";
                         }
                         $natrules .= "\n# Reflection redirect\n";
-                        $natrules .= "{$nordr}rdr {$rdrpass}on {$rdr_if_list} proto {$protocol} from {$srcaddr} to {$dstaddr_reflect}" . ($nordr == "" ? " -> {$target}{$localport}" : "");
+                        $natrules .= "{$nordr}rdr {$rdrpass}on {$rdr_if_list} {$address_family} proto {$protocol} from {$srcaddr} to {$dstaddr_reflect}" . ($nordr == "" ? " -> {$target}{$localport}" : "");
                         $nat_if_list = array_merge(array($natif), $nat_if_list);
                     }
                 }
@@ -2144,7 +2143,7 @@ function filter_generate_port(& $rule, $target = "source", $isnat = false) {
             $srcport = explode("-", $rule[$target]['port']);
             $srcporta = alias_expand($srcport[0]);
             if (!$srcporta) {
-                log_error(sprintf(gettext('filter_generate_port: %s is not a valid %s port.'), $srcport[0], $target));
+                log_error(sprintf('filter_generate_port: %s is not a valid %s port.', $srcport[0], $target));
             } elseif (empty($srcport[1]) || $srcport[0] == $srcport[1]) {
                 $src .= " port {$srcporta} ";
             } elseif (($srcport[0] == 1) && ($srcport[1] == 65535)) {
@@ -2508,7 +2507,7 @@ function filter_generate_user_rule(&$FilterIflist, $rule)
             if (is_ipaddrv4($rg)) {
                 $aline['reply'] = "reply-to ( {$ifcfg['if']} {$rg} ) ";
             } elseif ($rule['interface'] <> "pptp") {
-                log_error(sprintf(gettext("Could not find IPv4 gateway for interface (%s)."), $rule['interface']));
+                log_error(sprintf('Could not find IPv4 gateway for interface (%s).', $rule['interface']));
             }
         }
     } elseif (!empty($rule['gateway']) && $type == "pass") {
@@ -2909,10 +2908,8 @@ EOD;
         }
     }
 
-  foreach ($FilterIflist as $on => $oc) {
-      /* block bogon networks */
-      /* http://www.cymru.com/Documents/bogon-bn-nonagg.txt */
-      /* file is automatically in cron every 3000 minutes */
+    foreach ($FilterIflist as $on => $oc) {
+      /* block bogon networks via http://www.cymru.com/Documents/bogon-bn-nonagg.txt */
       if (!isset($config['syslog']['nologbogons'])) {
           $bogonlog = 'log';
       } else {

@@ -118,7 +118,6 @@ $areas = array(
     'bridges' => gettext('Bridge Devices'),
     'ca' => gettext('SSL Certificate Authorities'),
     'cert' => gettext('SSL Certificates'),
-    'cron' => gettext('Scheduled Tasks'),
     'dhcpd' => gettext('DHCP Server'),
     'dhcpdv6' => gettext('DHCPv6 Server'),
     'dhcrelay' => gettext('DHCP Relay'),
@@ -241,7 +240,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if (is_uploaded_file($_FILES['conffile']['tmp_name'])) {
             $data = file_get_contents($_FILES['conffile']['tmp_name']);
             if(empty($data)) {
-                log_error(sprintf(gettext("Warning, could not read file %s"), $_FILES['conffile']['tmp_name']));
+                log_error(sprintf('Warning, could not read file %s', $_FILES['conffile']['tmp_name']));
                 $input_errors[] = sprintf(gettext("Warning, could not read file %s"), $_FILES['conffile']['tmp_name']);
             }
         } else {
@@ -262,7 +261,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         if (count($input_errors) == 0) {
             if(stristr($data, "<m0n0wall>")) {
-                log_error(gettext("Upgrading m0n0wall configuration to OPNsense."));
+                log_error('Upgrading m0n0wall configuration to OPNsense.');
                 /* m0n0wall was found in config.  convert it. */
                 $data = str_replace("m0n0wall", "pfsense", $data);
                 $m0n0wall_upgrade = true;
@@ -609,7 +608,7 @@ $( document ).ready(function() {
             </table>
           </div>
           <div class="content-box tab-content table-responsive">
-            <table class="table table-striped ">
+            <table class="table table-striped opnsense_standard_table_form">
               <thead style="display: none;">
                 <tr>
                   <th class="col-sm-1"></th>

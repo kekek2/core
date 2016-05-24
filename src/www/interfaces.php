@@ -198,7 +198,7 @@ function parse_xml_config_raw_attr($cffile, $rootobj, &$parsed_attributes, $isst
     xml_parser_set_option($xml_parser,XML_OPTION_SKIP_WHITE, 1);
 
     if (!($fp = fopen($cffile, "r"))) {
-        log_error(gettext("Error: could not open XML input") . "\n");
+        log_error('Error: could not open XML input');
         if (isset($parsed_attributes)) {
             $parsed_attributes = array();
             unset($parsedattrs);
@@ -208,7 +208,7 @@ function parse_xml_config_raw_attr($cffile, $rootobj, &$parsed_attributes, $isst
 
     while ($data = fread($fp, 4096)) {
         if (!xml_parse($xml_parser, $data, feof($fp))) {
-            log_error(sprintf(gettext('XML error: %s at line %d') . "\n",
+            log_error(sprintf('XML error: %s at line %d' . "\n",
                   xml_error_string(xml_get_error_code($xml_parser)),
                   xml_get_current_line_number($xml_parser)));
             if (isset($parsed_attributes)) {
@@ -221,7 +221,7 @@ function parse_xml_config_raw_attr($cffile, $rootobj, &$parsed_attributes, $isst
     xml_parser_free($xml_parser);
 
     if (!$parsedcfg[$rootobj]) {
-        log_error(sprintf(gettext("XML error: no %s object found!") . "\n", $rootobj));
+        log_error(sprintf('XML error: no %s object found!', $rootobj));
         if (isset($parsed_attributes)) {
             $parsed_attributes = array();
             unset($parsedattrs);
@@ -373,6 +373,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['dhcp6-ia-pd-send-hint'] = isset($a_interfaces[$if]['dhcp6-ia-pd-send-hint']);
     $pconfig['dhcp6prefixonly'] = isset($a_interfaces[$if]['dhcp6prefixonly']);
     $pconfig['dhcp6usev4iface'] = isset($a_interfaces[$if]['dhcp6usev4iface']);
+    $pconfig['adv_dhcp6_debug'] = isset($a_interfaces[$if]['adv_dhcp6_debug']);
     $pconfig['track6-prefix-id--hex'] = sprintf("%x", empty($pconfig['track6-prefix-id']) ? 0 :$pconfig['track6-prefix-id']);
 
     // ipv4 type (from ipaddr)
@@ -460,7 +461,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         $wlanbaseif = interface_get_wireless_base($a_interfaces[$if]['if']);
         $std_wl_copy_fieldnames = array(
-          'standard', 'mode','protmode', 'ssid', 'channel', 'txpower', 'diversity', 'txantenna', 'rxantenna', 'distance',
+          'standard', 'mode','protmode', 'ssid', 'channel', 'txpower', 'diversity', 'txantenna', 'rxantenna',
           'regdomain', 'regcountry', 'reglocation', 'authmode', 'auth_server_addr', 'auth_server_port', 'auth_server_shared_secret',
           'auth_server_addr2', 'auth_server_port2', 'auth_server_shared_secret2', 'mac_acl'
         );
@@ -1089,6 +1090,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     if (!empty($pconfig['dhcp6usev4iface'])) {
                         $new_config['dhcp6usev4iface'] = true;
                     }
+                    $new_config['adv_dhcp6_debug'] = !empty($pconfig['adv_dhcp6_debug']);
                     $new_config['adv_dhcp6_interface_statement_send_options'] = $pconfig['adv_dhcp6_interface_statement_send_options'];
                     $new_config['adv_dhcp6_interface_statement_request_options'] = $pconfig['adv_dhcp6_interface_statement_request_options'];
                     $new_config['adv_dhcp6_interface_statement_information_only_enable'] = $pconfig['adv_dhcp6_interface_statement_information_only_enable'];
@@ -1154,7 +1156,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $new_config['wireless']['channel'] = $pconfig['channel'];
                 $new_config['wireless']['authmode'] = $pconfig['authmode'];
                 $new_config['wireless']['txpower'] = $pconfig['txpower'];
-                $new_config['wireless']['distance'] = $pconfig['distance'];
                 $new_config['wireless']['regdomain'] = $pconfig['regdomain'];
                 $new_config['wireless']['regcountry'] = $pconfig['regcountry'];
                 $new_config['wireless']['reglocation'] = $pconfig['reglocation'];
@@ -1310,8 +1311,7 @@ if (isset($a_interfaces[$if]['wireless'])) {
     $wlanbaseif = interface_get_wireless_base($a_interfaces[$if]['if']);
     preg_match("/^(.*?)([0-9]*)$/", $wlanbaseif, $wlanbaseif_split);
     $wl_sysctl_prefix = 'dev.' . $wlanbaseif_split[1] . '.' . $wlanbaseif_split[2];
-    $wl_sysctl = get_sysctl(array("{$wl_sysctl_prefix}.diversity", "{$wl_sysctl_prefix}.txantenna", "{$wl_sysctl_prefix}.rxantenna",
-                "{$wl_sysctl_prefix}.slottime", "{$wl_sysctl_prefix}.acktimeout", "{$wl_sysctl_prefix}.ctstimeout"));
+    $wl_sysctl = get_sysctl(array("{$wl_sysctl_prefix}.diversity", "{$wl_sysctl_prefix}.txantenna", "{$wl_sysctl_prefix}.rxantenna"));
     $wl_regdomain_xml_attr = array();
     $wl_regdomain_xml = parse_xml_regdomain($wl_regdomain_xml_attr);
     $wl_regdomains = &$wl_regdomain_xml['regulatory-domains']['rd'];
@@ -1677,7 +1677,7 @@ include("head.inc");
           <form method="post" name="iform" id="iform">
               <div class="tab-content content-box col-xs-12 __mb">
                 <div class="table-responsive">
-                  <table class="table table-striped">
+                  <table class="table table-striped opnsense_standard_table_form">
                     <thead>
                       <tr>
                         <td width="22%"><strong><?=gettext("General configuration"); ?></strong></td>
@@ -1704,7 +1704,7 @@ include("head.inc");
                 <div class="tab-content content-box col-xs-12 __mb">
                   <div class="table-responsive">
                     <!-- Section : All -->
-                    <table class="table table-striped">
+                    <table class="table table-striped opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("General configuration"); ?></th>
@@ -1849,7 +1849,7 @@ include("head.inc");
                 <!-- static IPv4 -->
                 <div class="tab-content content-box col-xs-12 __mb" id="staticv4" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-striped opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("Static IPv4 configuration"); ?></th>
@@ -1946,7 +1946,7 @@ include("head.inc");
                 <!-- Section : dhcp v4 -->
                 <div class="tab-content content-box col-xs-12 __mb" id="dhcp" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-striped opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("DHCP client configuration");?></th>
@@ -2111,7 +2111,7 @@ include("head.inc");
                 <!-- Section : PPP -->
                 <div class="tab-content content-box col-xs-12 __mb" id="ppp" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-striped opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("PPP configuration"); ?></th>
@@ -2213,7 +2213,7 @@ include("head.inc");
                 <!-- Section : PPPOE -->
                 <div class="tab-content content-box col-xs-12 __mb" id="pppoe" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-striped opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("PPPoE configuration"); ?></th>
@@ -2349,7 +2349,7 @@ include("head.inc");
                 <!-- Section : PPTP / L2TP -->
                 <div class="tab-content content-box col-xs-12 __mb" id="pptp" style="display:none">
                   <div class="table-responsive">
-                    <table  class="table table-striped">
+                    <table  class="table table-striped opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("PPTP/L2TP configuration"); ?></th>
@@ -2428,7 +2428,7 @@ include("head.inc");
                 <!-- Section : static IPv6 -->
                 <div class="tab-content content-box col-xs-12 __mb" id="staticv6" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-striped opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("Static IPv6 configuration"); ?></th>
@@ -2526,7 +2526,7 @@ include("head.inc");
                 <!-- Section : dhcp v6 -->
                 <div class="tab-content content-box col-xs-12 __mb" id="dhcp6" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-striped opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("DHCPv6 client configuration");?></th>
@@ -2551,6 +2551,15 @@ include("head.inc");
                               </label>
                             </div>
                           </td>
+                        </tr>
+                        <tr class="dhcpv6_advanced dhcpv6_file_override">
+                            <td><a id="help_for_dhcp6_debug" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Enable debug"); ?></td>
+                            <td>
+                              <input name="adv_dhcp6_debug" type="checkbox" id="adv_dhcp6_debug" value="yes" <?=!empty($pconfig['adv_dhcp6_debug']) ? "checked=\"checked\"" : ""; ?> />
+                              <div class="hidden" for="help_for_dhcp6_debug">
+                                <?=gettext("Enable debug mode for DHCPv6 client"); ?>
+                              </div>
+                            </td>
                         </tr>
                         <tr class="dhcpv6_basic">
                           <td><a id="help_for_dhcp6usev4iface" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Use IPv4 connectivity"); ?></td>
@@ -2730,7 +2739,7 @@ include("head.inc");
                 <!-- Section : 6RD-->
                 <div class="tab-content content-box col-xs-12 __mb" id="6rd" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-striped opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("6RD Rapid Deployment"); ?></th>
@@ -2780,7 +2789,7 @@ include("head.inc");
                 <!-- Section : Track 6 -->
                 <div class="tab-content content-box col-xs-12 __mb" id="track6" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-striped opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("Track IPv6 Interface"); ?></th>
@@ -2836,7 +2845,7 @@ include("head.inc");
                 <!-- Section : Wireless -->
                 <div class="tab-content content-box col-xs-12 __mb">
                   <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-striped opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("Common wireless configuration - Settings apply to all wireless networks on"); ?> <?=$wlanbaseif;?> </th>
@@ -2974,19 +2983,6 @@ include("head.inc");
                             </table>
                             <div class="hidden" for="help_for_antenna_settings">
                               <?=gettext("Note: The antenna numbers do not always match up with the labels on the card."); ?>
-                            </div>
-                          </td>
-                        </tr>
-<?php
-                        endif;
-                        if (isset($wl_sysctl["{$wl_sysctl_prefix}.slottime"]) && isset($wl_sysctl["{$wl_sysctl_prefix}.acktimeout"]) && isset($wl_sysctl["{$wl_sysctl_prefix}.ctstimeout"])): ?>
-                        <tr>
-                          <td><a id="help_for_distance" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Distance setting"); ?></td>
-                          <td>
-                            <input name="distance" type="text" id="distance" size="5" value="<?=$pconfig['distance'];?>" />
-                            <div class="hidden" for="help_for_distance">
-                              <?=gettext("Note: This field can be used to tune ACK/CTS timers to fit the distance between AP and Client"); ?><br />
-                              <?=gettext("(measured in Meters and works only for Atheros based cards !)"); ?>
                             </div>
                           </td>
                         </tr>
@@ -3351,7 +3347,7 @@ include("head.inc");
               </div>
               <div class="tab-content content-box col-xs-12 __mb">
                 <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-striped opnsense_standard_table_form">
                       <tr>
                         <td width="22%"></td>
                         <td width="78%">

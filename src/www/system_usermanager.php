@@ -1,7 +1,7 @@
 <?php
 
 /*
-    Copyright (C) 2014-2015 Deciso B.V.
+    Copyright (C) 2014-2016 Deciso B.V.
     Copyright (C) 2008 Shrew Soft Inc.
     Copyright (C) 2005 Paul Taylor <paultaylor@winn-dixie.com>
     Copyright (C) 2003-2005 Manuel Kasper <mk@neon1.net>
@@ -28,7 +28,9 @@
     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
 */
-require_once("guiconfig.inc");
+
+require_once 'guiconfig.inc';
+require_once 'base32/Base32.php';
 
 function get_user_privdesc(& $user)
 {
@@ -120,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     } elseif ($act == 'new' || $act == 'edit') {
         // edit user, load or init data
-        $fieldnames = array('user_dn', 'descr', 'expires', 'scope', 'uid', 'priv', 'ipsecpsk', 'lifetime');
+        $fieldnames = array('user_dn', 'descr', 'expires', 'scope', 'uid', 'priv', 'ipsecpsk', 'lifetime', 'otp_seed');
         if (isset($id)) {
             if (isset($a_user[$id]['authorizedkeys'])) {
                 $pconfig['authorizedkeys'] = base64_decode($a_user[$id]['authorizedkeys']);
@@ -169,30 +171,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         write_config();
         $savemsg = gettext("User")." {$userdeleted} ". gettext("successfully deleted");
         header("Location: system_usermanager.php?savemsg=".$savemsg);
-        exit;
-    } elseif ($act == "delpriv" && !empty($pconfig['priv_delete']) && isset($id)) {
-        // drop privilege from user
-        // search for priv id to delete
-        $privid = null;
-        if (!empty($a_user[$id]['priv'])) {
-            foreach ($a_user[$id]['priv'] as $key => $value) {
-                if ($value == $pconfig['priv_delete']) {
-                    $privid = $key;
-                    $privdeleted = $value;
-                }
-            }
-        }
-
-        if ($privid !== null) {
-            unset($a_user[$id]['priv'][$privid]);
-            local_user_set($a_user[$id]);
-            write_config();
-            $savemsg = gettext("Privilege")." {$privdeleted} ".
-                        gettext("successfully deleted");
-            header("Location: system_usermanager.php?savemsg=".$savemsg."&act=edit&userid=".$id);
-        } else {
-            header("Location: system_usermanager.php?act=edit&userid=".$id);
-        }
         exit;
     } elseif ($act == "delcert" && isset($id)) {
         // remove certificate association
@@ -332,6 +310,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $userent['expires'] = $pconfig['expires'];
             $userent['authorizedkeys'] = base64_encode($pconfig['authorizedkeys']);
             $userent['ipsecpsk'] = $pconfig['ipsecpsk'];
+            if (!empty($pconfig['gen_otp_seed'])) {
+                // generate 160bit base32 encoded secret
+                $userent['otp_seed'] = Base32\Base32::encode(openssl_random_pseudo_bytes(20));
+            } else {
+                $userent['otp_seed'] = trim($pconfig['otp_seed']);
+            }
 
             if (!empty($pconfig['disabled'])) {
                 $userent['disabled'] = true;
@@ -448,29 +432,6 @@ function presubmit() {
 
 <script type="text/javascript">
 $( document ).ready(function() {
-  // delete privilege
-  $(".act-del-priv").click(function(event){
-      event.preventDefault();
-      var priv_name = $(this).data('priv');
-      BootstrapDialog.show({
-          type:BootstrapDialog.TYPE_DANGER,
-          title: "<?= gettext("User");?>",
-          message: "<?=gettext("Do you really want to delete this privilege?");?> " + "<br/>("+priv_name+")",
-          buttons: [{
-                  label: "<?= gettext("No");?>",
-                  action: function(dialogRef) {
-                    dialogRef.close();
-                  }}, {
-                    label: "<?= gettext("Yes");?>",
-                    action: function(dialogRef) {
-                      $("#priv_delete").val(priv_name);
-                      $("#act").val("delpriv");
-                      $("#iform").submit();
-                  }
-          }]
-      });
-    });
-
     // remove certificate association
     $(".act-del-cert").click(function(event){
       var certid = $(this).data('certid');
@@ -605,7 +566,7 @@ $( document ).ready(function() {
                 <input type="hidden" id="priv_delete" name="priv_delete" value="" /> <!-- delete priv action -->
                 <input type="hidden" id="api_delete" name="api_delete" value="" /> <!-- delete api ke action -->
                 <input type="hidden" id="certid" name="certid" value="" /> <!-- remove cert association action -->
-                <table class="table table-striped">
+                <table class="table table-striped opnsense_standard_table_form">
                   <tr>
                     <td width="22%"></td>
                     <td width="78%" align="right">
@@ -737,16 +698,13 @@ $( document ).ready(function() {
 <?php
                   if ($pconfig['uid'] != "") :?>
                   <tr>
-                    <td colspan="2"><i class="fa fa-info-circle text-muted"></i> <?=gettext("Effective Privileges");?></td>
-                  </tr>
-                  <tr>
-                    <td colspan="2">
-                      <table class="table table-striped table-condensed">
+                    <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Effective Privileges");?></td>
+                    <td>
+                      <table class="table table-hover table-condensed">
                         <tr>
-                          <td width="20%"><b><?=gettext("Inherited From");?></b></td>
-                          <td width="30%"><b><?=gettext("Name");?></b></td>
-                          <td width="40%"><b><?=gettext("Description");?></b></td>
-                          <td></td>
+                          <td><b><?=gettext("Inherited From");?></b></td>
+                          <td><b><?=gettext("Name");?></b></td>
+                          <td><b><?=gettext("Description");?></b></td>
                         </tr>
 <?php
                         foreach (get_user_privdesc($a_user[$id]) as $priv) :?>
@@ -754,26 +712,15 @@ $( document ).ready(function() {
                             <td><?=!empty($priv['group']) ? $priv['group'] : ""?></td>
                             <td><?=$priv['name']?></td>
                             <td><?=!empty($priv['descr']) ? $priv['descr'] : ""?></td>
-                            <td class="text-center">
-<?php
-                            if (empty($priv['group'])) :?>
-                              <button type="button" data-priv="<?=$priv['id']?>" class="btn btn-default btn-xs act-del-priv"
-                                  title="<?=gettext("revoke privilege");?>" data-toggle="tooltip">
-                                <span class="fa fa-trash text-muted"></span>
-                              </button>
-<?php
-                            endif;?>
-                            </td>
                         </tr>
 <?php
                         endforeach;?>
                         <tr>
-                          <td colspan="3"></td>
-                          <td>
-                            <a href="system_usermanager_addprivs.php?userid=<?=$id?>" class="btn btn-xs btn-default"
-                                title="<?=gettext("assign privileges");?>" data-toggle="tooltip">
-                              <span class="glyphicon glyphicon-plus"></span>
-                            </a>
+                          <td colspan="3">
+                              <a href="system_usermanager_addprivs.php?userid=<?=$id?>" class="btn btn-xs btn-default"
+                                  title="<?=gettext("edit privileges");?>" data-toggle="tooltip">
+                                <span class="fa fa-pencil"></span>
+                              </a>
                           </td>
                         </tr>
                       </table>
@@ -822,8 +769,7 @@ $( document ).ready(function() {
                             endforeach;
                         endif;?>
                         <tr>
-                          <td colspan="2"></td>
-                          <td>
+                          <td colspan="3">
                             <a href="system_certmanager.php?act=new&amp;userid=<?=$id?>" class="btn btn-default btn-xs"
                                 title="<?=gettext("create or link user certificate");?>" data-toggle="tooltip">
                               <span class="glyphicon glyphicon-plus"></span>
@@ -872,8 +818,7 @@ $( document ).ready(function() {
                               </tbody>
                               <tfoot>
                                   <tr>
-                                    <td></td>
-                                    <td>
+                                    <td colspan="2">
                                       <button type="button" class="btn btn-default btn-xs" id="newApiKey"
                                           title="<?=gettext("create API key");?>" data-toggle="tooltip">
                                         <span class="glyphicon glyphicon-plus"></span>
@@ -898,6 +843,28 @@ $( document ).ready(function() {
                   </tr>
 <?php
                 endif;?>
+                  <tr>
+                    <td><a id="help_for_otp_seed" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a>  <?=gettext("OTP seed");?></td>
+                    <td>
+                      <input name="otp_seed" type="text" value="<?=$pconfig['otp_seed'];?>"/>
+                      <input type="checkbox" name="gen_otp_seed"/>&nbsp;<small><?=gettext("generate new (160bit) secret");?></small>
+                      <div class="hidden" for="help_for_otp_seed">
+                        <?=gettext("OTP (base32) seed to use when a one time password authenticator is used");?><br/>
+<?php
+                        if (!empty($pconfig['otp_seed'])):
+                            // construct google url, using token, username and this machines hostname
+                            $google_otp_url = "https://www.google.com/chart?chs=200x200&amp;chld=M|0&amp;cht=qr&amp;chl=otpauth://totp/";
+                            $google_otp_url .= $pconfig['usernamefld']."@".htmlspecialchars($config['system']['hostname'])."%3Fsecret%3D";
+                            $google_otp_url .= $pconfig['otp_seed'];
+                        ?>
+                            <br/>
+                            <?=gettext("When using google authenticator, the following link provides a qrcode for easy setup");?><br/>
+                            <a href="<?=$google_otp_url;?>" target="_blank"><?=$google_otp_url;?></a>
+<?php
+                        endif;?>
+                      </div>
+                    </td>
+                  </tr>
                   <tr>
                     <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Authorized keys");?></td>
                     <td>

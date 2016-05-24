@@ -166,8 +166,8 @@ function services_radvd_configure($blacklist = array())
         $radvdconf .= "# Generated for DHCPv6 Server $dhcpv6if\n";
         $radvdconf .= "interface {$realif} {\n";
         $radvdconf .= "\tAdvSendAdvert on;\n";
-        $radvdconf .= "\tMinRtrAdvInterval 5;\n";
-        $radvdconf .= "\tMaxRtrAdvInterval 20;\n";
+        $radvdconf .= "\tMinRtrAdvInterval 225;\n";
+        $radvdconf .= "\tMaxRtrAdvInterval 300;\n";
         $mtu = legacy_interface_stats($realif)['mtu'];
         if (is_numeric($mtu)) {
             $radvdconf .= "\tAdvLinkMTU {$mtu};\n";
@@ -530,7 +530,7 @@ EOD;
                     }
                 }
             } else {
-                log_error(gettext("Warning! DHCP Failover setup and no CARP virtual IPs defined!"));
+                log_error('Warning! DHCP Failover setup and no CARP virtual IPs defined!');
             }
             $dhcpdconf_pri = "";
             if ($skew > 10) {
@@ -1459,7 +1459,7 @@ EOD;
 
     $igmpfl = fopen('/usr/local/etc/igmpproxy.conf', 'w');
     if (!$igmpfl) {
-        log_error(gettext("Could not write Igmpproxy configuration file!"));
+        log_error('Could not write Igmpproxy configuration file!');
         return;
     }
     fwrite($igmpfl, $igmpconf);
@@ -1467,7 +1467,7 @@ EOD;
     unset($igmpconf);
 
     mwexec('/usr/local/etc/rc.d/igmpproxy onestart');
-    log_error(gettext("Started IGMP proxy service."));
+    log_error('Started IGMP proxy service.');
 
     return 0;
 }
@@ -1839,7 +1839,6 @@ function dyndnsCheckIP($int)
 function services_dnsmasq_configure()
 {
     global $config;
-    $return = 0;
 
     // hard coded args: will be removed to avoid duplication if specified in custom_options
     $standard_args = array(
@@ -1935,9 +1934,10 @@ function services_dnsmasq_configure()
         /* Setup forwarded domains */
         if (isset($config['dnsmasq']['domainoverrides']) && is_array($config['dnsmasq']['domainoverrides'])) {
           foreach($config['dnsmasq']['domainoverrides'] as $override) {
-            if ($override['ip'] == "!")
-              $override[ip] = "";
-            $args .= ' --server=/' . $override['domain'] . '/' . $override['ip'];
+            if ($override['ip'] == "!") {
+                $override['ip'] = "";
+            }
+            $args .= ' --server='. escapeshellarg('/' . $override['domain'] . '/' . $override['ip']);
           }
         }
 
@@ -1945,7 +1945,7 @@ function services_dnsmasq_configure()
         if (isset($config['dnsmasq']['domainoverrides']) && is_array($config['dnsmasq']['domainoverrides'])) {
             if (!isset($config['system']['webgui']['nodnsrebindcheck'])) {
                 foreach($config['dnsmasq']['domainoverrides'] as $override) {
-                    $args .= ' --rebind-domain-ok=/' . $override['domain'] . '/ ';
+                    $args .= ' --rebind-domain-ok=' . escapeshellarg('/'.$override['domain'].'/') . ' ' ;
                 }
             }
         }
@@ -1975,7 +1975,6 @@ function services_dnsmasq_configure()
 
         /* run dnsmasq */
         $cmd = "/usr/local/sbin/dnsmasq --all-servers {$dns_rebind} {$args}";
-        //log_error("dnsmasq command: {$cmd}");
         mwexec_bg($cmd);
         system_dhcpleases_configure();
         unset($args);
@@ -1987,11 +1986,11 @@ function services_dnsmasq_configure()
 
     if (!file_exists("/var/run/booting")) {
         if (services_dhcpd_configure()!=0) {
-            $return = 1;
+            return 1;
         }
     }
 
-    return $return;
+    return 0;
 }
 
 function services_unbound_configure()
@@ -2933,4 +2932,111 @@ function is_radvd_enabled() {
     }
 
     return false;
+}
+
+function service_control_start($name, $extras)
+{
+    if (!empty($extras['id'])) {
+        $filter['id'] = $extras['id'];
+    }
+
+    $service = find_service_by_name($name, $filter);
+    if (!isset($service['name'])) {
+        return sprintf(gettext("Could not start unknown service `%s'"), htmlspecialchars($name));
+    }
+
+    if (isset($service['configd']['start'])) {
+        foreach ($service['configd']['start'] as $cmd) {
+            configd_run($cmd);
+        }
+    } elseif (isset($service['php']['start'])) {
+        foreach ($service['php']['start'] as $cmd) {
+            $params = array();
+            if (isset($service['php']['args'])) {
+                foreach ($service['php']['args'] as $param) {
+                    $params[] = $service[$param];
+                }
+            }
+            call_user_func_array($cmd, $params);
+        }
+    } elseif (isset($service['mwexec']['start'])) {
+        foreach ($service['mwexec']['start'] as $cmd) {
+            mwexec($cmd);
+        }
+    } else {
+        return sprintf(gettext("Could not start service `%s'"), htmlspecialchars($name));
+    }
+
+    return sprintf(gettext('%s has been started.'), htmlspecialchars($name));
+}
+
+function service_control_stop($name, $extras)
+{
+    $filter = array();
+
+    if (!empty($extras['id'])) {
+        $filter['id'] = $extras['id'];
+    }
+
+    $service = find_service_by_name($name, $filter);
+    if (!isset($service['name'])) {
+        return sprintf(gettext("Could not stop unknown service `%s'"), htmlspecialchars($name));
+    }
+
+    if (isset($service['configd']['stop'])) {
+        foreach ($service['configd']['stop'] as $cmd) {
+            configd_run($cmd);
+        }
+    } elseif (isset($service['php']['stop'])) {
+        foreach ($service['php']['stop'] as $cmd) {
+            $cmd();
+        }
+    } elseif (isset($service['mwexec']['stop'])) {
+        foreach ($service['mwexec']['stop'] as $cmd) {
+            mwexec($cmd);
+        }
+    } elseif (isset($service['pidfile'])) {
+        killbypid($service['pidfile'], 'TERM', true);
+    } else {
+        /* last resort, but not very elegant */
+        killbyname($service['name']);
+    }
+
+    return sprintf(gettext("%s has been stopped."), htmlspecialchars($name));
+}
+
+function service_control_restart($name, $extras)
+{
+    if (!empty($extras['id'])) {
+        $filter['id'] = $extras['id'];
+    }
+
+    $service = find_service_by_name($name, $filter);
+    if (!isset($service['name'])) {
+        return sprintf(gettext("Could not restart unknown service `%s'"), htmlspecialchars($name));
+    }
+
+    if (isset($service['configd']['restart'])) {
+        foreach ($service['configd']['restart'] as $cmd) {
+            configd_run($cmd);
+        }
+    } elseif (isset($service['php']['restart'])) {
+        foreach ($service['php']['restart'] as $cmd) {
+            $params = array();
+            if (isset($service['php']['args'])) {
+                foreach ($service['php']['args'] as $param) {
+                    $params[] = $service[$param];
+                }
+            }
+            call_user_func_array($cmd, $params);
+        }
+    } elseif (isset($service['mwexec']['restart'])) {
+        foreach ($service['mwexec']['restart'] as $cmd) {
+            mwexec($cmd);
+        }
+    } else {
+        return sprintf(gettext("Could not restart service `%s'"), htmlspecialchars($name));
+    }
+
+    return sprintf(gettext("%s has been restarted."), htmlspecialchars($name));
 }

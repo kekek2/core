@@ -32,30 +32,12 @@ all:
 
 force:
 
-WRKDIR?=${.CURDIR}/work
-WRKSRC=	${WRKDIR}/src
-PKGDIR=	${WRKDIR}/pkg
+WANTS=		git pear-PHP_CodeSniffer phpunit
 
-mount: force
-	@if [ ! -f ${WRKDIR}/.mount_done ]; then \
-	    echo -n "Enabling core.git live mount..."; \
-	    ${.CURDIR}/scripts/version.sh > \
-	        ${.CURDIR}/src/opnsense/version/opnsense; \
-	    mount_unionfs ${.CURDIR}/src /usr/local; \
-	    touch ${WRKDIR}/.mount_done; \
-	    echo "done"; \
-	    service configd restart; \
-	fi
-
-umount: force
-	@if [ -f ${WRKDIR}/.mount_done ]; then \
-	    echo -n "Disabling core.git live mount..."; \
-	    umount -f "<above>:${.CURDIR}/src"; \
-	    rm ${.CURDIR}/src/opnsense/version/opnsense; \
-	    rm ${WRKDIR}/.mount_done; \
-	    echo "done"; \
-	    service configd restart; \
-	fi
+.for WANT in ${WANTS}
+want-${WANT}: force
+	@${PKG} info ${WANT} > /dev/null
+.endfor
 
 .if ${GIT} != true
 CORE_COMMIT!=	${.CURDIR}/scripts/version.sh
@@ -156,7 +138,33 @@ CORE_DEPENDS?=		apinger \
 			os-ndpi \
 			os-pkg-redirect
 
-manifest: force
+WRKDIR?=${.CURDIR}/work
+WRKSRC=	${WRKDIR}/src
+PKGDIR=	${WRKDIR}/pkg
+
+mount: want-git
+	@if [ ! -f ${WRKDIR}/.mount_done ]; then \
+	    echo -n "Enabling core.git live mount..."; \
+	    echo "${CORE_COMMIT}" > \
+	        ${.CURDIR}/src/opnsense/version/opnsense; \
+	    mount_unionfs ${.CURDIR}/src /usr/local; \
+	    touch ${WRKDIR}/.mount_done; \
+	    echo "done"; \
+	    service configd restart; \
+	fi
+
+umount: force
+	@if [ -f ${WRKDIR}/.mount_done ]; then \
+	    echo -n "Disabling core.git live mount..."; \
+	    umount -f "<above>:${.CURDIR}/src"; \
+	    rm ${.CURDIR}/src/opnsense/version/opnsense; \
+	    rm ${WRKDIR}/.mount_done; \
+	    echo "done"; \
+	    service configd restart; \
+	fi
+
+
+manifest: want-git
 	@echo "name: \"${CORE_NAME}\""
 	@echo "version: \"${CORE_VERSION}\""
 	@echo "origin: \"${CORE_ORIGIN}\""
@@ -185,7 +193,7 @@ name: force
 depends: force
 	@echo ${CORE_DEPENDS}
 
-scripts: force
+scripts: want-git
 	@mkdir -p ${DESTDIR}
 	@cp -v -- +PRE_DEINSTALL +POST_INSTALL ${DESTDIR}
 	@sed -i '' -e "s/%%CORE_COMMIT%%/${CORE_COMMIT}/g" \
@@ -223,7 +231,6 @@ package: force
 		echo ">>> Missing required file(s).  Please run 'make package-keywords'" >&2; \
 		exit 1; \
 	fi
-	@${PKG} info git > /dev/null
 	@rm -rf ${WRKSRC} ${PKGDIR}
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} install
 	@${MAKE} DESTDIR=${WRKSRC} scripts
@@ -259,7 +266,7 @@ sweep: force
 	find ${.CURDIR}/scripts -type f -print0 | \
 	    xargs -0 -n1 scripts/cleanfile
 
-style: force
+style: want-pear-PHP_CodeSniffer
 	@(phpcs --tab-width=4 --standard=PSR2 ${.CURDIR}/src/opnsense/mvc \
 	    || true) > ${.CURDIR}/.style.out
 	@echo -n "Total number of style warnings: "
@@ -269,7 +276,7 @@ style: force
 	@cat ${.CURDIR}/.style.out
 	@rm ${.CURDIR}/.style.out
 
-stylefix: force
+stylefix: want-pear-PHP_CodeSniffer
 	phpcbf --standard=PSR2 ${.CURDIR}/src/opnsense/mvc || true
 
 setup: force
@@ -279,7 +286,7 @@ health: force
 	# check test script output and advertise a failure...
 	[ "`${.CURDIR}/src/etc/rc.php_test_run`" == "FCGI-PASSED PASSED" ]
 
-clean:
+clean: want-git
 	${GIT} reset --hard HEAD && ${GIT} clean -xdqf .
 
 .PHONY: force
