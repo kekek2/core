@@ -1,5 +1,5 @@
 TING: {
-  url: "pkg+https://78.157.94.42/${ABI}/1.0.0",
+  url: "pkg+https://update0.smart-soft.ru/${ABI}/1.0.0",
   signature_type: "none",
   mirror_type: "srv",
   priority: 11,
