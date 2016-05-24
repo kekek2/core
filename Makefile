@@ -137,7 +137,7 @@ CORE_DEPENDS?=		apinger \
 			wol \
 			zip \
 			os-ndpi \
-			os-pkg-redirect
+			ting-update
 
 WRKDIR?=${.CURDIR}/work
 WRKSRC?=${WRKDIR}/src
