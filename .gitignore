@@ -1,4 +1,3 @@
-/src/etc/pkg.conf
 /src/etc/pkg/**
 /src/etc/ssh/**
 /src/etc/php/**
