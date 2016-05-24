@@ -197,7 +197,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $savemsg = get_std_save_message();
 
             if ($oldnologlighttpd !== isset($config['syslog']['nologlighttpd'])) {
-              log_error(gettext("webConfigurator configuration has changed. Restarting webConfigurator."));
+              log_error('webConfigurator configuration has changed. Restarting webConfigurator now.');
               mwexec_bg('/usr/local/etc/rc.restart_webgui 2');
               $savemsg .= "<br />" . gettext("WebGUI process is restarting.");
             }
@@ -320,7 +320,7 @@ $(document).ready(function() {
             <input type="hidden" id="action" name="action" value="" />
             <div class="tab-content content-box col-xs-12 __mb">
               <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-striped opnsense_standard_table_form">
                   <tr>
                     <td width="22%"><strong><?=gettext("Local Logging Options");?></strong></td>
                     <td  width="78%" align="right">
@@ -423,7 +423,7 @@ $(document).ready(function() {
 
               <div class="tab-content content-box col-xs-12 __mb">
                 <div class="table-responsive">
-                  <table class="table table-striped">
+                  <table class="table table-striped opnsense_standard_table_form">
                     <tr>
                       <td width="22%"><strong><?=gettext("Remote Logging Options");?></strong></td>
                       <td  width="78%" align="right">
@@ -474,7 +474,7 @@ $(document).ready(function() {
                     <tr>
                       <td><a id="help_for_remoteserver" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Remote Syslog Servers");?></td>
                       <td>
-                        <table class="table table-condensed">
+                        <table class="table table-condensed opnsense_standard_table_form">
                           <tr>
                             <td><?=gettext("Server") . " 1";?></td>
                             <td><input name="remoteserver" id="remoteserver" type="text" class="form-control host" size="20" value="<?=htmlspecialchars($pconfig['remoteserver']);?>" /></td>

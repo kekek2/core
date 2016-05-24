@@ -769,6 +769,13 @@
             "carp_status.php*"
         ]
     },
+    "page-status-habackup": {
+        "name": "WebCfg - Status: HA backup page",
+        "descr": "Allow access to the 'Status: HA backup' page.",
+        "match": [
+            "status_habackup.php"
+        ]
+    },
     "page-status-dhcpleases": {
         "name": "WebCfg - Status: DHCP leases page",
         "descr": "Allow access to the 'Status: DHCP leases' page.",
@@ -1104,7 +1111,7 @@
         "name": "WebCfg - System: Group Manager: Add Privileges page",
         "descr": "Allow access to the 'System: Group Manager: Add Privileges' page.",
         "match": [
-            "system_groupmanager_addprivs.php*"
+            "system_usermanager_addprivs.php?group*"
         ]
     },
     "page-system-hasync": {
@@ -1146,7 +1153,7 @@
         "name": "WebCfg - System: User Manager: Add Privileges page",
         "descr": "Allow access to the 'System: User Manager: Add Privileges' page.",
         "match": [
-            "system_usermanager_addprivs.php*"
+            "system_usermanager_addprivs.php?user*"
         ]
     },
     "page-system-usermanager-settings": {

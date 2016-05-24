@@ -130,9 +130,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (isset($configId)) {
         // copy 1-on-1
         foreach (array('protocol','target','local-port','descr','interface','associated-rule-id','nosync'
-                      ,'natreflection','created','updated') as $fieldname) {
+                      ,'natreflection','created','updated','ipprotocol') as $fieldname) {
             if (isset($a_nat[$configId][$fieldname])) {
                 $pconfig[$fieldname] = $a_nat[$configId][$fieldname];
+            } else {
+                $pconfig[$fieldname] = null;
             }
         }
         // fields with some kind of logic.
@@ -145,11 +147,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         address_to_pconfig($a_nat[$configId]['destination'], $pconfig['dst'],
           $pconfig['dstmask'], $pconfig['dstnot'],
           $pconfig['dstbeginport'], $pconfig['dstendport']);
+          if (empty($pconfig['ipprotocol'])) {
+              if (strpos($pconfig['src'].$pconfig['dst'].$pconfig['target'], ":") !== false) {
+                  $pconfig['ipprotocol'] = 'inet6';
+              } else {
+                  $pconfig['ipprotocol'] = 'inet';
+              }
+          }
     } elseif (isset($_GET['template']) && $_GET['template'] == 'transparant_proxy') {
         // new rule for transparant proxy reflection, to use as sample
         $pconfig['interface'] = "lan";
         $pconfig['src'] = "lan";
         $pconfig['dst'] = "any";
+        $pconfig['ipprotocol'] = "inet";
         if (isset($_GET['https'])){
             $pconfig['dstbeginport'] = 443;
             $pconfig['dstendport'] = 443;
@@ -178,7 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $pconfig['src'] = "any";
     }
     // init empty fields
-    foreach (array("dst","dstmask","srcmask","dstbeginport","dstendport","target","local-port","natreflection","descr","disabled","nosync") as $fieldname) {
+    foreach (array("dst","dstmask","srcmask","dstbeginport","dstendport","target","local-port","natreflection","descr","disabled","nosync", "ipprotocol") as $fieldname) {
         if (!isset($pconfig[$fieldname])) {
             $pconfig[$fieldname] = null;
         }
@@ -235,6 +245,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (!is_specialnet($pconfig['src']) && !is_ipaddroralias($pconfig['src'])) {
         $input_errors[] = sprintf(gettext("%s is not a valid source IP address or alias."), $pconfig['src']);
     }
+
+    // validate ipv4/v6, addresses should use selected address family
+    foreach (array('src', 'dst', 'target') as $fieldname) {
+        if (is_ipaddrv6($pconfig[$fieldname]) && $pconfig['ipprotocol'] != 'inet6') {
+            $input_errors[] = sprintf(gettext("%s is not a valid IPv4 address."), $pconfig[$fieldname]);
+        }
+        if (is_ipaddrv4($pconfig[$fieldname]) && $pconfig['ipprotocol'] != 'inet') {
+            $input_errors[] = sprintf(gettext("%s is not a valid IPv6 address."), $pconfig[$fieldname]);
+        }
+    }
     if (!empty($pconfig['srcmask']) && !is_numericint($pconfig['srcmask'])) {
         $input_errors[] = gettext("A valid source bit count must be specified.");
     }
@@ -260,6 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // 1-on-1 copy
         $natent['protocol'] = $pconfig['protocol'];
         $natent['interface'] = $pconfig['interface'];
+        $natent['ipprotocol'] = $pconfig['ipprotocol'];
         $natent['descr'] = $pconfig['descr'];
         if (!empty($pconfig['associated-rule-id'])) {
             $natent['associated-rule-id'] = $pconfig['associated-rule-id'];
@@ -349,6 +370,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             // Update interface, protocol and destination
             $filterent['interface'] = $pconfig['interface'];
             $filterent['protocol'] = $pconfig['protocol'];
+            $filterent['ipprotocol'] = $pconfig['ipprotocol'];
             if (!isset($filterent['destination'])) {
                 $filterent['destination'] = array();
             }
@@ -513,6 +535,9 @@ $( document ).ready(function() {
         $('#dstendport').change();
     });
 
+    // IPv4/IPv6 select
+    hook_ipv4v6('ipv4v6net', 'network-id');
+
 });
 
 </script>
@@ -524,7 +549,7 @@ $( document ).ready(function() {
         <section class="col-xs-12">
           <div class="content-box">
             <form method="post" name="iform" id="iform">
-              <table class="table table-striped">
+              <table class="table table-striped opnsense_standard_table_form">
                 <tr>
                   <td width="22%"><?=gettext("Edit Redirect entry"); ?></td>
                   <td  width="78%" align="right">
@@ -572,11 +597,28 @@ $( document ).ready(function() {
                   </td>
                 </tr>
                 <tr>
+                  <td><a id="help_for_ipv46" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("TCP/IP Version");?></td>
+                  <td>
+                    <select name="ipprotocol" class="selectpicker" data-width="auto" data-live-search="true" data-size="5" >
+<?php
+                    foreach (array('inet' => 'IPv4','inet6' => 'IPv6') as $proto => $name): ?>
+                    <option value="<?=$proto;?>" <?= $proto == $pconfig['ipprotocol'] ? "selected=\"selected\"" : "";?>>
+                      <?=$name;?>
+                    </option>
+<?php
+                    endforeach; ?>
+                    </select>
+                    <div class="hidden" for="help_for_ipv46">
+                      <?=gettext("Select the Internet Protocol version this rule applies to");?>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
                   <td><a id="help_for_proto" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Protocol"); ?></td>
                   <td>
                     <div class="input-group">
                       <select id="proto" name="protocol" class="selectpicker" data-live-search="true" data-size="5" data-width="auto">
-<?php                foreach (explode(" ", "TCP UDP TCP/UDP ICMP ESP AH GRE IPV6 IGMP PIM OSPF") as $proto):
+<?php                foreach (explode(" ", "TCP UDP TCP/UDP ICMP ESP AH GRE IGMP PIM OSPF") as $proto):
 ?>
               <option value="<?=strtolower($proto);?>" <?= strtolower($proto) == $pconfig['protocol'] ? "selected=\"selected\"" : ""; ?>>
                           <?=$proto;?>
@@ -635,9 +677,9 @@ $( document ).ready(function() {
                         <td>
                           <div class="input-group">
                           <!-- updates to "other" option in  src -->
-                          <input type="text" for="src" value="<?=$pconfig['src'];?>" aria-label="<?=gettext("Source address");?>"/>
-                          <select name="srcmask" class="selectpicker" data-size="5" id="srcmask"  data-width="auto" for="src" >
-                          <?php for ($i = 32; $i > 0; $i--): ?>
+                          <input type="text" id="src_address" for="src" value="<?=$pconfig['src'];?>" aria-label="<?=gettext("Source address");?>"/>
+                          <select name="srcmask" data-network-id="src_address" class="selectpicker ipv4v6net" data-size="5" id="srcmask"  data-width="auto" for="src" >
+                          <?php for ($i = 128; $i > 0; $i--): ?>
                             <option value="<?=$i;?>" <?= $i == $pconfig['srcmask'] ? "selected=\"selected\"" : ""; ?>><?=$i;?></option>
                           <?php endfor; ?>
                           </select>
@@ -779,9 +821,9 @@ $( document ).ready(function() {
                         <td>
                           <div class="input-group">
                           <!-- updates to "other" option in  src -->
-                          <input type="text" for="dst" value="<?= !is_specialnet($pconfig['dst']) ? $pconfig['dst'] : "";?>" aria-label="<?=gettext("Destination address");?>"/>
-                          <select name="dstmask" class="selectpicker" data-size="5" id="dstmask"  data-width="auto" for="dst" >
-                          <?php for ($i = 32; $i > 0; $i--): ?>
+                          <input type="text" id="dst_address" for="dst" value="<?= !is_specialnet($pconfig['dst']) ? $pconfig['dst'] : "";?>" aria-label="<?=gettext("Destination address");?>"/>
+                          <select name="dstmask" data-network-id="dst_address" class="selectpicker ipv4v6net" data-size="5" id="dstmask"  data-width="auto" for="dst" >
+                          <?php for ($i = 128; $i > 0; $i--): ?>
                             <option value="<?=$i;?>" <?= $i == $pconfig['dstmask'] ? "selected=\"selected\"" : ""; ?>><?=$i;?></option>
                           <?php endfor; ?>
                           </select>

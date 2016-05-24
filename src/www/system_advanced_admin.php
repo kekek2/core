@@ -242,12 +242,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
 
         if ($restart_sshd) {
-            log_error(gettext('Secure Shell configuration has changed. Applying now...'));
             configd_run('sshd restart', true);
         }
 
         if ($restart_webgui) {
-            log_error(gettext('webConfigurator configuration has changed. Applying now...'));
             mwexec_bg('/usr/local/etc/rc.restart_webgui 2');
         }
     }
@@ -312,7 +310,7 @@ include("head.inc");
       <section class="col-xs-12">
         <div class="content-box tab-content table-responsive">
           <form method="post" name="iform" id="iform">
-            <table class="table table-striped">
+            <table class="table table-striped opnsense_standard_table_form">
               <tr>
                 <td width="22%"><strong><?=gettext("webConfigurator");?></strong></td>
                 <td  width="78%" align="right">

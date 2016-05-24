@@ -278,7 +278,16 @@ function get_firmware_flavours()
 
 function get_zoneinfo()
 {
-    return timezone_identifiers_list(DateTimeZone::ALL ^ DateTimeZone::UTC);
+    $zones = timezone_identifiers_list(DateTimeZone::ALL ^ DateTimeZone::UTC);
+
+    $etcs = glob('/usr/share/zoneinfo/Etc/*');
+    foreach ($etcs as $etc) {
+        $zones[] = ltrim($etc, '/usr/share/zoneinfo/');
+    }
+
+    natsort($zones);
+
+    return $zones;
 }
 
 function get_searchdomains()
@@ -581,8 +590,8 @@ function system_routing_configure($interface = '')
         log_error("ROUTING: setting IPv4 default route to {$gatewayip}");
         mwexecf('/sbin/route delete -inet %s', 'default');
         if ($fargw) {
-            mwexecf('/sbin/route delete -inet %s -interface %s', array($gatewayip, $interfacegw));
-            mwexecf('/sbin/route add -inet %s -interface %s', array($gatewayip, $interfacegw));
+            mwexecf('/sbin/route delete -inet %s -interface %s', array($gatewayip, $defaultif));
+            mwexecf('/sbin/route add -inet %s -interface %s', array($gatewayip, $defaultif));
         }
         mwexecf('/sbin/route add -inet %s %s', array('default', $gatewayip));
     }
@@ -596,8 +605,8 @@ function system_routing_configure($interface = '')
         log_error("ROUTING: setting IPv6 default route to {$gatewayipv6}");
         mwexecf('/sbin/route delete -inet6 %s %s', array('default', $gatewayipv6));
         if ($fargw) {
-            mwexecf('/sbin/route delete -inet6 %s -interface %s', array($gatewayipv6, $interfacegwv6));
-            mwexecf('/sbin/route add -inet6 %s -interface %s', array($gatewayipv6, $interfacegwv6));
+            mwexecf('/sbin/route delete -inet6 %s -interface %s', array($gatewayipv6, $defaultifv6));
+            mwexecf('/sbin/route add -inet6 %s -interface %s', array($gatewayipv6, $defaultifv6));
         }
         mwexecf('/sbin/route add -inet6 %s %s', array('default', $gatewayipv6));
     }
@@ -644,7 +653,7 @@ function compare_hostname_to_dnscache($hostname) {
     }
 
     if(trim($oldcontents) != trim($contents)) {
-        log_error(sprintf(gettext('DNSCACHE: Found old IP %s and new IP %s'), $oldcontents, $contents));
+        log_error(sprintf('DNSCACHE: Found old IP %s and new IP %s', $oldcontents, $contents));
         return ($oldcontents);
     } else {
         return false;
@@ -663,7 +672,7 @@ function system_staticroutes_configure($interface = '', $update_dns = false)
 
         foreach ($static_routes as $rtent) {
             if (empty($gateways_arr[$rtent['gateway']])) {
-                log_error(sprintf(gettext("Static Routes: Gateway IP could not be found for %s"), $rtent['network']));
+                log_error(sprintf('Static Routes: Gateway IP could not be found for %s', $rtent['network']));
                 continue;
             }
             $gateway = $gateways_arr[$rtent['gateway']];
@@ -755,8 +764,8 @@ function system_staticroutes_configure($interface = '', $update_dns = false)
                     if (is_ipaddr($gatewayip)) {
                         mwexec("/sbin/route delete".$cmd . escapeshellarg($gatewayip));
                         if ($fargw) {
-                            mwexecf('/sbin/route delete %s %s -interface %s', array($inet, $ip, $interfacegw));
-                            mwexecf('/sbin/route add %s %s -interface %s', array($inet, $ip, $interfacegw));
+                            mwexecf('/sbin/route delete %s %s -interface %s', array($inet, $gatewayip, $interfacegw));
+                            mwexecf('/sbin/route add %s %s -interface %s', array($inet, $gatewayip, $interfacegw));
                         }
                         mwexec("/sbin/route add".$cmd . escapeshellarg($gatewayip));
                     } elseif (!empty($interfacegw)) {
@@ -999,7 +1008,7 @@ EOD;
     return $retval;
 }
 
-function system_webgui_start()
+function system_webgui_configure()
 {
     global $config;
 
@@ -1065,10 +1074,13 @@ function system_webgui_start()
       $crt, $key, $ca, "lighty-webConfigurator.pid", $portarg, "/usr/local/www/",
       "cert.pem", "ca.pem");
 
-    /* kill any running lighttpd */
-    killbypid('/var/run/lighty-webConfigurator.pid');
+    killbypid('/var/run/lighty-webConfigurator.pid', 'TERM', true);
 
-    sleep(1);
+    /*
+     * Force reloading all php-cgi children to
+     * avoid hiccups with moved include files.
+     */
+    killbyname('php-cgi', 'HUP');
 
     /* regenerate the php.ini files in case the setup has changed */
     mwexec('/usr/local/etc/rc.php_ini_setup');
@@ -1325,7 +1337,7 @@ EOD;
     if($cert <> "" and $key <> "") {
         $fd = fopen("/var/etc/{$cert_location}", "w");
         if (!$fd) {
-            printf(gettext("Error: cannot open cert.pem in system_webgui_start().%s"), "\n");
+            log_error('Error: cannot open cert.pem in system_webgui_configure()');
             return 1;
         }
         chmod("/var/etc/{$cert_location}", 0600);
@@ -1336,7 +1348,7 @@ EOD;
         if(!(empty($ca) || (strlen(trim($ca)) == 0))) {
             $fd = fopen("/var/etc/{$ca_location}", "w");
             if (!$fd) {
-                printf(gettext("Error: cannot open ca.pem in system_webgui_start().%s"), "\n");
+                log_error('Error: cannot open ca.pem in system_webgui_configure()');
                 return 1;
             }
             chmod("/var/etc/{$ca_location}", 0600);
@@ -1381,7 +1393,7 @@ EOD;
 
     $fd = fopen("{$filename}", "w");
     if (!$fd) {
-        printf(gettext("Error: cannot open %s in system_generate_lighty_config().%s"), $filename, "\n");
+        log_error(sprintf('Error: cannot open %s in system_webgui_configure()', $filename));
         return 1;
     }
     fwrite($fd, $lighty_config);

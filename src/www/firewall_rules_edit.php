@@ -687,7 +687,7 @@ include("head.inc");
                 <input name="after" type="hidden" value="<?=isset($after) ? $after :'';?>" />
                 <input type="hidden" name="floating" value="<?=$pconfig['floating'];?>" />
                 <div class="table-responsive">
-                  <table class="table table-striped">
+                  <table class="table table-striped opnsense_standard_table_form">
                   <tr>
                     <td valign="top"><strong><?=gettext("Edit Firewall rule");?></strong></td>
                     <td align="right">
@@ -837,7 +837,7 @@ include("head.inc");
                     <td>
                       <select <?=!empty($pconfig['associated-rule-id']) ? "disabled" : "";?> name="protocol" id="proto" class="selectpicker" data-live-search="true" data-size="5" >
 <?php
-                      $protocols = explode(" ", "TCP UDP TCP/UDP ICMP ESP AH GRE IPV6 IGMP PIM OSPF any carp pfsync");
+                      $protocols = explode(" ", "any TCP UDP TCP/UDP ICMP ESP AH GRE IGMP PIM OSPF carp pfsync");
                       foreach ($protocols as $proto): ?>
                         <option value="<?=strtolower($proto);?>" <?= strtolower($proto) == $pconfig['protocol'] ? "selected=\"selected\"" :""; ?>>
                           <?=$proto;?>
