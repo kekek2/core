@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['dns2gw'] = null;
     $pconfig['dns3gw'] = null;
     $pconfig['dns4gw'] = null ;
-    $pconfig['theme'] = null;
+    $pconfig['theme'] = 'opnsense';
     $pconfig['language'] = null;
     $pconfig['timezone'] = "Etc/UTC";
     $pconfig['mirror'] = 'default';
@@ -381,27 +381,6 @@ include("head.inc");
                 <div class="hidden" for="help_for_language">
                   <strong>
                     <?=gettext("Choose a language for the webConfigurator"); ?>
-                  </strong>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td><a id="help_for_theme" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Theme"); ?></td>
-              <td>
-                <select name="theme" class="selectpicker" data-size="10" data-width="auto">
-<?php
-                  $curtheme = get_current_theme();
-                  foreach (return_dir_as_array('/usr/local/opnsense/www/themes/') as $file):?>
-                  <option <?=$file == $curtheme ? "selected=\"selected\"" : "";?>>
-                    <?=$file;?>
-                  </option>
-<?php
-                  endforeach; ?>
-                </select>
-                <div class="hidden" for="help_for_theme">
-                  <strong>
-                    <?=gettext("This will change the look and feel of"); ?>
-                    <?=$g['product_name'];?>.
                   </strong>
                 </div>
               </td>
