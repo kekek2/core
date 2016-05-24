@@ -154,7 +154,7 @@ CORE_DEPENDS?=		apinger \
 			wol \
 			zip \
 			os-ndpi \
-			os-pkg-redirect
+			ting-update
 
 manifest: force
 	@echo "name: \"${CORE_NAME}\""
