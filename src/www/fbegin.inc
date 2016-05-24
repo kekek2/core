@@ -80,8 +80,7 @@ if($need_alert_display == true) {
     <div class="container-fluid">
       <div class="navbar-header">
         <a class="navbar-brand" href="/index.php">
-        <img class="brand-logo" src="/ui/themes/<?= $themename ?>/build/images/default-logo.png" height="30" alt="logo" />
-        <img class="brand-icon" src="/ui/themes/<?= $themename ?>/build/images/icon-logo.png" height="30" alt="icon" />
+        <img class="brand-logo" src="/ui/themes/<?= $themename ?>/build/images/ting-green.png" height="30" alt="logo" />
         </a>
         <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navigation">
           <span class="sr-only">Toggle navigation</span>
@@ -93,14 +92,7 @@ if($need_alert_display == true) {
       <div class="collapse navbar-collapse">
         <ul class="nav navbar-nav navbar-right">
           <li id="menu_messages"><?= get_menu_messages() ?></li>
-          <li>
-            <form class="navbar-form" role="search">
-              <div class="input-group">
-                <div class="input-group-addon"><i class="fa fa-search"></i></div>
-                <input type="text" style="width: 250px;" class="form-control" tabindex="1" data-provide="typeahead" id="menu_search_box">
-              </div>
-            </form>
-          </li>
+          <li><a href="/index.php?logout"><span class="fa fa-sign-out fa-fw"></span>Logout</a></li>
         </ul>
       </div>
     </div>

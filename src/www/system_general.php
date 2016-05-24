@@ -124,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $ignore_posted_dnsgw = array();
 
-    for ($dnscounter=1; $dnscounter<5; $dnscounter++){
+    for ($dnscounter=1; $dnscounter<3; $dnscounter++){
       $dnsname="dns{$dnscounter}";
       $dnsgwname="dns{$dnscounter}gw";
       if (!empty($pconfig[$dnsname]) && !is_ipaddr($pconfig[$dnsname])) {
@@ -146,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
     /* XXX cranky low-level call, please refactor */
     $direct_networks_list = explode(' ', filter_get_direct_networks_list(filter_generate_optcfg_array()));
-    for ($dnscounter=1; $dnscounter<5; $dnscounter++) {
+    for ($dnscounter=1; $dnscounter<3; $dnscounter++) {
         $dnsitem = "dns{$dnscounter}";
         $dnsgwitem = "dns{$dnscounter}gw";
         if (!empty($pconfig[$dnsgwitem])) {
@@ -223,7 +223,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
       /* which interface should the dns servers resolve through? */
       $outdnscounter = 0;
-      for ($dnscounter=1; $dnscounter<5; $dnscounter++) {
+      for ($dnscounter=1; $dnscounter<3; $dnscounter++) {
           $dnsname="dns{$dnscounter}";
           $dnsgwname="dns{$dnscounter}gw";
           $olddnsgwname = !empty($config['system'][$dnsgwname]) ? $config['system'][$dnsgwname] : "none" ;
@@ -459,7 +459,7 @@ include("head.inc");
                   </thead>
                   <tbody>
 <?php
-                    for ($dnscounter=1; $dnscounter<5; $dnscounter++):
+                    for ($dnscounter=1; $dnscounter<3; $dnscounter++):
                       $dnsgw = "dns{$dnscounter}gw";?>
                     <tr>
                       <td>

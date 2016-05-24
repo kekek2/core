@@ -124,8 +124,6 @@ include("fbegin.inc");?>
         <section class="col-xs-12">
           <div class="content-box" style="padding: 20px;">
             <div class="table-responsive">
-              <img src="/ui/themes/<?=$themename;?>/build/images/default-logo.png" border="0" alt="logo" />
-              <br />
               <div class="content-box-main">
                 <?php
                     echo sprintf(gettext("Welcome to %s!"), $g['product_name']) . "<p>\n";

@@ -187,7 +187,7 @@
   </sysctl>
   <system>
     <optimization>normal</optimization>
-    <hostname>OPNsense</hostname>
+    <hostname>TING</hostname>
     <domain>localdomain</domain>
     <dnsallowoverride/>
     <group>
@@ -228,6 +228,11 @@
     </bogons>
     <kill_states/>
     <backupcount>60</backupcount>
+    <ssh>
+      <enabled>enabled</enabled>
+      <passwordauth>1</passwordauth>
+      <permitrootlogin>1</permitrootlogin>
+    </ssh>
   </system>
   <interfaces>
     <wan>

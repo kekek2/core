@@ -324,9 +324,4 @@
             <Log order="70" VisibleName="Log File" url="/diag_logs_openvpn.php"/>
         </OpenVPN>
     </VPN>
-    <Help order="70" cssClass="fa fa-support">
-        <Documentation order="10" url="https://docs.opnsense.org/" cssClass="fa fa-book" IsExternal="Y"/>
-        <Forum VisibleName="User Forum" order="20" url="https://forum.opnsense.org/" cssClass="fa fa-ticket" IsExternal="Y"/>
-        <Support VisibleName="Commercial Support" order="30" url="https://opnsense.org/support-overview/commercial-support/" cssClass="fa fa-phone" IsExternal="Y"/>
-    </Help>
 </menu>
