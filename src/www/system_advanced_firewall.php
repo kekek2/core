@@ -43,8 +43,6 @@ function default_table_entries_size()
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = array();
     $pconfig['ipv6allow'] = isset($config['system']['ipv6allow']);
-    $pconfig['ipv6nat_enable'] = isset($config['diag']['ipv6nat']['enable']);
-    $pconfig['ipv6nat_ipaddr'] = isset($config['diag']['ipv6nat']['ipaddr']) ? $config['diag']['ipv6nat']['ipaddr']:"" ;
     $pconfig['disablefilter'] = !empty($config['system']['disablefilter']);
     $pconfig['scrubnodf'] = !empty($config['system']['scrubnodf']);
     $pconfig['scrubrnid'] = !empty($config['system']['scrubrnid']);
@@ -63,9 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['skip_rules_gw_down'] = isset($config['system']['skip_rules_gw_down']);
     $pconfig['lb_use_sticky'] = isset($config['system']['lb_use_sticky']);
     $pconfig['srctrack'] = !empty($config['system']['srctrack']) ? $config['system']['srctrack'] : null;
-    if (!isset($config['system']['disablenatreflection']) && !isset($config['system']['enablenatreflectionpurenat'])) {
-        $pconfig['natreflection'] = "proxy";
-    } elseif (isset($config['system']['enablenatreflectionpurenat'])) {
+    if (!isset($config['system']['disablenatreflection'])) {
         $pconfig['natreflection'] = "purenat";
     } else {
         $pconfig['natreflection'] = "disable";
@@ -82,10 +78,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $input_errors = array();
 
     /* input validation */
-    if (!empty($pconfig['ipv6nat_enable']) && !is_ipaddr($_POST['ipv6nat_ipaddr'])) {
-        $input_errors[] = gettext("You must specify an IP address to NAT IPv6 packets.");
-    }
-
     if ((empty($pconfig['adaptivestart']) && !empty($pconfig['adaptiveend'])) || (!empty($pconfig['adaptivestart']) && empty($pconfig['adaptiveend']))) {
         $input_errors[] = gettext("The Firewall Adaptive values must be set together.");
     }
@@ -119,14 +111,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $config['system']['srctrack'] = $pconfig['srctrack'];
         } elseif (isset($config['system']['srctrack'])) {
             unset($config['system']['srctrack']);
-        }
-
-        if (!empty($pconfig['ipv6nat_enable'])) {
-            $config['diag']['ipv6nat'] = array();
-            $config['diag']['ipv6nat']['enable'] = true;
-            $config['diag']['ipv6nat']['ipaddr'] = $_POST['ipv6nat_ipaddr'];
-        } elseif (isset($config['diag']['ipv6nat'])) {
-            unset($config['diag']['ipv6nat']);
         }
 
         if (!empty($pconfig['ipv6allow'])) {
@@ -176,17 +160,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             unset($config['system']['checkaliasesurlcert']);
         }
 
-        if ($pconfig['natreflection'] == "proxy") {
-            unset($config['system']['disablenatreflection']);
-            unset($config['system']['enablenatreflectionpurenat']);
-        } elseif ($pconfig['natreflection'] == "purenat") {
-            unset($config['system']['disablenatreflection']);
-            $config['system']['enablenatreflectionpurenat'] = "yes";
+        if ($pconfig['natreflection'] == "purenat") {
+            if (isset($config['system']['disablenatreflection'])) {
+                unset($config['system']['disablenatreflection']);
+            }
         } else {
             $config['system']['disablenatreflection'] = "yes";
-            if (isset($config['system']['enablenatreflectionpurenat'])) {
-                unset($config['system']['enablenatreflectionpurenat']);
-            }
         }
 
         if (!empty($pconfig['enablebinatreflection'])) {
@@ -270,28 +249,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 legacy_html_escape_form_data($pconfig);
 
 include("head.inc");
-
 ?>
 
 <body>
 <?php include("fbegin.inc"); ?>
-
-  <script type="text/javascript">
-  //<![CDATA[
-  function enable_change(enable_over) {
-    if (document.iform.ipv6nat_enable.checked || enable_over) {
-        document.iform.ipv6nat_ipaddr.disabled = 0;
-    } else {
-      document.iform.ipv6nat_ipaddr.disabled = 1;
-    }
-  }
-
-  $( document ).ready(function() {
-    enable_change(false);
-  });
-  //]]>
-  </script>
-
   <!-- row -->
 <section class="page-content-main">
   <div class="container-fluid">
@@ -326,21 +287,6 @@ include("head.inc");
                     </div>
                   </td>
                 </tr>
-                <tr>
-                  <td><a id="help_for_ipv6nat_enable" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPv6 over IPv4 Tunneling"); ?></td>
-                  <td>
-                    <input name="ipv6nat_enable" type="checkbox" id="ipv6nat_enable" value="yes" <?=!empty($pconfig['ipv6nat_enable']) ? "checked=\"checked\"" : "";?> onclick="enable_change(false)" />
-                    <strong><?=gettext("Enable IPv4 NAT encapsulation of IPv6 packets"); ?></strong><br />
-                    <div class="hidden" for="help_for_ipv6nat_enable">
-                      <?=gettext("This provides an RFC 2893 compatibility mechanism ".
-                                          "that can be used to tunneling IPv6 packets over IPv4 ".
-                                          "routing infrastructures. If enabled, don't forget to ".
-                                          "add a firewall rule to permit IPv6 packets."); ?>
-                    </div>
-                    <?=gettext("IP address"); ?>&nbsp;:&nbsp;
-                    <input name="ipv6nat_ipaddr" type="text" class="formfld unknown" id="ipv6nat_ipaddr" size="20" value="<?=$pconfig['ipv6nat_ipaddr'];?>" />
-                  </td>
-                </tr>
 <?php           if (count($config['interfaces']) > 1): ?>
                 <tr>
                   <th colspan="2" valign="top" class="listtopic"><?=gettext("Network Address Translation");?></th>
@@ -351,9 +297,6 @@ include("head.inc");
                     <select name="natreflection" class="formselect selectpicker" data-style="btn-default">
                       <option value="disable" <?=$pconfig['natreflection'] == "disable" ? "selected=\"selected\"" : "";?>>
                         <?=gettext("Disable"); ?>
-                      </option>
-                      <option value="proxy" <?=$pconfig['natreflection'] == "proxy" ? "selected=\"selected\"" : "";?>>
-                        <?=gettext("Enable (NAT + Proxy)"); ?>
                       </option>
                       <option value="purenat" <?=$pconfig['natreflection'] == "purenat" ? "selected=\"selected\"" : "";?>>
                         <?=gettext("Enable (Pure NAT)"); ?>
@@ -542,19 +485,19 @@ include("head.inc");
                       <table class="table table-condensed">
                         <tr>
                           <td><strong><?=gettext("normal");?></strong></td>
-                          <td><?=gettext("as the name says, it is the normal optimization algorithm");?></td>
+                          <td><?=gettext("As the name says, it is the normal optimization algorithm");?></td>
                         </tr>
                         <tr>
                           <td><strong><?=gettext("high-latency");?></strong></td>
-                          <td><?=gettext("used for high latency links, such as satellite links.  Expires idle connections later than default");?></td>
+                          <td><?=gettext("Used for high latency links, such as satellite links. Expires idle connections later than default");?></td>
                         </tr>
                         <tr>
                           <td><strong><?=gettext("aggressive");?></strong></td>
-                          <td><?=gettext("expires idle connections quicker. More efficient use of CPU and memory but can drop legitimate idle connections");?></td>
+                          <td><?=gettext("Expires idle connections quicker. More efficient use of CPU and memory but can drop legitimate idle connections");?></td>
                         </tr>
                         <tr>
                           <td><strong><?=gettext("conservative");?></strong></td>
-                          <td><?=gettext("tries to avoid dropping any legitimate idle connections at the expense of increased memory usage and CPU utilization.");?></td>
+                          <td><?=gettext("Tries to avoid dropping any legitimate idle connections at the expense of increased memory usage and CPU utilization.");?></td>
                         </tr>
                       </table>
                       <hr/>
@@ -612,7 +555,7 @@ include("head.inc");
                       <strong><?=gettext("start");?></strong></br>
                       <?=gettext("When the number of state entries exceeds this value, adaptive scaling begins. All timeout values are scaled linearly with factor (adaptive.end - number of states) / (adaptive.end - adaptive.start).");?><br/>
                       <strong><?=gettext("end");?></strong></br>
-                      <?=gettext("When reaching this number of state entries, all timeout values become zero, effectively purging all state entries immediately.  This value is used to define the scale factor, it should not actually be reached (set a lower state limit, see below).");?>
+                      <?=gettext("When reaching this number of state entries, all timeout values become zero, effectively purging all state entries immediately. This value is used to define the scale factor, it should not actually be reached (set a lower state limit, see below).");?>
                       <br/>
                       <strong><?=gettext("Note: Leave this blank for the default(0).");?></strong>
                     </div>
