@@ -55,14 +55,16 @@ function get_locale_list()
     return $locales;
 }
 
+$no_change_config['theme'] = 'opnsense';
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = array();
 
     $pconfig['dns1gw'] = null;
     $pconfig['dns2gw'] = null;
     $pconfig['dns3gw'] = null;
-    $pconfig['dns4gw'] = null ;
-    $pconfig['theme'] = 'opnsense';
+    $pconfig['dns4gw'] = null;
+    $pconfig['theme'] = $no_change_config['theme'];
     $pconfig['language'] = null;
     $pconfig['timezone'] = "Etc/UTC";
     $pconfig['mirror'] = 'default';
@@ -164,7 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
       $config['system']['hostname'] = $pconfig['hostname'];
       $config['system']['domain'] = $pconfig['domain'];
       $config['system']['timezone'] = $pconfig['timezone'];
-      $config['theme'] =  $pconfig['theme'];
+      $config['theme'] = $no_change_config['theme'];
 
       if (!empty($pconfig['language']) && $pconfig['language'] != $config['system']['language']) {
           $config['system']['language'] = $pconfig['language'];
