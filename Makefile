@@ -134,7 +134,6 @@ CORE_DEPENDS?=		apinger \
 			unbound \
 			wol \
 			zip \
-			os-ndpi \
 			ting-update \
 			ting-lang 
 
