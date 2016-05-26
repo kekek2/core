@@ -233,6 +233,7 @@
       <passwordauth>1</passwordauth>
       <permitrootlogin>1</permitrootlogin>
     </ssh>
+    <disablebeep>1</disablebeep>
   </system>
   <interfaces>
     <wan>
