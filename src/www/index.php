@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = $config['widgets'];
     if (empty($pconfig['sequence'])) {
         // set default dashboard view
-        $pconfig['sequence'] = 'system_information-container:col1:show,gateways-container:col2:show,interface_list-container:col2:show,services_status-container:col2:show';
+        $pconfig['sequence'] = 'system_information-container:00000000-col1:show,gateways-container:00000001-col2:show,interface_list-container:00000002-col2:show,services_status-container:00000003-col2:show';
     }
     // default 2 column grid layout
     $pconfig['column_count'] = !empty($pconfig['column_count']) ? $pconfig['column_count'] : 2;
