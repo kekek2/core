@@ -262,35 +262,8 @@ $( document ).ready(function() {
            // create tabs per interface + floating
            $iflist_tabs = array();
            $iflist_tabs['FloatingRules'] = 'Floating';
-           if (isset($config['ifgroups']['ifgroupentry']))
-             foreach($config['ifgroups']['ifgroupentry'] as $ifgen)
-                 $iflist_tabs[$ifgen['ifname']] = $ifgen['ifname'];
-
-           foreach (get_configured_interface_with_descr() as $ifent => $ifdesc)
-               $iflist_tabs[$ifent] = $ifdesc;
-
-           if (isset($config['l2tp']['mode']) && $config['l2tp']['mode'] == "server")
-               $iflist_tabs['l2tp'] = "L2TP VPN";
-
-           if (isset($config['pptpd']['mode']) && $config['pptpd']['mode'] == "server")
-               $iflist_tabs['pptp'] = "PPTP VPN";
-
-           if (isset($config['pppoes']['pppoe'])) {
-             foreach ($config['pppoes']['pppoe'] as $pppoes) {
-               if (($pppoes['mode'] == 'server')) {
-                 $iflist_tabs['pppoe'] = "PPPoE Server";
-               }
-             }
-           }
-
-           /* add ipsec interfaces */
-           if (isset($config['ipsec']['enable']) || isset($config['ipsec']['client']['enable'])) {
-               $iflist_tabs['enc0'] = 'IPsec';
-           }
-
-           /* add openvpn/tun interfaces */
-           if (isset($config['openvpn']['openvpn-server']) || isset($config['openvpn']['openvpn-client'])) {
-             $iflist_tabs['openvpn'] = 'OpenVPN';
+           foreach (legacy_config_get_interfaces(array("enable" => true)) as $if => $ifdetail) {
+               $iflist_tabs[$if] = strtoupper($ifdetail['descr']);
            }
 
           $tab_array = array();
@@ -710,9 +683,6 @@ $( document ).ready(function() {
                           <td width="16"><span class="glyphicon glyphicon-play text-success"></span></td>
                           <td width="100"><?=gettext("pass");?></td>
                           <td width="14"></td>
-                          <td width="16"><span class="glyphicon glyphicon-ok text-info"></span></td>
-                          <td width="100"><?=gettext("match");?></td>
-                          <td width="14"></td>
                           <td width="16"><span class="glyphicon glyphicon-remove text-danger"></span></td>
                           <td width="100"><?=gettext("block");?></td>
                           <td width="14"></td>
@@ -731,9 +701,6 @@ $( document ).ready(function() {
                         <tr>
                           <td><span class="glyphicon glyphicon-play text-muted"></span></td>
                           <td class="nowrap"><?=gettext("pass (disabled)");?></td>
-                          <td>&nbsp;</td>
-                          <td><span class="glyphicon glyphicon-ok text-muted"></span></td>
-                          <td class="nowrap"><?=gettext("match (disabled)");?></td>
                           <td>&nbsp;</td>
                           <td><span class="glyphicon glyphicon-remove text-muted"></span></td>
                           <td class="nowrap"><?=gettext("block (disabled)");?></td>

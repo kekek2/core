@@ -78,13 +78,13 @@ CORE_DEPENDS?=		apinger \
 			filterdns \
 			filterlog \
 			ifinfo \
+			flock \
 			flowd \
 			igmpproxy \
 			isc-dhcp43-client \
 			isc-dhcp43-relay \
 			isc-dhcp43-server \
 			lighttpd \
-			minicron \
 			miniupnpd \
 			mpd5 \
 			ngattach \
@@ -252,7 +252,7 @@ upgrade: package
 lint: force
 	find ${.CURDIR}/src ${.CURDIR}/scripts \
 	    -name "*.sh" -type f -print0 | xargs -0 -n1 sh -n
-	find ${.CURDIR}/src ${.CURDIR}/src \
+	find ${.CURDIR}/src ${.CURDIR}/scripts \
 	    -name "*.xml" -type f -print0 | xargs -0 -n1 xmllint --noout
 	find ${.CURDIR}/src \
 	    ! -name "*.xml" ! -name "*.xml.sample" ! -name "*.eot" \

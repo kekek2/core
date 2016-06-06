@@ -243,39 +243,6 @@ function get_country_codes()
     return $dn_cc;
 }
 
-function get_firmware_mirrors()
-{
-    $mirrors = array();
-
-    $mirrors['default'] = '(default)';
-    $mirrors['https://opnsense.aivian.org'] = 'Aivian (Shaoxing, CN)';
-    $mirrors['https://mirror.auf-feindgebiet.de/opnsense'] = 'auf-feindgebiet.de (Karlsruhe, DE)';
-    $mirrors['https://opnsense.c0urier.net'] = 'c0urier.net (Lund, SE)';
-    $mirrors['https://fleximus.org/mirror/opnsense'] = 'Fleximus (Roubaix, FR)';
-    $mirrors['http://mirror.ams1.nl.leaseweb.net/opnsense'] = 'LeaseWeb (Amsterdam, NL)';
-    $mirrors['http://mirror.fra10.de.leaseweb.net/opnsense'] = 'LeaseWeb (Frankfurt, DE)';
-    $mirrors['http://mirror.sfo12.us.leaseweb.net/opnsense'] = 'LeaseWeb (San Francisco, US)';
-    $mirrors['http://mirror.wdc1.us.leaseweb.net/opnsense'] = 'LeaseWeb (Washington, D.C., US)';
-    $mirrors['http://mirrors.nycbug.org/pub/opnsense'] = 'NYC*BUG (New York, US)';
-    $mirrors['http://pkg.opnsense.org'] = 'OPNsense (Amsterdam, NL)';
-    $mirrors['http://mirror.ragenetwork.de/opnsense'] = 'RageNetwork (Munich, DE)';
-    $mirrors['http://mirrors.supranet.net/pub/opnsense'] = 'Supranet Communications (Middleton, US)';
-    $mirrors['http://mirror.wjcomms.co.uk/opnsense'] = 'WJComms (London, GB)';
-
-    return $mirrors;
-}
-
-function get_firmware_flavours()
-{
-    $flavours = array();
-
-    $flavours['default'] = '(default)';
-    $flavours['libressl'] = 'LibreSSL';
-    $flavours['latest'] = 'OpenSSL';
-
-    return $flavours;
-}
-
 function get_zoneinfo()
 {
     $zones = timezone_identifiers_list(DateTimeZone::ALL ^ DateTimeZone::UTC);
@@ -611,7 +578,7 @@ function system_routing_configure($interface = '')
         mwexecf('/sbin/route add -inet6 %s %s', array('default', $gatewayipv6));
     }
 
-    system_staticroutes_configure($interface, false);
+    system_staticroutes_configure($interface);
 
     return 0;
 }
@@ -660,7 +627,7 @@ function compare_hostname_to_dnscache($hostname) {
     }
 }
 
-function system_staticroutes_configure($interface = '', $update_dns = false)
+function system_staticroutes_configure($interface = '')
 {
     global $config, $aliastable;
 
@@ -698,17 +665,6 @@ function system_staticroutes_configure($interface = '', $update_dns = false)
                 continue;
             }
 
-            $dnscache = array();
-            if ($update_dns === true) {
-                if (is_subnet($rtent['network'])) {
-                    continue;
-                }
-                $dnscache = explode("\n", trim(compare_hostname_to_dnscache($rtent['network'])));
-                if (empty($dnscache)) {
-                    continue;
-                }
-            }
-
             if (is_subnet($rtent['network'])) {
                 $ips = array($rtent['network']);
             } else {
@@ -716,21 +672,6 @@ function system_staticroutes_configure($interface = '', $update_dns = false)
                     $filterdns_list[] = $rtent['network'];
                 }
                 $ips = add_hostname_to_watch($rtent['network']);
-            }
-            foreach ($dnscache as $ip) {
-                if (in_array($ip, $ips)) {
-                    continue;
-                }
-
-                if (!is_subnet($ip)) {
-                    if (is_ipaddrv4($ip)) {
-                        $ip .= "/32";
-                    } elseif (is_ipaddrv6($ip)) {
-                        $ip .= "/128";
-                    }
-                }
-                $inet = (is_subnetv6($ip) ? "-inet6" : "-inet");
-                mwexec("/sbin/route delete {$inet} " . escapeshellarg($ip));
             }
 
             if (isset($rtent['disabled'])) {
@@ -777,31 +718,21 @@ function system_staticroutes_configure($interface = '', $update_dns = false)
                 }
             }
         }
-        unset($gateways_arr);
     }
-    unset($static_routes);
 
-    if ($update_dns === false) {
-        if (count($filterdns_list)) {
-            $interval = 60;
-            $hostnames = "";
-            array_unique($filterdns_list);
-            foreach ($filterdns_list as $hostname) {
-                $hostnames .= "cmd {$hostname} '/usr/local/opnsense/service/configd_ctl.py routedns reload'\n";
-            }
-            file_put_contents("/var/etc/filterdns-route.hosts", $hostnames);
-            unset($hostnames);
-
-            if (isvalidpid('/var/run/filterdns-route.pid')) {
-                killbypid('/var/run/filterdns-route.pid', 'HUP');
-            } else {
-                mwexec("/usr/local/sbin/filterdns -p /var/run/filterdns-route.pid -i {$interval} -c /var/etc/filterdns-route.hosts -d 1");
-            }
+    if (count($filterdns_list)) {
+        $hostnames = "";
+        array_unique($filterdns_list);
+        foreach ($filterdns_list as $hostname) {
+            $hostnames .= "cmd {$hostname} '/usr/local/opnsense/service/configd_ctl.py routedns reload'\n";
+        }
+        file_put_contents("/var/etc/filterdns-route.hosts", $hostnames);
+        if (isvalidpid('/var/run/filterdns-route.pid')) {
+            killbypid('/var/run/filterdns-route.pid', 'HUP');
         } else {
-            killbypid('/var/run/filterdns-route.pid');
+            mwexec("/usr/local/sbin/filterdns -p /var/run/filterdns-route.pid -i 60 -c /var/etc/filterdns-route.hosts -d 1");
         }
     }
-    unset($filterdns_list);
 
     return 0;
 }
@@ -843,10 +774,22 @@ function system_syslogd_get_remote_servers($syslogcfg, $facility = "*.*") {
     return $remote_servers;
 }
 
+function system_syslogd_extra_local($logsocket)
+{
+    $logdir = dirname($logsocket);
+
+    if (!is_dir($logdir)) {
+        /* create if needed to avoid startup error */
+        mwexecf('/bin/mkdir -p %s', $logdir);
+    }
+
+    /* emit extra args for syslogd invoke */
+    return exec_safe('-l %s ', $logsocket);
+}
+
 function system_syslogd_start()
 {
     global $config, $g;
-    $retval = null;
 
     /* XXX temporary hook for newsyslog.conf regeneration */
     configd_run('template reload OPNsense.Syslog');
@@ -864,38 +807,32 @@ function system_syslogd_start()
     if (isset($syslogcfg)) {
         $syslogconf = '';
 
-        // create structure with log section definitions and config tags for remote usage
         $syslogconfs = array();
-        $syslogconfs['routing'] = array("facility" => array('radvd', 'routed', 'olsrd', 'zebra', 'ospfd', 'bgpd', 'miniupnpd') , "remote" => null);
-        $syslogconfs['ntpd'] = array("facility" => array('ntp', 'ntpd', 'ntpdate'), "remote" => null);
-        $syslogconfs['ppps'] = array("facility" => array('ppp'), "remote" => null);
-        $syslogconfs['ipsec'] = array("facility" => array('charon'), "remote" => null);
-        $syslogconfs['openvpn'] = array("facility" => array('openvpn'), "remote" => "vpn");
-        $syslogconfs['gateways'] = array("facility" => array('apinger'), "remote" => "apinger");
-        $syslogconfs['resolver'] = array("facility" => array('dnsmasq','filterdns','unbound'), "remote" => null);
-        $syslogconfs['dhcpd'] = array("facility" => array('dhcpd','dhcrelay','dhclient','dhcp6c'), "remote" => "dhcp");
-        $syslogconfs['relayd'] = array("facility" => array('relayd'), "remote" => "relayd");
-        $syslogconfs['wireless'] = array("facility" => array('hostapd'), "remote" => "hostapd");
-        $syslogconfs['filter'] = array("facility" => array('filterlog'), "remote" => "filter");
-        $syslogconfs['portalauth'] = array("facility" => array('captiveportal'), "remote" => "portalauth");
 
-        // probe syslog facilities in plugins
-        foreach (plugin_scan() as $name => $path) {
-            require_once $path;
-            $func = sprintf('%s_syslog', $name);
-            if (function_exists($func)) {
-                $workers = $func();
-                foreach ($workers as $plugin_syslog => $plugin_details) {
-                    if (!array_key_exists($plugin_syslog, $syslogconfs)) {
-                        $syslogconfs[$plugin_syslog] = array();
-                        $syslogconfs[$plugin_syslog]['facility'] = array();
-                        $syslogconfs[$plugin_syslog]['remote'] = $plugin_details['remote'];
-                    }
-                    $tmp = array_merge($syslogconfs[$plugin_syslog]['facility'], $plugin_details['facility']);
-                    $syslogconfs[$plugin_syslog]['facility'] = $tmp;
-                }
+        if (function_exists('plugins_syslog')) {
+            /* only pull plugins if plugins.inc was included before */
+            foreach (plugins_syslog() as $plugin_name => $plugin_details) {
+                $syslogconfs[$plugin_name] = $plugin_details;
             }
         }
+
+        /*
+         * XXX Standard syslog configs overwrite plugins, but we can
+         * get rid of this behaviour by wrapping this local array using
+         * the key as a "name" entry in the array...
+         */
+        $syslogconfs['dhcpd'] = array('facility' => array('dhcpd', 'dhcrelay', 'dhclient', 'dhcp6c'), 'local' => "{$g['dhcpd_chroot_path']}/var/run/log", 'remote' => 'dhcp');
+        $syslogconfs['filter'] = array('facility' => array('filterlog'), 'remote' => 'filter');
+        $syslogconfs['gateways'] = array('facility' => array('apinger'), 'remote' => 'apinger');
+        $syslogconfs['ipsec'] = array('facility' => array('charon'));
+        $syslogconfs['ntpd'] = array('facility' => array('ntp', 'ntpd', 'ntpdate'));
+        $syslogconfs['openvpn'] = array('facility' => array('openvpn'), 'remote' => 'vpn');
+        $syslogconfs['portalauth'] = array('facility' => array('captiveportal'), 'remote' => 'portalauth');
+        $syslogconfs['ppps'] = array('facility' => array('ppp'));
+        $syslogconfs['relayd'] = array('facility' => array('relayd'), 'remote' => 'relayd');
+        $syslogconfs['resolver'] = array('facility' => array('dnsmasq', 'filterdns', 'unbound'));
+        $syslogconfs['routing'] = array('facility' => array('radvd', 'routed', 'olsrd', 'zebra', 'ospfd', 'bgpd', 'miniupnpd'));
+        $syslogconfs['wireless'] = array('facility' => array('hostapd'), 'remote' => 'hostapd');
 
         $separatelogfacilities = array();
         foreach ($syslogconfs as $logTopic => $logConfig) {
@@ -904,8 +841,11 @@ function system_syslogd_start()
             if (!isset($syslogcfg['disablelocallogging'])) {
                 $syslogconf .= "*.*                {$log_directive}/var/log/{$logTopic}.log\n";
             }
-            if ($logConfig['remote'] != null && !empty($syslogcfg[$logConfig['remote']]) && !empty($syslogcfg['enable'])) {
+            if (!empty($logConfig['remote']) && !empty($syslogcfg[$logConfig['remote']]) && !empty($syslogcfg['enable'])) {
                 $syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "*.*");
+            }
+            if (!empty($logConfig['local'])) {
+                $syslogd_extra .= system_syslogd_extra_local($logConfig['local']);
             }
         }
 
@@ -921,7 +861,7 @@ news.err;local0.none;local3.none;local4.none;      {$log_directive}/var/log/syst
 local7.none              {$log_directive}/var/log/system.log
 security.*              {$log_directive}/var/log/system.log
 auth.info;authpriv.info;daemon.info        {$log_directive}/var/log/system.log
-auth.info;authpriv.info            |exec /usr/local/sbin/sshlockout_pf 15
+auth.info;authpriv.info;user.*        |exec /usr/local/sbin/sshlockout_pf 15
 *.emerg                *
 
 EOD;
@@ -958,12 +898,6 @@ EOD;
         }
         unset($syslogconf);
 
-        // Ensure that the log directory exists
-        if (!is_dir("{$g['dhcpd_chroot_path']}/var/run")) {
-            exec("/bin/mkdir -p {$g['dhcpd_chroot_path']}/var/run");
-        }
-
-        $sourceip = "";
         if (!empty($syslogcfg['sourceip'])) {
             if ($syslogcfg['ipproto'] == "ipv6") {
                 $ifaddr = is_ipaddr($syslogcfg['sourceip']) ? $syslogcfg['sourceip'] : get_interface_ipv6($syslogcfg['sourceip']);
@@ -977,11 +911,12 @@ EOD;
                 }
             }
             if (is_ipaddr($ifaddr)) {
-                $sourceip = "-b {$ifaddr}";
+                $syslogd_extra .= exec_safe('-b %s ', $ifaddr);
             }
         }
 
-        $syslogd_extra = "-f /var/etc/syslog.conf {$sourceip}";
+        $syslogd_extra .= exec_safe('-f %s ', '/var/etc/syslog.conf');
+
         // setup log files for all facilities including default
         $default_logfile_size = !empty($syslogcfg['logfilesize']) ? $syslogcfg['logfilesize'] : '511488';
         $syslog_files = array_keys($syslogconfs);
@@ -998,15 +933,54 @@ EOD;
     if (isvalidpid('/var/run/syslog.pid')) {
         killbypid('/var/run/syslog.pid', 'HUP');
     } else {
-        $retval = mwexec_bg("/usr/local/sbin/syslogd -s -c -c -l {$g['dhcpd_chroot_path']}/var/run/log -P /var/run/syslog.pid {$syslogd_extra}");
+        mwexecf_bg("/usr/local/sbin/syslogd -s -c -c -P %s {$syslogd_extra}", '/var/run/syslog.pid');
     }
 
     if (file_exists("/var/run/booting")) {
         echo gettext("done.") . "\n";
     }
-
-    return $retval;
 }
+
+function system_clear_log($logfile, $restart_syslogd = true)
+{
+    if ($restart_syslogd) {
+        killbyname('syslogd');
+    }
+
+    foreach (glob($logfile . '.*') as $rotated) {
+        @unlink($rotated);
+    }
+
+    /* preserve file ownership and permissions */
+    if (file_exists($logfile)) {
+        $handle = fopen($logfile, 'r+');
+        if ($handle) {
+            ftruncate($handle, 0);
+            fclose($handle);
+        }
+    }
+
+    if ($restart_syslogd) {
+        system_syslogd_start();
+    }
+}
+
+function system_clear_clog($logfile, $restart_syslogd = true)
+{
+    global $config;
+
+    if ($restart_syslogd) {
+        killbyname('syslogd');
+    }
+
+    $log_size = isset($config['syslog']['logfilesize']) ? $config['syslog']['logfilesize'] : '511488';
+    mwexecf('/usr/local/sbin/clog -i -s %s %s', array($log_size, $logfile));
+
+    if ($restart_syslogd) {
+        system_syslogd_start();
+    }
+}
+
 
 function system_webgui_configure()
 {
@@ -1413,16 +1387,16 @@ function system_firmware_configure()
     $origin_conf = '/usr/local/etc/pkg/repos/origin.conf';
     copy("${origin_conf}.sample", $origin_conf);
 
-    if (isset($config['system']['firmware']['mirror'])) {
-        configd_run('firmware mirror ' . escapeshellarg(
-            str_replace('/', '\/', $config['system']['firmware']['mirror'])
-        ));
+    if (!empty($config['system']['firmware']['mirror'])) {
+        mwexecf("/usr/local/sbin/opnsense-update %s %s",
+            array("-sm", str_replace('/', '\/', $config['system']['firmware']['mirror']))
+        );
     }
 
-    if (isset($config['system']['firmware']['flavour'])) {
-        configd_run('firmware flavour ' . escapeshellarg(
-            str_replace('/', '\/', $osabi . '/' . $config['system']['firmware']['flavour'])
-        ));
+    if (!empty($config['system']['firmware']['flavour'])) {
+        mwexecf("/usr/local/sbin/opnsense-update %s %s",
+            array("-sn", str_replace('/', '\/', $osabi . '/' . $config['system']['firmware']['flavour']))
+        );
     }
 }
 
@@ -1887,31 +1861,4 @@ function get_possible_traffic_source_addresses($include_ipv6_link_local=false) {
         }
     }
     return $sourceips;
-}
-
-/**
- * scan plugins for legacy system
- * @return array
- */
-function plugin_scan()
-{
-    $path = '/usr/local/etc/inc/plugins.inc.d/';
-    $ext = '.inc';
-
-    $ret = array();
-
-    $plugins = glob($path . '*' . $ext);
-    if (!is_array($plugins)) {
-        return $ret;
-    }
-
-    sort($plugins);
-
-    foreach ($plugins as $plugin) {
-        $name = preg_replace('/' . preg_quote($path, '/') . '/', '', $plugin);
-        $name = preg_replace('/' . preg_quote($ext, '/') . '/', '', $name);
-        $ret[$name] = $plugin;
-    }
-
-    return $ret;
 }
