@@ -165,9 +165,9 @@ function services_radvd_configure($blacklist = array())
 
         $radvdconf .= "# Generated for DHCPv6 Server $dhcpv6if\n";
         $radvdconf .= "interface {$realif} {\n";
-        $radvdconf .= "\tAdvSendAdvert on;\n";
-        $radvdconf .= "\tMinRtrAdvInterval 225;\n";
-        $radvdconf .= "\tMaxRtrAdvInterval 300;\n";
+        $radvdconf .= sprintf("\tAdvSendAdvert %s;\n", !empty($dhcpv6ifconf['ranosend']) ? 'off' : 'on');
+        $radvdconf .= sprintf("\tMinRtrAdvInterval %s;\n", !empty($dhcpv6ifconf['ramininterval']) ? $dhcpv6ifconf['ramininterval'] : '200');
+        $radvdconf .= sprintf("\tMaxRtrAdvInterval %s;\n", !empty($dhcpv6ifconf['ramaxinterval']) ? $dhcpv6ifconf['ramaxinterval'] : '600');
         $mtu = legacy_interface_stats($realif)['mtu'];
         if (is_numeric($mtu)) {
             $radvdconf .= "\tAdvLinkMTU {$mtu};\n";
@@ -1066,7 +1066,7 @@ function is_dhcpv6_server_enabled()
     global $config;
 
     if (is_array($config['interfaces'])) {
-        foreach ($config['interfaces'] as $ifcfg) {
+        foreach (legacy_config_get_interfaces(array("virtual" => false)) as $ifcfg) {
             if (isset($ifcfg['enable']) && !empty($ifcfg['track6-interface'])) {
                 return true;
             }
@@ -2344,25 +2344,8 @@ function configure_cron()
 {
     global $config;
 
-    $obsoletes = array(
-        '/usr/local/etc/rc.backup_dhcpleases',
-        '/usr/local/etc/rc.backup_netflow',
-        '/usr/local/etc/rc.backup_rrd',
-        '/usr/local/etc/rc.filter_configure_sync',
-        '/usr/local/etc/rc.dyndns.update',
-        '/usr/local/etc/rc.update_bogons',
-        '/usr/local/etc/rc.update_urltables',
-        '/usr/local/opnsense/scripts/remote_backup.php',
-        '/usr/local/sbin/expiretable -v -t 3600 sshlockout',
-        '/usr/local/sbin/expiretable -v -t 3600 virusprot',
-        'adjkerntz -a',
-        /* old config migration for extra care: */
-        'checkreload.sh',
-        'newsyslog',
-    );
-
     /*
-     * Strip old cron jobs that we no longer save explicitly.
+     * Strip the cron jobs that we no longer save explicitly.
      * This can be safely removed on our final road to 17.1.
      */
     if (isset($config['cron']['item'])) {
@@ -2371,12 +2354,8 @@ function configure_cron()
 
         /* PHP retains the index, can iterate all and unset */
         foreach ($config['cron']['item'] as $item) {
-            foreach ($obsoletes as $obsolete) {
-                if ($item['command'] === $obsolete) {
-                    unset($config['cron']['item'][$index]);
-                    $flush = true;
-                }
-            }
+            unset($config['cron']['item'][$index]);
+            $flush = true;
             $index++;
         }
 
@@ -2392,10 +2371,19 @@ function configure_cron()
 
     $autocron = array();
 
-    $autocron[] = generate_cron_job('/usr/local/sbin/expiretable -v -t 3600 sshlockout', '*/60');
-    $autocron[] = generate_cron_job('/usr/local/sbin/expiretable -v -t 3600 virusprot', '*/60');
-    $autocron[] = generate_cron_job('/usr/local/etc/rc.dyndns.update', '1', '1');
-    $autocron[] = generate_cron_job('/usr/local/etc/rc.update_urltables', '30', '12');
+    /* hourly */
+    $autocron[] = generate_cron_job('/usr/local/sbin/expiretable -v -t 3600 webConfiguratorlockout', '1');
+    $autocron[] = generate_cron_job('/usr/local/sbin/expiretable -v -t 3600 sshlockout', '2');
+    $autocron[] = generate_cron_job('/usr/local/sbin/expiretable -v -t 3600 virusprot', '3');
+    $autocron[] = generate_cron_job('/usr/local/etc/rc.expireaccounts', '5');
+
+    /* daily */
+    $autocron[] = generate_cron_job('/usr/local/etc/rc.update_alias_url_data', '1', '1');
+    $autocron[] = generate_cron_job('/usr/local/etc/rc.update_urltables', '5', '1');
+    $autocron[] = generate_cron_job('/usr/local/etc/rc.dyndns.update', '11', '1');
+
+    /* every now and then */
+    $autocron[] = generate_cron_job('/usr/local/sbin/ping_hosts.sh', '*/4');
 
     if (!empty($config['system']['rrdbackup'])) {
        $autocron[] = generate_cron_job('/usr/local/etc/rc.backup_rrd', '0', '*/' . $config['system']['rrdbackup']);
@@ -2436,30 +2424,11 @@ function configure_cron()
             break;
     }
 
-    $anchor = '# custom crontab entries';
-
-    /* preserve existing crontab entries */
-    $crontab_contents = file('/etc/crontab', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-
-    for ($i = 0; $i < count($crontab_contents); $i++) {
-        $cron_item = &$crontab_contents[$i];
-        if (strpos($cron_item, $anchor) !== false) {
-            array_splice($crontab_contents, $i - 1);
-            break;
-        }
-    }
-
-    /* please maintain the newline at the end of file */
-    $crontab_contents = implode("\n", $crontab_contents) . "\n";
-
-    $crontab_contents .= "#\n";
-    $crontab_contents .= $anchor . "\n";
-    $crontab_contents .= '# auto-generated at ' . date('F j, Y, g:i a') . "\n";
-    $crontab_contents .= "#\n";
-
-    if (isset($config['cron']['item'])) {
-        $autocron = array_merge($config['cron']['item'], $autocron);
-    }
+    $crontab_contents = "# DO NOT EDIT THIS FILE -- OPNsense auto-generated file\n";
+    $crontab_contents .= "# Please use /etc/crontab for your overrides instead.\n";
+    $crontab_contents .= "SHELL=/bin/sh\n";
+    $crontab_contents .= "PATH=/etc:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin\n";
+    $crontab_contents .= "#minute\thour\tmday\tmonth\twday\tcommand\n";
 
     foreach ($autocron as $item) {
         $crontab_contents .= "{$item['minute']}\t";
@@ -2467,22 +2436,14 @@ function configure_cron()
         $crontab_contents .= "{$item['mday']}\t";
         $crontab_contents .= "{$item['month']}\t";
         $crontab_contents .= "{$item['wday']}\t";
-        $crontab_contents .= "{$item['who']}\t";
         $crontab_contents .= "{$item['command']}\n";
     }
 
-    $crontab_contents .= "#\n";
-    $crontab_contents .= "# If possible do not add items to this file manually.\n";
-    $crontab_contents .= "# If you do so, this file must be terminated with a blank line (e.g. new line)\n";
-    $crontab_contents .= "#\n\n";
-
-    file_put_contents('/etc/crontab', $crontab_contents);
-    unset($crontab_contents);
-
+    file_put_contents('/var/cron/tabs/root', $crontab_contents);
     killbypid('/var/run/cron.pid', 'HUP');
 }
 
-function generate_cron_job($command, $minute = '0', $hour = '*', $monthday = '*', $month = '*', $weekday = '*', $who = 'root')
+function generate_cron_job($command, $minute = '0', $hour = '*', $monthday = '*', $month = '*', $weekday = '*')
 {
     $cron_item = array();
 
@@ -2491,7 +2452,6 @@ function generate_cron_job($command, $minute = '0', $hour = '*', $monthday = '*'
     $cron_item['mday'] = $monthday;
     $cron_item['month'] = $month;
     $cron_item['wday'] = $weekday;
-    $cron_item['who'] = $who;
     $cron_item['command'] = $command;
 
     return $cron_item;
@@ -2644,17 +2604,6 @@ function services_get()
         $services[] = $pconfig;
     }
 
-    if (isset($config['ipsec']['enable'])) {
-        $pconfig = array();
-        $pconfig['name'] = "ipsec";
-        $pconfig['description'] = gettext("IPsec VPN");
-        $pconfig['pidfile'] = '/var/run/charon.pid';
-        $pconfig['php']['restart'] = array('ipsec_force_reload');
-        $pconfig['php']['start'] = array('ipsec_force_reload');
-        $pconfig['mwexec']['stop'] = array('/usr/local/sbin/ipsec stop');
-        $services[] = $pconfig;
-    }
-
     if (isset($config['system']['ssh']['enabled'])) {
         $pconfig = array();
         $pconfig['name'] = 'sshd';
@@ -2662,25 +2611,6 @@ function services_get()
         $pconfig['configd']['restart'] = array('sshd restart');
         $pconfig['configd']['start'] = array('sshd restart');
         $services[] = $pconfig;
-    }
-
-    foreach (array('server', 'client') as $mode) {
-        if (isset($config['openvpn']["openvpn-{$mode}"])) {
-            foreach ($config['openvpn']["openvpn-{$mode}"] as $setting) {
-                if (!isset($setting['disable'])) {
-                    $pconfig = array();
-                    $pconfig['description'] = gettext("OpenVPN") . " ".$mode.": ".htmlspecialchars($setting['description']);
-                    $pconfig['php']['restart'] = array('openvpn_restart_by_id');
-                    $pconfig['php']['start'] = array('openvpn_restart_by_id');
-                    $pconfig['php']['args'] = array('mode', 'id');
-                    $pconfig['pidfile'] = "/var/run/openvpn_{$mode}{$setting['vpnid']}.pid";
-                    $pconfig['id'] = $setting['vpnid'];
-                    $pconfig['name'] = 'openvpn';
-                    $pconfig['mode'] = $mode;
-                    $services[] = $pconfig;
-                }
-            }
-        }
     }
 
     if (isset($config['load_balancer']['virtual_server']) && isset($config['load_balancer']['lbpool']) && count($config['load_balancer']['virtual_server']) && count($config['load_balancer']['lbpool'])) {
@@ -2820,10 +2750,10 @@ function get_service_status_icon($service, $withtext = true, $smallicon = false)
     $output = "";
     if (get_service_status($service)) {
         $statustext = gettext("Running");
-        $output .= '<span class="btn btn-success"><span class="glyphicon glyphicon-play" title="'.sprintf(gettext('%s Service is'),$service['name']).' '.$statustext.'" data-toggle="tooltip" data-placement="bottom" ></span></span>&nbsp;';
+        $output .= '<span class="btn btn-success glyphicon glyphicon-play" title="'.sprintf(gettext('%s Service is'),$service['name']).' '.$statustext.'" data-toggle="tooltip"></span>' . PHP_EOL;
     } else {
         $statustext = gettext("Stopped") ;
-        $output .= '<span class="btn btn-danger"><span class="glyphicon glyphicon-stop" title="'.sprintf(gettext('%s Service is'),$service['name']).' '.$statustext.'" data-toggle="tooltip" data-placement="bottom" ></span></span>&nbsp;';
+        $output .= '<span class="btn btn-danger glyphicon glyphicon-stop" title="'.sprintf(gettext('%s Service is'),$service['name']).' '.$statustext.'" data-toggle="tooltip"></span>' . PHP_EOL;
     }
     return $output;
 }
@@ -2834,8 +2764,7 @@ function get_service_control_links($service, $addname = false)
     $service_title = $addname ? $service['name'] . ' ' : '';
 
     $template  = '<span data-service_id="%s" data-service_action="%s" data-service="%s" ';
-    $template .= 'data-toggle="tooltip" data-placement="bottom" title="%s" ';
-    $template .= 'class="btn btn-default %s %s"></span>' . PHP_EOL;
+    $template .= 'data-toggle="tooltip" title="%s" class="btn btn-default %s %s"></span>' . PHP_EOL;
 
     $output = '';
 

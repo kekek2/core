@@ -1,8 +1,7 @@
-#!/usr/local/bin/php
 <?php
 
 /*
-    Copyright (C) 2004 Scott Ullrich
+    Copyright (C) 2016 Deciso B.V.
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -27,38 +26,42 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-require_once("config.inc");
-require_once("interfaces.inc");
-require_once("openvpn.inc");
-require_once("filter.inc");
-require_once('ipsec.inc');
-require_once("util.inc");
-require_once("system.inc");
-require_once("pfsense-utils.inc");
-require_once("services.inc");
-require_once("unbound.inc");
-require_once("interfaces.inc");
-require_once("plugins.inc");
+function if_ipsec_services()
+{
+    global $config;
 
-global $config;
+    $services = array();
 
-$config = parse_config();
+    if (isset($config['ipsec']['enable'])) {
+        $pconfig = array();
+        $pconfig['name'] = 'ipsec';
+        $pconfig['description'] = gettext('IPsec VPN');
+        $pconfig['pidfile'] = '/var/run/charon.pid';
+        $pconfig['php']['restart'] = array('ipsec_force_reload');
+        $pconfig['php']['start'] = array('ipsec_force_reload');
+        $pconfig['mwexec']['stop'] = array('/usr/local/sbin/ipsec stop');
+        $services[] = $pconfig;
+    }
 
-log_error("rc.reload_all: Reloading all configuration settings.");
+    return $services;
+}
 
-system_timezone_configure();
-system_firmware_configure();
-system_hostname_configure();
-system_hosts_generate();
-system_resolvconf_generate();
-system_routing_enable();
-interfaces_configure();
-services_dyndns_configure();
-configure_cron();
-system_ntp_configure();
-mwexec_bg('/usr/local/etc/rc.sshd');
-mwexec_bg('/usr/local/etc/rc.restart_webgui');
+function if_ipsec_interfaces()
+{
+    global $config;
 
-log_error("rc.reload_all: Reloading filter configuration.");
-plugins_interfaces();
-filter_configure_sync();
+    $interfaces = array();
+
+    /* add ipsec interfaces */
+    if (isset($config['ipsec']['enable']) || isset($config['ipsec']['client']['enable'])) {
+        $oic = array("enable" => true);
+        $oic['if'] = 'enc0';
+        $oic['descr'] = 'IPsec';
+        $oic['type'] = "none";
+        $oic['virtual'] = true;
+        $oic['networks'] = array();
+        $interfaces['enc0'] = $oic;
+    }
+
+    return $interfaces;
+}

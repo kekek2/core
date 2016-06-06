@@ -1,6 +1,7 @@
 <?php
 
 /*
+    Copyright (C) 2015-2016 Franco Fichtner <franco@opnsense.org>
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
     All rights reserved.
 
@@ -732,7 +733,7 @@ function get_configured_interface_list($only_opt = false, $withdisabled = false)
 
     /* if list */
     if (isset($config['interfaces'])) {
-        foreach($config['interfaces'] as $if => $ifdetail) {
+        foreach (legacy_config_get_interfaces(array("virtual" => false)) as $if => $ifdetail) {
             if ($only_opt && ($if == "wan" || $if == "lan")) {
                 continue;
             }
@@ -753,7 +754,7 @@ function get_configured_interface_list_by_realif ($only_opt = false, $withdisabl
     $iflist = array();
     /* if list */
     if (isset($config['interfaces'])) {
-        foreach($config['interfaces'] as $if => $ifdetail) {
+        foreach (legacy_config_get_interfaces(array("virtual" => false)) as $if => $ifdetail) {
             if ($only_opt && ($if == "wan" || $if == "lan")) {
                 continue;
             }
@@ -776,17 +777,13 @@ function get_configured_interface_with_descr($only_opt = false, $withdisabled = 
     $iflist = array();
     /* if list */
     if (isset($config['interfaces'])) {
-        foreach($config['interfaces'] as $if => $ifdetail) {
+        foreach (legacy_config_get_interfaces(array("virtual" => false)) as $if => $ifdetail) {
             if ($only_opt && ($if == "wan" || $if == "lan")) {
                 continue;
             }
 
             if (isset($ifdetail['enable']) || $withdisabled == true) {
-                if (empty($ifdetail['descr'])) {
-                    $iflist[$if] = strtoupper($if);
-                } else {
-                    $iflist[$if] = strtoupper($ifdetail['descr']);
-                }
+                $iflist[$if] = strtoupper($ifdetail['descr']);
             }
         }
     }
@@ -925,7 +922,7 @@ function get_interface_list($only_active = false)
         );
 
         if (isset($config['interfaces'])) {
-            foreach($config['interfaces'] as $name => $int) {
+            foreach (legacy_config_get_interfaces(array("virtual" => false)) as $name => $int) {
                 if ($int['if'] == $ifname) {
                     $toput['friendly'] = $name;
                     break;
@@ -984,22 +981,6 @@ function exec_command($command)
     return(implode("\n", $output));
 }
 
-/* wrapper for mwexec() ;) */
-function mwexecf($format, $args = array(), $mute = false)
-{
-    if (!is_array($args)) {
-        /* just in case there's only one argument */
-        $args = array($args);
-    }
-
-    foreach ($args as $id => $arg) {
-        $args[$id] = escapeshellarg($arg);
-    }
-
-    return mwexec(vsprintf($format, $args), $mute);
-}
-
-/* wrapper for exec() */
 function mwexec($command, $mute = false)
 {
     $oarr = array();
@@ -1019,10 +1000,33 @@ function mwexec($command, $mute = false)
     return $retval;
 }
 
-/* wrapper for exec() in background */
 function mwexec_bg($command, $mute = false)
 {
     mwexec("/usr/sbin/daemon -f {$command}", $mute);
+}
+
+function exec_safe($format, $args = array())
+{
+    if (!is_array($args)) {
+        /* just in case there's only one argument */
+        $args = array($args);
+    }
+
+    foreach ($args as $id => $arg) {
+        $args[$id] = escapeshellarg($arg);
+    }
+
+    return vsprintf($format, $args);
+}
+
+function mwexecf($format, $args = array(), $mute = false)
+{
+    return mwexec(exec_safe($format, $args), $mute);
+}
+
+function mwexecf_bg($format, $args = array(), $mute = false)
+{
+    mwexec_bg(exec_safe($format, $args), $mute);
 }
 
 

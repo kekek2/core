@@ -662,11 +662,11 @@ $( document ).ready(function() {
                             </td>
                             <td class="text-center">
                               <br />
-                              <a href="javascript:move_selected('notgroups','groups')" class="btn btn-default btn-xs" data-toggle="tooltip" data-placement="left"  title="<?=gettext("add groups"); ?>">
+                              <a href="javascript:move_selected('notgroups','groups')" class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("Add groups"); ?>">
                                   <span class="glyphicon glyphicon-arrow-right"></span>
                               </a>
                               <br /><br />
-                              <a href="javascript:move_selected('groups','notgroups')" class="btn btn-default btn-xs" data-toggle="tooltip" data-placement="left"  title="<?=gettext("remove groups"); ?>">
+                              <a href="javascript:move_selected('groups','notgroups')" class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("Remove groups"); ?>">
                                   <span class="glyphicon glyphicon-arrow-left"></span>
                               </a>
                             </td>
@@ -853,7 +853,7 @@ $( document ).ready(function() {
 <?php
                         if (!empty($pconfig['otp_seed'])):
                             // construct google url, using token, username and this machines hostname
-                            $google_otp_url = "https://www.google.com/chart?chs=200x200&amp;chld=M|0&amp;cht=qr&amp;chl=otpauth://totp/";
+                            $google_otp_url = "https://chart.googleapis.com/chart?chs=200x200&amp;chld=M|0&amp;cht=qr&amp;chl=otpauth://totp/";
                             $google_otp_url .= $pconfig['usernamefld']."@".htmlspecialchars($config['system']['hostname'])."%3Fsecret%3D";
                             $google_otp_url .= $pconfig['otp_seed'];
                         ?>

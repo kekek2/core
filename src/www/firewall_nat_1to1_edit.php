@@ -31,66 +31,6 @@ require_once("guiconfig.inc");
 require_once("interfaces.inc");
 require_once("pfsense-utils.inc");
 
-/**
- * fetch list of selectable networks to use in form
- */
-function formNetworks() {
-    $networks = array();
-    $networks["any"] = gettext("any");
-    $networks["pptp"] = gettext("PPTP clients");
-    $networks["pppoe"] = gettext("PPPoE clients");
-    $networks["l2tp"] = gettext("L2TP clients");
-    foreach (get_configured_interface_with_descr() as $ifent => $ifdesc) {
-        $networks[$ifent] = htmlspecialchars($ifdesc) . " " . gettext("net");
-        $networks[$ifent."ip"] = htmlspecialchars($ifdesc). " ". gettext("address");
-    }
-    return $networks;
-}
-
-/**
- * build array with interface options for this form
- */
-function formInterfaces() {
-    global $config;
-    $interfaces = array();
-    foreach ( get_configured_interface_with_descr(false, true) as $if => $ifdesc) {
-        $interfaces[$if] = $ifdesc;
-    }
-
-    if (isset($config['l2tp']['mode']) && $config['l2tp']['mode'] == "server") {
-        $interfaces['l2tp'] = "L2TP VPN";
-    }
-
-    if (isset($config['pptpd']['mode']) && $config['pptpd']['mode'] == "server") {
-        $interfaces['pptp'] = "PPTP VPN";
-    }
-
-    if (is_pppoe_server_enabled()) {
-        $interfaces['pppoe'] = "PPPoE VPN";
-    }
-
-    /* add ipsec interfaces */
-    if (isset($config['ipsec']['enable']) || isset($config['ipsec']['client']['enable'])) {
-        $interfaces["enc0"] = "IPsec";
-    }
-
-    /* add openvpn/tun interfaces */
-    if (isset($config['openvpn']['openvpn-server']) || isset($config['openvpn']['openvpn-client'])) {
-        $interfaces['openvpn'] = 'OpenVPN';
-    }
-    return $interfaces;
-}
-
-/**
- * obscured by clouds, is_specialnet uses this.. so let's hide it in here.
- * let's kill this another day.
- */
-$specialsrcdst = explode(" ", "any pptp pppoe l2tp openvpn");
-$ifdisp = get_configured_interface_with_descr();
-foreach ($ifdisp as $kif => $kdescr) {
-    $specialsrcdst[] = "{$kif}";
-    $specialsrcdst[] = "{$kif}ip";
-}
 
 if (!isset($config['nat']['onetoone'])) {
     $config['nat']['onetoone'] = array();
@@ -306,9 +246,9 @@ include("head.inc");
                       <div class="input-group">
                         <select name="interface" class="selectpicker" data-width="auto" data-live-search="true">
   <?php
-                          foreach (formInterfaces() as $iface => $ifacename): ?>
+                          foreach (legacy_config_get_interfaces(array("enable" => true)) as $iface => $ifdetail): ?>
                           <option value="<?=$iface;?>" <?= $iface == $pconfig['interface'] ? "selected=\"selected\"" : ""; ?>>
-                            <?=htmlspecialchars($ifacename);?>
+                            <?=htmlspecialchars($ifdetail['descr']);?>
                           </option>
                           <?php endforeach; ?>
                         </select>
@@ -355,7 +295,7 @@ include("head.inc");
   <?php                          endforeach; ?>
                                 </optgroup>
                                 <optgroup label="<?=gettext("Networks");?>">
-  <?php                          foreach (formNetworks() as $ifent => $ifdesc):
+  <?php                          foreach (get_specialnets(true) as $ifent => $ifdesc):
   ?>
                                   <option value="<?=$ifent;?>" <?= $pconfig['src'] == $ifent ? "selected=\"selected\"" : ""; ?>><?=$ifdesc;?></option>
   <?php                            endforeach; ?>
@@ -406,7 +346,7 @@ include("head.inc");
   <?php                          endforeach; ?>
                               </optgroup>
                               <optgroup label="<?=gettext("Networks");?>">
-  <?php                          foreach (formNetworks() as $ifent => $ifdesc):
+  <?php                          foreach (get_specialnets(true) as $ifent => $ifdesc):
   ?>
                                 <option value="<?=$ifent;?>" <?= $pconfig['dst'] == $ifent ? "selected=\"selected\"" : ""; ?>><?=$ifdesc;?></option>
   <?php                            endforeach; ?>

@@ -67,8 +67,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['theme'] = $no_change_config['theme'];
     $pconfig['language'] = null;
     $pconfig['timezone'] = "Etc/UTC";
-    $pconfig['mirror'] = 'default';
-    $pconfig['flavour'] = 'default';
     $pconfig['prefer_ipv4'] = isset($config['system']['prefer_ipv4']);
     $pconfig['gw_switch_default'] = isset($config['system']['gw_switch_default']);
     $pconfig['hostname'] = $config['system']['hostname'];
@@ -96,14 +94,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $pconfig['language'] = $config['system']['language'];
     }
     $pconfig['dnslocalhost'] = isset($config['system']['dnslocalhost']);
-
-    if (isset($config['system']['firmware']['mirror'])) {
-        $pconfig['mirror'] = $config['system']['firmware']['mirror'];
-    }
-
-    if (isset($config['system']['firmware']['flavour'])) {
-        $pconfig['flavour'] = $config['system']['firmware']['flavour'];
-    }
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['timezone']) && $pconfig['timezone'] <> $_POST['timezone']) {
         filter_pflog_start();
@@ -172,26 +162,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
           $config['system']['language'] = $pconfig['language'];
           /* XXX while this is very proactive, we should defer in favour of a unified language transition point ;) */
           set_language();
-      }
-
-      if (!isset($config['system']['firmware'])) {
-          $config['system']['firmware'] = array();
-      }
-      if ($pconfig['mirror'] == 'default') {
-          if (isset($config['system']['firmware']['mirror'])) {
-              /* default does not set anything for backwards compat */
-              unset($config['system']['firmware']['mirror']);
-          }
-      } else {
-          $config['system']['firmware']['mirror'] = $pconfig['mirror'];
-      }
-      if ($pconfig['flavour'] == 'default') {
-          if (isset($config['system']['firmware']['flavour'])) {
-              /* default does not set anything for backwards compat */
-              unset($config['system']['firmware']['flavour']);
-          }
-      } else {
-          $config['system']['firmware']['flavour'] = $pconfig['flavour'];
       }
 
       if (!empty($pconfig['prefer_ipv4'])) {
@@ -280,7 +250,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
       services_dnsmasq_configure();
       services_unbound_configure();
       system_timezone_configure();
-      system_firmware_configure();
 
       if ($olddnsallowoverride != $config['system']['dnsallowoverride']) {
           configd_run("dns reload");
@@ -490,11 +459,11 @@ include("head.inc");
                   <?=gettext("Allow DNS server list to be overridden by DHCP/PPP on WAN"); ?>
                 </strong>
                 <div class="hidden" for="help_for_dnsservers_opt">
-                  <?php printf(gettext("If this option is set, %s will " .
-                  "use DNS servers assigned by a DHCP/PPP server on WAN " .
+                  <?= gettext("If this option is set, DNS servers " .
+                  "assigned by a DHCP/PPP server on WAN will be used " .
                   "for its own purposes (including the DNS forwarder). " .
                   "However, they will not be assigned to DHCP and PPTP " .
-                  "VPN clients."), $g['product_name']); ?>
+                  "VPN clients.") ?>
                 </div>
                 <br/>
                 <input name="dnslocalhost" type="checkbox" value="yes" <?=$pconfig['dnslocalhost'] ? "checked=\"checked\"" : ""; ?> />

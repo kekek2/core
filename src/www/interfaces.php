@@ -411,10 +411,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
     }
 
-    $std_ppp_copy_fieldnames = array(
-      "ptpid", "ports", "username", "phone", "apn", "provider", "idletimeout", "pppoe-reset-type", "localip",
-
-    );
+    $std_ppp_copy_fieldnames = array("ptpid", "ports", "username", "phone", "apn", "provider", "idletimeout", "localip");
     foreach ($std_ppp_copy_fieldnames as $fieldname) {
         $pconfig[$fieldname] = isset($a_ppps[$pppid][$fieldname]) ? $a_ppps[$pppid][$fieldname] : null;
     }
@@ -434,15 +431,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     if (isset($a_ppps[$pppid])) {
         $pconfig['pppid'] = $pppid;
-        $itemhash = getMPDCRONSettings($a_ppps[$pppid]['if']);
-        if (!empty($itemhash)) {
-            $cronitem = $itemhash['ITEM'];
-            $pconfig['pppoe_resetminute'] = $cronitem['minute'];
-            $pconfig['pppoe_resethour'] = $cronitem['hour'];
-            $pconfig['pppoe_resetmday'] = $cronitem['mday'];
-            $pconfig['pppoe_resetmonth'] = $cronitem['month'];
-            $pconfig['pppoe_resetwday'] = $cronitem['wday'];
-        }
     } else {
         $pconfig['ptpid'] = interfaces_ptpid_next();
         $pppid = count($a_ppps);
@@ -795,17 +783,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $input_errors[] = gettext("The idle timeout value must be an integer.");
         }
 
-        if (!empty($pconfig['pppoe-reset-type'])) {
-            if (!empty($pconfig['pppoe_resethour']) && (!is_numericint($pconfig['pppoe_resethour']) || $pconfig['pppoe_resethour'] < 0 || $pconfig['pppoe_resethour']  > 23)) {
-                $input_errors[] = gettext("A valid PPPoE reset hour must be specified (0-23).");
-            }
-            if (!empty($pconfig['pppoe_resetminute']) && (!is_numericint($pconfig['pppoe_resetminute']) || $pconfig['pppoe_resetminute'] < 0 || $pconfig['pppoe_resetminute'] > 59)) {
-                $input_errors[] = gettext("A valid PPPoE reset minute must be specified (0-59).");
-            }
-            if (!empty($pconfig['pppoe_resetdate']) && !is_numeric(str_replace("/", "", $pconfig['pppoe_resetdate']))) {
-                $input_errors[] = gettext("A valid PPPoE reset date must be specified (mm/dd/yyyy).");
-            }
-        }
         if (!empty($pconfig['localip']) && !is_ipaddrv4($pconfig['localip'])) {
             $input_errors[] = gettext("A valid PPTP local IP address must be specified.");
         }
@@ -1036,10 +1013,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     $new_ppp_config['ondemand'] = !empty($pconfig['pppoe_dialondemand']);
                     if (!empty($pconfig['pppoe_idletimeout'])) {
                         $new_ppp_config['idletimeout'] = $pconfig['pppoe_idletimeout'];
-                    }
-
-                    if (!empty($pconfig['pppoe-reset-type'])) {
-                        $new_ppp_config['pppoe-reset-type'] = $pconfig['pppoe-reset-type'];
                     }
                     break;
                 case "pptp":
@@ -1273,8 +1246,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     exec('/bin/kill ' . $pid);
                 }
             }
-            // yak... room for improvement here....
-            handle_pppoe_reset($pconfig);
 
             // save to config
             write_config();
@@ -1293,9 +1264,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             file_put_contents('/tmp/.interfaces.apply', serialize($toapplylist));
 
             mark_subsystem_dirty('interfaces');
-
-            /* regenerate cron settings/crontab file */
-            configure_cron();
 
             header("Location: interfaces.php?if={$if}");
             exit;
@@ -1629,21 +1597,6 @@ include("head.inc");
           });
       });
 
-      // pppoe reset_type
-      $("#reset_type").change(function() {
-        if ($(this).val() == 'preset') {
-          $('#pppoepresetwrap').show();
-          $('#pppoecustomwrap').hide();
-        }
-        else if ($(this).val() == 'custom') {
-          $('#pppoecustomwrap').show();
-          $('#pppoepresetwrap').hide();
-        } else {
-          $('#pppoecustomwrap').hide();
-          $('#pppoepresetwrap').hide();
-        }
-      });
-      $("#reset_type").change();
       $("#mtu").change(function(){
         // ppp uses an mtu
         if (!isNaN($("#mtu").val()) && $("#mtu").val() > 8) {
@@ -1896,7 +1849,7 @@ include("head.inc");
                                 endforeach;
                               endif;?>
                             </select>
-                            <button type="button" class="btn btn-sm" id="btn_show_add_gateway" title="<?=gettext("add a new one.");?>"  data-toggle="tooltip" data-placement="right" ><span class="glyphicon glyphicon-plus"></span></button>
+                            <button type="button" class="btn btn-sm" id="btn_show_add_gateway" title="<?=gettext("Add a new one.");?>"  data-toggle="tooltip"><span class="glyphicon glyphicon-plus"></span></button>
                             <div class="hidden" id="addgateway">
                               <br/>
                               <table class="table table-striped table-condensed">
@@ -1935,7 +1888,7 @@ include("head.inc");
                             <div class="hidden" for="help_for_gateway">
                               <?=gettext("If this interface is an Internet connection, select an existing Gateway from the list or add a new one using the link above."); ?><br />
                               <?=gettext("On local LANs the upstream gateway should be \"none\"."); ?>
-                              <p><strong><?=gettext("NOTE:"); ?></strong> <?=gettext("You can manage Gateways"); ?> <a target='_blank' href='system_gateways.php'><?=gettext("here"); ?></a>.</p>
+                              <p><?= sprintf(gettext("You can manage Gateways %shere%s."),'<a target="_blank" href="system_gateways.php">','</a>') ?></p>
                             </div>
                           </td>
                         </tr>
@@ -2046,7 +1999,7 @@ include("head.inc");
                               </label>
                             </div>
                             <div class="hidden" for="help_for_dhcpprotocol_timing">
-                              <?=sprintf(gettext("The values in these fields are DHCP %sprotocol timings%s used when requesting a lease. "),'<a target="_blank" href="http://www.freebsd.org/cgi/man.cgi?query=dhclient.conf&amp;sektion=5#PROTOCOL_TIMING">','</a>') ?>
+                              <?=sprintf(gettext("The values in these fields are DHCP %sprotocol timings%s used when requesting a lease."),'<a target="_blank" href="http://www.freebsd.org/cgi/man.cgi?query=dhclient.conf&amp;sektion=5#PROTOCOL_TIMING">','</a>') ?>
                             </div>
                           </td>
                         </tr>
@@ -2060,23 +2013,23 @@ include("head.inc");
                             <?=gettext("Send Options"); ?><br />
                             <input name="adv_dhcp_send_options" type="text" id="adv_dhcp_send_options" value="<?=$pconfig['adv_dhcp_send_options'];?>" />
                             <div class="hidden" for="help_for_dhcp_lease_requirements_and_requests">
-                              <?=gettext("The values in this field are DHCP options to be sent when requesting a DHCP lease.  [option declaration [, ...]] <br />" .
+                              <?=gettext("The values in this field are DHCP options to be sent when requesting a DHCP lease. [option declaration [, ...]] <br />" .
                               "Value Substitutions: {interface}, {hostname}, {mac_addr_asciiCD}, {mac_addr_hexCD} <br />" .
                               "Where C is U(pper) or L(ower) Case, and D is \" :-.\" Delimiter (space, colon, hyphen, or period) (omitted for none). <br />" .
-                              "Some ISPs may require certain options be or not be sent. "); ?>
+                              "Some ISPs may require certain options be or not be sent."); ?>
                             </div>
                             <hr/>
                             <?=gettext("Request Options");?>
                             <input name="adv_dhcp_request_options" type="text" id="adv_dhcp_request_options" value="<?=$pconfig['adv_dhcp_request_options'];?>" />
                             <div class="hidden" for="help_for_dhcp_lease_requirements_and_requests">
-                              <?=gettext("The values in this field are DHCP option 55 to be sent when requesting a DHCP lease.  [option [, ...]] <br />" .
-                              "Some ISPs may require certain options be or not be requested. "); ?>
+                              <?=gettext("The values in this field are DHCP option 55 to be sent when requesting a DHCP lease. [option [, ...]] <br />" .
+                              "Some ISPs may require certain options be or not be requested."); ?>
                             </div>
                             <hr/>
                             <?=gettext("Require Options");?>
                             <input name="adv_dhcp_required_options" type="text" id="adv_dhcp_required_options" value="<?=htmlspecialchars($pconfig['adv_dhcp_required_options']);?>" />
                             <div class="hidden" for="help_for_dhcp_lease_requirements_and_requests">
-                              <?=gettext("The values in this field are DHCP options required by the client when requesting a DHCP lease.  [option [, ...]] "); ?>
+                              <?=gettext("The values in this field are DHCP options required by the client when requesting a DHCP lease. [option [, ...]]"); ?>
                             </div>
                           </td>
                         </tr>
@@ -2085,7 +2038,7 @@ include("head.inc");
                           <td>
                             <input name="adv_dhcp_option_modifiers" type="text" id="adv_dhcp_option_modifiers" value="<?=$pconfig['adv_dhcp_option_modifiers'];?>" />
                             <div class="hidden" for="help_for_dhcp_option_modifiers">
-                              <?=gettext("The values in this field are DHCP option modifiers applied to obtained DHCP lease.  [modifier option declaration [, ...]] <br /> " .
+                              <?=gettext("The values in this field are DHCP option modifiers applied to obtained DHCP lease. [modifier option declaration [, ...]] <br />" .
                               "modifiers: (default, supersede, prepend, append)"); ?><br/>
                               <a target="FreeBSD_DHCP" href="http://www.freebsd.org/cgi/man.cgi?query=dhcp-options&amp;sektion=5"><?=gettext("FreeBSD manual");?></a>
                             </div>
@@ -2099,7 +2052,7 @@ include("head.inc");
                               <?=gettext("The value in this field is the full absolute path to a DHCP client configuration file.  [/[dirname/[.../]]filename[.ext]] <br /> " .
                               "Value Substitutions in Config File: {interface}, {hostname}, {mac_addr_asciiCD}, {mac_addr_hexCD} <br />" .
                               "Where C is U(pper) or L(ower) Case, and D is \" :-.\" Delimiter (space, colon, hyphen, or period) (omitted for none). <br />" .
-                              "Some ISPs may require certain options be or not be sent. "); ?>
+                              "Some ISPs may require certain options be or not be sent."); ?>
                               <a target="FreeBSD_DHCP" href="http://www.freebsd.org/cgi/man.cgi?query=dhclient.conf&amp;sektion=5"><?=gettext("FreeBSD manual");?></a>
                             </div>
                           </td>
@@ -2261,76 +2214,6 @@ include("head.inc");
                           </td>
                         </tr>
                         <tr>
-                          <td><a id="help_for_periodic_reset" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Periodic reset");?></td>
-                          <td>
-                            <table class="table table-condensed">
-                              <tr>
-                                <td>
-                                  <select style="vertical-align:top" id="reset_type" name="pppoe-reset-type" class="selectpicker" data-style="btn-default">
-                                    <option value=""><?=gettext("Disabled"); ?></option>
-                                    <option value="custom" <?=$pconfig['pppoe-reset-type'] == "custom" ? "selected=\"selected\"" : ""; ?>><?=gettext("Custom"); ?></option>
-                                    <option value="preset" <?=$pconfig['pppoe-reset-type'] == "preset" ? "selected=\"selected\"" : ""; ?>><?=gettext("Pre-Set"); ?></option>
-                                  </select>
-                                  &nbsp;<?=gettext("Select a reset timing type"); ?>
-                                </td>
-                              </tr>
-                              <tr>
-                                <td>
-                                  <div style="<?=$pconfig['pppoe-reset-type'] != "custom" ? "display: none;" :"";?>"  id="pppoecustomwrap">
-                                    <input type="text" name="pppoe_resethour" maxlength="2" id="pppoe_resethour" value="<?= $pconfig['pppoe_resethour']; ?>" />
-                                    <?=gettext("hour (0-23)"); ?><br />
-                                    <input type="text" name="pppoe_resetminute" maxlength="2" id="pppoe_resetminute" value="<?= $pconfig['pppoe_resetminute']; ?>" />
-                                    <?=gettext("minute (0-59)"); ?><br />
-                                    <?php
-                                    if (!empty($pconfig['pppoe_resetmday']) && $pconfig['pppoe_resetmday'] <> "*" && $pconfig['pppoe_resetmonth'] <> "*") {
-                                        $pconfig['pppoe_resetdate'] = "{$pconfig['pppoe_resetmonth']}/{$pconfig['pppoe_resetmday']}/" . date("Y");
-                                    }
-                                    ?>
-                                    <input name="pppoe_resetdate" type="text" id="pppoe_resetdate" maxlength="10" value="<?=$pconfig['pppoe_resetdate'];?>" />
-                                    <?=gettext("reset at a specific date (mm/dd/yyyy)"); ?>
-                                    <div class="hidden" for="help_for_periodic_reset">
-                                      <span class="text-danger"><strong><?=gettext("Note:"); ?> </strong></span>
-                                      <?=gettext("If you leave the date field empty, the reset will be executed each day at the time you did specify using the minutes and hour field."); ?>
-                                    </div>
-                                  </div>
-                                  <div style="<?=$pconfig['pppoe-reset-type'] != "preset" ? "display: none;" :"";?>"  id="pppoepresetwrap">
-<?php
-                                    if ($pconfig['pppoe-reset-type'] == "preset") {
-                                      $resetTime = "{$pconfig['pppoe_resetminute']} {$pconfig['pppoe_resethour']} {$pconfig['pppoe_resetmday']} {$pconfig['pppoe_resetmonth']} {$pconfig['pppoe_resetwday']}";
-                                      switch ($resetTime) {
-                                        case "0 0 1 * *": // CRON_MONTHLY_PATTERN
-                                          $pconfig['pppoe_monthly'] = true;
-                                          break;
-                                        case "0 0 * * 0": // CRON_WEEKLY_PATTERN
-                                          $pconfig['pppoe_weekly'] = true;
-                                          break;
-                                        case "0 0 * * *": // CRON_DAILY_PATTERN
-                                          $pconfig['pppoe_daily'] = true;
-                                          break;
-                                        case "0 * * * *": //CRON_HOURLY_PATTERN
-                                          $pconfig['pppoe_hourly'] = true;
-                                          break;
-                                      }
-                                    }?>
-                                    <input name="pppoe_pr_preset_val" type="radio" id="pppoe_monthly" value="monthly" <?=!empty($pconfig['pppoe_monthly']) ? "checked=\"checked\"" : ""; ?> />
-                                    <?=gettext("reset at each month ('0 0 1 * *')"); ?>
-                                    <br />
-                                    <input name="pppoe_pr_preset_val" type="radio" id="pppoe_weekly" value="weekly" <?=!empty($pconfig['pppoe_weekly']) ? "checked=\"checked\"" : ""; ?> />
-                                    <?=gettext("reset at each week ('0 0 * * 0')"); ?>
-                                    <br />
-                                    <input name="pppoe_pr_preset_val" type="radio" id="pppoe_daily" value="daily" <?=!empty($pconfig['pppoe_daily']) ? "checked=\"checked\"" : ""; ?> />
-                                    <?=gettext("reset at each day ('0 0 * * *')"); ?>
-                                    <br />
-                                    <input name="pppoe_pr_preset_val" type="radio" id="pppoe_hourly" value="hourly" <?=!empty($pconfig['pppoe_hourly']) ? "checked=\"checked\"" : ""; ?> />
-                                    <?=gettext("reset at each hour ('0 * * * *')"); ?>
-                                    </p>
-                                  </div>
-                                </td>
-                              </tr>
-                            </table>
-                          </td>
-                        </tr>
-                        <tr>
                           <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Advanced and MLPPP"); ?></td>
                           <?php if (isset($pconfig['pppid'])): ?>
                             <td>
@@ -2476,11 +2359,11 @@ include("head.inc");
                                 endforeach;
                               endif;?>
                             </select>
-                            <button type="button" class="btn btn-sm" id="btn_show_add_gatewayv6" title="<?=gettext("add a new one.");?>"  data-toggle="tooltip" data-placement="right" ><span class="glyphicon glyphicon-plus"></span></button>
+                            <button type="button" class="btn btn-sm" id="btn_show_add_gatewayv6" title="<?=gettext("Add a new one.");?>"  data-toggle="tooltip"><span class="glyphicon glyphicon-plus"></span></button>
                             <div class="hidden" for="help_for_gatewayv6">
                               <?=gettext("If this interface is an Internet connection, select an existing Gateway from the list or add a new one using the link above."); ?><br />
-                              <?=gettext("On local LANs the upstream gateway should be \"none\"."); ?>
-                              <p><strong><?=gettext("NOTE:"); ?></strong> <?=gettext("You can manage Gateways"); ?> <a target='_blank' href='system_gateways.php'><?=gettext("here"); ?></a>.</p>
+                              <?=gettext('On local LANs the upstream gateway should be "none".'); ?>
+                              <p><?= sprintf(gettext("You can manage Gateways %shere%s."),'<a target="_blank" href="system_gateways.php">','</a>') ?></p>
                             </div>
                             <div class="hidden" id="addgatewayv6">
                               <br/>

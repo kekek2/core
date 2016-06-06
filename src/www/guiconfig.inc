@@ -97,11 +97,9 @@ require_once("authgui.inc");
 $reserved_table_names = array(
     "bogons",
     "bogonsv6",
-    "negate_networks",
     "sshlockout",
     "tonatsubnets",
     "virusprot",
-    "vpn_networks",
     "webConfiguratorlockout"
 );
 
@@ -292,18 +290,24 @@ function get_std_save_message()
     return $to_return;
 }
 
-function pprint_address($adr) {
-    if (!isset($specialnets)) {
-        global $specialnets;
-        $specialnets = array("(self)" => "This Firewall", "pptp" => "PPTP clients", "pppoe" => "PPPoE clients", "l2tp" => "L2TP clients");
-
-        $spiflist = get_configured_interface_with_descr(false, true);
-        foreach ($spiflist as $ifgui => $ifdesc) {
-            $specialnets[$ifgui] = $ifdesc . " net";
-            $specialnets[$ifgui . 'ip'] = $ifdesc . " address";
+function get_specialnets($only_enabled=false)
+{
+    $specialnets = array();
+    $specialnets["any"] = gettext("any");
+    $specialnets["(self)"] = gettext("This Firewall");
+    $filter = $only_enabled ? array("enable" => true) : array();
+    foreach (legacy_config_get_interfaces($filter) as $ifent => $ifdetail) {
+        $specialnets[$ifent] = htmlspecialchars($ifdetail['descr']) . " " . gettext("net");
+        if (!isset($ifdetail['virtual'])) {
+            $specialnets[$ifent."ip"] = htmlspecialchars($ifdetail['descr']). " ". gettext("address");
         }
     }
 
+    return $specialnets;
+}
+
+function pprint_address($adr) {
+    $specialnets = get_specialnets();
     if (isset($adr['any'])) {
         $padr = "*";
     } elseif (isset($adr['network'])) {
@@ -353,46 +357,6 @@ function gentitle($breadcrumbs, $navlevelsep = ': ')
     }
 
     return join($navlevelsep, $output);
-}
-
-function clear_log($logfile, $restart_syslogd = true)
-{
-    if ($restart_syslogd) {
-        killbyname('syslogd');
-    }
-
-    foreach (glob($logfile . '.*') as $rotated) {
-        @unlink($rotated);
-    }
-
-    /* preserve file ownership and permissions */
-    if (file_exists($logfile)) {
-        $handle = fopen($logfile, 'r+');
-        if ($handle) {
-            ftruncate($handle, 0);
-            fclose($handle);
-        }
-    }
-
-    if ($restart_syslogd) {
-        system_syslogd_start();
-    }
-}
-
-function clear_clog($logfile, $restart_syslogd = true)
-{
-    global $config;
-
-    if ($restart_syslogd) {
-        killbyname('syslogd');
-    }
-
-    $log_size = isset($config['syslog']['logfilesize']) ? $config['syslog']['logfilesize'] : '511488';
-    mwexecf('/usr/local/sbin/clog -i -s %s %s', array($log_size, $logfile));
-
-    if ($restart_syslogd) {
-        system_syslogd_start();
-    }
 }
 
 function print_dump($logarr)
@@ -555,16 +519,16 @@ function pconfig_to_address(&$adr, $padr, $pmask, $pnot=false, $pbeginport=0, $p
 
 function is_specialnet($net)
 {
-    global $specialsrcdst;
-
-    if (!$net) {
-        return false;
-    }
-    if (is_array($specialsrcdst) && in_array($net, $specialsrcdst)) {
+    if (in_array($net, array('any','(self)'))) {
         return true;
     } else {
-        return false;
+        foreach (legacy_config_get_interfaces(array("enable" => true)) as $ifent => $ifdetail) {
+            if ($ifent == $net || (!isset($ifdetail['virtual']) &&  $ifent."ip" == $net)) {
+                return true;
+            }
+        }
     }
+    return false;
 }
 
 
