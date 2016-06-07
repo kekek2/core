@@ -414,7 +414,7 @@ function display_login_form($Login_Error = '')
     <!--[if lt IE 9]><script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.2/html5shiv.min.js"></script><![endif]-->
 
   </head>
-  <body class="page-login">
+  <body class="page-login" style="background: #fff;">
 
   <div class="container">
     <?php
@@ -425,9 +425,11 @@ function display_login_form($Login_Error = '')
             ?>
 
 
-    <main class="login-modal-container">
+    <main class="login-modal-container" style="border: none; margin-top: 50px;">
 
       <div class="login-modal-content">
+        <div><img src="/ui/themes/opnsense/build/images/ting_full.png" /></div>
+
         <div id="inputerrors" class="text-danger"><?= !empty($Login_Error) ? $Login_Error : '&nbsp;' ?></div><br />
 
             <form class="clearfix" id="iform" name="iform" method="post" <?= $loginautocomplete ?> action="<?=$_SERVER['REQUEST_URI'];?>">
