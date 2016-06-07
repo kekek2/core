@@ -21,10 +21,10 @@ echo "Updating /boot/loader.conf"
 touch /boot/loader.conf
 cp /boot/loader.conf /boot/loader.conf.bak
 (grep -v loader_brand /boot/loader.conf.bak; \
-    echo 'loader_brand="opnsense"') > /boot/loader.conf
+    echo 'loader_brand="ting"') > /boot/loader.conf
 cp /boot/loader.conf /boot/loader.conf.bak
 (grep -v loader_logo /boot/loader.conf.bak; \
-    echo 'loader_logo="hourglass"') > /boot/loader.conf
+    echo 'loader_logo="ting"') > /boot/loader.conf
 rm -f /boot/loader.conf.bak
 
 echo "Writing package version"
