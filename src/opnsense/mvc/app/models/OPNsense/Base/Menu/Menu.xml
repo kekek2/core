@@ -4,8 +4,8 @@
             <Root url="/" visibility="hidden"/>
         </Dashboard>
         <License order="1" url="/license.php" cssClass="fa fa-balance-scale fa-fw"/>
-        <Password order="2" url="/system_usermanager_passwordmg.php" cssClass="fa fa-key fa-fw"/>
-        <Logout order="3" url="/index.php?logout" cssClass="fa fa-sign-out fa-fw"/>
+        <Certificate order="2" url="/ting_cert.php" cssClass="fa fa-certificate fa-fw"/>
+        <Password order="3" url="/system_usermanager_passwordmg.php" cssClass="fa fa-key fa-fw"/>
     </Lobby>
     <Reporting order="15" cssClass="fa fa-area-chart"/>
     <System order="20" cssClass="fa fa-server">
