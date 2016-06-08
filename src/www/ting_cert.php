@@ -12,6 +12,8 @@ $temporary_key_path = '/tmp/ting-client.key';
 $installed_crt_info = false;
 $temporary_crt_info = false;
 
+$upload_errors = [];
+
 if (file_exists($installed_crt_path) && file_exists($installed_key_path)) {
     $installed_crt_info = openssl_x509_parse(file_get_contents($installed_crt_path));
 }
@@ -22,9 +24,17 @@ if (file_exists($temporary_crt_path) && file_exists($temporary_key_path)) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($_FILES['crtfile'] && $_FILES['keyfile']) {
-        move_uploaded_file($_FILES['crtfile']['tmp_name'], $temporary_crt_path);
-        move_uploaded_file($_FILES['keyfile']['tmp_name'], $temporary_key_path);
-        $temporary_crt_info = openssl_x509_parse(file_get_contents($temporary_crt_path));
+        if ($_FILES['crtfile']['type'] != 'application/x-x509-ca-cert') {
+            $upload_errors[] = "Certificate file must be of type 'application/x-x509-ca-cert'.";
+        }
+        if ($_FILES['keyfile']['type'] != 'application/octet-stream') {
+            $upload_errors[] = "Private key file must be of type 'application/octet-stream'.";
+        }
+        if (!$upload_errors) {
+            move_uploaded_file($_FILES['crtfile']['tmp_name'], $temporary_crt_path);
+            move_uploaded_file($_FILES['keyfile']['tmp_name'], $temporary_key_path);
+            $temporary_crt_info = openssl_x509_parse(file_get_contents($temporary_crt_path));
+        }
     }
     if ($_POST['install'] == 1 && $temporary_crt_info) {
         try {
@@ -79,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <br/>
 
-<?php if ($temporary_crt_info) { ?>
+<?php if ($temporary_crt_info && !$upload_errors) { ?>
                     <table class="table opnsense_standard_table_form ">
                         <thead>
                             <tr style="background-color: rgb(251, 251, 251);">
@@ -88,27 +98,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </tr>
                         </thead>
                         <tbody>
-                        <tr>
-                            <td width="22%">Name</td>
-                            <td><?php echo $temporary_crt_info['subject']['CN']; ?></td>
-                        </tr>
-                        <tr>
-                            <td width="22%">Valid from</td>
-                            <td><?php echo strftime("%Y-%m-%d %H:%M:%S", $temporary_crt_info['validFrom_time_t']); ?></td>
-                        </tr>
-                        <tr>
-                            <td width="22%">Valid to</td>
-                            <td><?php echo strftime("%Y-%m-%d %H:%M:%S", $temporary_crt_info['validTo_time_t']); ?></td>
-                        </tr>
-                        <tr>
-                            <td width="22%"></td>
-                            <td>
-                                <form action="/ting_cert.php" method="post">
-                                    <input type="hidden" name="install" value="1"/>
-                                    <input type="submit" value="Install" class="btn btn-primary"/>
-                                </form>
-                            </td>
-                        </tr>
+                            <tr>
+                                <td width="22%">Name</td>
+                                <td><?php echo $temporary_crt_info['subject']['CN']; ?></td>
+                            </tr>
+                            <tr>
+                                <td width="22%">Valid from</td>
+                                <td><?php echo strftime("%Y-%m-%d %H:%M:%S", $temporary_crt_info['validFrom_time_t']); ?></td>
+                            </tr>
+                            <tr>
+                                <td width="22%">Valid to</td>
+                                <td><?php echo strftime("%Y-%m-%d %H:%M:%S", $temporary_crt_info['validTo_time_t']); ?></td>
+                            </tr>
+                            <tr>
+                                <td width="22%"></td>
+                                <td>
+                                    <form action="/ting_cert.php" method="post">
+                                        <input type="hidden" name="install" value="1"/>
+                                        <input type="submit" value="Install" class="btn btn-primary"/>
+                                    </form>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
 
@@ -126,13 +136,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </tr>
                             </thead>
                             <tbody>
+                            <?php if ($upload_errors) { ?>
+                                <tr>
+                                    <td width="22%"></td>
+                                    <td>
+                                        <?php foreach ($upload_errors as $error) { ?>
+                                            <p style="color: red;"><?php echo $error; ?></p>
+                                        <?php } ?>
+                                    </td>
+                                </tr>
+                            <?php } ?>
                             <tr>
                                 <td width="22%">Certificate file</td>
-                                <td><input name="crtfile" type="file" /></td>
+                                <td><input name="crtfile" type="file" required/></td>
                             </tr>
                             <tr>
                                 <td width="22%">Private key file</td>
-                                <td><input name="keyfile" type="file" /></td>
+                                <td><input name="keyfile" type="file" required/></td>
                             </tr>
                             <tr>
                                 <td width="22%"></td>
