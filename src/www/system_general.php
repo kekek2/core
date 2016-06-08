@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['dns1gw'] = null;
     $pconfig['dns2gw'] = null;
     $pconfig['dns3gw'] = null;
-    $pconfig['dns4gw'] = null;
+    $pconfig['dns4gw'] = null ;
     $pconfig['theme'] = $no_change_config['theme'];
     $pconfig['language'] = null;
     $pconfig['timezone'] = "Etc/UTC";
@@ -87,9 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $pconfig['dnsallowoverride'] = isset($config['system']['dnsallowoverride']);
     $pconfig['timezone'] = $config['system']['timezone'];
-    if (isset($config['system']['theme'])) {
-        $pconfig['theme'] = $config['system']['theme'];
-    }
+    $pconfig['theme'] = $no_change_config['theme'];
     if (isset($config['system']['language'])) {
         $pconfig['language'] = $config['system']['language'];
     }
@@ -352,44 +350,6 @@ include("head.inc");
                 <div class="hidden" for="help_for_language">
                   <strong>
                     <?=gettext("Choose a language for the webConfigurator"); ?>
-                  </strong>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td><a id="help_for_mirror" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Firmware Mirror"); ?></td>
-              <td>
-                <select name="mirror" class="selectpicker" data-size="10" data-width="auto">
-<?php
-                foreach (get_firmware_mirrors() as $mcode => $mdesc):?>
-                  <option value="<?=$mcode;?>" <?=$mcode == $pconfig['mirror'] ? "selected=\"selected\"":"";?>>
-                    <?=$mdesc;?>
-                  </option>
-<?php
-                 endforeach;?>
-                </select>
-                <div class="hidden" for="help_for_mirror">
-                  <strong>
-                    <?=gettext("Select an alternate firmware mirror."); ?>
-                  </strong>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td><a id="help_for_flavour" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Firmware Flavour"); ?></td>
-              <td width="78%" class="vtable">
-                <select name="flavour" class="selectpicker" data-size="10" data-style="btn-default" data-width="auto">
-<?php
-                foreach (get_firmware_flavours() as $fcode => $fdesc):?>
-                  <option value="<?=$fcode;?>" <?=$fcode == $pconfig['flavour'] ? "selected=\"selected\"" : "" ;?>>
-                    <?=$fdesc;?>
-                  </option>
-<?php
-                 endforeach;?>
-                </select>
-                <div class="hidden" for="help_for_flavour">
-                  <strong>
-                    <?=gettext("Select the firmware cryptography flavour."); ?>
                   </strong>
                 </div>
               </td>
