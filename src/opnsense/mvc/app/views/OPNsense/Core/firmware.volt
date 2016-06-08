@@ -398,61 +398,13 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="row">
         <div class="col-md-12" id="content">
             <ul class="nav nav-tabs" data-tabs="tabs">
-                <li id="settingstab" class="active"><a data-toggle="tab" href="#settings">{{ lang._('Settings') }}</a></li>
-                <li id="packagestab"><a data-toggle="tab" href="#packages">{{ lang._('Packages') }}</a></li>
+                <li id="packagestab" class="active"><a data-toggle="tab" href="#packages">{{ lang._('Packages') }}</a></li>
                 <li id="plugintab"><a data-toggle="tab" href="#plugins">{{ lang._('Plugins') }}</a></li>
                 <li id="updatetab"><a data-toggle="tab" href="#updates">{{ lang._('Updates') }}</a></li>
                 <li id="progresstab"><a data-toggle="tab" href="#progress">{{ lang._('Progress') }}</a></li>
             </ul>
             <div class="tab-content content-box tab-content">
-                <div id="settings" class="tab-pane fade in active">
-                    <table class="table table-striped table-responsive">
-                        <tbody>
-                            <tr>
-                                <td style="width: 150px;"><a id="help_for_mirror" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> {{ lang._('Firmware Mirror') }}</td>
-                                <td>
-                                    <select class="selectpicker" id="firmware_mirror">
-                                    </select>
-                                    <div style="display:none;" id="firmware_mirror_other">
-                                        <br/>
-                                        <input type="text" id="firmware_mirror_value">
-                                    </div>
-                                    <div class="hidden" for="help_for_mirror">
-                                        <strong>
-                                            {{ lang._("Select an alternate firmware mirror.") }}
-                                        </strong>
-                                    </div>
-                                </td>
-                                <td></td>
-                            </tr>
-                            <tr>
-                                <td><a id="help_for_flavour" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> {{ lang._('Firmware Flavour') }}</td>
-                                <td>
-                                    <select class="selectpicker" id="firmware_flavour">
-                                    </select>
-                                    <div style="display:none;" id="firmware_flavour_other">
-                                        <br/>
-                                        <input type="text" id="firmware_flavour_value">
-                                    </div>
-                                    <div class="hidden" for="help_for_flavour">
-                                        <strong>
-                                            {{ lang._("Select the firmware cryptography flavour.") }}
-                                        </strong>
-                                    </div>
-                                </td>
-                                <td></td>
-                            </tr>
-                            <tr>
-                                <td></td>
-                                <td>
-                                    <button class="btn btn-primary"  id="change_mirror" type="button"><b>{{ lang._('Change') }}</b><i id="change_mirror_progress" class=""></i></button>
-                                </td>
-                                <td></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div id="packages" class="tab-pane fade in">
+                <div id="packages" class="tab-pane fade in active">
                     <table class="table table-striped table-condensed table-responsive" id="packageslist">
                     </table>
                 </div>
