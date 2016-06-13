@@ -437,9 +437,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $filterent['updated'] = make_config_revision_entry();
 
         // update or insert item
+        $rule_action = "Added rule: ";
         if (isset($id)) {
             if ( isset($a_filter[$id]['created']) && is_array($a_filter[$id]['created']) ) {
                 $filterent['created'] = $a_filter[$id]['created'];
+                $rule_action = "Updated rule: ";
             }
             $a_filter[$id] = $filterent;
         } else {
@@ -456,6 +458,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // write to config
         if (write_config()) {
             mark_subsystem_dirty('filter');
+
+            if (isset($_SERVER["HTTPS"]))
+                $http_proto = "https";
+            else
+                $http_proto = "http";
+
+            syslog(LOG_NOTICE, $rule_action . $pconfig["descr"] . ", " . $http_proto . "://" . $_SERVER["SERVER_NAME"] . "/firewall_rules_edit.php?id=" . $pconfig["id"]);
         }
 
         if (!empty($pconfig['floating'])) {
