@@ -30,6 +30,7 @@
 
 require_once("guiconfig.inc");
 require_once("filter.inc");
+require_once("logs.inc");
 
 function find_alias_type($type)
 {
@@ -169,9 +170,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 configd_run("filter kill table {$alias_name}");
                 unset($a_aliases[$_POST['id']]);
-                write_config();
-                filter_configure();
-                mark_subsystem_dirty('aliases');
+                if (write_config()) {
+                    filter_configure();
+                    mark_subsystem_dirty('aliases');
+                    firewall_syslog("Delete Firewall/Alias", $_POST['id']);
+                }
                 header(url_safe('Location: /firewall_aliases.php'));
                 exit;
             }
