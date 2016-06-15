@@ -30,6 +30,7 @@
 
 require_once("guiconfig.inc");
 require_once("filter.inc");
+require_once("logs.inc");
 
 
 if (!isset($config['filter']['rule'])) {
