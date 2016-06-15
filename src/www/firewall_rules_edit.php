@@ -33,6 +33,7 @@ require_once("pfsense-utils.inc");
 require_once("interfaces.inc");
 require_once("services.inc");
 require_once("filter.inc");
+require_once("logs.inc");
 
 /* TCP flags */
 $tcpflags = array("syn", "ack", "fin", "rst", "psh", "urg", "ece", "cwr");
