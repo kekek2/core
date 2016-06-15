@@ -3126,7 +3126,7 @@ function get_protocols()
     return $protocols;
 }
 
-function firewall_syslog($section, $rule_action, $id)
+function firewall_syslog($section, $rule_action, $id, $needle = NULL)
 {
     if (!empty($_SESSION['Username'])) {
         $username = $_SESSION['Username'];
@@ -3135,6 +3135,11 @@ function firewall_syslog($section, $rule_action, $id)
     }
 
     openlog($username, LOG_ODELAY, LOG_USER);
+    if (is_array($id) && $needle != NULL) {
+        $id = array_search($needle, $id);
+        if ($id === FALSE)
+            syslog(LOG_ERR, "Firewall/Rules error inserting rule");
+    }
     syslog(LOG_NOTICE, $section . ", " . $rule_action . ": " . $id);
     openlog('opnsense', LOG_ODELAY, LOG_USER);
 }

@@ -458,12 +458,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // write to config
         if (write_config()) {
             mark_subsystem_dirty('filter');
-
-            $id_for_logs = array_search($filterent, $a_filter);
-            if ($id_for_logs === FALSE)
-                syslog(LOG_ERR, "Firewall/Rules error inserting rule");
-            else
-                firewall_syslog("Firewall/Rules", $rule_action, $id_for_logs);
+            firewall_syslog("Firewall/Rules", $rule_action, $a_filter, $filterent);
         }
 
         if (!empty($pconfig['floating'])) {
