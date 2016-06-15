@@ -3345,3 +3345,16 @@ function get_protocols()
     }
     return $protocols;
 }
+
+function firewall_syslog($section, $rule_action, $id)
+{
+    if (!empty($_SESSION['Username'])) {
+        $username = $_SESSION['Username'];
+    } else {
+        $username = '(' . trim(shell_exec('/usr/bin/whoami')) . ')';
+    }
+
+    openlog($username, LOG_ODELAY, LOG_USER);
+    syslog(LOG_NOTICE, $section . ", " . $rule_action . ": " . $id);
+    openlog('opnsense', LOG_ODELAY, LOG_USER);
+}

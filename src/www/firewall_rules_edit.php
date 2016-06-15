@@ -436,13 +436,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $filterent['updated'] = make_config_revision_entry();
 
         // update or insert item
-        $rule_action = "Added rule: ";
         if (isset($id)) {
             if ( isset($a_filter[$id]['created']) && is_array($a_filter[$id]['created']) ) {
                 $filterent['created'] = $a_filter[$id]['created'];
-                $rule_action = "Updated rule: ";
             }
             $a_filter[$id] = $filterent;
+            $rule_action = "Update rule";
         } else {
             $filterent['created'] = make_config_revision_entry();
             if (isset($after)) {
@@ -450,6 +449,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             } else {
                 $a_filter[] = $filterent;
             }
+            $rule_action = "Add rule";
         }
         // sort filter items per interface, not really necessary but leaves a bit nicer sorted config.xml behind.
         filter_rules_sort();
@@ -458,12 +458,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if (write_config()) {
             mark_subsystem_dirty('filter');
 
-            if (isset($_SERVER["HTTPS"]))
-                $http_proto = "https";
+            $id_for_logs = array_search($filterent, $a_filter);
+            if ($id_for_logs === FALSE)
+                syslog(LOG_ERR, "Firewall/Rules error inserting rule");
             else
-                $http_proto = "http";
-
-            syslog(LOG_NOTICE, $rule_action . $pconfig["descr"] . ", " . $http_proto . "://" . $_SERVER["SERVER_NAME"] . "/firewall_rules_edit.php?id=" . $pconfig["id"]);
+                firewall_syslog("Firewall/Rules", $rule_action, $id_for_logs);
         }
 
         header(url_safe('Location: /firewall_rules.php?if=%s', array(
