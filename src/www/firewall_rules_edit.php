@@ -441,7 +441,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $filterent['created'] = $a_filter[$id]['created'];
             }
             $a_filter[$id] = $filterent;
-            $rule_action = "Update rule";
+            $alias_action = "Update Firewall/Rule";
         } else {
             $filterent['created'] = make_config_revision_entry();
             if (isset($after)) {
@@ -449,7 +449,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             } else {
                 $a_filter[] = $filterent;
             }
-            $rule_action = "Add rule";
+            $alias_action = "Add Firewall/Rule";
         }
         // sort filter items per interface, not really necessary but leaves a bit nicer sorted config.xml behind.
         filter_rules_sort();
@@ -457,7 +457,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // write to config
         if (write_config()) {
             mark_subsystem_dirty('filter');
-            firewall_syslog("Firewall/Rules", $rule_action, $a_filter, $filterent);
+            firewall_syslog($alias_action, $a_filter, $filterent);
         }
 
         header(url_safe('Location: /firewall_rules.php?if=%s', array(

@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         unset($a_filter[$id]);
         if (write_config()) {
             mark_subsystem_dirty('filter');
-            firewall_syslog("Firewall/Rules", "delete", $id);
+            firewall_syslog("Delete Firewall/Rule", $id);
         }
         header("Location: firewall_rules.php?if=" . htmlspecialchars($current_if));
         exit;
@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (write_config()) {
             mark_subsystem_dirty('filter');
             foreach ($deleted_rules as $rule_id)
-                firewall_syslog("Firewall/Rules", "delete", $rule_id);
+                firewall_syslog("Delete Firewall/Rule", $rule_id);
         }
         header("Location: firewall_rules.php?if=" . htmlspecialchars($current_if));
         exit;
@@ -111,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $a_filter = legacy_move_config_list_items($a_filter, $id,  $pconfig['rule']);
         if (write_config()) {
             mark_subsystem_dirty('filter');
-            firewall_syslog("Firewall/Rules", "move", $id);
+            firewall_syslog("Move Firewall/Rule", $id);
         }
         header("Location: firewall_rules.php?if=" . htmlspecialchars($current_if));
         exit;
@@ -119,14 +119,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // toggle item
         if(isset($a_filter[$id]['disabled'])) {
             unset($a_filter[$id]['disabled']);
-            $rule_action = "enable";
+            $alias_action = "Enable";
         } else {
             $a_filter[$id]['disabled'] = true;
-            $rule_action = "disable";
+            $alias_action = "Disable";
         }
         if (write_config()) {
             mark_subsystem_dirty('filter');
-            firewall_syslog("Firewall/Rules", $rule_action, $id);
+            firewall_syslog($alias_action . " Firewall/Rule", $id);
         }
         header("Location: firewall_rules.php?if=" . htmlspecialchars($current_if));
         exit;
