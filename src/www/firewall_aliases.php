@@ -30,6 +30,7 @@
 
 require_once("guiconfig.inc");
 require_once("filter.inc");
+require_once("logs.inc");
 
 function find_alias_type($type)
 {
@@ -172,6 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (write_config()) {
                     filter_configure();
                     mark_subsystem_dirty('aliases');
+                    firewall_syslog("Delete Firewall/Alias", $_POST['id']);
                 }
                 header('Location: firewall_aliases.php');
                 exit;

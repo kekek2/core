@@ -32,6 +32,7 @@
 
 require_once("guiconfig.inc");
 require_once("pfsense-utils.inc");
+require_once("logs.inc");
 
 /**
  * generate simple country selection list for geoip
@@ -245,8 +246,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             // save to config
             if (isset($id)) {
                 $a_aliases[$id] = $confItem;
+                $alias_action = "Update Firewall/Alias";
             } else {
                 $a_aliases[] = $confItem;
+                $alias_action = "Add Firewall/Alias";
             }
             // Sort list
             $a_aliases = msort($a_aliases, "name");
@@ -254,6 +257,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             if (write_config()) {
               // post save actions
               mark_subsystem_dirty('aliases');
+              firewall_syslog($alias_action, $a_aliases, $confItem);
               if (strpos($pconfig['type'],'url') !== false || $pconfig['type'] == 'geoip') {
                   // update URL Table Aliases
                   configd_run('filter refresh_url_alias', true);

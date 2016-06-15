@@ -28,6 +28,7 @@
 */
 
 require_once("guiconfig.inc");
+require_once("logs.inc");
 
 if (!isset($config['aliases']) || !is_array($config['aliases'])) {
     $config['aliases'] = array();
@@ -147,6 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         if (write_config()) {
             mark_subsystem_dirty('aliases');
+            firewall_syslog("Import Firewall/Alias", $config['aliases']['alias'], $alias);
         }
         header("Location: firewall_aliases.php");
         exit;
