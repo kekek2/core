@@ -76,11 +76,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         unset($a_filter[$id]);
         if (write_config()) {
             mark_subsystem_dirty('filter');
+            firewall_syslog("Firewall/Rules", "delete", $id);
         }
         header("Location: firewall_rules.php?if=" . htmlspecialchars($current_if));
         exit;
     } elseif (isset($pconfig['act']) && $pconfig['act'] == 'del_x' && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
         // delete selected rules
+        $deleted_rules = [];
         foreach ($pconfig['rule'] as $rulei) {
             // unlink nat entry
             if (isset($config['nat']['rule'])) {
@@ -91,10 +93,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
             }
+            $deleted_rules[] = $rulei["id"];
             unset($a_filter[$rulei]);
         }
         if (write_config()) {
             mark_subsystem_dirty('filter');
+            foreach ($deleted_rules as $rule_id)
+                firewall_syslog("Firewall/Rules", "delete", $rule_id);
         }
         header("Location: firewall_rules.php?if=" . htmlspecialchars($current_if));
         exit;
@@ -107,6 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $a_filter = legacy_move_config_list_items($a_filter, $id,  $pconfig['rule']);
         if (write_config()) {
             mark_subsystem_dirty('filter');
+            firewall_syslog("Firewall/Rules", "move", $id);
         }
         header("Location: firewall_rules.php?if=" . htmlspecialchars($current_if));
         exit;
@@ -115,11 +121,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // toggle item
         if(isset($a_filter[$id]['disabled'])) {
             unset($a_filter[$id]['disabled']);
+            $rule_action = "enable";
         } else {
             $a_filter[$id]['disabled'] = true;
+            $rule_action = "disable";
         }
         if (write_config()) {
             mark_subsystem_dirty('filter');
+            firewall_syslog("Firewall/Rules", $rule_action, $id);
         }
         header("Location: firewall_rules.php?if=" . htmlspecialchars($current_if));
         exit;
