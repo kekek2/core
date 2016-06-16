@@ -494,6 +494,200 @@ function return_gateways_array($disabled = false, $localhost = false, $inactive 
     $interfaces_v4 = array();
     $interfaces_v6 = array();
 
+    /* Loop through all interfaces with a gateway and add it to a array */
+    if ($disabled == false) {
+        $iflist = get_configured_interface_with_descr();
+    } else {
+        $iflist = get_configured_interface_with_descr(false, true);
+    }
+
+    /* Process/add dynamic v4 gateways. */
+    foreach ($iflist as $ifname => $friendly) {
+        if (!interface_has_gateway($ifname)) {
+            continue;
+        }
+
+        if (empty($config['interfaces'][$ifname])) {
+            continue;
+        }
+
+        $ifcfg = &$config['interfaces'][$ifname];
+        if (!isset($ifcfg['enable'])) {
+            continue;
+        }
+
+        if (!empty($ifcfg['ipaddr']) && is_ipaddrv4($ifcfg['ipaddr'])) {
+            continue;
+        }
+
+        if (isset($interfaces_v4[$ifname])) {
+            continue;
+        }
+
+        $ctype = '';
+        switch($ifcfg['ipaddr']) {
+            case "dhcp":
+            case "pppoe":
+            case "pptp":
+            case "ppp":
+                $ctype = $ifcfg['ipaddr'];
+                break;
+            default:
+                if (substr($ifcfg['if'], 0, 4) ==  "ovpn") {
+                    // if current iface is an ovpn server endpoint then skip it
+                    if (substr($ifcfg['if'], 4, 1) == 's') {
+                        continue 2;
+                    }
+
+                    $ctype = "VPNv4";
+                }
+                break;
+        }
+
+        if (empty($ctype)) {
+            continue;
+        }
+
+        $ctype = "_". strtoupper($ctype);
+
+        $gateway = array();
+        $gateway['dynamic'] = false;
+        $gateway['ipprotocol'] = "inet";
+        $gateway['gateway'] = get_interface_gateway($ifname, $gateway['dynamic']);
+        $gateway['interface'] = get_real_interface($ifname);
+        $gateway['friendlyiface'] = $ifname;
+        $gateway['name'] = "{$friendly}{$ctype}";
+        $gateway['attribute'] = "system";
+
+        if (($gateway['dynamic'] === "default") && ($found_defaultv4 == 0)) {
+            $gateway['defaultgw'] = true;
+            $gateway['dynamic'] = true;
+            $found_defaultv4 = 1;
+        }
+        /* Loopback dummy for dynamic interfaces without a IP */
+        if (!is_ipaddrv4($gateway['gateway']) && $gateway['dynamic'] == true) {
+            $gateway['gateway'] = "dynamic";
+        }
+
+        /* automatically skip known static and dynamic gateways we have a array entry for */
+        foreach ($gateways_arr as $gateway_item) {
+            if ((($ifname == $gateway_item['friendlyiface'] && $friendly == $gateway_item['name'])&& ($gateway['ipprotocol'] == $gateway_item['ipprotocol'])) ||
+              ($ifname == $gateway_item['friendlyiface'] && $gateway_item['dynamic'] == true) && ($gateway['ipprotocol'] == $gateway_item['ipprotocol'])) {
+                continue 2;
+            }
+        }
+
+        if (is_ipaddrv4($gateway['gateway'])) {
+            $gateway['monitor'] = $gateway['gateway'];
+        }
+
+        $gateway['descr'] = "Interface {$friendly}{$ctype} Gateway";
+        $gateway['monitor_disable'] = true;
+        $gateways_arr[$gateway['name']] = $gateway;
+    }
+    unset($gateway);
+
+    /* Process/add dynamic v6 gateways. */
+    foreach ($iflist as $ifname => $friendly) {
+        /* If the user has disabled IPv6, they probably don't want any IPv6 gateways. */
+        if (!isset($config['system']['ipv6allow'])) {
+            break;
+        }
+
+        if (!interface_has_gatewayv6($ifname)) {
+            continue;
+        }
+
+        if (empty($config['interfaces'][$ifname])) {
+            continue;
+        }
+
+        $ifcfg = &$config['interfaces'][$ifname];
+        if (!isset($ifcfg['enable'])) {
+            continue;
+        }
+
+        if (!empty($ifcfg['ipaddrv6']) && is_ipaddrv6($ifcfg['ipaddrv6'])) {
+            continue;
+        }
+
+        if (isset($interfaces_v6[$ifname])) {
+            continue;
+        }
+
+        $ctype = '';
+        switch($ifcfg['ipaddrv6']) {
+            case "slaac":
+            case "dhcp6":
+            case "6to4":
+            case "6rd":
+                $ctype = $ifcfg['ipaddrv6'];
+                break;
+            default:
+                $tunnelif = substr($ifcfg['if'], 0, 3);
+                if (substr($ifcfg['if'], 0, 4) ==  "ovpn") {
+                    // if current iface is an ovpn server endpoint then skip it
+                    if (substr($ifcfg['if'], 4, 1) == 's') {
+                        continue 2;
+                    }
+
+                    $ctype = "VPNv6";
+                } elseif ($tunnelif == "gif" || $tunnelif == "gre") {
+                    $ctype = "TUNNELv6";
+                }
+                break;
+        }
+
+        if (empty($ctype)) {
+            continue;
+        }
+
+        $ctype = "_". strtoupper($ctype);
+
+        $gateway = array();
+        $gateway['dynamic'] = false;
+        $gateway['ipprotocol'] = "inet6";
+        $gateway['gateway'] = get_interface_gateway_v6($ifname, $gateway['dynamic']);
+        $gateway['interface'] = get_real_interface($ifname, "inet6");
+        switch($ifcfg['ipaddrv6']) {
+            case "6rd":
+            case "6to4":
+                $gateway['dynamic'] = "default";
+                break;
+        }
+        $gateway['friendlyiface'] = $ifname;
+        $gateway['name'] = "{$friendly}{$ctype}";
+        $gateway['attribute'] = "system";
+
+        if (($gateway['dynamic'] === "default")  && ($found_defaultv6 == 0)) {
+            $gateway['defaultgw'] = true;
+            $gateway['dynamic'] = true;
+            $found_defaultv6 = 1;
+        }
+
+        /* Loopback dummy for dynamic interfaces without a IP */
+        if (!is_ipaddrv6($gateway['gateway']) && $gateway['dynamic'] == true) {
+            $gateway['gateway'] = "dynamic";
+        }
+
+        /* automatically skip known static and dynamic gateways we have a array entry for */
+        foreach($gateways_arr as $gateway_item) {
+            if ((($ifname == $gateway_item['friendlyiface'] && $friendly == $gateway_item['name']) && ($gateway['ipprotocol'] == $gateway_item['ipprotocol'])) ||
+              ($ifname == $gateway_item['friendlyiface'] && $gateway_item['dynamic'] == true) && ($gateway['ipprotocol'] == $gateway_item['ipprotocol'])) {
+                continue 2;
+            }
+        }
+
+        if (is_ipaddrv6($gateway['gateway'])) {
+            $gateway['monitor'] = $gateway['gateway'];
+        }
+
+        $gateway['descr'] = "Interface {$friendly}{$ctype} Gateway";
+        $gateway['monitor_disable'] = true;
+        $gateways_arr[$gateway['name']] = $gateway;
+    }
+    unset($gateway);
+
     $i = -1;
     /* Process/add all the configured gateways. */
     if (isset($config['gateways']['gateway_item'])) {
@@ -512,6 +706,9 @@ function return_gateways_array($disabled = false, $localhost = false, $inactive 
 
             /* skip disabled interfaces */
             if ($disabled === false && (!isset($wancfg['enable']) || isset($gateway['disabled']))) {
+                if (isset($gateways_arr[$gateway['name']])) {
+                    unset($gateways_arr[$gateway['name']]);
+                }
                 continue;
             }
 
@@ -577,190 +774,6 @@ function return_gateways_array($disabled = false, $localhost = false, $inactive 
 
             $gateways_arr[$gateway['name']] = $gateway;
         }
-    }
-    unset($gateway);
-
-    /* Loop through all interfaces with a gateway and add it to a array */
-    if ($disabled == false) {
-        $iflist = get_configured_interface_with_descr();
-    } else {
-        $iflist = get_configured_interface_with_descr(false, true);
-    }
-
-    /* Process/add dynamic v4 gateways. */
-    foreach($iflist as $ifname => $friendly ) {
-        if (! interface_has_gateway($ifname)) {
-            continue;
-        }
-
-        if (empty($config['interfaces'][$ifname])) {
-            continue;
-        }
-
-        $ifcfg = &$config['interfaces'][$ifname];
-        if (!isset($ifcfg['enable'])) {
-            continue;
-        }
-
-        if (!empty($ifcfg['ipaddr']) && is_ipaddrv4($ifcfg['ipaddr'])) {
-            continue;
-        }
-
-        if (isset($interfaces_v4[$ifname])) {
-            continue;
-        }
-
-        $ctype = "";
-        switch($ifcfg['ipaddr']) {
-            case "dhcp":
-            case "pppoe":
-            case "pptp":
-            case "ppp":
-                $ctype = strtoupper($ifcfg['ipaddr']);
-                break;
-            default:
-                if (substr($ifcfg['if'], 0, 4) ==  "ovpn") {
-                    // if current iface is an ovpn server endpoint then skip it
-                    if (substr($ifcfg['if'], 4, 1) == 's') {
-                        continue 2;
-                    }
-
-                    $ctype = "VPNv4";
-                }
-                break;
-        }
-        $ctype = "_". strtoupper($ctype);
-
-        $gateway = array();
-        $gateway['dynamic'] = false;
-        $gateway['ipprotocol'] = "inet";
-        $gateway['gateway'] = get_interface_gateway($ifname, $gateway['dynamic']);
-        $gateway['interface'] = get_real_interface($ifname);
-        $gateway['friendlyiface'] = $ifname;
-        $gateway['name'] = "{$friendly}{$ctype}";
-        $gateway['attribute'] = "system";
-
-        if (($gateway['dynamic'] === "default") && ($found_defaultv4 == 0)) {
-            $gateway['defaultgw'] = true;
-            $gateway['dynamic'] = true;
-            $found_defaultv4 = 1;
-        }
-        /* Loopback dummy for dynamic interfaces without a IP */
-        if (!is_ipaddrv4($gateway['gateway']) && $gateway['dynamic'] == true) {
-            $gateway['gateway'] = "dynamic";
-        }
-
-        /* automatically skip known static and dynamic gateways we have a array entry for */
-        foreach($gateways_arr as $gateway_item) {
-            if ((($ifname == $gateway_item['friendlyiface'] && $friendly == $gateway_item['name'])&& ($gateway['ipprotocol'] == $gateway_item['ipprotocol'])) ||
-              ($ifname == $gateway_item['friendlyiface'] && $gateway_item['dynamic'] == true) && ($gateway['ipprotocol'] == $gateway_item['ipprotocol'])) {
-                continue 2;
-            }
-        }
-
-        if (is_ipaddrv4($gateway['gateway'])) {
-            $gateway['monitor'] = $gateway['gateway'];
-        }
-
-        $gateway['descr'] = "Interface {$friendly}{$ctype} Gateway";
-        $gateway['monitor_disable'] = true;
-        $gateways_arr[$gateway['name']] = $gateway;
-    }
-    unset($gateway);
-
-    /* Process/add dynamic v6 gateways. */
-    foreach($iflist as $ifname => $friendly ) {
-        /* If the user has disabled IPv6, they probably don't want any IPv6 gateways. */
-        if (!isset($config['system']['ipv6allow'])) {
-            break;
-        }
-
-        if (!interface_has_gatewayv6($ifname)) {
-            continue;
-        }
-
-        if (empty($config['interfaces'][$ifname])) {
-            continue;
-        }
-
-        $ifcfg = &$config['interfaces'][$ifname];
-        if (!isset($ifcfg['enable'])) {
-            continue;
-        }
-
-        if (!empty($ifcfg['ipaddrv6']) && is_ipaddrv6($ifcfg['ipaddrv6'])) {
-            continue;
-        }
-
-        if (isset($interfaces_v6[$ifname])) {
-            continue;
-        }
-
-        $ctype = "";
-        switch($ifcfg['ipaddrv6']) {
-            case "slaac":
-            case "dhcp6":
-            case "6to4":
-            case "6rd":
-                $ctype = strtoupper($ifcfg['ipaddrv6']);
-                break;
-            default:
-                $tunnelif = substr($ifcfg['if'], 0, 3);
-                if (substr($ifcfg['if'], 0, 4) ==  "ovpn") {
-                    // if current iface is an ovpn server endpoint then skip it
-                    if (substr($ifcfg['if'], 4, 1) == 's') {
-                        continue 2;
-                    }
-
-                    $ctype = "VPNv6";
-                } elseif ($tunnelif == "gif" || $tunnelif == "gre") {
-                    $ctype = "TUNNELv6";
-                }
-                break;
-        }
-        $ctype = "_". strtoupper($ctype);
-
-        $gateway = array();
-        $gateway['dynamic'] = false;
-        $gateway['ipprotocol'] = "inet6";
-        $gateway['gateway'] = get_interface_gateway_v6($ifname, $gateway['dynamic']);
-        $gateway['interface'] = get_real_interface($ifname, "inet6");
-        switch($ifcfg['ipaddrv6']) {
-            case "6rd":
-            case "6to4":
-                $gateway['dynamic'] = "default";
-                break;
-        }
-        $gateway['friendlyiface'] = $ifname;
-        $gateway['name'] = "{$friendly}{$ctype}";
-        $gateway['attribute'] = "system";
-
-        if (($gateway['dynamic'] === "default")  && ($found_defaultv6 == 0)) {
-            $gateway['defaultgw'] = true;
-            $gateway['dynamic'] = true;
-            $found_defaultv6 = 1;
-        }
-
-        /* Loopback dummy for dynamic interfaces without a IP */
-        if (!is_ipaddrv6($gateway['gateway']) && $gateway['dynamic'] == true) {
-            $gateway['gateway'] = "dynamic";
-        }
-
-        /* automatically skip known static and dynamic gateways we have a array entry for */
-        foreach($gateways_arr as $gateway_item) {
-            if ((($ifname == $gateway_item['friendlyiface'] && $friendly == $gateway_item['name']) && ($gateway['ipprotocol'] == $gateway_item['ipprotocol'])) ||
-              ($ifname == $gateway_item['friendlyiface'] && $gateway_item['dynamic'] == true) && ($gateway['ipprotocol'] == $gateway_item['ipprotocol'])) {
-                continue 2;
-            }
-        }
-
-        if (is_ipaddrv6($gateway['gateway'])) {
-            $gateway['monitor'] = $gateway['gateway'];
-        }
-
-        $gateway['descr'] = "Interface {$friendly}{$ctype} Gateway";
-        $gateway['monitor_disable'] = true;
-        $gateways_arr[$gateway['name']] = $gateway;
     }
     unset($gateway);
 
