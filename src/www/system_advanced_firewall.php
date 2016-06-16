@@ -32,6 +32,7 @@
 require_once("guiconfig.inc");
 require_once("filter.inc");
 require_once("system.inc");
+require_once("logs.inc");
 
 function default_table_entries_size()
 {
@@ -191,7 +192,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             unset($config['system']['skip_rules_gw_down']);
         }
 
-        write_config();
+        if (write_config())
+            firewall_syslog("Update Firewall/Settings/Advanced");
 
         // Kill filterdns when value changes, filter_configure() will restart it
         if ($old_aliasesresolveinterval != $config['system']['aliasesresolveinterval']) {
