@@ -32,6 +32,7 @@ require_once("guiconfig.inc");
 require_once("interfaces.inc");
 require_once("ipsec.inc");
 require_once("services.inc");
+require_once("plugins.inc");
 
 /**
  * combine ealgos and keylen_* tags
@@ -755,7 +756,7 @@ if (isset($input_errors) && count($input_errors) > 0) {
                       </option>
                     </select>
                     <div class="hidden" for="help_for_natlocalid_nattype">
-                        <?php echo gettext("Enforce the type of NAT by choosing either NAT or BINAT. Leave it to Auto to let OPNsense automatically choose the best NAT option."); ?>
+                        <?= gettext('Enforce the type of NAT by choosing either NAT or BINAT. Leave it to Auto to let OPNsense automatically choose the best NAT option.') ?>
                     </div>
                   </td>
                 </tr>
@@ -774,7 +775,7 @@ if (isset($input_errors) && count($input_errors) > 0) {
                       </option>
                     </select>
                     <div class="hidden" for="help_for_natlocalid_type">
-                        <?php echo gettext("In case you need NAT/BINAT on this network specify the address to be translated"); ?>
+                        <?= gettext('In case you need NAT/BINAT on this network specify the address to be translated.') ?>
                     </div>
                   </td>
                 </tr>

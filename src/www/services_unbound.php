@@ -205,7 +205,7 @@ include_once("head.inc");
                           <input name="regdhcp" type="checkbox" id="regdhcp" value="yes" <?=!empty($pconfig['regdhcp']) ? "checked=\"checked\"" : "";?> />
                           <strong><?=gettext("Register DHCP leases in the DNS Resolver");?></strong>
                           <div class="hidden" for="help_for_regdhcp">
-                            <?php printf(gettext("If this option is set, then machines that specify".
+                            <?= sprintf(gettext("If this option is set, then machines that specify".
                             " their hostname when requesting a DHCP lease will be registered".
                             " in the DNS Resolver, so that their name can be resolved.".
                             " You should also set the domain in %sSystem:".
@@ -219,7 +219,7 @@ include_once("head.inc");
                           <input name="regdhcpstatic" type="checkbox" id="regdhcpstatic" value="yes" <?=!empty($pconfig['regdhcpstatic']) ? "checked=\"checked\"" : "";?> />
                           <strong><?=gettext("Register DHCP static mappings in the DNS Resolver");?></strong>
                           <div class="hidden" for="help_for_regdhcpstatic">
-                            <?php printf(gettext("If this option is set, then DHCP static mappings will ".
+                            <?= sprintf(gettext("If this option is set, then DHCP static mappings will ".
                                 "be registered in the DNS Resolver, so that their name can be ".
                                 "resolved. You should also set the domain in %s".
                                 "System: General setup%s to the proper value."),'<a href="system_general.php">','</a>');?>
@@ -242,12 +242,13 @@ include_once("head.inc");
                         </td>
                       </tr>
                       <tr class="showadv" style="display:none">
-                          <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Advanced");?></td>
-                          <td>
-                              <strong><?=gettext("Advanced");?><br /></strong>
-                              <textarea rows="6" cols="78" name="custom_options" id="custom_options"><?=$pconfig['custom_options'];?></textarea><br />
-                              <?=gettext("Enter any additional options you would like to add to the DNS Resolver configuration here, separated by a space or newline"); ?><br />
-                          </td>
+                        <td><a id="help_for_custom_options" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('Custom options') ?></td>
+                        <td>
+                          <textarea rows="6" cols="78" name="custom_options" id="custom_options"><?=$pconfig['custom_options'];?></textarea>
+                          <div class="hidden" for="help_for_custom_options">
+                            <?=gettext("Enter any additional options you would like to add to the DNS Resolver configuration here."); ?>
+                          </div>
+                        </td>
                       </tr>
                       <tr class="showadv" style="display:none">
                         <td><a id="help_for_outgoing_interface" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Outgoing Network Interfaces"); ?></td>

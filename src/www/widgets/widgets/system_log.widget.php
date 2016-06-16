@@ -37,13 +37,16 @@ if (!$config['widgets']['systemlogfiltercount']){
   $syslogEntriesToFetch = $config['widgets']['systemlogfiltercount'];
 }
 
-if(is_numeric($_POST['logfiltercount'])) {
+if (is_numeric($_POST['logfiltercount'])) {
    $countReceived =  $_POST['logfiltercount'];
    $config['widgets']['systemlogfiltercount'] = $countReceived;
    write_config("Saved Widget System Log Filter Setting");
    Header("Location: /index.php");
-   exit(0);
+   exit;
 }
+
+require_once('diag_logs_common.inc');
+
 ?>
 
 <div id="system_log-settings" class="widgetconfigdiv" style="display:none;">
@@ -54,7 +57,7 @@ if(is_numeric($_POST['logfiltercount'])) {
         <td>
           <select name="logfiltercount" id="logfiltercount">
             <?php for ($i = 1; $i <= 50; $i++) {?>
-            <option value="<?php echo $i;?>" <?php if ($syslogEntriesToFetch == $i) { echo "selected=\"selected\"";}?>><?php echo $i;?></option>
+            <option value="<?= html_safe($i) ?>" <?php if ($syslogEntriesToFetch == $i) { echo "selected=\"selected\"";}?>><?= html_safe($i) ?></option>
             <?php } ?>
           </select>
         </td>
