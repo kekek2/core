@@ -32,6 +32,7 @@ use \OPNsense\Base\ApiControllerBase;
 use \OPNsense\Core\Config;
 use \OPNsense\TrafficShaper\TrafficShaper;
 use \OPNsense\Base\UIModelGrid;
+require_once("logs.inc");
 
 /**
  * Class SettingsController Handles settings related API actions for the Traffic Shaper
@@ -110,6 +111,7 @@ class SettingsController extends ApiControllerBase
                 $node = $mdlShaper->getNodeByReference('pipes.pipe.'.$uuid);
                 if ($node != null) {
                     $node->setNodes($this->request->getPost("pipe"));
+                    firewall_syslog("Update Firewall/Traffic Shaper/Pipe", $node->number);
                     return $this->save($mdlShaper, $node, "pipe");
                 }
             }
@@ -129,6 +131,7 @@ class SettingsController extends ApiControllerBase
             $node = $mdlShaper->addPipe();
             $node->setNodes($this->request->getPost("pipe"));
             $node->origin = "TrafficShaper"; // set origin to this component.
+            firewall_syslog("Add Firewall/Traffic Shaper/Pipe", $node->number->__toString());
             return $this->save($mdlShaper, $node, "pipe");
         }
         return $result;
@@ -145,8 +148,10 @@ class SettingsController extends ApiControllerBase
         if ($this->request->isPost()) {
             $mdlShaper = new TrafficShaper();
             if ($uuid != null) {
+                $id = $mdlShaper->getNodeByReference('pipes.pipe.'.$uuid)->number;
                 if ($mdlShaper->pipes->pipe->del($uuid)) {
                     // if item is removed, serialize to config and save
+                    firewall_syslog("Delete Firewall/Traffic Shaper/Pipe", $id);
                     $mdlShaper->serializeToConfig();
                     Config::getInstance()->save();
                     $result['result'] = 'deleted';
@@ -177,8 +182,10 @@ class SettingsController extends ApiControllerBase
                         $node->enabled = (string)$enabled;
                     } elseif ($node->enabled->__toString() == "1") {
                         $node->enabled = "0";
+                        firewall_syslog("Disable Firewall/Traffic Shaper/Pipe", $node->number);
                     } else {
                         $node->enabled = "1";
+                        firewall_syslog("Enable Firewall/Traffic Shaper/Pipe", $node->number);
                     }
                     $result['result'] = $node->enabled;
                     // if item has toggled, serialize to config and save
@@ -257,6 +264,7 @@ class SettingsController extends ApiControllerBase
                 $node = $mdlShaper->getNodeByReference('queues.queue.'.$uuid);
                 if ($node != null) {
                     $node->setNodes($this->request->getPost("queue"));
+                    firewall_syslog("Update Firewall/Traffic Shaper/Queue", $node->number);
                     return $this->save($mdlShaper, $node, "queue");
                 }
             }
@@ -276,6 +284,7 @@ class SettingsController extends ApiControllerBase
             $node = $mdlShaper->addQueue();
             $node->setNodes($this->request->getPost("queue"));
             $node->origin = "TrafficShaper"; // set origin to this component.
+            firewall_syslog("Add Firewall/Traffic Shaper/Queue", $node->number->__toString());
             return $this->save($mdlShaper, $node, "queue");
         }
         return $result;
@@ -292,8 +301,10 @@ class SettingsController extends ApiControllerBase
         if ($this->request->isPost()) {
             $mdlShaper = new TrafficShaper();
             if ($uuid != null) {
+                $id = $mdlShaper->getNodeByReference('pipes.queue.'.$uuid)->number;
                 if ($mdlShaper->queues->queue->del($uuid)) {
                     // if item is removed, serialize to config and save
+                    firewall_syslog("Delete Firewall/Traffic Shaper/Queue", $id);
                     $mdlShaper->serializeToConfig();
                     Config::getInstance()->save();
                     $result['result'] = 'deleted';
@@ -324,8 +335,10 @@ class SettingsController extends ApiControllerBase
                         $node->enabled = (string)$enabled;
                     } elseif ($node->enabled->__toString() == "1") {
                         $node->enabled = "0";
+                        firewall_syslog("Disable Firewall/Traffic Shaper/Queue", $node->number);
                     } else {
                         $node->enabled = "1";
+                        firewall_syslog("Enable Firewall/Traffic Shaper/Queue", $node->number);
                     }
                     $result['result'] = $node->enabled;
                     // if item has toggled, serialize to config and save
@@ -389,6 +402,7 @@ class SettingsController extends ApiControllerBase
                 $node = $mdlShaper->getNodeByReference('rules.rule.'.$uuid);
                 if ($node != null) {
                     $node->setNodes($this->request->getPost("rule"));
+                    firewall_syslog("Update Firewall/Traffic Shaper/Rule", $node->sequence);
                     return $this->save($mdlShaper, $node, "rule");
                 }
             }
@@ -408,6 +422,7 @@ class SettingsController extends ApiControllerBase
             $node = $mdlShaper->rules->rule->add();
             $node->setNodes($this->request->getPost("rule"));
             $node->origin = "TrafficShaper"; // set origin to this component.
+            firewall_syslog("Add Firewall/Traffic Shaper/Rule", $node->sequence->__toString());
             return $this->save($mdlShaper, $node, "rule");
         }
         return $result;
@@ -424,8 +439,10 @@ class SettingsController extends ApiControllerBase
         if ($this->request->isPost()) {
             $mdlShaper = new TrafficShaper();
             if ($uuid != null) {
+                $id = $mdlShaper->getNodeByReference('rules.rule.'.$uuid)->sequence;
                 if ($mdlShaper->rules->rule->del($uuid)) {
                     // if item is removed, serialize to config and save
+                    firewall_syslog("Delete Firewall/Traffic Shaper/Rule", $id);
                     $mdlShaper->serializeToConfig();
                     Config::getInstance()->save();
                     $result['result'] = 'deleted';
