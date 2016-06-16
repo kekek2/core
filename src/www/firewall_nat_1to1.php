@@ -30,6 +30,7 @@
 require_once("guiconfig.inc");
 require_once("interfaces.inc");
 require_once("filter.inc");
+require_once("logs.inc");
 
 if (!isset($config['nat']['onetoone'])) {
     $config['nat']['onetoone'] = array();
@@ -53,16 +54,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         unset($a_1to1[$id]);
         if (write_config()) {
             mark_subsystem_dirty('natconf');
+            firewall_syslog("Delete Firewall/NAT/One-to-One", $id);
         }
         header("Location: firewall_nat_1to1.php");
         exit;
     } elseif (isset($pconfig['action']) && $pconfig['action'] == 'del_x' && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
         // delete selected
+        $id_for_delete = [];
         foreach ($pconfig['rule'] as $rulei) {
             unset($a_1to1[$rulei]);
+            $id_for_delete[] = $rulei;
         }
         if (write_config()) {
             mark_subsystem_dirty('natconf');
+            foreach ($id_for_delete as $idk)
+                firewall_syslog("Delete Firewall/NAT/One-to-One", $idk);
         }
         header("Location: firewall_nat_1to1.php");
         exit;
@@ -77,6 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (write_config()) {
                 mark_subsystem_dirty('natconf');
+                firewall_syslog("Move Firewall/NAT/One-to-One", $id);
             }
             header("Location: firewall_nat_1to1.php");
             exit;
@@ -85,11 +92,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // toggle item
         if(isset($a_1to1[$id]['disabled'])) {
             unset($a_1to1[$id]['disabled']);
+            $a_1to1_action = "Enable Firewall/NAT/One-to-One";
         } else {
             $a_1to1[$id]['disabled'] = true;
+            $a_1to1_action = "Disable Firewall/NAT/One-to-One";
         }
         if (write_config(gettext('Toggled NAT rule'))) {
             mark_subsystem_dirty('natconf');
+            firewall_syslog($a_1to1_action, $id);
         }
         header("Location: firewall_nat_1to1.php");
         exit;
