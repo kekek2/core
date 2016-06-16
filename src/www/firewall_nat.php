@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if (isset($pconfig['apply'])) {
         write_config();
-        firewall_syslog("Apply Firewall/NAT/Port Forward", $id);
+        firewall_syslog("Apply Firewall/NAT/Port Forward");
         filter_configure();
         $savemsg = get_std_save_message();
         clear_subsystem_dirty('natconf');

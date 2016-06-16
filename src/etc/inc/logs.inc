@@ -1,6 +1,6 @@
 <?php
 
-function firewall_syslog($rule_action, $id, $needle = NULL)
+function firewall_syslog($rule_action, $id = NULL, $needle = NULL)
 {
     if (!empty($_SESSION['Username'])) {
         $username = $_SESSION['Username'];
@@ -9,11 +9,15 @@ function firewall_syslog($rule_action, $id, $needle = NULL)
     }
 
     openlog($username, LOG_ODELAY, LOG_USER);
-    if (is_array($id) && $needle != NULL) {
-        $id = array_search($needle, $id);
-        if ($id === FALSE)
-            syslog(LOG_ERR, "Firewall/Rules error inserting rule");
+    if ($id === NULL)
+        syslog(LOG_NOTICE, $rule_action);
+    else {
+        if (is_array($id) && $needle != NULL) {
+            $id = array_search($needle, $id);
+            if ($id === FALSE)
+                syslog(LOG_ERR, "Firewall/Rules error inserting rule");
+        }
+        syslog(LOG_NOTICE, $rule_action . ": " . $id);
     }
-    syslog(LOG_NOTICE, $rule_action . ": " . $id);
     openlog('opnsense', LOG_ODELAY, LOG_USER);
 }
