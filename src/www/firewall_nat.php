@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if (isset($pconfig['apply'])) {
         write_config();
-        firewall_syslog("Apply Firewall/NAT", $id);
+        firewall_syslog("Apply Firewall/NAT/Port Forward", $id);
         filter_configure();
         $savemsg = get_std_save_message();
         clear_subsystem_dirty('natconf');
@@ -97,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         unset($a_nat[$id]);
         if (write_config()) {
             mark_subsystem_dirty('natconf');
-            firewall_syslog("Delete Firewall/NAT", $id);
+            firewall_syslog("Delete Firewall/NAT/Port Forward", $id);
         }
         header(url_safe('Location: /firewall_nat.php'));
         exit;
@@ -119,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (write_config()) {
             mark_subsystem_dirty('natconf');
             foreach ($id_for_delete as $idk)
-                firewall_syslog("Delete Firewall/NAT", $idk);
+                firewall_syslog("Delete Firewall/NAT/Port Forward", $idk);
         }
         header(url_safe('Location: /firewall_nat.php'));
         exit;
@@ -134,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         if (write_config()) {
             mark_subsystem_dirty('natconf');
-            firewall_syslog("Move Firewall/NAT", $id);
+            firewall_syslog("Move Firewall/NAT/Port Forward", $id);
         }
         header(url_safe('Location: /firewall_nat.php'));
         exit;
@@ -142,10 +142,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // toggle item
         if(isset($a_nat[$id]['disabled'])) {
             unset($a_nat[$id]['disabled']);
-            $nat_action = "Enable Firewall/NAT";
+            $nat_action = "Enable Firewall/NAT/Port Forward";
         } else {
             $a_nat[$id]['disabled'] = true;
-            $nat_action = "Disable Firewall/NAT";
+            $nat_action = "Disable Firewall/NAT/Port Forward";
         }
         if (write_config("Firewall: NAT: Outbound, enable/disable NAT rule")) {
             mark_subsystem_dirty('natconf');
