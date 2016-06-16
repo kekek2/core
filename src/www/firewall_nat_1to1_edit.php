@@ -29,6 +29,7 @@
 
 require_once("guiconfig.inc");
 require_once("interfaces.inc");
+require_once("logs.inc");
 
 
 if (!isset($config['nat']['onetoone'])) {
@@ -143,12 +144,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // save data
         if (isset($id)) {
             $a_1to1[$id] = $natent;
+            $a_1to1_action = "Update Firewall/NAT/One-to-One";
         } else {
             $a_1to1[] = $natent;
+            $a_1to1_action = "Add Firewall/NAT/One-to-One";
         }
 
-        write_config();
-        mark_subsystem_dirty('natconf');
+        if (write_config()) {
+            mark_subsystem_dirty('natconf');
+            firewall_syslog($a_1to1_action, $a_1to1, $natent);
+        }
         header(url_safe('Location: /firewall_nat_1to1.php'));
         exit;
     }
