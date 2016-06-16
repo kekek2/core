@@ -30,6 +30,7 @@
 require_once("guiconfig.inc");
 require_once("filter.inc");
 require_once("interfaces.inc");
+require_once("logs.inc");
 
 if (!isset($config['nat']['npt'])) {
   $config['nat']['npt'] = array();
@@ -52,18 +53,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         unset($a_npt[$id]);
         if (write_config()) {
             mark_subsystem_dirty('natconf');
+            firewall_syslog("Delete Firewall/NAT/NPT (IPv6)", $id);
         }
         header("Location: firewall_nat_npt.php");
         exit;
       } elseif (isset($pconfig['act']) && $pconfig['act'] == 'del_x' && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
           /* delete selected rules */
+          $id_for_delete = [];
           foreach ($pconfig['rule'] as $rulei) {
               if (isset($a_npt[$rulei])) {
                   unset($a_npt[$rulei]);
+                  $id_for_delete[] = $rulei;
               }
           }
           if (write_config()) {
               mark_subsystem_dirty('natconf');
+              foreach ($id_for_delete as $idk)
+                  firewall_syslog("Delete Firewall/NAT/NPT (IPv6)", $idk);
           }
           header("Location: firewall_nat_npt.php");
           exit;
@@ -78,18 +84,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             if (write_config()) {
                 mark_subsystem_dirty('natconf');
+                firewall_syslog("Move Firewall/NAT/NPT (IPv6)", $id);
             }
             header("Location: firewall_nat_npt.php");
             exit;
         } elseif (isset($pconfig['act']) && $pconfig['act'] == 'toggle' && isset($id)) {
             // toggle item
             if(isset($a_npt[$id]['disabled'])) {
+                $npt_action = "Enable Firewall/NAT/NPT (IPv6)";
                 unset($a_npt[$id]['disabled']);
             } else {
                 $a_npt[$id]['disabled'] = true;
+                $npt_action = "Disable Firewall/NAT/NPT (IPv6)";
             }
             if (write_config(gettext("Firewall: NAT: NPT, enable/disable NAT rule"))) {
                 mark_subsystem_dirty('natconf');
+                firewall_syslog($npt_action, $id);
             }
             header("Location: firewall_nat_npt.php");
             exit;
