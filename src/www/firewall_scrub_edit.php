@@ -28,6 +28,7 @@
 
 require_once("guiconfig.inc");
 require_once("filter.inc");
+require_once("logs.inc");
 
 
 /**
@@ -153,6 +154,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $scrubent['created'] = $a_scrub[$id]['created'];
             }
             $a_scrub[$id] = $scrubent;
+            $scub_action = "Update Firewall/Settings/Normalization";
         } else {
             $scrubent['created'] = make_config_revision_entry();
             if (isset($after)) {
@@ -160,10 +162,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             } else {
                 $a_scrub[] = $scrubent;
             }
+            $scub_action = "Add Firewall/Settings/Normalization";
         }
         // write to config
-        write_config();
-        mark_subsystem_dirty('filter');
+        if (write_config()) {
+            mark_subsystem_dirty('filter');
+            firewall_syslog($scub_action, $a_scrub, $scrubent);
+        }
 
         header(url_safe('Location: /firewall_scrub.php'));
         exit;
