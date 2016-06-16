@@ -31,6 +31,7 @@
 require_once("guiconfig.inc");
 require_once("filter.inc");
 require_once("interfaces.inc");
+require_once("logs.inc");
 
 /**
  *   quite nasty, content provided by filter_generate_gateways (in filter.inc).
@@ -58,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if (isset($pconfig['apply'])) {
         write_config();
+        firewall_syslog("Apply Firwall/NAT/Outbound");
         filter_configure();
         clear_subsystem_dirty('natconf');
         clear_subsystem_dirty('filter');
@@ -117,26 +119,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $config['nat']['outbound']['mode'] = $pconfig['mode'];
 
-        write_config();
-        mark_subsystem_dirty('natconf');
+        if (write_config()) {
+            mark_subsystem_dirty('natconf');
+            firewall_syslog("Change mode Firwall/NAT/Outbound");
+        }
         header(url_safe('Location: /firewall_nat_out.php'));
         exit;
     } elseif (isset($pconfig['act']) && $pconfig['act'] == 'del' && isset($id)) {
         // delete single record
         unset($a_out[$id]);
-        write_config();
-        mark_subsystem_dirty('natconf');
+        if (write_config()) {
+            mark_subsystem_dirty('natconf');
+            firewall_syslog("Delete Firwall/NAT/Outbound", $id);
+        }
         header(url_safe('Location: /firewall_nat_out.php'));
         exit;
     } elseif (isset($pconfig['act']) && $pconfig['act'] == 'del_x' && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
         /* delete selected rules */
+        $id_for_delete = [];
         foreach ($pconfig['rule'] as $rulei) {
             if (isset($a_out[$rulei])) {
                 unset($a_out[$rulei]);
+                $id_for_delete[] = $rulei;
             }
         }
-        write_config();
-        mark_subsystem_dirty('natconf');
+        if (write_config()) {
+            mark_subsystem_dirty('natconf');
+            foreach ($id_for_delete as $idk)
+                firewall_syslog("Delete Firwall/NAT/Outbound", $idk);
+        }
         header(url_safe('Location: /firewall_nat_out.php'));
         exit;
     } elseif ( isset($pconfig['act']) && $pconfig['act'] == 'move' && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
@@ -145,19 +156,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id = count($a_out);
         }
         $a_out = legacy_move_config_list_items($a_out, $id,  $pconfig['rule']);
-        write_config();
-        mark_subsystem_dirty('natconf');
+        if (write_config()) {
+            mark_subsystem_dirty('natconf');
+            firewall_syslog("Move Firwall/NAT/Outbound", $id);
+        }
         header(url_safe('Location: /firewall_nat_out.php'));
         exit;
     } elseif (isset($pconfig['act']) && $pconfig['act'] == 'toggle' && isset($id)) {
         // toggle item disabled / enabled
         if(isset($a_out[$id]['disabled'])) {
             unset($a_out[$id]['disabled']);
+            $out_action = "Enable Firwall/NAT/Outbound";
         } else {
             $a_out[$id]['disabled'] = true;
+            $out_action = "Disable Firwall/NAT/Outbound";
         }
-        write_config('Firewall: NAT: Outbound, toggle NAT rule');
-        mark_subsystem_dirty('natconf');
+        if (write_config("Firewall: NAT: Outbound, enable/disable NAT rule")) {
+            mark_subsystem_dirty('natconf');
+            firewall_syslog($out_action, $id);
+        }
         header(url_safe('Location: /firewall_nat_out.php'));
         exit;
     }
