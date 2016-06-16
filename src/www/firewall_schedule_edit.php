@@ -30,6 +30,7 @@
 
 require_once("guiconfig.inc");
 require_once("filter.inc");
+require_once("logs.inc");
 
 
 /****f* legacy/is_schedule_inuse
@@ -200,12 +201,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         if (isset($id)) {
             $a_schedules[$id] = $schedule;
+            $shedule_action = "Update Firewall/Settings/Shedule";
         } else {
             $a_schedules[] = $schedule;
+            $shedule_action = "Add Firewall/Settings/Shedule";
         }
         schedule_sort();
         if (write_config()) {
             filter_configure();
+            firewall_syslog($shedule_action, $a_schedules, $schedule);
         }
 
         header("Location: firewall_schedule.php");
