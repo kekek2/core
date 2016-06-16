@@ -352,7 +352,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $natent['created'] = $a_nat[$id]['created'];
             }
             $a_nat[$id] = $natent;
-            $nat_action = "Update Firewall/NAT";
+            $nat_action = "Update Firewall/NAT/Port Forward";
         } else {
             $natent['created'] = make_config_revision_entry();
             if (isset($after)) {
@@ -360,7 +360,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             } else {
                 $a_nat[] = $natent;
             }
-            $nat_action = "Add Firewall/NAT";
+            $nat_action = "Add Firewall/NAT/Port Forward";
         }
 
         if (write_config()) {
