@@ -45,13 +45,11 @@ function get_locale_list()
     $locales['nl_NL'] = gettext('Dutch');
     $locales['fr_FR'] = gettext('French');
     $locales['de_DE'] = gettext('German');
-    $locales['it_IT'] = gettext('Italian');
     $locales['ja_JP'] = gettext('Japanese');
     $locales['mn_MN'] = gettext('Mongolian');
     $locales['pt_BR'] = gettext('Portuguese');
     $locales['ru_RU'] = gettext('Russian');
     $locales['es_CO'] = gettext('Spanish');
-    $locales['sv_SE'] = gettext('Swedish');
     $locales['tr_TR'] = gettext('Turkish');
 
     return $locales;
@@ -162,7 +160,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
           $config['system']['language'] = $pconfig['language'];
           /* XXX while this is very proactive, we should defer in favour of a unified language transition point ;) */
           set_language();
+          $language_change = true;
       }
+      else
+          $language_change = false;
 
       if (!empty($pconfig['prefer_ipv4'])) {
           $config['system']['prefer_ipv4'] = true;
@@ -256,6 +257,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
       }
 
       filter_configure();
+      if ($language_change)
+      {
+          configd_run('template reload SmartSoft.HAVP');
+          configd_run('havp restart');
+      }
 
       $savemsg = get_std_save_message();
     }
@@ -335,6 +341,9 @@ include("head.inc");
               </td>
             </tr>
             <tr>
+              <th colspan="2" valign="top" class="listtopic"><?=gettext("Firmware"); ?></th>
+            </tr>
+            <tr>
               <td><a id="help_for_language" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Language");?></td>
               <td>
                 <select name="language" class="selectpicker" data-size="10" data-style="btn-default" data-width="auto">
@@ -387,8 +396,8 @@ include("head.inc");
                             if(is_ipaddrv6(lookup_gateway_ip_by_name($pconfig[$dnsgw])) && is_ipaddrv4($gwitem['gateway'])) {
                               continue;
                             }?>
-                            <option value="<?=$gwname;?>" <?=$pconfig[$dnsgw] == $gwname ? 'selected="selected"' : '' ?>>
-                              <?=$gwname;?> - <?=$gwitem['friendlyiface'];?> - <?=$gwitem['gateway'];?>
+                            <option value="<?=$gwname;?>" <?=$pconfig[$dnsgw] == $gwname ? "selected=\"selected\"" : "" ;?>>
+                              <?=$gwname;?> - <?=$gwitem['friendlyiface'];?> - <?$gwitem['gateway'];?>
                             </option>
 <?php
                              endforeach;?>
@@ -432,6 +441,32 @@ include("head.inc");
                 <div class="hidden" for="help_for_dnsservers_opt">
                   <?=gettext("By default localhost (127.0.0.1) will be used as the first DNS server where the DNS Forwarder or DNS Resolver is enabled and set to listen on Localhost, so system can use the local DNS service to perform lookups. ".
                   "Checking this box omits localhost from the list of DNS servers."); ?>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <th colspan="2" valign="top" class="listtopic"><?=gettext("Networking"); ?></th>
+            </tr>
+            <tr>
+              <td><a id="help_for_prefer_ipv4" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Prefer IPv4 over IPv6"); ?></td>
+              <td>
+                <input name="prefer_ipv4" type="checkbox" id="prefer_ipv4" value="yes" <?= !empty($pconfig['prefer_ipv4']) ? "checked=\"checked\"" : "";?> />
+                <strong><?=gettext("Prefer to use IPv4 even if IPv6 is available"); ?></strong>
+                <div class="hidden" for="help_for_prefer_ipv4">
+                  <?=gettext("By default, if a hostname resolves IPv6 and IPv4 addresses ".
+                                      "IPv6 will be used, if you check this option, IPv4 will be " .
+                                      "used instead of IPv6."); ?>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><a id="help_for_gw_switch_default" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Gateway switching");?> </td>
+              <td>
+                <input name="gw_switch_default" type="checkbox" id="gw_switch_default" value="yes" <?= !empty($pconfig['gw_switch_default']) ? "checked=\"checked\"" : "";?> />
+                <strong><?=gettext("Allow default gateway switching"); ?></strong><br />
+                <div class="hidden" for="help_for_gw_switch_default">
+                  <?=gettext("If the link where the default gateway resides fails " .
+                                      "switch the default gateway to another available one."); ?>
                 </div>
               </td>
             </tr>
