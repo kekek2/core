@@ -24,11 +24,10 @@ if (file_exists($temporary_crt_path) && file_exists($temporary_key_path)) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($_FILES['crtfile'] && $_FILES['keyfile']) {
-        if ($_FILES['crtfile']['type'] != 'application/x-x509-ca-cert') {
-            $upload_errors[] = "Certificate file must be of type 'application/x-x509-ca-cert'.";
-        }
-        if ($_FILES['keyfile']['type'] != 'application/octet-stream') {
-            $upload_errors[] = "Private key file must be of type 'application/octet-stream'.";
+        $uploaded_crt = file_get_contents($_FILES['crtfile']['tmp_name']);
+        $uploaded_key = file_get_contents($_FILES['keyfile']['tmp_name']);
+        if (!openssl_x509_check_private_key($uploaded_crt, $uploaded_key)) {
+            $upload_errors[] = 'The uploaded key does not correspond to the uploaded certificate.';
         }
         if (!$upload_errors) {
             move_uploaded_file($_FILES['crtfile']['tmp_name'], $temporary_crt_path);
