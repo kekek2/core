@@ -320,6 +320,9 @@ class Config extends Singleton
             throw new ConfigException('empty file');
         }
 
+        if (!$this->check_sha1($this->config_file, $xml))
+            throw new ConfigException('checksum not match');
+        
         set_error_handler(
             function () {
                 // reset simplexml pointer on parse error.
@@ -445,6 +448,7 @@ class Config extends Singleton
         // But if for some reason a script keeps calling this backup very often, it shouldn't crash.
         if (!file_exists($target_dir . $target_filename)) {
             copy($this->config_file, $target_dir . $target_filename);
+            copy($this->config_file . ".sum", $target_dir . $target_filename . ".sum");
         }
     }
 
@@ -467,6 +471,8 @@ class Config extends Singleton
                 foreach ($backups as $filename) {
                     // try to read backup info from xml
                     $xmlNode = simplexml_load_file($filename, "SimpleXMLElement", LIBXML_NOERROR |  LIBXML_ERR_NONE);
+                    if (!$this->check_sha1($filename, file_get_contents($filename)))
+                            continue;
                     if (isset($xmlNode->revision)) {
                         $result[$filename] = $this->toArray(null, $xmlNode->revision);
                         $result[$filename]['version'] = $xmlNode->version->__toString();
@@ -495,7 +501,8 @@ class Config extends Singleton
             $simplexml = $this->simplexml;
             try {
                 // try to restore config
-                copy($filename, $this->config_file);
+                copy($filename, $this->config_file) ;
+                copy($filename . ".sum", $this->config_file . ".sum") ;
                 $this->load();
                 return true;
             } catch (ConfigException $e) {
@@ -507,7 +514,8 @@ class Config extends Singleton
             }
         } else {
             // we don't have a valid config loaded, just copy and load the requested one
-            copy($filename, $this->config_file);
+            copy($filename, $this->config_file) ;
+            copy($filename . ".sum", $this->config_file . ".sum") ;
             $this->load();
             return true;
         }
@@ -553,5 +561,37 @@ class Config extends Singleton
         } else {
             throw new ConfigException("Unable to lock config");
         }
+
+        // save sha-1 configuration, try to obtain a lock before doing so.
+        $target_filename_sum = $this->config_file . ".sum";
+        if (file_exists($target_filename_sum)) {
+            $fp = fopen($target_filename_sum, "r+");
+        } else {
+            // apparently we're missing the config, not expected but open a new one.
+            $fp = fopen($target_filename_sum, "w+");
+        }
+
+        if (flock($fp, LOCK_EX)) {
+            // lock aquired, truncate and write new data
+            ftruncate($fp, 0);
+            fwrite($fp, sha1($xml_text));
+            // flush, unlock and close file handler
+            fflush($fp);
+            flock($fp, LOCK_UN);
+            fclose($fp);
+        } else {
+            throw new ConfigException("Unable to lock config sum");
+        }
+    }
+    
+    public function check_sha1($file_name, $xml)
+    {
+        $fp = fopen($file_name . ".sum", "r");
+        if ($fp === FALSE)
+            return false;
+        
+        $res = fgets($fp) == sha1($xml);
+        fclose($fp);
+        return $res;
     }
 }
