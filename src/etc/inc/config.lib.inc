@@ -216,7 +216,8 @@ function config_restore($conffile)
 
     $cnf = OPNsense\Core\Config::getInstance();
     $cnf->backup();
-    $cnf->restoreBackup($conffile);
+    if (!$cnf->restoreBackup($conffile))
+        return 1;
 
     disable_security_checks();
 
@@ -273,6 +274,7 @@ function cleanup_backups()
     foreach ($cnf->getBackups() as $filename) {
         if ($cnt > $revisions ) {
             @unlink($filename);
+            @unlink($filename . ".sum");
         }
         ++$cnt ;
     }
