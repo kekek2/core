@@ -490,6 +490,8 @@ class Config extends Singleton
                     }
                     // try to read backup info from xml
                     $xmlNode = simplexml_load_file($filename, "SimpleXMLElement", LIBXML_NOERROR |  LIBXML_ERR_NONE);
+                    if (!$this->check_sha1($filename, file_get_contents($filename)))
+                            continue;
                     if (isset($xmlNode->revision)) {
                         $result[$filename] = $this->toArray(null, $xmlNode->revision);
                         $result[$filename]['version'] = $xmlNode->version->__toString();
