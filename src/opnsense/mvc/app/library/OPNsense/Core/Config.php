@@ -33,6 +33,8 @@ namespace OPNsense\Core;
 use \Phalcon\DI\FactoryDefault;
 use \Phalcon\Logger\Adapter\Syslog;
 
+require_once("system.inc");
+
 /**
  * Class Config provides access to systems config xml
  * @package Core
@@ -281,7 +283,7 @@ class Config extends Singleton
         } catch (\Exception $e) {
             $this->simplexml = null;
             // there was an issue with loading the config, try to restore the last backup
-            $backups = $this->getBackups();
+            $backups = $this->getBackups(true);
             $logger = new Syslog("config", array('option' => LOG_PID, 'facility' => LOG_LOCAL4));
             if (count($backups) > 0) {
                 // load last backup
@@ -290,7 +292,15 @@ class Config extends Singleton
             } else {
                 // in case there are no backups, restore defaults.
                 $logger->error(gettext('No valid config.xml found, attempting to restore factory config.'));
-                $this->restoreBackup('/usr/local/etc/config.xml');
+                try {
+                    $this->restoreBackup('/usr/local/etc/config.xml');
+                } catch (\Exception $e) {
+                    $logger->error(gettext('Checksum for /usr/local/etc/config.xml missing. Anyware using this file'));
+                    $fp = fopen($this->config_file . ".sum", "w");
+                    fwrite($fp, sha1(file_get_contents($this->config_file)));
+                    fclose($fp);
+                    $this->load();
+                }
             }
         }
     }
@@ -589,8 +599,8 @@ class Config extends Singleton
         $fp = fopen($file_name . ".sum", "r");
         if ($fp === FALSE)
             return false;
-        
-        $res = fgets($fp) == sha1($xml);
+
+        $res = str_replace(array("\r", "\n"), '', fgets($fp)) == sha1($xml);
         fclose($fp);
         return $res;
     }
