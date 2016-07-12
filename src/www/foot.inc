@@ -1,6 +1,19 @@
 
   </div>
   <!-- /row-->
+  <?php
+  require_once("util.inc");
+  if (is_subsystem_dirty('restore_backup'))
+  {
+    print_info_box(gettext('No valid config.xml found, attempting last known config restore.'));
+    clear_subsystem_dirty("restore_backup");
+  }
+  if (is_subsystem_dirty('restore_factory'))
+  {
+    print_info_box(gettext('No valid config.xml found, attempting to restore factory config.'));
+    clear_subsystem_dirty("restore_factory");
+  }
+  ?>
 </main>
 
 <?php

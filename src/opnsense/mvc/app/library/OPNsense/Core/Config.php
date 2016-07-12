@@ -33,7 +33,7 @@ namespace OPNsense\Core;
 use \Phalcon\DI\FactoryDefault;
 use \Phalcon\Logger\Adapter\Syslog;
 
-require_once("system.inc");
+require_once("util.inc");
 
 /**
  * Class Config provides access to systems config xml
@@ -283,16 +283,18 @@ class Config extends Singleton
         } catch (\Exception $e) {
             $this->simplexml = null;
             // there was an issue with loading the config, try to restore the last backup
-            $backups = $this->getBackups(true);
+            $backups = $this->getBackups(true, true);
             $logger = new Syslog("config", array('option' => LOG_PID, 'facility' => LOG_LOCAL4));
             if (count($backups) > 0) {
                 // load last backup
                 $logger->error(gettext('No valid config.xml found, attempting last known config restore.'));
+                mark_subsystem_dirty("restore_backup");
                 $this->restoreBackup($backups[0]);
             } else {
                 // in case there are no backups, restore defaults.
                 $logger->error(gettext('No valid config.xml found, attempting to restore factory config.'));
                 try {
+                    mark_subsystem_dirty("restore_factory");
                     $this->restoreBackup('/usr/local/etc/config.xml');
                 } catch (\Exception $e) {
                     $logger->error(gettext('Checksum for /usr/local/etc/config.xml missing. Anyware using this file'));
@@ -467,7 +469,7 @@ class Config extends Singleton
      * @param bool $fetchRevisionInfo fetch revision information and return detailed information. (key/value)
      * @return array list of backups
      */
-    public function getBackups($fetchRevisionInfo = false)
+    public function getBackups($fetchRevisionInfo = false, $onlyChecksum = false)
     {
         $target_dir = dirname($this->config_file)."/backup/";
         if (file_exists($target_dir)) {
@@ -479,10 +481,15 @@ class Config extends Singleton
             } else {
                 $result = array ();
                 foreach ($backups as $filename) {
+                    if ($onlyChecksum)
+                    {
+                        if (!$this->check_sha1($filename, file_get_contents($filename)))
+                            continue;
+                        $result[] = $filename;
+                        continue;
+                    }
                     // try to read backup info from xml
                     $xmlNode = simplexml_load_file($filename, "SimpleXMLElement", LIBXML_NOERROR |  LIBXML_ERR_NONE);
-                    if (!$this->check_sha1($filename, file_get_contents($filename)))
-                            continue;
                     if (isset($xmlNode->revision)) {
                         $result[$filename] = $this->toArray(null, $xmlNode->revision);
                         $result[$filename]['version'] = $xmlNode->version->__toString();
