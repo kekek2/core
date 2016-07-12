@@ -8,6 +8,8 @@ use Phalcon\Mvc\Model\Metadata\Memory as MetaDataAdapter;
 use Phalcon\Session\Adapter\Files as SessionAdapter;
 use OPNsense\Core\Config;
 
+require_once("util.inc");
+
 /**
  * The FactoryDefault Dependency Injector automatically register the right services providing a full stack framework
  */
@@ -41,6 +43,13 @@ $di->set('view', function () use ($config) {
                 'compiledPath' => $config->application->cacheDir,
                 'compiledSeparator' => '_'
             ));
+            $compiler = $volt->getCompiler();
+            $compiler->addFunction(
+                'checkRestoreConfig',
+                function ($resolvedArgs, $exprArgs) {
+                    return " is_subsystem_dirty('restore_backup') ? clear_subsystem_dirty('restore_backup') . 'No valid config.xml found, attempting last known config restore.' : (is_subsystem_dirty('restore_factory') ? clear_subsystem_dirty('restore_factory') . 'No valid config.xml found, attempting to restore factory config.' : '')";
+                }
+            );
 
             return $volt;
         },

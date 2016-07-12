@@ -230,6 +230,7 @@
           <div class="row">
               <section class="col-xs-12">
                   <div id="messageregion"></div>
+                      {{ checkRestoreConfig() }}
                       {{ content() }}
               </section>
           </div>
