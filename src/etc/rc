@@ -99,6 +99,7 @@ mkdir -p /conf/sshd
 if [ ! -f /conf/config.xml ]; then
 	echo -n "Bootstrapping config.xml..."
 	cp /usr/local/etc/config.xml /conf/config.xml
+	cp /usr/local/etc/config.xml.sum /conf/config.xml.sum
 	echo "done."
 fi
 

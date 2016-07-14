@@ -26,6 +26,7 @@
 PKG!=		which pkg || echo true
 GIT!=		which git || echo true
 PAGER?=		less
+SHA1!=          which sha1 || echo true
 
 all:
 	@cat ${.CURDIR}/README.md | ${PAGER}
@@ -229,6 +230,7 @@ bootstrap: force
 	    CORE_REPOSITORY=${CORE_REPOSITORY}
 
 plist: force
+	@${SHA1} -q ${.CURDIR}/src/etc/config.xml.sample > ${.CURDIR}/src/etc/config.xml.sum.sample
 	@${MAKE} -C ${.CURDIR}/contrib plist
 	@${MAKE} -C ${.CURDIR}/src plist
 
