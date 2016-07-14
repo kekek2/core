@@ -105,6 +105,10 @@ fi
 # Check VPN CA cert
 /usr/local/sbin/ovpn-certs check-config || /usr/local/sbin/ovpn-certs create-keys
 
+# Check and create TING client key
+TING_CLIENT_KEY=/usr/local/etc/ssl/ting-client.key
+[ -d /usr/local/etc/ssl ] || mkdir -p /usr/local/etc/ssl
+[ -f ${TING_CLIENT_KEY} ] || openssl genrsa -out ${TING_CLIENT_KEY} 2048
 
 # Bootstrap openssl.cnf for port if necessary
 if [ ! -f /usr/local/openssl/openssl.cnf ]; then
