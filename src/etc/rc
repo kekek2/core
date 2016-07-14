@@ -102,13 +102,6 @@ if [ ! -f /conf/config.xml ]; then
 	echo "done."
 fi
 
-# Check VPN CA cert
-/usr/local/sbin/ovpn-certs check-config || /usr/local/sbin/ovpn-certs create-keys
-
-# Check and create TING client key
-TING_CLIENT_KEY=/usr/local/etc/ssl/ting-client.key
-[ -d /usr/local/etc/ssl ] || mkdir -p /usr/local/etc/ssl
-[ -f ${TING_CLIENT_KEY} ] || openssl genrsa -out ${TING_CLIENT_KEY} 2048
 
 # Bootstrap openssl.cnf for port if necessary
 if [ ! -f /usr/local/openssl/openssl.cnf ]; then
@@ -268,8 +261,17 @@ echo -n "Starting CRON... "
 cd /tmp && /usr/sbin/cron -s 2>/dev/null
 echo "done."
 
+
 # starting standard rc scripts
 /usr/local/etc/rc.opnsense start
+
+# Check VPN CA cert
+/usr/local/sbin/ovpn-certs
+
+# Check and create TING client key
+TING_CLIENT_KEY=/usr/local/etc/ssl/ting-client.key
+[ -d /usr/local/etc/ssl ] || mkdir -p /usr/local/etc/ssl
+[ -f ${TING_CLIENT_KEY} ] || openssl genrsa -out ${TING_CLIENT_KEY} 2048
 
 /usr/local/sbin/beep.sh start
 
