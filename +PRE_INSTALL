@@ -1,0 +1,6 @@
+  NAME=`pkg info -E ting`                                                         
+  MAJOR=`echo ${NAME} | awk -F"_" '{ print $1}'`                                    
+  MINOR=`echo ${NAME} | awk -F"_" '{ print $2}'`                                    
+  if [ ${MAJOR} = ting-1.0.0 -a ${MINOR} -ge 359 ]; then                              
+          sha1 -q /conf/config.xml > /conf/config.xml.sum                         
+  fi                                                                              
