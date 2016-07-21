@@ -32,7 +32,7 @@ require_once("guiconfig.inc");
 require_once("filter.inc");
 require_once("system.inc");
 require_once("unbound.inc");
-require_once("pfsense-utils.inc");
+require_once("util.inc");
 require_once("interfaces.inc");
 require_once("services.inc");
 
@@ -42,25 +42,18 @@ require_once("services.inc");
  */
 function reconfigure_dhcpd()
 {
-    /* services_dnsmasq_configure calls services_dhcpd_configure */
     if (isset($config['dnsmasq']['enable']) && isset($config['dnsmasq']['regdhcpstatic']))  {
-        $retvaldns = services_dnsmasq_configure();
-        if ($retvaldns == 0) {
-            clear_subsystem_dirty('hosts');
-            clear_subsystem_dirty('staticmaps');
-        }
-    /* services_unbound_configure calls services_dhcpd_configure */
-    } elseif (isset($config['unbound']['enable']) && isset($config['unbound']['regdhcpstatic'])) {
-        $retvaldns = services_unbound_configure();
-        if ($retvaldns == 0) {
-            clear_subsystem_dirty('unbound');
-        }
-    } else {
-        $retvaldhcp = services_dhcpd_configure();
-        if ($retvaldhcp == 0) {
-            clear_subsystem_dirty('staticmaps');
-        }
+        services_dnsmasq_configure(false);
+        clear_subsystem_dirty('hosts');
     }
+
+    if (isset($config['unbound']['enable']) && isset($config['unbound']['regdhcpstatic'])) {
+        services_unbound_configure(false);
+        clear_subsystem_dirty('unbound');
+    }
+
+    services_dhcpd_configure();
+    clear_subsystem_dirty('staticmaps');
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -175,6 +168,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         if (!empty($pconfig['ddnsdomain']) && !is_ipaddrv4($pconfig['ddnsdomainprimary'])) {
             $input_errors[] = gettext("A valid primary domain name server IPv4 address must be specified for the dynamic domain name.");
+        }
+        if (!empty($pconfig['ddnsdomainkey']) && base64_encode(base64_decode($pconfig['ddnsdomainkey'], true)) !== $pconfig['ddnsdomainkey']) {
+            $input_errors[] = gettext('You must specify a Base64-encoded domain key.');
         }
         if ((!empty($pconfig['ddnsdomainkey']) && empty($pconfig['ddnsdomainkeyname'])) ||
           (!empty($pconfig['ddnsdomainkeyname']) && empty($pconfig['ddnsdomainkey']))) {
@@ -345,8 +341,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 }
 
-$service_hook = 'dhcpd';
+$service_hook = 'dhcpd6';
+
 legacy_html_escape_form_data($pconfig);
+
 include("head.inc");
 
 ?>
@@ -549,8 +547,8 @@ include("head.inc");
                           </tbody>
                         </table>
                         <div class="hidden" for="help_for_prefixrange">
-                          <?= gettext("You can define a Prefix range here for DHCP Prefix Delegation. This allows for
-                            assigning networks to subrouters. The start and end of the range must end on boundaries of the prefix delegation size."); ?>
+                          <?= gettext("You can define a Prefix range here for DHCP Prefix Delegation. This allows for assigning networks to subrouters. " .
+                          "The start and end of the range must end on boundaries of the prefix delegation size."); ?>
                         </div>
                       </td>
                     </tr>
@@ -560,7 +558,7 @@ include("head.inc");
                         <input name="dns1" type="text" id="dns1" value="<?=$pconfig['dns1'];?>" /><br />
                         <input name="dns2" type="text" id="dns2" value="<?=$pconfig['dns2'];?>" />
                         <div class="hidden" for="help_for_dns">
-                          <?=gettext("NOTE: leave blank to use the system default DNS servers - this interface's IP if DNS forwarder is enabled, otherwise the servers configured on the General page.");?>
+                          <?=gettext("Leave blank to use the system default DNS servers - this interface's IP if DNS forwarder is enabled, otherwise the servers configured on the General page.");?>
                         </div>
                       </td>
                     </tr>
@@ -587,7 +585,7 @@ include("head.inc");
                       <td>
                         <input name="defaultleasetime" type="text" value="<?=$pconfig['defaultleasetime'];?>" />
                         <div class="hidden" for="help_for_defaultleasetime">
-                          <?=gettext("This is used for clients that do not ask for a specific " ."expiration time."); ?><br />
+                          <?=gettext("This is used for clients that do not ask for a specific expiration time."); ?><br />
                           <?=gettext("The default is 7200 seconds.");?>
                         </div>
                       </td>
@@ -597,7 +595,7 @@ include("head.inc");
                       <td>
                         <input name="maxleasetime" type="text" id="maxleasetime" size="10" value="<?=$pconfig['maxleasetime'];?>" />
                         <div class="hidden" for="help_for_maxleasetime">
-                          <?=gettext("This is the maximum lease time for clients that ask"." for a specific expiration time."); ?><br />
+                          <?=gettext("This is the maximum lease time for clients that ask for a specific expiration time."); ?><br />
                           <?=gettext("The default is 86400 seconds.");?>
                         </div>
                       </td>
@@ -610,7 +608,7 @@ include("head.inc");
                           <?=gettext("Change DHCPv6 display lease time from UTC to local time."); ?>
                         </strong>
                         <div class="hidden" for="help_for_dhcpv6leaseinlocaltime">
-                          <strong><?=gettext("Note:");?></strong> <?=gettext("By default DHCPv6 leases are displayed in UTC time.  By checking this box DHCPv6 lease time will be displayed in local time and set to time zone selected.  This will be used for all DHCPv6 interfaces lease time."); ?>
+                          <?=gettext("By default DHCPv6 leases are displayed in UTC time. By checking this box DHCPv6 lease time will be displayed in local time and set to time zone selected. This will be used for all DHCPv6 interfaces lease time."); ?>
                         </div>
                       </td>
                     </tr>
@@ -655,7 +653,7 @@ include("head.inc");
                         </div>
                         <div id="showldap" style="display:none">
                           <input name="ldap" type="text" value="<?=$pconfig['ldap'];?>" />
-                          <?=gettext("Leave blank to disable.  Enter a full URI for the LDAP server in the form ldap://ldap.example.com/dc=example,dc=com");?>
+                          <?=gettext("Leave blank to disable. Enter a full URI for the LDAP server in the form ldap://ldap.example.com/dc=example,dc=com");?>
                         </div>
                       </td>
                     </tr>
@@ -666,7 +664,7 @@ include("head.inc");
                           <input type="button" onclick="show_netboot_config()" value="<?=gettext("Advanced");?>" class="btn btn-xs btn-default"/> - <?=gettext("Show Network booting");?>
                         </div>
                         <div id="shownetboot" style="display:none">
-                          <input style="vertical-align:middle" type="checkbox" value="yes" name="netboot" id="netboot" <?=!empty($pconfig['netboot']) ? " checked=\"checked\"" : ""; ?> />
+                          <input style="vertical-align:middle" type="checkbox" value="yes" name="netboot" id="netboot" <?=!empty($pconfig['netboot']) ? 'checked="checked"' : ""; ?> />
                           <b><?=gettext("Enables network booting.");?></b>
                           <br/>
                           <?=gettext("Enter the Bootfile URL");?>
@@ -754,7 +752,7 @@ include("head.inc");
                             </tfoot>
                           </table>
                           <div class="hidden" for="help_for_numberoptions">
-                          <?=gettext("Enter the DHCP option number and the value for each item you would like to include in the DHCP lease information.  For a list of available options please visit this"); ?> <a href="http://www.iana.org/assignments/bootp-dhcp-parameters/" target="_blank"><?=gettext("URL"); ?></a>
+                          <?= sprintf(gettext("Enter the DHCP option number and the value for each item you would like to include in the DHCP lease information. For a list of available options please visit this %sURL%s"),'<a href="http://www.iana.org/assignments/bootp-dhcp-parameters/" target="_blank">','</a>') ?>
                           </div>
                         </div>
                       </td>

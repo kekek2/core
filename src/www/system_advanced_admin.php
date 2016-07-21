@@ -33,7 +33,7 @@ require_once("guiconfig.inc");
 require_once("filter.inc");
 require_once("system.inc");
 require_once("unbound.inc");
-require_once("pfsense-utils.inc");
+require_once("util.inc");
 require_once("services.inc");
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -231,7 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $savemsg .= sprintf("<br />" . gettext("One moment...redirecting to %s in 20 seconds."), $url);
         }
 
-        setup_serial_port();
+        system_console_configure();
         system_hosts_generate();
 
         // Restart DNS in case dns rebinding toggled
@@ -269,20 +269,17 @@ include("head.inc");
 ?>
 
 <body>
-
 <?php include("fbegin.inc"); ?>
 <script type="text/javascript">
-//<![CDATA[
-  function prot_change() {
-      if (document.iform.https_proto.checked) {
-          document.getElementById("ssl_opts").style.display="";
-      } else {
-          document.getElementById("ssl_opts").style.display="none";
-      }
-  }
-
-  $( document ).ready(function() {
-      prot_change();
+  $(document).ready(function() {
+      $(".proto").change(function(){
+         if ($("#https_proto").prop('checked')) {
+             $(".ssl_opts").show();
+         } else {
+             $(".ssl_opts").hide();
+         }
+      });
+      $(".proto").change();
 
  <?php
     // reload page after 20 seconds if webserver is restarted
@@ -293,7 +290,6 @@ include("head.inc");
  <?php
     endif;?>
   });
-//]]>
 </script>
 
 <section class="page-content-main">
@@ -321,10 +317,10 @@ include("head.inc");
                 <tr>
                   <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Protocol"); ?></td>
                   <td>
-                    <input name="webguiproto" id="http_proto" type="radio" value="http" <?= $pconfig['webguiproto'] == "http" ? 'checked="checked"' :'' ?> onclick="prot_change()" />
+                    <input name="webguiproto" class="proto" id="http_proto" type="radio" value="http" <?= $pconfig['webguiproto'] == "http" ? 'checked="checked"' :'' ?>/>
                     <?=gettext("HTTP"); ?>
                     &nbsp;&nbsp;&nbsp;
-                    <input name="webguiproto" id="https_proto" type="radio" value="https" <?= $pconfig['webguiproto'] == "https" ? 'checked="checked"' : '' ?> <?=$certs_available ? '' : 'disabled="disabled"' ?> onclick="prot_change()" />
+                    <input name="webguiproto" class="proto" id="https_proto" type="radio" value="https" <?= $pconfig['webguiproto'] == "https" ? 'checked="checked"' : '' ?> <?=$certs_available ? '' : 'disabled="disabled"' ?>/>
                     <?=gettext("HTTPS"); ?>
 
 <?php
@@ -335,7 +331,7 @@ include("head.inc");
                     endif; ?>
                   </td>
                 </tr>
-                <tr id="ssl_opts">
+                <tr class="ssl_opts">
                   <td><a id="help_for_sslcertref" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("SSL Certificate"); ?></td>
                   <td>
                     <select name="ssl-certref" class="formselect selectpicker" data-style="btn-default">
@@ -506,7 +502,7 @@ include("head.inc");
                   <td><a id="help_for_enableserial" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Serial Terminal"); ?></td>
                   <td width="78%">
                     <input name="enableserial" type="checkbox" id="enableserial" value="yes" <?=!empty($pconfig['enableserial']) ? "checked=\"checked\"" : "";?> />
-                    <strong><?=gettext("Enables the first serial port with 115200/8/N/1 by default, or another speed selectable below."); ?></strong>
+                    <strong><?=gettext("Enable serial ports with 115200/8/N/1 by default, or another speed selectable below."); ?></strong>
                     <div class="hidden" for="help_for_enableserial">
                       <?=gettext("Note: This will redirect the console output and messages to the serial port. You can still access the console menu from the internal video card/keyboard. A null modem serial cable or adapter is required to use the serial console."); ?>
                     </div>

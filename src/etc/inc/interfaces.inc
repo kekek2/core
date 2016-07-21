@@ -95,8 +95,8 @@ function convert_128bit_to_ipv6($ip6bin)
 
 function match_wireless_interface($int)
 {
-	$wireless_regex = '/^(ndis|wi|ath|an|ral|ural|iwi|wlan|rum|run|bwn|zyd|mwl|bwi|ipw|iwn|malo|uath|upgt|urtw|wpi)/';
-	return preg_match($wireless_regex, $int);
+    $wireless_regex = '/^(ndis|wi|ath|an|ral|ural|iwi|wlan|rum|run|bwn|zyd|mwl|bwi|ipw|iwn|malo|uath|upgt|urtw|wpi)/';
+    return preg_match($wireless_regex, $int);
 }
 
 function interfaces_bring_up($interface)
@@ -153,9 +153,9 @@ function interface_netgraph_needed($interface)
             case 'pppoe':
             case 'l2tp':
             case 'pptp':
-		return true;
+                return true;
             default:
-               break;
+                break;
         }
     }
 
@@ -1052,34 +1052,26 @@ function interfaces_configure()
         $realif = $config['interfaces'][$if]['if'];
         if (strstr($realif, "bridge")) {
             $bridge_list[$if] = $ifname;
+        } elseif (strstr($realif, 'gre') || strstr($realif, 'gif') || strstr($realif, 'ovpn')) {
+            $delayed_list[$if] = $ifname;
+        } elseif (!empty($config['interfaces'][$if]['ipaddrv6']) && $config['interfaces'][$if]['ipaddrv6'] == 'track6') {
+            $track6_list[$if] = $ifname;
         } else {
-            if (strstr($realif, "gre")) {
-                $delayed_list[$if] = $ifname;
-            } elseif (strstr($realif, "gif")) {
-                $delayed_list[$if] = $ifname;
-            } elseif (strstr($realif, "ovpn")) {
-                //echo "Delaying OpenVPN interface configuration...done.\n";
-                continue;
-            } elseif (!empty($config['interfaces'][$if]['ipaddrv6']) && $config['interfaces'][$if]['ipaddrv6'] == "track6") {
-                $track6_list[$if] = $ifname;
-            } else {
-                if (file_exists("/var/run/booting")) {
-                    printf(gettext("Configuring %s interface..."), $ifname);
-                }
-
-                interface_configure($if, $reload);
-                if (file_exists("/var/run/booting")) {
-                    echo gettext("done.") . "\n";
-                }
+            if (file_exists("/var/run/booting")) {
+                printf(gettext("Configuring %s interface..."), $ifname);
+            }
+            interface_configure($if, $reload);
+            if (file_exists("/var/run/booting")) {
+                echo gettext("done.") . "\n";
             }
         }
     }
 
     /*
-   * NOTE: The following function parameter consists of
-   *  1 - Do not load gre/gif/bridge with parent/member as vip
-   *  2 - Do load gre/gif/bridge with parent/member as vip
-   */
+     * NOTE: The following function parameter consists of
+     *  1 - Do not load gre/gif/bridge with parent/member as vip
+     *  2 - Do load gre/gif/bridge with parent/member as vip
+     */
 
     /* set up GRE virtual interfaces */
     interfaces_gre_configure(1);
@@ -1094,9 +1086,7 @@ function interfaces_configure()
         if (file_exists("/var/run/booting")) {
             printf(gettext("Configuring %s interface..."), $ifname);
         }
-
         interface_configure($if, $reload);
-
         if (file_exists("/var/run/booting")) {
             echo gettext("done.") . "\n";
         }
@@ -1148,15 +1138,12 @@ function interfaces_configure()
         /* reload IPsec tunnels */
         ipsec_configure();
 
+        /* restart dns servers (defering dhcp restart) */
+        services_dnsmasq_configure(false);
+        services_unbound_configure(false);
+
         /* reload dhcpd (interface enabled/disabled status may have changed) */
         services_dhcpd_configure();
-
-        /* restart dnsmasq or unbound */
-        if (isset($config['dnsmasq']['enable'])) {
-            services_dnsmasq_configure();
-        } elseif (isset($config['unbound']['enable'])) {
-            services_unbound_configure();
-        }
     }
 
     return 0;
@@ -2812,10 +2799,7 @@ function interface_configure($interface = 'wan', $reloadall = false, $linkupeven
         mwexec("/sbin/ifconfig " . escapeshellarg($realhwif) .
             " link " . escapeshellarg($wancfg['spoofmac']));
 
-        /*
-         * All vlans need to spoof their parent mac address, too.  see
-         * ticket #1514: http://cvstrac.pfsense.com/tktview?tn=1514,33
-         */
+        /* All vlans need to spoof their parent mac address, too. */
         if (isset($config['vlans']['vlan'])) {
             foreach ($config['vlans']['vlan'] as $vlan) {
                 if ($vlan['if'] == $realhwif) {
@@ -2965,7 +2949,7 @@ function interface_configure($interface = 'wan', $reloadall = false, $linkupeven
             array_walk($grouptmp, 'interface_group_add_member');
         }
 
-        if ($interface == "lan") {
+        if ($interface == 'lan') {
             /* make new hosts file */
             system_hosts_generate();
         }
@@ -2977,12 +2961,12 @@ function interface_configure($interface = 'wan', $reloadall = false, $linkupeven
             /* reload ipsec tunnels */
             ipsec_configure();
 
-            /* restart dnsmasq or unbound */
-            if (isset($config['dnsmasq']['enable'])) {
-                services_dnsmasq_configure();
-            } elseif (isset($config['unbound']['enable'])) {
-                services_unbound_configure();
-            }
+            /* restart dns servers (defering dhcp restart) */
+            services_dnsmasq_configure(false);
+            services_unbound_configure(false);
+
+            /* reload dhcpd (interface enabled/disabled status may have changed) */
+            services_dhcpd_configure();
 
             /* update dyndns */
             configd_run("dyndns reload {$interface}");
@@ -2990,6 +2974,7 @@ function interface_configure($interface = 'wan', $reloadall = false, $linkupeven
     }
 
     interfaces_staticarp_configure($interface);
+
     return 0;
 }
 
@@ -3434,7 +3419,7 @@ function interface_dhcpv6_configure($interface = 'wan', $wancfg)
     $dhcp6cscript = "#!/bin/sh\n";
     $dhcp6cscript .= "# This shell script launches /usr/local/etc/rc.newwanipv6 with a interface argument.\n";
     $dhcp6cscript .= "/usr/local/etc/rc.newwanipv6 {$wanif} \n";
-    /* Add wide-dhcp6c shell script here. Because we can not pass a argument to it. */
+
     if (!@file_put_contents("/var/etc/dhcp6c_{$interface}_script.sh", $dhcp6cscript)) {
         printf("Error: cannot open dhcp6c_{$interface}_script.sh in interface_dhcpv6_configure() for writing.\n");
         unset($dhcp6cscript);
@@ -3442,6 +3427,16 @@ function interface_dhcpv6_configure($interface = 'wan', $wancfg)
     }
     unset($dhcp6cscript);
     chmod("/var/etc/dhcp6c_{$interface}_script.sh", 0755);
+
+    $dhcp6ccommand = exec_safe(
+        "/usr/local/sbin/dhcp6c %s -c %s -p %s %s",
+        array(
+            empty($wancfg['adv_dhcp6_debug']) ? '-d' : '-D',
+            "/var/etc/dhcp6c_{$interface}.conf",
+            "/var/run/dhcp6c_{$wanif}.pid",
+            "{$wanif}"
+        )
+    );
 
     $rtsoldscript = "#!/bin/sh\n";
     $rtsoldscript .= "# This shell script launches dhcp6c and configured gateways for this interface.\n";
@@ -3451,10 +3446,9 @@ function interface_dhcpv6_configure($interface = 'wan', $wancfg)
     $rtsoldscript .= "\t/bin/pkill -F /var/run/dhcp6c_{$wanif}.pid\n";
     $rtsoldscript .= "\t/bin/sleep 1\n";
     $rtsoldscript .= "fi\n";
-    $rtsoldscript .= "/usr/local/sbin/dhcp6c " . (empty($wancfg['adv_dhcp6_debug']) ? '-d' : '-D') ;
-    $rtsoldscript .= "  -c /var/etc/dhcp6c_{$interface}.conf -p /var/run/dhcp6c_{$wanif}.pid {$wanif}\n";
     $rtsoldscript .= "/usr/bin/logger -t rtsold \"Starting dhcp6 client for interface {$interface}({$wanif})\"\n";
-    /* Add wide-dhcp6c shell script here. Because we can not pass a argument to it. */
+    $rtsoldscript .= "$dhcp6ccommand\n";
+
     if (!@file_put_contents("/var/etc/rtsold_{$wanif}_script.sh", $rtsoldscript)) {
         printf("Error: cannot open rtsold_{$wanif}_script.sh in interface_dhcpv6_configure() for writing.\n");
         unset($rtsoldscript);
@@ -3471,25 +3465,27 @@ function interface_dhcpv6_configure($interface = 'wan', $wancfg)
     /* Enable RFC6204w support for IPv6 Customer Edge (CE) router */
     set_single_sysctl("net.inet6.ip6.rfc6204w3", "1");
 
-    /* fire up rtsold for IPv6 RAs first, this backgrounds immediately. It will call dhcp6c */
-    if (isvalidpid("/var/run/rtsold_{$wanif}.pid")) {
-        killbypid("/var/run/rtsold_{$wanif}.pid");
-        sleep(2);
+    /* always kill rtsold in case of reconfigure */
+    killbypid("/var/run/rtsold_{$wanif}.pid", 'TERM', true);
+
+    if (isset($wancfg['dhcp6sendsolicit'])) {
+        /* dhcp6c from previous run can still be around */
+        killbypid("/var/run/dhcp6c_{$wanif}.pid", 'TERM', true);
+        /* command is already exec_safe() */
+        mwexec($dhcp6ccommand);
+    } else {
+        /* fire up rtsold for IPv6 RAs first, this backgrounds immediately. It will call dhcp6c */
+        mwexecf(
+            '/usr/sbin/rtsold -p %s -O %s -R %s %s %s',
+            array(
+                "/var/run/rtsold_{$wanif}.pid",
+                "/var/etc/rtsold_{$wanif}_script.sh",
+                '/usr/bin/true', /* XXX missing proper script to refresh resolv.conf */
+                empty($wancfg['adv_dhcp6_debug']) ? '-d' : '-D',
+                $wanif
+            )
+        );
     }
-
-    mwexecf(
-        '/usr/sbin/rtsold -p %s -O %s -R %s %s',
-        array(
-            "/var/run/rtsold_{$wanif}.pid",
-            "/var/etc/rtsold_{$wanif}_script.sh",
-            '/usr/bin/true', /* XXX missing proper script to refresh resolv.conf */
-            $wanif
-        )
-    );
-
-    /* NOTE: will be called from rtsold invoked script
-     * link_interface_to_track6($interface, "update");
-     */
 
     return 0;
 }
@@ -5297,4 +5293,126 @@ function get_ppp_uptime($port)
         $total_time = gettext("No history data found!");
         return $total_time;
     }
+}
+
+/****f* legacy/load_mac_manufacturer_table
+ * NAME
+ *   load_mac_manufacturer_table
+ * INPUTS
+ *   none
+ * RESULT
+ *   returns associative array with MAC-Manufacturer pairs
+ ******/
+function load_mac_manufacturer_table() {
+    /* load MAC-Manufacture data from the file */
+    $macs = false;
+    if (file_exists("/usr/local/share/nmap/nmap-mac-prefixes")) {
+        $macs=file("/usr/local/share/nmap/nmap-mac-prefixes");
+    }
+    if ($macs){
+        foreach ($macs as $line){
+            if (preg_match('/([0-9A-Fa-f]{6}) (.*)$/', $line, $matches)){
+                /* store values like this $mac_man['000C29']='VMware' */
+                $mac_man["$matches[1]"]=$matches[2];
+            }
+        }
+        return $mac_man;
+    } else {
+        return -1;
+    }
+}
+
+/****f* legacy/is_ipaddr_configured
+ * NAME
+ *   is_ipaddr_configured
+ * INPUTS
+ *   IP Address to check.
+ * RESULT
+ *   returns true if the IP Address is
+ *   configured and present on this device.
+*/
+function is_ipaddr_configured($ipaddr, $ignore_if = "", $check_localip = false, $check_subnets = false) {
+    global $config;
+
+    $isipv6 = is_ipaddrv6($ipaddr);
+    if ($check_subnets) {
+        $iflist = get_configured_interface_list();
+        foreach ($iflist as $if => $ifname) {
+            if ($ignore_if == $if) {
+                continue;
+            }
+
+            if ($isipv6 === true) {
+                $bitmask = get_interface_subnetv6($if);
+                $subnet = gen_subnetv6(get_interface_ipv6($if), $bitmask);
+            } else {
+                $bitmask = get_interface_subnet($if);
+                $subnet = gen_subnet(get_interface_ip($if), $bitmask);
+            }
+
+            if (ip_in_subnet($ipaddr, $subnet . '/' . $bitmask)) {
+                return true;
+            }
+        }
+    } else {
+        if ($isipv6 === true) {
+            $interface_list_ips = get_configured_ipv6_addresses();
+        } else {
+            $interface_list_ips = get_configured_ip_addresses();
+        }
+        foreach($interface_list_ips as $if => $ilips) {
+            /* Also ignore CARP interfaces, it'll be checked below */
+            if ($ignore_if == $if || strstr($ignore_if, "_vip")) {
+                continue;
+            }
+            if (strcasecmp($ipaddr, $ilips) == 0) {
+                return true;
+            }
+        }
+    }
+
+    $interface_list_vips = get_configured_vips_list(true);
+    foreach ($interface_list_vips as $id => $vip) {
+        if ($ignore_if == $vip['if']) {
+            continue;
+        }
+        if (strcasecmp($ipaddr, $vip['ipaddr']) == 0) {
+            return true;
+        }
+    }
+
+    if ($check_localip) {
+        if (is_array($config['pptpd']) && !empty($config['pptpd']['localip']) && (strcasecmp($ipaddr, $config['pptpd']['localip']) == 0)) {
+            return true;
+        }
+
+        if (!is_array($config['l2tp']) && !empty($config['l2tp']['localip']) && (strcasecmp($ipaddr, $config['l2tp']['localip']) == 0)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/*
+ * get_carp_interface_status($carpinterface): returns the status of a carp ip
+ */
+function get_carp_interface_status($carpinterface)
+{
+    $carp_query = '';
+
+    /* XXX: Need to fidn a better way for this! */
+    list ($interface, $vhid) = explode("_vip", $carpinterface);
+    $interface = get_real_interface($interface);
+    exec("/sbin/ifconfig $interface | /usr/bin/grep -v grep | /usr/bin/grep carp: | /usr/bin/grep 'vhid {$vhid}'", $carp_query);
+    foreach($carp_query as $int) {
+        if (stristr($int, "MASTER")) {
+            return gettext("MASTER");
+        } elseif (stristr($int, "BACKUP")) {
+            return gettext("BACKUP");
+        } elseif(stristr($int, "INIT")) {
+            return gettext("INIT");
+        }
+    }
+    return;
 }

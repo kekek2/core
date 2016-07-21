@@ -2,6 +2,7 @@
 
 /*
     Copyright (C) 2016 Franco Fichtner <franco@opnsense.org>
+    Copyright (C) 2004-2007 Scott Ullrich <sullrich@gmail.com>
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
     All rights reserved.
 
@@ -583,19 +584,10 @@ function system_routing_configure($interface = '')
     return 0;
 }
 
-/* Compare the current hostname DNS to the DNS cache we made
- * if it has changed we return the old records
- * if no change we return false */
-function compare_hostname_to_dnscache($hostname) {
-    if(!is_dir("/var/db/dnscache")) {
-        mkdir("/var/db/dnscache");
-    }
-    $hostname = trim($hostname);
-    if(is_readable("/var/db/dnscache/{$hostname}")) {
-        $oldcontents = file_get_contents("/var/db/dnscache/{$hostname}");
-    } else {
-        $oldcontents = "";
-    }
+function add_hostname_to_watch($hostname)
+{
+    $result = array();
+
     if((is_fqdn($hostname)) && (!is_ipaddr($hostname))) {
         $domrecords = array();
         $domips = array();
@@ -617,14 +609,12 @@ function compare_hostname_to_dnscache($hostname) {
                 $contents .= "$ip\n";
             }
         }
+
+        /* Remove empty elements */
+        $result = array_filter(explode("\n", $contents), 'strlen');
     }
 
-    if(trim($oldcontents) != trim($contents)) {
-        log_error(sprintf('DNSCACHE: Found old IP %s and new IP %s', $oldcontents, $contents));
-        return ($oldcontents);
-    } else {
-        return false;
-    }
+    return $result;
 }
 
 function system_staticroutes_configure($interface = '')
@@ -829,7 +819,7 @@ function system_syslogd_start()
         $syslogconfs['ppps'] = array('facility' => array('ppp'));
         $syslogconfs['relayd'] = array('facility' => array('relayd'), 'remote' => 'relayd');
         $syslogconfs['resolver'] = array('facility' => array('dnsmasq', 'filterdns', 'unbound'));
-        $syslogconfs['routing'] = array('facility' => array('radvd', 'routed', 'olsrd', 'zebra', 'ospfd', 'bgpd', 'miniupnpd'));
+        $syslogconfs['routing'] = array('facility' => array('radvd', 'routed', 'rtsold', 'olsrd', 'zebra', 'ospfd', 'bgpd', 'miniupnpd'));
         $syslogconfs['wireless'] = array('facility' => array('hostapd'), 'remote' => 'hostapd');
 
         $separatelogfacilities = array();
@@ -1378,22 +1368,33 @@ function system_firmware_configure()
 {
     global $config;
 
-    /* our own ABI prefix on the mirror */
-    $osabi = '16.1';
-
     /* rewrite the config via the defaults */
     $origin_conf = '/usr/local/etc/pkg/repos/origin.conf';
     copy("${origin_conf}.sample", $origin_conf);
 
     if (!empty($config['system']['firmware']['mirror'])) {
-        mwexecf("/usr/local/sbin/opnsense-update %s %s",
-            array("-sm", str_replace('/', '\/', $config['system']['firmware']['mirror']))
+        mwexecf(
+            '/usr/local/sbin/opnsense-update %s %s',
+            array('-sm', str_replace('/', '\/', $config['system']['firmware']['mirror']))
         );
     }
 
     if (!empty($config['system']['firmware']['flavour'])) {
-        mwexecf("/usr/local/sbin/opnsense-update %s %s",
-            array("-sn", str_replace('/', '\/', $osabi . '/' . $config['system']['firmware']['flavour']))
+        $osabi = '';
+
+        switch ($config['system']['firmware']['flavour']) {
+            case 'libressl':
+            case 'latest':
+                /* if this is known flavour we treat it with ABI prefix */
+                $osabi = trim(file_get_contents('/usr/local/opnsense/version/opnsense.abi')) . '/';
+                break;
+            default:
+                break;
+        }
+
+        mwexecf(
+            '/usr/local/sbin/opnsense-update %s %s',
+            array('-sn', str_replace('/', '\/', $osabi . $config['system']['firmware']['flavour']))
         );
     }
 }
@@ -1792,11 +1793,6 @@ function system_reboot($sync = false)
     }
 }
 
-function system_console_configure()
-{
-    setup_serial_port();
-}
-
 function system_setup_sysctl()
 {
     activate_sysctls();
@@ -1859,4 +1855,178 @@ function get_possible_traffic_source_addresses($include_ipv6_link_local=false) {
         }
     }
     return $sourceips;
+}
+
+function load_kernel_module()
+{
+    $mods = array(
+        'carp',
+        /*
+         * The netgraph(4) framework is loaded here
+         * for backwards compat with the pre-16.7
+         * kernel configuration that compiled all of
+         * these modules into the kernel.  This list
+         * needs further pruning and probing, it's
+         * possible we do not need frame relay anymore.
+         */
+        'netgraph',
+        'ng_UI',
+        'ng_async',
+        'ng_bpf',
+        'ng_bridge',
+        'ng_car',
+        'ng_cisco',
+        'ng_deflate',
+        'ng_echo',
+        'ng_eiface',
+        'ng_ether',
+        'ng_frame_relay',
+        'ng_hole',
+        'ng_iface',
+        'ng_ksocket',
+        'ng_l2tp',
+        'ng_lmi',
+        'ng_mppc',
+        'ng_one2many',
+        'ng_pipe',
+        'ng_ppp',
+        'ng_pppoe',
+        'ng_pptpgre',
+        'ng_pred1',
+        'ng_rfc1490',
+        'ng_socket',
+        'ng_tcpmss',
+        'ng_tee',
+        'ng_tty',
+        'ng_vjc',
+        'ng_vlan',
+    );
+
+    foreach ($mods as $mod) {
+        mwexecf('/sbin/kldload %s', $mod);
+    }
+}
+
+function load_crypto_module()
+{
+    global $config;
+
+    if (!empty($config['system']['crypto_hardware'])) {
+        log_error(sprintf('Loading %s cryptographic accelerator module.', $config['system']['crypto_hardware']));
+        mwexecf('/sbin/kldload %s', $config['system']['crypto_hardware'], true);
+    }
+
+    if (isset($config['system']['cryptodev_enable'])) {
+        log_error('Loading cryptodev kernel module.');
+        mwexecf('/sbin/kldload %s', 'cryptodev', true);
+    }
+}
+
+function load_thermal_module()
+{
+    global $config;
+
+    if (!empty($config['system']['thermal_hardware'])) {
+        log_error(sprintf('Loading %s thermal monitor module.', $config['system']['thermal_hardware']));
+        mwexecf('/sbin/kldload %s', $config['system']['thermal_hardware'], true);
+    }
+}
+
+function system_console_configure()
+{
+    global $config;
+
+    $serialspeed = (!empty($config['system']['serialspeed']) && is_numeric($config['system']['serialspeed'])) ? $config['system']['serialspeed'] : '115200';
+    $serial_enabled = isset($config['system']['enableserial']);
+
+    // ** serial console - write out /boot.config
+    if ($serial_enabled) {
+        @file_put_contents('/boot.config', "-S{$serialspeed} -D\n");
+    } else {
+        @unlink('/boot.config');
+    }
+
+    // ** console settings in /boot/loader.conf
+    $new_boot_config = array();
+    $new_boot_config['boot_multicons'] = $serial_enabled ? '"YES"' : null;
+    $new_boot_config['boot_serial'] = $serial_enabled ? '"YES"' : null;
+    if ($serial_enabled) {
+        $primaryconsole = !empty($config['system']['primaryconsole']) ? $config['system']['primaryconsole'] : "";
+        $new_boot_config['console'] = $primaryconsole == "video" ? '"vidconsole,comconsole"' : '"comconsole,vidconsole"';
+    } else {
+        $new_boot_config['console'] = null;
+    }
+    $new_boot_config['comconsole_speed'] = '"'.$serialspeed.'"';
+    $new_boot_config['hw.usb.no_pf'] = '"1"';
+    $new_boot_config['autoboot_delay'] = '"3"';
+
+    $new_loader_conf = "";
+    // construct OPNsense config for /boot/loader.conf
+    foreach ($new_boot_config as $param => $value) {
+        if (!empty($value)) {
+            $new_loader_conf .= "{$param}={$value}\n";
+        }
+    }
+    // copy non matched settings in /boot/loader.conf
+    foreach (explode("\n", @file_get_contents('/boot/loader.conf')) as $line) {
+        if (!empty($line) && !array_key_exists(trim(explode('=', $line)[0]), $new_boot_config)) {
+            $new_loader_conf .= $line . "\n";
+        }
+    }
+    @file_put_contents('/boot/loader.conf', $new_loader_conf);
+
+    // ** setup /etc/ttys
+    $etc_ttys_lines = explode("\n", file_get_contents('/etc/ttys'));
+    $fd = fopen('/etc/ttys', 'w');
+    $on_off_secure = $serial_enabled ? 'onifconsole secure' : 'off secure';
+    $terminal_type = 'cons25'; /* XXX standard is 'xterm' for virtual, 'vt100' for serial */
+    if (isset($config['system']['disableconsolemenu'])) {
+        $console_type = 'Pc';
+        $serial_type = 'std.' . $serialspeed;
+    } else {
+        $console_type = 'al.Pc';
+        $serial_type = 'al.' . $serialspeed;
+    }
+    foreach ($etc_ttys_lines as $tty) {
+        if (strpos($tty, 'ttyv0') === 0) {
+            /* first virtual terminal */
+            fwrite($fd, "ttyv0\t\"/usr/libexec/getty {$console_type}\"\t\t{$terminal_type}\ton  secure\n");
+            continue;
+        }
+        foreach (array('ttyu0', 'ttyu1', 'ttyu2', 'ttyu3') as $serialport) {
+            if (strpos($tty, $serialport) === 0) {
+                /* each serial terminal */
+                fwrite($fd, "{$serialport}\t\"/usr/libexec/getty {$serial_type}\"\t{$terminal_type}\t{$on_off_secure}\n");
+                /* skip to next line in outer loop */
+                continue 2;
+            }
+        }
+
+        if (!empty($tty)) {
+            /* all other lines stay the same */
+            fwrite($fd, $tty . "\n");
+        }
+    }
+    fclose($fd);
+
+    /* force init(8) to reload /etc/ttys */
+    exec('/bin/kill -HUP 1');
+}
+
+/****f* config/reset_factory_defaults
+ * NAME
+ *   reset_factory_defaults - Reset the system to its default configuration.
+ ******/
+function reset_factory_defaults($sync = true)
+{
+    mwexec('/bin/rm -r /conf/*');
+    disable_security_checks();
+
+    /* as we go through a special case directly reboot */
+    $shutdown_cmd = '/sbin/shutdown -or now';
+    if ($sync) {
+        mwexec($shutdown_cmd);
+    } else {
+        mwexec_bg($shutdown_cmd);
+    }
 }

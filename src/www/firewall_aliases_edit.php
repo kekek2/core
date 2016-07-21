@@ -31,8 +31,8 @@
 */
 
 require_once("guiconfig.inc");
-require_once("pfsense-utils.inc");
 require_once("logs.inc");
+require_once("filter.inc");
 
 /**
  * generate simple country selection list for geoip
@@ -239,7 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 update_alias_names_upon_change(array('nat', 'advancedoutbound', 'rule'), array('dstport'), $pconfig['name'], $origname);
                 update_alias_names_upon_change(array('nat', 'advancedoutbound', 'rule'), array('target'), $pconfig['name'], $origname);
                 // Alias in an alias
-                update_alias_names_upon_change(array('aliases', 'alias'), array('address'), $pconfig['name'], $origname);
+                update_alias_names_upon_change(array('aliases', 'alias'), array('address'), $pconfig['name'], $origname, ' ');
             }
 
 
@@ -295,6 +295,29 @@ include("head.inc");
             $(this).parent().parent().remove();
         }
     }
+
+    /**
+     * link alias typeahead to input, only return items not already on this form.
+     */
+    function addFieldTypeAhead() {
+        $(".fld_detail").typeahead({
+            source: document.all_aliases[$("#typeSelect").val()],
+            matcher: function(item){
+                var used = false;
+                $(".fld_detail").each(function(){
+                    if (item == $(this).val()) {
+                        used = true;
+                    }
+                });
+                if (used) {
+                    return false;
+                } else {
+                    return ~item.toLowerCase().indexOf(this.query)
+                }
+            }
+        });
+    }
+
     // add new detail record
     $("#addNew").click(function(){
         // copy last row and reset values
@@ -304,7 +327,7 @@ include("head.inc");
         });
         $(".act-removerow").click(removeRow);
         // link typeahead to new item
-        $(".fld_detail").typeahead({ source: document.all_aliases[$("#typeSelect").val()] });
+        addFieldTypeAhead();
         // link geoip list to new item
         $(".geoip_list").change(function(){
             $(this).parent().find('input').val($(this).val());
@@ -368,7 +391,7 @@ include("head.inc");
               break;
       }
       $(".fld_detail").typeahead("destroy");
-      $(".fld_detail").typeahead({ source: document.all_aliases[$("#typeSelect").val()] });
+      addFieldTypeAhead();
     }
 
     $("#typeSelect").change(function(){

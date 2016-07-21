@@ -29,7 +29,6 @@
 
 require_once("guiconfig.inc");
 require_once("interfaces.inc");
-require_once("pfsense-utils.inc");
 require_once("logs.inc");
 
 
@@ -96,6 +95,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $reqdfieldsn[] = gettext("Destination prefix");
 
     do_input_validation($pconfig, $reqdfields, $reqdfieldsn, $input_errors);
+
+    if (!is_ipaddroralias($pconfig['src'])) {
+        $input_errors[] = sprintf(gettext("%s is not a valid source IP address or alias."), $pconfig['src']);
+    }
+    if (!is_ipaddroralias($pconfig['dst'])) {
+        $input_errors[] = sprintf(gettext("%s is not a valid destination IP address or alias."), $pconfig['dst']);
+    }
 
     if (count($input_errors) == 0) {
       $natent = array();

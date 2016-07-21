@@ -2,6 +2,7 @@
 
 /*
     Copyright (C) 2015-2016 Franco Fichtner <franco@opnsense.org>
+    Copyright (C) 2004-2007 Scott Ullrich <sullrich@gmail.com>
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
     All rights reserved.
 
@@ -167,6 +168,39 @@ function gen_subnetv6_max($ipaddr, $bits)
     $inet_end = $inet_ip | ~$inet_mask;
 
     return (inet_ntop($inet_end));
+}
+
+/* Returns the calculated bit length of the prefix delegation from the WAN interface */
+/* DHCP-PD is variable, calculate from the prefix-len on the WAN interface */
+/* 6rd is variable, calculate from 64 - (v6 prefixlen - (32 - v4 prefixlen)) */
+/* 6to4 is 16 bits, e.g. 65535 */
+function calculate_ipv6_delegation_length($if) {
+    global $config;
+
+    if(!isset($config['interfaces'][$if]) || !is_array($config['interfaces'][$if])) {
+        return false;
+    } elseif (!isset($config['interfaces'][$if]['ipaddrv6'])) {
+        return 0;
+    }
+
+    switch($config['interfaces'][$if]['ipaddrv6']) {
+        case "6to4":
+            $pdlen = 16;
+            break;
+        case "6rd":
+            $rd6cfg = $config['interfaces'][$if];
+            $rd6plen = explode("/", $rd6cfg['prefix-6rd']);
+            $pdlen = (64 - ($rd6plen[1] + (32 - $rd6cfg['prefix-6rd-v4plen'])));
+            break;
+        case "dhcp6":
+            $dhcp6cfg = $config['interfaces'][$if];
+            $pdlen = $dhcp6cfg['dhcp6-ia-pd-len'];
+            break;
+        default:
+            $pdlen = 0;
+            break;
+    }
+    return $pdlen;
 }
 
 /* returns a subnet mask (long given a bit count) */
@@ -1125,6 +1159,17 @@ function ip_in_subnet($addr,$subnet)
     }
 }
 
+function is_private_ip($iptocheck)
+{
+    foreach(array("10.0.0.0/8", "100.64.0.0/10", "172.16.0.0/12", "192.168.0.0/16") as $private) {
+        if (ip_in_subnet($iptocheck,$private)==true) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 function resolve_retry($hostname, $retries = 5)
 {
     if (is_ipaddr($hostname)) {
@@ -1488,4 +1533,24 @@ function download_alias_geoip($alias)
     } else {
         return false;
     }
+}
+
+function is_fqdn($fqdn)
+{
+    $hostname = false;
+
+    if (preg_match("/[-A-Z0-9\.]+\.[-A-Z0-9\.]+/i", $fqdn)) {
+        $hostname = true;
+    }
+    if (preg_match("/\.\./", $fqdn)) {
+        $hostname = false;
+    }
+    if (preg_match("/^\./i", $fqdn)) {
+        $hostname = false;
+    }
+    if (preg_match("/\//i", $fqdn)) {
+        $hostname = false;
+    }
+
+    return $hostname;
 }

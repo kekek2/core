@@ -28,30 +28,45 @@ while read FS_PART FS_MNT FS_TYPE FS_MORE; do
 		continue;
 	fi
 
-	# enables soft updates
-	tunefs -n enable ${FS_MNT}
-
-	# enables TRIM
-	FS_DEV=$(echo ${FS_PART} | awk 'match($0, /\/dev\/([a-z]+[0-9]+)/) { print substr( $0, RSTART, RLENGTH )}')
-	FS_TRIM=$(camcontrol identify ${FS_DEV} | grep TRIM | awk '{ print $5; }')
-	if [ "${FS_TRIM}" = "yes" ]; then
-		# appending "# notrim" to the /etc/fstab entry
+	if echo "${FS_MORE}" | grep -iq nosoft; then
+		# appending "# nosoft" to the /etc/fstab entry
 		# will allow to strip trim and leave it disabled
-		if echo "${FS_MORE}" | grep -iq notrim; then
-			tunefs -t disable ${FS_MNT}
-		else
-			tunefs -t enable ${FS_MNT}
+		tunefs -n disable ${FS_MNT}
+	else
+		# enables soft updates
+		tunefs -n enable ${FS_MNT}
+	fi
+
+	FS_DEV=$(echo ${FS_PART} | awk 'match($0, /^\/dev\/(gpt|ufs)\/.+$/) { print substr( $0, RSTART + 5, RLENGTH - 5 )}')
+	if [ -n "${FS_DEV}" ]; then
+		FS_DEV=$(glabel status -as | grep ${FS_DEV} | awk 'match($3, /^[a-z]+[0-9]+/) { print substr( $3, RSTART, RLENGTH )}')
+	fi
+	if [ -z "${FS_DEV}" ]; then
+		FS_DEV=$(echo ${FS_PART} | awk 'match($0, /^\/dev\/[a-z]+[0-9]+/) { print substr( $0, RSTART + 5, RLENGTH - 5 )}')
+	fi
+	if [ -n "${FS_DEV}" ]; then
+		FS_TRIM=$(camcontrol identify ${FS_DEV} | grep TRIM | awk '{ print $5; }')
+		if [ "${FS_TRIM}" = "yes" ]; then
+			if echo "${FS_MORE}" | grep -iq notrim; then
+				# appending "# notrim" to the /etc/fstab entry
+				# will allow to strip trim and leave it disabled
+				tunefs -t disable ${FS_MNT}
+			else
+				# enables TRIM
+				tunefs -t enable ${FS_MNT}
+			fi
 		fi
 	fi
 done < /etc/fstab
 
 attempts=0
 while [ ${attempts} -lt 3 ]; do
+	fsck -C -y /
+	fsck -C -y /
 	if mount -a 2>/dev/null; then
 		# bail if all is well
 		break
 	fi
-	fsck -y /
 	attempts=$((attempts+1))
 done
 
@@ -147,8 +162,16 @@ remove_mfs_link()
 	fi
 }
 
-USE_MFS_TMPVAR=`/usr/bin/grep -c use_mfs_tmpvar /conf/config.xml`
-if [ ${USE_MFS_TMPVAR} -ne 0 ]; then
+# USE_MFS_TMP also catches and overrides USE_MFS_VAR (pre-16.7 compat)
+# At some point we want to flip use_mfs_tmpvar to use_mfs_var instead.
+USE_MFS_VAR=`/usr/bin/grep -c use_mfs_tmpvar /conf/config.xml`
+USE_MFS_TMP=`/usr/bin/grep -c use_mfs_tmp /conf/config.xml`
+
+if [ ${USE_MFS_TMP} -ne 0 ]; then
+	mount -t tmpfs -o mode=01777 tmpfs /tmp
+fi
+
+if [ ${USE_MFS_VAR} -ne 0 ]; then
 	echo -n "Setting up memory disks..."
 
 	setup_mfs_link /root /var/cache opnsense-update
@@ -156,7 +179,6 @@ if [ ${USE_MFS_TMPVAR} -ne 0 ]; then
 	setup_mfs_link /root /var/db pkg
 	setup_mfs_link /root /var crash
 
-	mount -t tmpfs -o mode=01777 tmpfs /tmp
 	mount -t tmpfs tmpfs /var
 
 	install_mfs_link /root /var/cache opnsense-update
@@ -202,11 +224,6 @@ if [ -f "/dev/kbdmux0" ]; then
 fi
 
 echo "done."
-
-# restore pkg database if bootstrapped
-if [ -f /conf/pkg.db ]; then
-	if pkg -N; then pkg backup -qr /conf/pkg.db; fi
-fi
 
 # regenerate groups and users for packages
 /usr/local/etc/rc.recover pkg > /dev/null

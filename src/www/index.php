@@ -28,13 +28,6 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-// Turn on buffering to speed up rendering
-ini_set('output_buffering', 'true');
-
-// Start buffering with a cache size of 100000
-ob_start(null, "1000");
-
-// Load Essential Includes
 require_once('guiconfig.inc');
 
 // closing should be $_POST, but the whole notice handling needs more attention. Leave it as is for now.
@@ -84,12 +77,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($_POST['sequence'])) {
         $config['widgets']['sequence'] = $_POST['sequence'];
-        if (!empty($_POST['column_count'])) {
-            $config['widgets']['column_count'] = $_POST['column_count'];
-        }
-        write_config(gettext("Widget configuration has been changed."));
+    } elseif (isset($config['widgets']['sequence'])) {
+        unset($config['widgets']['sequence']);
     }
-    header("Location: index.php");
+    if (!empty($_POST['column_count'])) {
+        $config['widgets']['column_count'] = $_POST['column_count'];
+    } elseif(isset($config['widgets']['column_count'])) {
+        unset($config['widgets']['column_count']);
+    }
+    write_config(gettext('Widget configuration has been changed.'));
+    header('Location: index.php');
     exit;
 }
 

@@ -122,7 +122,7 @@ function plugins_interfaces()
                     $intf_config['internal_dynamic'] = true;
                     // traverse and diff interface properties with known configuration
                     foreach ($intf_data as $prop_name => $prop_value) {
-                        if (empty($intf_config[$prop_name]) || $intf_config[$prop_name] != $prop_value) {
+                        if ((empty($intf_config[$prop_name]) && !empty($prop_value)) || $intf_config[$prop_name] != $prop_value) {
                             $intf_config[$prop_name] = $prop_value;
                             if (!in_array($intf_ref, $changed_interfaces)) {
                                 $changed_interfaces[] = $intf_ref;
@@ -135,10 +135,12 @@ function plugins_interfaces()
     }
 
     // cleanup registrations
-    foreach ($config['interfaces'] as $intf => $intf_data) {
-        if (!empty($intf_data['internal_dynamic']) && !in_array($intf, $registered_interfaces)) {
-            $changed_interfaces[] = $intf;
-            unset($config['interfaces'][$intf]);
+    if (isset($config['interfaces'])) {
+        foreach ($config['interfaces'] as $intf => $intf_data) {
+            if (!empty($intf_data['internal_dynamic']) && !in_array($intf, $registered_interfaces)) {
+                $changed_interfaces[] = $intf;
+                unset($config['interfaces'][$intf]);
+            }
         }
     }
 

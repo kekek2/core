@@ -28,19 +28,84 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-/* Allow additional execution time 0 = no limit. */
-ini_set('max_execution_time', '0');
-ini_set('max_input_time', '0');
-
 require_once("guiconfig.inc");
 require_once("interfaces.inc");
 require_once("filter.inc");
 require_once("services.inc");
 require_once("rrd.inc");
 require_once("system.inc");
-require_once("pfsense-utils.inc");
 
-function rrd_data_xml() {
+/**
+ * restore config section
+ * @param string $section_name config section name
+ * @param string $new_contents xml content
+ * @return bool status
+ */
+function restore_config_section($section_name, $new_contents)
+{
+    global $config;
+    $tmpxml = '/tmp/tmpxml';
+
+    $fout = fopen($tmpxml, 'w');
+    fwrite($fout, $new_contents);
+    fclose($fout);
+
+    $xml = parse_xml_config($tmpxml, null);
+    if ($xml === -1) {
+        return false;
+    }
+
+    $section_xml = -1;
+
+    /*
+     * So, we're looking for a non-root tag written as a
+     * root tag, or a proper config where we cherry-pick
+     * a specific matching section... ok...
+     */
+    foreach ($xml as $xml_strip_root) {
+        if (isset($xml_strip_root[$section])) {
+            $section_xml = $xml_strip_root[$section];
+	    break;
+	}
+    }
+
+    if ($section_xml = -1 && isset($xml[$section_name])) {
+        $section_xml = $xml[$section_name];
+    }
+
+    @unlink($tmpxml);
+
+    if ($section_xml === -1) {
+        return false;
+    }
+
+    $config[$section_name] = &$section_xml;
+    write_config(sprintf(gettext("Restored %s of config file"), $section_name));
+    disable_security_checks();
+
+    return true;
+}
+
+/*
+ *  backup_config_section($section): returns as an xml file string of
+ *                                   the configuration section
+ */
+function backup_config_section($section_name)
+{
+    global $config;
+
+    $new_section = &$config[$section_name];
+
+    $xmlconfig = dump_xml_config($new_section, $section_name);
+    $xmlconfig = str_replace("<?xml version=\"1.0\"?>", "", $xmlconfig);
+
+    /* KEEP THIS: unbreaks syntax highlighting <?php */
+
+    return $xmlconfig;
+}
+
+function rrd_data_xml()
+{
     $rrddbpath = '/var/db/rrd';
 
     $result = "\t<rrddata>\n";
@@ -63,7 +128,6 @@ function rrd_data_xml() {
     return $result;
 }
 
-
 function restore_rrddata() {
     global $config;
     foreach($config['rrddata']['rrddatafile'] as $rrd) {
@@ -83,7 +147,7 @@ function restore_rrddata() {
             }
             unlink($xml_file);
         } elseif (!empty($rrd['data'])) {
-            // pfSense 2.0 rrd backup format
+            /* rrd backup format */
             $rrd_file = "/var/db/rrd/{$rrd['filename']}";
             $rrd_fd = fopen($rrd_file, "w");
             if (!$rrd_fd) {
@@ -262,8 +326,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if (count($input_errors) == 0) {
             if(stristr($data, "<m0n0wall>")) {
                 log_error('Upgrading m0n0wall configuration to OPNsense.');
-                /* m0n0wall was found in config.  convert it. */
-                $data = str_replace("m0n0wall", "pfsense", $data);
+                $data = str_replace('m0n0wall', 'opnsense', $data);
                 $m0n0wall_upgrade = true;
             }
             if (!empty($_POST['restorearea'])) {
@@ -390,7 +453,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                         convert_config();
                         $savemsg = gettext("The m0n0wall configuration has been restored and upgraded to OPNsense.");
                     }
-                    setup_serial_port();
                 } else {
                     $input_errors[] = gettext("The configuration could not be restored.");
                 }
