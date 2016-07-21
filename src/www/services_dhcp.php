@@ -32,7 +32,7 @@ require_once("filter.inc");
 require_once("services.inc");
 require_once("system.inc");
 require_once("unbound.inc");
-require_once("pfsense-utils.inc");
+require_once("util.inc");
 require_once("interfaces.inc");
 
 /*
@@ -283,6 +283,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         if ((!empty($pconfig['ddnsdomain']) && !is_ipaddrv4($pconfig['ddnsdomainprimary']))) {
             $input_errors[] = gettext("A valid primary domain name server IP address must be specified for the dynamic domain name.");
+        }
+        if (!empty($pconfig['ddnsdomainkey']) && base64_encode(base64_decode($pconfig['ddnsdomainkey'], true)) !== $pconfig['ddnsdomainkey']) {
+            $input_errors[] = gettext('You must specify a Base64-encoded domain key.');
         }
         if ((!empty($pconfig['ddnsdomainkey']) && empty($pconfig['ddnsdomainkeyname'])) ||
             (!empty($pconfig['ddnsdomainkeyname']) && empty($pconfig['ddnsdomainkey']))
@@ -949,10 +952,10 @@ include("head.inc");
                           <input type="button" onclick="show_maccontrol_config()" class="btn btn-default btn-xs" value="<?=gettext("Advanced");?>" /> - <?=gettext("Show MAC Address Control");?>
                         </div>
                         <div id="showmaccontrol" style="display:none">
-                          <?=gettext("Enter a list of partial MAC addresses to allow, comma separated, no spaces, such as ");?>00:00:00,01:E5:FF
-                          <input name="mac_allow" type="text" id="mac_allow" value="<?=$pconfig['mac_allow'];?>" />
-                          <?=gettext("Enter a list of partial MAC addresses to deny access, comma separated, no spaces, such as ");?>00:00:00,01:E5:FF
-                          <input name="mac_deny" type="text" id="mac_deny" value="<?=$pconfig['mac_deny'];?>" /><br />
+                          <?= sprintf(gettext("Enter a list of partial MAC addresses to allow, comma separated, no spaces, such as %s"), '00:00:00,01:E5:FF') ?>
+                          <input name="mac_allow" type="text" id="mac_allow" value="<?= $pconfig['mac_allow'] ?>" />
+                          <?= sprintf(gettext("Enter a list of partial MAC addresses to deny access, comma separated, no spaces, such as %s"), '00:00:00,01:E5:FF') ?>
+                          <input name="mac_deny" type="text" id="mac_deny" value="<?= $pconfig['mac_deny'] ?>" /><br />
                         </div>
                       </td>
                     </tr>
@@ -1126,13 +1129,12 @@ include("head.inc");
                       </td>
                     </tr>
                     <tr>
-                      <td>&nbsp;</td>
-                        <td> <p><?=gettext("Note:");?><br />
-                        <?=sprintf(gettext("The DNS servers entered in %sSystem: " .
-                        "General setup%s (or the %sDNS forwarder%s, if enabled), will be assigned to clients by the DHCP server."),'<a href="system_general.php">','</a>','<a href="services_dnsmasq.php">','</a>'); ?><br />
-                        <br />
-                        <?=sprintf(gettext("The DHCP lease table can be viewed on the %sStatus: DHCP leases%s page."),'<a href="status_dhcp_leases.php">','</a>') ?><br />
-                        </p>
+                      <td colspan="2">
+                        <?= sprintf(gettext('The DNS servers entered in %sSystem: ' .
+                          'General setup%s (or the %sDNS forwarder%s, if enabled), ' .
+                          'will be assigned to clients by the DHCP server.'),
+                          '<a href="system_general.php">', '</a>',
+                          '<a href="services_dnsmasq.php">','</a>'); ?>
                       </td>
                     </tr>
                   </table>

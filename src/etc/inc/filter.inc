@@ -1,7 +1,7 @@
 <?php
 
 /*
-    Copyright (C) 2004-2006 Scott Ullrich
+    Copyright (C) 2004-2007 Scott Ullrich
     Copyright (C) 2005 Bill Marquette
     Copyright (C) 2006 Peter Allgeyer
     Copyright (C) 2008-2010  Ermal Luci
@@ -97,6 +97,198 @@ function is_bogonsv6_used()
     }
 
     return $usebogonsv6;
+}
+
+function download_file($url, $destination, $verify_ssl = false, $connect_timeout = 60, $timeout = 0)
+{
+    global $config, $g;
+
+    $fp = fopen($destination, "wb");
+
+    if (!$fp) {
+        return false;
+    }
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    if (!$verify_ssl) {
+        /* leave the curl defaults untouched when verify is used */
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+    }
+    curl_setopt($ch, CURLOPT_FILE, $fp);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $connect_timeout);
+    curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
+    curl_setopt($ch, CURLOPT_HEADER, false);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_USERAGENT, $g['product_name'] . '/' . rtrim(file_get_contents("/usr/local/opnsense/version/opnsense")));
+
+    @curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    fclose($fp);
+    curl_close($ch);
+
+    return ($http_code == 200);
+}
+
+function update_alias_names_upon_change($section, $field, $new_alias_name, $origname, $field_separator=null)
+{
+    global $config;
+    if (!empty($origname) && !empty($new_alias_name)) {
+        // find section, return if not found
+        $sectionref = &$config;
+        foreach ($section as $sectionname) {
+            if (!empty($sectionref[$sectionname]) && is_array($sectionref[$sectionname])) {
+                $sectionref = &$sectionref[$sectionname];
+            } else {
+                return;
+            }
+        }
+        // traverse all found sections
+        foreach($sectionref as $itemkey => $item) {
+            // locate field within structure
+            $fieldref = &$sectionref[$itemkey];
+            foreach($field as $fieldname) {
+                if (!empty($fieldref[$fieldname])) {
+                    $fieldref = &$fieldref[$fieldname];
+                } else {
+                    unset($fieldref);
+                    break;
+                }
+            }
+            // if field is found, check and replace
+            if (isset($fieldref) && !is_array($fieldref)) {
+                if ($fieldref == $origname) {
+                    $fieldref = $new_alias_name;
+                } elseif ($field_separator != null) {
+                    // field contains more then one value
+                    $parts = explode($field_separator, $fieldref);
+                    foreach ($parts as &$part) {
+                        if ($part == $origname) {
+                            $part = $new_alias_name;
+                        }
+                    }
+                    $new_field_value = implode($field_separator, $parts);
+                    if ($new_field_value != $fieldref) {
+                        $fieldref = $new_field_value;
+                    }
+                }
+            }
+        }
+    }
+}
+
+function process_alias_urltable($name, $url, $freq, $forceupdate = false)
+{
+    global $config;
+
+    $urltable_prefix = "/var/db/aliastables/";
+    $urltable_filename = $urltable_prefix . $name . ".txt";
+
+    // Make the aliases directory if it doesn't exist
+    if (!file_exists($urltable_prefix)) {
+        mkdir($urltable_prefix);
+    } elseif (!is_dir($urltable_prefix)) {
+        unlink($urltable_prefix);
+        mkdir($urltable_prefix);
+    }
+    if (empty($freq)) {
+        $freq = 1;
+    }
+    $update_freq = ($freq * 86400) - 90;
+    // If the file doesn't exist or is older than update_freq days, fetch a new copy.
+    if (!file_exists($urltable_filename) || ((time() - filemtime($urltable_filename)) > $update_freq) || $forceupdate) {
+        // open file handle to output file, in case the process takes a lot of time, make sure there's a file before
+        // filter starts to load. Also helps for tracking progress.
+        //
+        // todo: rethink alias_expand_urltable in filter.inc , its probably not a very good idea to download and
+        //       process files during boot.
+        $output_file_handle = fopen($urltable_filename, 'w');
+        $alias_type = alias_get_type($name);
+        // Try to fetch the URL supplied
+        @unlink("{$urltable_filename}.tmp");
+        $verify_ssl = isset($config['system']['checkaliasesurlcert']);
+        if (download_file($url, "{$urltable_filename}.tmp", $verify_ssl)) {
+            foreach (preg_split('/[\n\r]+/', file_get_contents("{$urltable_filename}.tmp"), -1, PREG_SPLIT_NO_EMPTY) as $line) {
+                $line = trim($line);
+                if (!strlen($line) || !strncmp($line, '#', 1) || !strncmp($line, '//', 2)) {
+                    continue;
+                }
+                // cleanse line item
+                $line = preg_split('/\s+/', $line)[0];
+                if ($alias_type == "urltable_ports") {
+                    // todo: add proper validation for ports here
+                    fwrite($output_file_handle, "{$line}\n");
+                } else {
+                    // validate or resolve line items, skip unparseable content
+                    if (is_subnet($line) || is_ipaddr($line)) {
+                        fwrite($output_file_handle, "{$line}\n");
+                    } elseif (is_hostname($line)) {
+                        foreach (array(DNS_AAAA, DNS_A) as $dns_type) {
+                            // normally dns_get_record should be able to use DNS_A + DNS_AAAA
+                            // but for some strange reason not on our platform...
+                            $dns_records = @dns_get_record($line, $dns_type);
+                            if ($dns_records) {
+                                foreach ($dns_records as $dns_record) {
+                                    if (!empty($dns_record['ipv6'])) {
+                                        fwrite($output_file_handle, $dns_record['ipv6'] . "\n");
+                                    } elseif (!empty($dns_record['ip'])) {
+                                        fwrite($output_file_handle, $dns_record['ip'] . "\n");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    fflush($output_file_handle);
+                }
+            }
+            fclose($output_file_handle);
+
+            if ($alias_type == "urltable_ports") {
+                $ports = explode("\n", file_get_contents($urltable_filename));
+                $ports = group_ports($ports);
+                file_put_contents($urltable_filename, implode("\n", $ports));
+            }
+            @unlink("{$urltable_filename}.tmp");
+        } else {
+          touch($urltable_filename);
+        }
+        return true;
+    } else {
+        // File exists, and it doesn't need updated.
+        return -1;
+    }
+}
+
+/* sort by interface only, retain the original order of rules that apply to
+   the same interface */
+function filter_rules_sort()
+{
+    global $config;
+
+    /* mark each rule with the sequence number (to retain the order while sorting) */
+    for ($i = 0; isset($config['filter']['rule'][$i]); $i++) {
+        $config['filter']['rule'][$i]['seq'] = $i;
+    }
+    usort($config['filter']['rule'], "filter_rules_compare");
+    /* strip the sequence numbers again */
+    for ($i = 0; isset($config['filter']['rule'][$i]); $i++) {
+        unset($config['filter']['rule'][$i]['seq']);
+    }
+}
+
+function filter_rules_compare($a, $b) {
+    if (isset($a['floating']) && isset($b['floating'])) {
+        return $a['seq'] - $b['seq'];
+    } elseif (isset($a['floating'])) {
+        return -1;
+    } elseif (isset($b['floating'])) {
+        return 1;
+    } elseif ($a['interface'] == $b['interface']) {
+        return $a['seq'] - $b['seq'];
+    } else {
+        return compare_interface_friendly_names($a['interface'], $b['interface']);
+    }
 }
 
 function filter_pflog_start()
@@ -1489,7 +1681,6 @@ function filter_nat_rules_generate(&$FilterIflist)
     }
 
     if (isset($config['nat']['rule'])) {
-        /* start reflection redirects on port 19000 of localhost */
         $natrules .= "# NAT Inbound Redirects\n";
           foreach ($config['nat']['rule'] as $rule) {
             update_filter_reload_status(sprintf(gettext("Creating NAT rule %s"), $rule['descr']));

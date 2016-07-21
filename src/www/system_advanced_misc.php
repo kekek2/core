@@ -34,7 +34,7 @@ require_once("filter.inc");
 require_once("ipsec.inc");
 require_once("vslb.inc");
 require_once("system.inc");
-require_once("pfsense-utils.inc");
+require_once("util.inc");
 require_once("services.inc");
 require_once("interfaces.inc");
 
@@ -83,6 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['cryptodev_enable'] = isset($config['system']['cryptodev_enable']);
     $pconfig['thermal_hardware'] = !empty($config['system']['thermal_hardware']) ? $config['system']['thermal_hardware'] : null;
     $pconfig['use_mfs_tmpvar'] = isset($config['system']['use_mfs_tmpvar']);
+    $pconfig['use_mfs_tmp'] = isset($config['system']['use_mfs_tmp']);
     $pconfig['powerd_ac_mode'] = "hadp";
     $pconfig['rrdbackup'] = !empty($config['system']['rrdbackup']) ? $config['system']['rrdbackup'] : null;
     $pconfig['dhcpbackup'] = !empty($config['system']['dhcpbackup']) ? $config['system']['dhcpbackup'] : null;
@@ -139,6 +140,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $config['system']['use_mfs_tmpvar'] = true;
         } elseif (isset($config['system']['use_mfs_tmpvar'])) {
             unset($config['system']['use_mfs_tmpvar']);
+        }
+
+        if (!empty($pconfig['use_mfs_tmp'])) {
+            $config['system']['use_mfs_tmp'] = true;
+        } elseif (isset($config['system']['use_mfs_tmp'])) {
+            unset($config['system']['use_mfs_tmp']);
         }
 
         if (!empty($pconfig['rrdbackup'])) {
@@ -335,17 +342,17 @@ include("head.inc");
                   <input name="powerd_enable" type="checkbox" id="powerd_enable" value="yes" <?=!empty($pconfig['powerd_enable']) ? "checked=\"checked\"" : "";?> />
                   <div class="hidden" for="help_for_powerd_enable">
                     <?=gettext("The powerd utility monitors the system state and sets various power control " .
-                                        "options accordingly.  It offers four modes (maximum, minimum, adaptive " .
+                                        "options accordingly. It offers four modes (maximum, minimum, adaptive " .
                                         "and hiadaptive) that can be individually selected while on AC power or batteries. " .
                                         "The modes maximum, minimum, adaptive and hiadaptive may be abbreviated max, " .
-                                        "min, adp, hadp.  Maximum mode chooses the highest performance values.  Minimum " .
+                                        "min, adp, hadp. Maximum mode chooses the highest performance values. Minimum " .
                                         "mode selects the lowest performance values to get the most power savings. " .
                                         "Adaptive mode attempts to strike a balance by degrading performance when " .
-                                        "the system appears idle and increasing it when the system is busy.  It " .
+                                        "the system appears idle and increasing it when the system is busy. It " .
                                         "offers a good balance between a small performance loss for greatly " .
-                                        "increased power savings.  Hiadaptive mode is alike adaptive mode, but " .
+                                        "increased power savings. Hiadaptive mode is alike adaptive mode, but " .
                                         "tuned for systems where performance and interactivity are more important " .
-                                        "than power consumption.  It raises frequency faster, drops slower and " .
+                                        "than power consumption. It raises frequency faster, drops slower and " .
                                         "keeps twice lower CPU load."); ?>
                   </div>
                 </td>
@@ -391,13 +398,23 @@ include("head.inc");
                 <th colspan="2" valign="top" class="listtopic"><?=gettext("RAM Disk Settings (Reboot to Apply Changes)"); ?></th>
               </tr>
               <tr>
-                <td><a id="help_for_use_mfs_tmpvar" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Use RAM Disks"); ?></td>
+                <td><a id="help_for_use_mfs_tmpvar" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('/tmp and /var RAM disks'); ?></td>
                 <td>
-                  <input name="use_mfs_tmpvar" type="checkbox" id="use_mfs_tmpvar" value="yes" <?=!empty($pconfig['use_mfs_tmpvar']) ? "checked=\"checked\"" : "";?>/>
+                  <input name="use_mfs_tmpvar" type="checkbox" id="use_mfs_tmpvar" value="yes" <?=!empty($pconfig['use_mfs_tmpvar']) ? 'checked="checked"' : '';?>/>
                   <strong><?=gettext("Use memory file system for /tmp and /var"); ?></strong>
                   <div class="hidden" for="help_for_use_mfs_tmpvar">
-                    <?=gettext("Set this if you wish to use /tmp and /var as RAM disks (memory file system disks) on a full install " .
-                      "rather than use the hard disk. Setting this will cause the data in /tmp and /var to be lost on reboot, including log data."); ?>
+                    <?=gettext("Set this if you wish to use /tmp and /var as RAM disks (memory file system disks) " .
+                      "rather than use the hard disk. Setting this will cause the data /var to be lost on reboot, including log data."); ?>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td><a id="help_for_use_mfs_tmp" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('/tmp RAM disk'); ?></td>
+                <td>
+                  <input name="use_mfs_tmp" type="checkbox" id="use_mfs_tmp" value="yes" <?=!empty($pconfig['use_mfs_tmp']) ? 'checked="checked"' : '';?>/>
+                  <strong><?=gettext('Use memory file system for /tmp'); ?></strong>
+                  <div class="hidden" for="help_for_use_mfs_tmp">
+                    <?= gettext('Set this if you wish to use /tmp as a RAM disk (memory file system disk) rather than use the hard disk.') ?>
                   </div>
                 </td>
               </tr>

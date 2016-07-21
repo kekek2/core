@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     // validate and copy subnets
     $pconfig['subnets'] = array("item" => array());
-    foreach ($pconfig['subnet_address'] as $ids => $address) {
+    foreach ($pconfig['subnet_address'] as $idx => $address) {
         if (!empty($address)) {
             if (is_alias($address)) {
                 $pconfig['subnets']['item'][] = $address;
@@ -312,7 +312,7 @@ include("head.inc");
                         foreach($pconfig['subnets']['item'] as $item):
                           $parts = explode('/', $item);
                           if (count($parts) > 1) {
-                              $sn_bits = $parts[1];
+                              $sn_bits = intval($parts[1]);
                           } else {
                               $sn_bits = null;
                           }
@@ -347,7 +347,7 @@ include("head.inc");
                         </tfoot>
                       </table>
                       <div class="hidden" for="help_for_subnets">
-                        <?=gettext("Subnets are specified in CIDR format.  " .
+                        <?=gettext("Subnets are specified in CIDR format. " .
                               "Select the CIDR mask that pertains to each entry. " .
                               "/128 specifies a single IPv6 host; /64 specifies a normal IPv6 network; etc. " .
                               "If no subnets are specified here, the Router Advertisement (RA) Daemon will advertise to the subnet to which the router's interface is assigned.");?>

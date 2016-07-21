@@ -193,25 +193,6 @@ function write_config($desc = '', $backup = true)
     return $config;
 }
 
-/****f* config/reset_factory_defaults
- * NAME
- *   reset_factory_defaults - Reset the system to its default configuration.
- ******/
-function reset_factory_defaults($sync = true)
-{
-    mwexec('/bin/rm -r /conf/*');
-    disable_security_checks();
-    setup_serial_port(false);
-
-    /* as we go through a special case directly reboot */
-    $shutdown_cmd = '/sbin/shutdown -or now';
-    if ($sync) {
-        mwexec($shutdown_cmd);
-    } else {
-        mwexec_bg($shutdown_cmd);
-    }
-}
-
 function config_restore($conffile)
 {
     global $config;
@@ -374,18 +355,27 @@ function backup_to_google_drive()
             $target_filename = "config-" . time() . ".xml";
             if (count($configfiles) > 1) {
                 // compare last backup with current, only save new
-                $bck_data_enc_in = $client->download($configfiles[array_keys($configfiles)[0]]);
-                $bck_data_enc = "";
-                tagfile_deformat($bck_data_enc_in, $bck_data_enc, "config.xml");
-                $bck_data = decrypt_data($bck_data_enc, $config->system->remotebackup->GDrivePassword->__toString());
-                if ($bck_data == $confdata) {
-                    $target_filename = null;
+                try {
+                    $bck_data_enc_in = $client->download($configfiles[array_keys($configfiles)[0]]);
+                    $bck_data_enc = "";
+                    tagfile_deformat($bck_data_enc_in, $bck_data_enc, "config.xml");
+                    $bck_data = decrypt_data($bck_data_enc, $config->system->remotebackup->GDrivePassword->__toString());
+                    if ($bck_data == $confdata) {
+                        $target_filename = null;
+                    }
+                } catch (Exception $e) {
+                    log_error("unable to download " . $configfiles[array_keys($configfiles)[0]]->description . " from Google Drive (" . $e . ")");
                 }
             }
             if (!is_null($target_filename)) {
                 log_error("backup configuration as " . $target_filename);
-                $configfiles[$target_filename] = $client->upload($config->system->remotebackup->GDriveFolderID->__toString(),
-                $target_filename, $confdata_enc);
+                try {
+                    $configfiles[$target_filename] = $client->upload($config->system->remotebackup->GDriveFolderID->__toString(), $target_filename, $confdata_enc);
+                } catch (Exception $e) {
+                    log_error("unable to upload " . $target_filename . " to Google Drive (" . $e . ")");
+                    return array();
+                }
+
                 krsort($configfiles);
             }
 

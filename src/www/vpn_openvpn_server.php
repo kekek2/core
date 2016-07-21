@@ -31,7 +31,6 @@ require_once("guiconfig.inc");
 require_once("openvpn.inc");
 require_once("services.inc");
 require_once("interfaces.inc");
-require_once('pfsense-utils.inc');
 
 if (!isset($config['openvpn']['openvpn-server'])) {
     $config['openvpn']['openvpn-server'] = array();
@@ -424,7 +423,6 @@ legacy_html_escape_form_data($pconfig);
 <body>
 <?php include("fbegin.inc"); ?>
 <script type="text/javascript">
-//<![CDATA[
 $( document ).ready(function() {
   // watch scroll position and set to last known on page load
   watchScrollPosition();
@@ -459,262 +457,121 @@ $( document ).ready(function() {
       });
   });
 
-  // init form (old stuff)
-  if (document.iform != undefined) {
-    mode_change();
-    autokey_change();
-    tlsauth_change();
-    gwredir_change();
-    dns_domain_change();
-    dns_server_change();
-    wins_server_change();
-    client_mgmt_port_change();
-    ntp_server_change();
-    netbios_change();
-    tuntap_change();
+  // input form events
+  if ($("#iform").length) {
+      $("#mode,#gwredir").change(function(){
+          $(".opt_mode").hide();
+          $(".opt_mode_"+$("#mode").val()).show();
+          if ($("#gwredir").is(":checked")) {
+              $(".opt_gwredir").hide();
+          }
+          $("#dev_mode").change();
+      });
+      $("#mode").change();
+
+      $("#dev_mode,#serverbridge_dhcp").change(function(){
+          $(".dev_mode").hide();
+          $(".dev_mode_"+$("#dev_mode").val()).show();
+          if ($("#mode").val().indexOf('p2p_tls') == 0) {
+              $("#serverbridge_dhcp").prop('disabled', true);
+          } else {
+              $("#serverbridge_dhcp").prop('disabled', false);
+          }
+
+          if ($("#mode").val().indexOf('p2p_tls') == 0 || $("#serverbridge_dhcp").is(':checked') == false) {
+              $("#serverbridge_interface").prop('disabled', true);
+              $("#serverbridge_dhcp_start").prop('disabled', true);
+              $("#serverbridge_dhcp_end").prop('disabled', true);
+          } else {
+              $("#serverbridge_interface").prop('disabled', false);
+              $("#serverbridge_dhcp_start").prop('disabled', false);
+              $("#serverbridge_dhcp_end").prop('disabled', false);
+          }
+      });
+      $("#dev_mode").change();
+
+      $("#autokey_enable").change(function(){
+          if ($("#autokey_enable").is(':checked')) {
+              $("#autokey_opts").hide();
+          } else {
+              $("#autokey_opts").show();
+          }
+      });
+      $("#autokey_enable").change();
+
+      $("#tlsauth_enable,#autotls_enable").change(function(){
+          if ($("#autotls_enable").is(':checked') || !$("#tlsauth_enable").is(':checked')) {
+              $("#tls").parent().hide();
+          } else {
+              $("#tls").parent().show();
+          }
+          if ($("#tlsauth_enable").is(':checked')) {
+              $("#autotls_enable").parent().show();
+          } else {
+              $("#autotls_enable").parent().hide();
+          }
+      });
+      $("#tlsauth_enable").change();
+
+      $("#dns_domain_enable").change(function(){
+          if ($("#dns_domain_enable").is(':checked')) {
+              $("#dns_domain_data").show();
+          } else {
+              $("#dns_domain_data").hide();
+          }
+      });
+      $("#dns_domain_enable").change();
+
+      $("#dns_server_enable").change(function(){
+          if ($("#dns_server_enable").is(':checked')) {
+              $("#dns_server_data").show();
+          } else {
+              $("#dns_server_data").hide();
+          }
+      });
+      $("#dns_server_enable").change();
+
+      $("#wins_server_enable").change(function(){
+          if ($("#wins_server_enable").is(':checked')) {
+              $("#wins_server_data").show();
+          } else {
+              $("#wins_server_data").hide();
+          }
+      });
+      $("#wins_server_enable").change();
+
+      $("#netbios_enable").change(function(){
+          if ($("#netbios_enable").is(':checked')) {
+              $("#wins_opts").show();
+              $("#netbios_data").show();
+          } else {
+              $("#wins_opts").hide();
+              $("#netbios_data").hide();
+          }
+      });
+      $("#netbios_enable").change();
+
+      $("#ntp_server_enable").change(function(){
+          if ($("#ntp_server_enable").is(':checked')) {
+              $("#ntp_server_data").show();
+          } else {
+              $("#ntp_server_data").hide();
+          }
+      });
+      $("#ntp_server_enable").change();
+
+      $("#client_mgmt_port_enable").change(function(){
+          if ($("#client_mgmt_port_enable").is(':checked')) {
+              $("#client_mgmt_port_data").show();
+          } else {
+              $("#client_mgmt_port_data").hide();
+          }
+      });
+      $("#client_mgmt_port_enable").change();
+
   }
 
 });
-
-function mode_change() {
-  index = document.iform.mode.selectedIndex;
-  value = document.iform.mode.options[index].value;
-  switch(value) {
-    case "p2p_tls":
-    case "server_tls":
-    case "server_user":
-      document.getElementById("tls").style.display="";
-      document.getElementById("tls_ca").style.display="";
-      document.getElementById("tls_crl").style.display="";
-      document.getElementById("tls_cert").style.display="";
-      document.getElementById("tls_dh").style.display="";
-      document.getElementById("cert_depth").style.display="";
-      document.getElementById("strictusercn").style.display="none";
-      document.getElementById("psk").style.display="none";
-      break;
-    case "server_tls_user":
-      document.getElementById("tls").style.display="";
-      document.getElementById("tls_ca").style.display="";
-      document.getElementById("tls_crl").style.display="";
-      document.getElementById("tls_cert").style.display="";
-      document.getElementById("tls_dh").style.display="";
-      document.getElementById("cert_depth").style.display="";
-      document.getElementById("strictusercn").style.display="";
-      document.getElementById("psk").style.display="none";
-      break;
-    case "p2p_shared_key":
-      document.getElementById("tls").style.display="none";
-      document.getElementById("tls_ca").style.display="none";
-      document.getElementById("tls_crl").style.display="none";
-      document.getElementById("tls_cert").style.display="none";
-      document.getElementById("tls_dh").style.display="none";
-      document.getElementById("cert_depth").style.display="none";
-      document.getElementById("strictusercn").style.display="none";
-      document.getElementById("psk").style.display="";
-      break;
-  }
-  switch(value) {
-    case "p2p_shared_key":
-      document.getElementById("remote_optsv4").style.display="";
-      document.getElementById("remote_optsv6").style.display="";
-      document.getElementById("gwredir_opts").style.display="none";
-      document.getElementById("local_optsv4").style.display="none";
-      document.getElementById("local_optsv6").style.display="none";
-      document.getElementById("authmodetr").style.display="none";
-      document.getElementById("inter_client_communication").style.display="none";
-      break;
-    case "p2p_tls":
-      document.getElementById("remote_optsv4").style.display="";
-      document.getElementById("remote_optsv6").style.display="";
-      document.getElementById("gwredir_opts").style.display="";
-      document.getElementById("local_optsv4").style.display="";
-      document.getElementById("local_optsv6").style.display="";
-      document.getElementById("authmodetr").style.display="none";
-      document.getElementById("inter_client_communication").style.display="none";
-      break;
-    case "server_user":
-                case "server_tls_user":
-      document.getElementById("authmodetr").style.display="";
-      document.getElementById("remote_optsv4").style.display="none";
-      document.getElementById("remote_optsv6").style.display="none";
-      document.getElementById("gwredir_opts").style.display="";
-      document.getElementById("local_optsv4").style.display="";
-      document.getElementById("local_optsv6").style.display="";
-      document.getElementById("inter_client_communication").style.display="";
-      break;
-    case "server_tls":
-      document.getElementById("authmodetr").style.display="none";
-    default:
-      document.getElementById("remote_optsv4").style.display="none";
-      document.getElementById("remote_optsv6").style.display="none";
-      document.getElementById("gwredir_opts").style.display="";
-      document.getElementById("local_optsv4").style.display="";
-      document.getElementById("local_optsv6").style.display="";
-      document.getElementById("inter_client_communication").style.display="";
-      break;
-  }
-  gwredir_change();
-}
-
-function autokey_change() {
-
-  if ((document.iform.autokey_enable != null) && (document.iform.autokey_enable.checked))
-    document.getElementById("autokey_opts").style.display="none";
-  else
-    document.getElementById("autokey_opts").style.display="";
-}
-
-function tlsauth_change() {
-
-<?php if (empty($pconfig['tls'])) :
-?>
-  if (document.iform.tlsauth_enable.checked)
-    document.getElementById("tlsauth_opts").style.display="";
-  else
-    document.getElementById("tlsauth_opts").style.display="none";
-<?php
-endif; ?>
-
-  autotls_change();
-}
-
-function autotls_change() {
-
-<?php if (empty($pconfig['tls'])) :
-?>
-  autocheck = document.iform.autotls_enable.checked;
-<?php
-else :
-?>
-  autocheck = false;
-<?php
-endif; ?>
-
-  if (document.iform.tlsauth_enable.checked && !autocheck)
-    document.getElementById("autotls_opts").style.display="";
-  else
-    document.getElementById("autotls_opts").style.display="none";
-}
-
-function gwredir_change() {
-
-  if (document.iform.gwredir.checked) {
-    document.getElementById("local_optsv4").style.display="none";
-    document.getElementById("local_optsv6").style.display="none";
-  } else {
-    document.getElementById("local_optsv4").style.display="";
-    document.getElementById("local_optsv6").style.display="";
-  }
-}
-
-function dns_domain_change() {
-
-  if (document.iform.dns_domain_enable.checked)
-    document.getElementById("dns_domain_data").style.display="";
-  else
-    document.getElementById("dns_domain_data").style.display="none";
-}
-
-function dns_server_change() {
-
-  if (document.iform.dns_server_enable.checked)
-    document.getElementById("dns_server_data").style.display="";
-  else
-    document.getElementById("dns_server_data").style.display="none";
-}
-
-function wins_server_change() {
-
-  if (document.iform.wins_server_enable.checked)
-    document.getElementById("wins_server_data").style.display="";
-  else
-    document.getElementById("wins_server_data").style.display="none";
-}
-
-function client_mgmt_port_change() {
-
-  if (document.iform.client_mgmt_port_enable.checked)
-    document.getElementById("client_mgmt_port_data").style.display="";
-  else
-    document.getElementById("client_mgmt_port_data").style.display="none";
-}
-
-function ntp_server_change() {
-
-  if (document.iform.ntp_server_enable.checked)
-    document.getElementById("ntp_server_data").style.display="";
-  else
-    document.getElementById("ntp_server_data").style.display="none";
-}
-
-function netbios_change() {
-
-  if (document.iform.netbios_enable.checked) {
-    document.getElementById("netbios_data").style.display="";
-    document.getElementById("wins_opts").style.display="";
-  } else {
-    document.getElementById("netbios_data").style.display="none";
-    document.getElementById("wins_opts").style.display="none";
-  }
-}
-
-function tuntap_change() {
-
-  mindex = document.iform.mode.selectedIndex;
-  mvalue = document.iform.mode.options[mindex].value;
-
-  switch(mvalue) {
-    case "p2p_tls":
-    case "p2p_shared_key":
-      p2p = true;
-      break;
-    default:
-      p2p = false;
-      break;
-  }
-
-  index = document.iform.dev_mode.selectedIndex;
-  value = document.iform.dev_mode.options[index].value;
-  switch(value) {
-    case "tun":
-      document.getElementById("chkboxNoTunIPv6").style.display="";
-      document.getElementById("ipv4_tunnel_network").className="vncellreq";
-      document.getElementById("serverbridge_dhcp").style.display="none";
-      document.getElementById("serverbridge_interface").style.display="none";
-      document.getElementById("serverbridge_dhcp_start").style.display="none";
-      document.getElementById("serverbridge_dhcp_end").style.display="none";
-      document.getElementById("topology_subnet_opt").style.display="";
-      break;
-    case "tap":
-      document.getElementById("chkboxNoTunIPv6").style.display="none";
-      document.getElementById("ipv4_tunnel_network").className="vncell";
-      if (!p2p) {
-        document.getElementById("serverbridge_dhcp").style.display="";
-        document.getElementById("serverbridge_interface").style.display="";
-        document.getElementById("serverbridge_dhcp_start").style.display="";
-        document.getElementById("serverbridge_dhcp_end").style.display="";
-        document.getElementById("topology_subnet_opt").style.display="none";
-        document.iform.serverbridge_dhcp.disabled = false;
-        if (document.iform.serverbridge_dhcp.checked) {
-          document.iform.serverbridge_interface.disabled = false;
-          document.iform.serverbridge_dhcp_start.disabled = false;
-          document.iform.serverbridge_dhcp_end.disabled = false;
-        } else {
-          document.iform.serverbridge_interface.disabled = true;
-          document.iform.serverbridge_dhcp_start.disabled = true;
-          document.iform.serverbridge_dhcp_end.disabled = true;
-        }
-      } else {
-        document.getElementById("topology_subnet_opt").style.display="none";
-        document.iform.serverbridge_dhcp.disabled = true;
-        document.iform.serverbridge_interface.disabled = true;
-        document.iform.serverbridge_dhcp_start.disabled = true;
-        document.iform.serverbridge_dhcp_end.disabled = true;
-      }
-      break;
-  }
-}
-//]]>
 </script>
 
   <section class="page-content-main">
@@ -727,15 +584,15 @@ function tuntap_change() {
         if (isset($savemsg)) {
             print_info_box($savemsg);
         }?>
-        <section class="col-xs-12">
-          <div class="tab-content content-box col-xs-12">
 <?php
           if ($act=="new" || $act=="edit") :?>
-              <form method="post" name="iform" id="iform">
+          <form method="post" name="iform" id="iform">
+            <section class="col-xs-12">
+              <div class="tab-content content-box col-xs-12">
                 <div class="table-responsive">
                   <table class="table table-striped opnsense_standard_table_form">
                     <tr>
-                      <td width="22%"><?=gettext("General information"); ?></td>
+                      <td width="22%"><strong><?=gettext("General information"); ?></strong></td>
                       <td width="78%" align="right">
                         <small><?=gettext("full help"); ?> </small>
                         <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
@@ -758,7 +615,7 @@ function tuntap_change() {
                     <tr>
                       <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Server Mode");?></td>
                         <td>
-                        <select name='mode' id='mode' class="form-control" onchange='mode_change(); tuntap_change()'>
+                        <select name='mode' id="mode" class="form-control">
 <?php
                       $openvpn_server_modes = array(
                         'p2p_tls' => gettext("Peer to Peer ( SSL/TLS )"),
@@ -777,7 +634,7 @@ function tuntap_change() {
                         </select>
                       </td>
                     </tr>
-                    <tr id="authmodetr" style="display:none">
+                    <tr class="opt_mode opt_mode_server_user opt_mode_server_tls_user" style="display:none">
                       <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Backend for authentication");?></td>
                       <td>
                         <select name='authmode[]' id='authmode' class="form-control" multiple="multiple" size="5">
@@ -818,7 +675,7 @@ function tuntap_change() {
                     <tr>
                       <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Device Mode"); ?></td>
                       <td>
-                        <select name="dev_mode" class="form-control" onchange='tuntap_change()'>
+                        <select name="dev_mode" id="dev_mode" class="form-control">
 <?php
                         foreach (array("tun", "tap") as $device) :
                                $selected = "";
@@ -892,54 +749,39 @@ function tuntap_change() {
                         </div>
                       </td>
                     </tr>
+                  </table>
+                </div>
+              </div>
+            </section>
+            <section class="col-xs-12">
+              <div class="tab-content content-box col-xs-12">
+                <div class="table-responsive">
+                  <table class="table table-striped opnsense_standard_table_form">
                     <tr>
-                      <td colspan="2" height="12"></td>
+                      <td colspan="2"><strong><?=gettext("Cryptographic Settings"); ?></strong></td>
                     </tr>
-                    <tr>
-                      <td colspan="2"><?=gettext("Cryptographic Settings"); ?></td>
-                    </tr>
-                    <tr id="tls">
-                      <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("TLS Authentication"); ?></td>
-                      <td>
-                        <table border="0" cellpadding="2" cellspacing="0" summary="tls authentication">
-                          <tr>
-                            <td>
-                              <input name="tlsauth_enable" id="tlsauth_enable" type="checkbox" value="yes" <?=!empty($pconfig['tlsauth_enable']) ? "checked=\"checked\"" : "" ;?> onclick="tlsauth_change()" />
-                            </td>
-                            <td>
-                              <span>
-                                <?=gettext("Enable authentication of TLS packets"); ?>.
-                              </span>
-                            </td>
-                          </tr>
-                        </table>
+                    <tr class="opt_mode opt_mode_p2p_tls opt_mode_server_tls opt_mode_server_user opt_mode_server_tls_user">
+                      <td width="22%"><i class="fa fa-info-circle text-muted"></i> <?=gettext("TLS Authentication"); ?></td>
+                      <td width="78%">
+                        <div>
+                          <input name="tlsauth_enable" id="tlsauth_enable" type="checkbox" value="yes" <?=!empty($pconfig['tlsauth_enable']) ? "checked=\"checked\"" : "" ;?>/>
+                          <?=gettext("Enable authentication of TLS packets"); ?>.
+                        </div>
                         <?php if (!$pconfig['tls']) :
 ?>
-                        <table border="0" cellpadding="2" cellspacing="0" id="tlsauth_opts" summary="tls authentication options">
-                          <tr>
-                            <td>
-                              <input name="autotls_enable" id="autotls_enable" type="checkbox" value="yes" <?=!empty($pconfig['autotls_enable']) ? "checked=\"checked\"" : "" ;?> onclick="autotls_change()" />
-                            </td>
-                            <td>
-                              <span>
-                                <?=gettext("Automatically generate a shared TLS authentication key"); ?>.
-                              </span>
-                            </td>
-                          </tr>
-                        </table>
+                        <div>
+                          <input name="autotls_enable" id="autotls_enable" type="checkbox" value="yes" <?=!empty($pconfig['autotls_enable']) ? "checked=\"checked\"" : "" ;?>  />
+                          <?=gettext("Automatically generate a shared TLS authentication key"); ?>.
+                         </div>
                         <?php
 endif; ?>
-                        <table border="0" cellpadding="2" cellspacing="0" id="autotls_opts" summary="tls authentication key">
-                          <tr>
-                            <td>
-                              <textarea name="tls" cols="65" rows="7" class="formpre"><?=$pconfig['tls'];?></textarea>
-                                <?=gettext("Paste your shared key here"); ?>.
-                            </td>
-                          </tr>
-                        </table>
+                        <div>
+                          <textarea id="tls" name="tls" cols="65" rows="7" class="formpre"><?=$pconfig['tls'];?></textarea>
+                          <?=gettext("Paste your shared key here"); ?>.
+                        </div>
                       </td>
                     </tr>
-                    <tr id="tls_ca">
+                    <tr class="opt_mode opt_mode_p2p_tls opt_mode_server_tls opt_mode_server_user opt_mode_server_tls_user">
                       <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Peer Certificate Authority"); ?></td>
                         <td>
 <?php
@@ -966,7 +808,7 @@ endif; ?>
                         endif; ?>
                       </td>
                     </tr>
-                    <tr id="tls_crl">
+                    <tr class="opt_mode opt_mode_p2p_tls opt_mode_server_tls opt_mode_server_user opt_mode_server_tls_user">
                       <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Peer Certificate Revocation List"); ?></td>
                       <td>
 <?php
@@ -975,21 +817,15 @@ endif; ?>
                           <option value="">None</option>
 <?php
                           foreach ($config['crl'] as $crl) :
-                              if (isset($acrl['refid'])) {
-                                  $selected = "";
-                                  $caname = "";
-                                  $ca = lookup_ca($crl['caref']);
-                                  if ($ca) {
-                                      $caname = " (CA: {$ca['descr']})";
-                                      if ($pconfig['crlref'] == $crl['refid']) {
-                                          $selected = "selected=\"selected\"";
-                                      }
-                                  }
-                              }?>
-                            <option value="<?=htmlspecialchars($crl['refid']);?>" <?=$selected;?>>
-                              <?=htmlspecialchars($crl['descr'] . $caname);?>
-                            </option>
+                              if (!isset($crl['refid'])) {
+                                  continue;
+                              }
+                              $ca = lookup_ca($crl['caref']);
+                              if ($ca) {
+                                  $selected = $pconfig['crlref'] == $crl['refid'] ? 'selected="selected"' : ''; ?>
+                            <option value="<?=htmlspecialchars($crl['refid']);?>" <?=$selected;?>><?=htmlspecialchars("{$crl['descr']} ({$ca['descr']})");?></option>
 <?php
+                              }
                           endforeach; ?>
                         </select>
 <?php
@@ -1000,7 +836,7 @@ endif; ?>
                         endif; ?>
                       </td>
                     </tr>
-                    <tr id="tls_cert">
+                    <tr class="opt_mode opt_mode_p2p_tls opt_mode_server_tls opt_mode_server_user opt_mode_server_tls_user">
                       <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Server Certificate"); ?></td>
                       <td>
 <?php
@@ -1015,7 +851,7 @@ endif; ?>
                             if (isset($cert['caref'])) {
                                 $ca = lookup_ca($cert['caref']);
                                 if (!empty($ca)) {
-                                    $caname = " (CA: {$ca['descr']})";
+                                    $caname = " ({$ca['descr']})";
                                 }
                             }
                             if ($pconfig['certref'] == $cert['refid']) {
@@ -1042,7 +878,7 @@ endif; ?>
                       endif; ?>
                       </td>
                     </tr>
-                    <tr id="tls_dh">
+                    <tr class="opt_mode opt_mode_p2p_tls opt_mode_server_tls opt_mode_server_user opt_mode_server_tls_user">
                       <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("DH Parameters Length"); ?></td>
                       <td>
                         <select name="dh_length" class="form-control">
@@ -1062,33 +898,21 @@ endif; ?>
                         </span>
                       </td>
                     </tr>
-                    <tr id="psk">
-                      <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Shared Key"); ?></td>
+                    <tr class="opt_mode opt_mode_p2p_shared_key">
+                      <td width="22%"><i class="fa fa-info-circle text-muted"></i> <?=gettext("Shared Key"); ?></td>
                       <td>
 <?php
                         if (empty($pconfig['shared_key'])) :?>
-                        <table border="0" cellpadding="2" cellspacing="0" summary="shared key">
-                          <tr>
-                            <td>
-                              <input name="autokey_enable" type="checkbox" value="yes"  <?=!empty($pconfig['autokey_enable']) ? "checked=\"checked\"" : "" ;?>  onclick="autokey_change()" />
-                            </td>
-                            <td>
-                              <span>
-                                <?=gettext("Automatically generate a shared key"); ?>.
-                              </span>
-                            </td>
-                          </tr>
-                        </table>
+                        <div>
+                          <input name="autokey_enable" id="autokey_enable" type="checkbox" value="yes"  <?=!empty($pconfig['autokey_enable']) ? "checked=\"checked\"" : "" ;?>  />
+                          <?=gettext("Automatically generate a shared key"); ?>.
+                        </div>
 <?php
                         endif; ?>
-                        <table border="0" cellpadding="2" cellspacing="0" id="autokey_opts" summary="shared key">
-                          <tr>
-                            <td>
-                              <textarea name="shared_key" cols="65" rows="7" class="formpre"><?=$pconfig['shared_key'];?></textarea>
-                                <?=gettext("Paste your shared key here"); ?>.
-                            </td>
-                          </tr>
-                        </table>
+                        <div id="autokey_opts">
+                          <textarea name="shared_key" cols="65" rows="7"><?=$pconfig['shared_key'];?></textarea>
+                          <?=gettext("Paste your shared key here"); ?>.
+                        </div>
                       </td>
                     </tr>
                     <tr>
@@ -1154,10 +978,10 @@ endif; ?>
                         </select>
                       </td>
                     </tr>
-                    <tr id="cert_depth">
+                    <tr class="opt_mode opt_mode_p2p_tls opt_mode_server_tls opt_mode_server_user opt_mode_server_tls_user">
                       <td width="22%" ><a id="help_for_cert_depth" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Certificate Depth"); ?></td>
                       <td>
-                        <table border="0" cellpadding="2" cellspacing="0" summary="certificate depth">
+                        <table>
                         <tr><td>
                         <select name="cert_depth" class="form-control">
                           <option value=""><?=gettext('Do Not Check') ?></option>
@@ -1192,7 +1016,7 @@ endif; ?>
                         </table>
                       </td>
                     </tr>
-                    <tr id="strictusercn">
+                    <tr class="opt_mode opt_mode_server_tls_user">
                       <td width="22%" ><a id="help_for_strictusercn" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Strict User/CN Matching"); ?></td>
                       <td>
                         <input name="strictusercn" type="checkbox" value="yes" <?=!empty($pconfig['strictusercn']) ? "checked=\"checked\"" : "" ;?> />
@@ -1203,15 +1027,20 @@ endif; ?>
                         </div>
                       </td>
                     </tr>
+                </table>
+              </div>
+            </div>
+          </section>
+          <section class="col-xs-12">
+            <div class="tab-content content-box col-xs-12">
+              <div class="table-responsive">
+                <table class="table table-striped opnsense_standard_table_form">
                     <tr>
-                      <td colspan="2" height="12"></td>
+                      <td colspan="2"><strong><?=gettext("Tunnel Settings"); ?></strong></td>
                     </tr>
                     <tr>
-                      <td colspan="2"><?=gettext("Tunnel Settings"); ?></td>
-                    </tr>
-                    <tr>
-                      <td id="ipv4_tunnel_network"><a id="help_for_tunnel_network" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPv4 Tunnel Network"); ?></td>
-                      <td>
+                      <td width="22%" id="ipv4_tunnel_network"><a id="help_for_tunnel_network" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPv4 Tunnel Network"); ?></td>
+                      <td witdh="78%">
                         <input name="tunnel_network" type="text" class="form-control unknown" size="20" value="<?=$pconfig['tunnel_network'];?>" />
                         <div class="hidden" for="help_for_tunnel_network">
                             <?=gettext("This is the IPv4 virtual network used for private " .
@@ -1239,10 +1068,10 @@ endif; ?>
                         </div>
                       </td>
                     </tr>
-                    <tr id="serverbridge_dhcp">
+                    <tr class="dev_mode dev_mode_tap">
                       <td width="22%" ><a id="help_for_serverbridge_dhcp" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Bridge DHCP"); ?></td>
                       <td>
-                              <input name="serverbridge_dhcp" type="checkbox" value="yes" <?=!empty($pconfig['serverbridge_dhcp']) ? "checked=\"checked\"" : "" ;?> onchange="tuntap_change()" />
+                              <input id="serverbridge_dhcp" name="serverbridge_dhcp" type="checkbox" value="yes" <?=!empty($pconfig['serverbridge_dhcp']) ? "checked=\"checked\"" : "" ;?>/>
                               <div class="hidden" for="help_for_serverbridge_dhcp">
                                 <span>
                                     <?=gettext("Allow clients on the bridge to obtain DHCP."); ?><br />
@@ -1250,10 +1079,10 @@ endif; ?>
                               </div>
                       </td>
                     </tr>
-                    <tr id="serverbridge_interface">
+                    <tr class="dev_mode dev_mode_tap">
                       <td width="22%" ><a id="help_for_serverbridge_interface" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Bridge Interface"); ?></td>
                       <td>
-                        <select name="serverbridge_interface" class="form-control">
+                        <select id="serverbridge_interface" name="serverbridge_interface" class="form-control">
 <?php
                         $serverbridge_interface['none'] = "none";
                         $serverbridge_interface = array_merge($serverbridge_interface, get_configured_interface_with_descr());
@@ -1287,10 +1116,10 @@ endif; ?>
                         </div>
                       </td>
                     </tr>
-                    <tr id="serverbridge_dhcp_start">
+                    <tr class="dev_mode dev_mode_tap">
                       <td width="22%" ><a id="help_for_serverbridge_dhcp_start" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Server Bridge DHCP Start"); ?></td>
                       <td>
-                        <input name="serverbridge_dhcp_start" type="text" class="form-control unknown" size="20" value="<?=$pconfig['serverbridge_dhcp_start'];?>" />
+                        <input  id="serverbridge_dhcp_start" name="serverbridge_dhcp_start" type="text" class="form-control unknown" size="20" value="<?=$pconfig['serverbridge_dhcp_start'];?>" />
                         <div class="hidden" for="help_for_serverbridge_dhcp_start">
                             <?=gettext("When using tap mode as a multi-point server, " .
                                                   "you may optionally supply a DHCP range to use on the " .
@@ -1301,17 +1130,16 @@ endif; ?>
                         </div>
                       </td>
                     </tr>
-                    <tr id="serverbridge_dhcp_end">
+                    <tr class="dev_mode dev_mode_tap">
                       <td width="22%" ><i class="fa fa-info-circle text-muted"></i> <?=gettext("Server Bridge DHCP End"); ?></td>
                       <td>
-                        <input name="serverbridge_dhcp_end" type="text" class="form-control unknown" size="20" value="<?=$pconfig['serverbridge_dhcp_end'];?>" />
-                        <br />
+                        <input id="serverbridge_dhcp_end" name="serverbridge_dhcp_end" type="text" class="form-control unknown" size="20" value="<?=$pconfig['serverbridge_dhcp_end'];?>" />
                       </td>
                     </tr>
-                    <tr id="gwredir_opts">
+                    <tr class="opt_mode opt_mode_p2p_tls opt_mode_server_tls opt_mode_server_user opt_mode_server_tls_user">
                       <td width="22%" ><a id="help_for_gwredir" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Redirect Gateway"); ?></td>
                       <td>
-                        <input name="gwredir" type="checkbox" value="yes" <?=!empty($pconfig['gwredir']) ? "checked=\"checked\"" : "" ;?> onclick="gwredir_change()" />
+                        <input name="gwredir" id="gwredir" type="checkbox" value="yes" <?=!empty($pconfig['gwredir']) ? "checked=\"checked\"" : "" ;?> />
                         <div class="hidden" for="help_for_gwredir">
                             <span>
                                 <?=gettext("Force all client generated traffic through the tunnel"); ?>.
@@ -1319,7 +1147,7 @@ endif; ?>
                         </div>
                       </td>
                     </tr>
-                    <tr id="local_optsv4">
+                    <tr class="opt_mode opt_mode_p2p_tls opt_mode_server_tls opt_mode_server_user opt_mode_server_tls_user opt_gwredir">
                       <td width="22%" ><a id="help_local_network" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPv4 Local Network/s"); ?></td>
                       <td>
                         <input name="local_network" type="text" class="form-control unknown" size="40" value="<?=$pconfig['local_network'];?>" />
@@ -1333,7 +1161,7 @@ endif; ?>
                         </div>
                       </td>
                     </tr>
-                    <tr id="local_optsv6">
+                    <tr class="opt_mode opt_mode_p2p_tls opt_mode_server_tls opt_mode_server_user opt_mode_server_tls_user opt_gwredir">
                       <td width="22%" ><a id="help_for_local_networkv6" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a><?=gettext("IPv6 Local Network/s"); ?></td>
                       <td>
                         <input name="local_networkv6" type="text" class="form-control unknown" size="40" value="<?=$pconfig['local_networkv6'];?>" />
@@ -1347,7 +1175,7 @@ endif; ?>
                         </div>
                       </td>
                     </tr>
-                    <tr id="remote_optsv4">
+                    <tr class="opt_mode opt_mode_p2p_tls opt_mode_p2p_shared_key">
                       <td width="22%" ><a id="help_for_remote_network" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPv4 Remote Network/s"); ?></td>
                       <td>
                         <input name="remote_network" type="text" class="form-control unknown" size="40" value="<?=$pconfig['remote_network'];?>" />
@@ -1362,7 +1190,7 @@ endif; ?>
                         </div>
                       </td>
                     </tr>
-                    <tr id="remote_optsv6">
+                    <tr class="opt_mode opt_mode_p2p_tls opt_mode_p2p_shared_key">
                       <td width="22%" ><a id="help_for_remote_networkv6" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPv6 Remote Network/s"); ?></td>
                       <td>
                         <input name="remote_networkv6" type="text" class="form-control unknown" size="40" value="<?=$pconfig['remote_networkv6'];?>" />
@@ -1378,7 +1206,7 @@ endif; ?>
                       </td>
                     </tr>
                     <tr>
-                      <td width="22%" ><a id="help_for_maxclients" href="#" class="showhelp"><a id="help_for_maxclients" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Concurrent connections");?></td>
+                      <td width="22%" ><a id="help_for_maxclients" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Concurrent connections");?></td>
                       <td>
                         <input name="maxclients" type="text" class="form-control unknown" size="5" value="<?=$pconfig['maxclients'];?>" />
                         <div class="hidden" for="help_for_maxclients">
@@ -1417,7 +1245,7 @@ endif; ?>
                         </div>
                       </td>
                     </tr>
-                    <tr id="inter_client_communication">
+                    <tr class="opt_mode opt_mode_server_tls opt_mode_server_user opt_mode_server_tls_user">
                       <td width="22%" ><a id="help_for_client2client" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Inter-client communication"); ?></td>
                       <td>
                           <input name="client2client" type="checkbox" value="yes"  <?=!empty($pconfig['client2client']) ? "checked=\"checked\"" : "" ;?> />
@@ -1439,7 +1267,7 @@ endif; ?>
                             </div>
                       </td>
                     </tr>
-                    <tr id="chkboxNoTunIPv6">
+                    <tr class="dev_mode dev_mode_tun">
                       <td width="22%" ><a id="help_for_no_tun_ipv6" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Disable IPv6"); ?></td>
                       <td>
                         <input name="no_tun_ipv6" type="checkbox" value="yes" <?=!empty($pconfig['no_tun_ipv6']) ? "checked=\"checked\"" : "" ;?> />
@@ -1450,15 +1278,20 @@ endif; ?>
                         </div>
                       </td>
                     </tr>
+                  </table>
+                </div>
+              </div>
+            </section>
+            <section class="col-xs-12">
+              <div class="tab-content content-box col-xs-12">
+                <div class="table-responsive">
+                  <table class="table table-striped opnsense_standard_table_form">
                     <tr>
-                      <td colspan="2" height="12"></td>
-                    </tr>
-                    <tr>
-                      <td colspan="2"><?=gettext("Client Settings"); ?></td>
+                      <td colspan="2"><strong><?=gettext("Client Settings"); ?></strong></td>
                     </tr>
                     <tr>
                       <td width="22%" ><a id="help_for_dynamic_ip" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Dynamic IP"); ?></td>
-                      <td>
+                      <td width="78%">
                         <input name="dynamic_ip" type="checkbox" id="dynamic_ip" value="yes" <?=!empty($pconfig['dynamic_ip']) ? "checked=\"checked\"" : "" ;?> />
                         <div class="hidden" for="help_for_dynamic_ip">
                           <span>
@@ -1478,7 +1311,7 @@ endif; ?>
                         </div>
                       </td>
                     </tr>
-                    <tr id="topology_subnet_opt">
+                    <tr class="dev_mode dev_mode_tun" id="topology_subnet_opt">
                       <td width="22%" ><a id="help_for_topology_subnet" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Topology"); ?></td>
                       <td>
                         <input name="topology_subnet" type="checkbox" id="topology_subnet" value="yes"  <?=!empty($pconfig['topology_subnet']) ? "checked=\"checked\"" : "" ;?> />
@@ -1494,8 +1327,8 @@ endif; ?>
                     <tr>
                       <td width="22%" ><a id="help_for_dns_domain" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("DNS Default Domain"); ?></td>
                       <td>
-                        <input name="dns_domain_enable" type="checkbox" id="dns_domain_enable" value="yes" <?=!empty($pconfig['dns_domain']) ? "checked=\"checked\"" : "" ;?>  onclick="dns_domain_change()" />
-                        <div id="dns_domain_data" summary="dns domain data">
+                        <input name="dns_domain_enable" type="checkbox" id="dns_domain_enable" value="yes" <?=!empty($pconfig['dns_domain']) ? "checked=\"checked\"" : "" ;?> />
+                        <div id="dns_domain_data">
                               <input name="dns_domain" type="text" class="form-control unknown" id="dns_domain" size="30" value="<?=htmlspecialchars($pconfig['dns_domain']);?>" />
                         </div>
                         <div class="hidden" for="help_for_dns_domain">
@@ -1508,8 +1341,8 @@ endif; ?>
                     <tr>
                       <td width="22%" ><a id="help_for_dns_server" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("DNS Servers"); ?></td>
                       <td>
-                        <input name="dns_server_enable" type="checkbox" id="dns_server_enable" value="yes" <?=!empty($pconfig['dns_server1']) || !empty($pconfig['dns_server2']) || !empty($pconfig['dns_server3']) || !empty($pconfig['dns_server4']) ? "checked=\"checked\"" : "" ;?> onclick="dns_server_change()" />
-                        <div id="dns_server_data" summary="dns servers">
+                        <input name="dns_server_enable" type="checkbox" id="dns_server_enable" value="yes" <?=!empty($pconfig['dns_server1']) || !empty($pconfig['dns_server2']) || !empty($pconfig['dns_server3']) || !empty($pconfig['dns_server4']) ? "checked=\"checked\"" : "" ;?> />
+                        <div id="dns_server_data">
                               <span>
                                 <?=gettext("Server #1:"); ?>&nbsp;
                               </span>
@@ -1548,8 +1381,8 @@ endif; ?>
                     <tr>
                       <td width="22%" ><a id="help_for_ntp_server_enable" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("NTP Servers"); ?></td>
                       <td>
-                        <input name="ntp_server_enable" type="checkbox" id="ntp_server_enable" value="yes" <?=!empty($pconfig['ntp_server1']) || !empty($pconfig['ntp_server2']) ? "checked=\"checked\"" : "" ;?>  onclick="ntp_server_change()" />
-                        <div id="ntp_server_data" summary="ntp servers">
+                        <input name="ntp_server_enable" type="checkbox" id="ntp_server_enable" value="yes" <?=!empty($pconfig['ntp_server1']) || !empty($pconfig['ntp_server2']) ? "checked=\"checked\"" : "" ;?>  />
+                        <div id="ntp_server_data">
                           <span>
                             <?=gettext("Server #1:"); ?>&nbsp;
                           </span>
@@ -1569,14 +1402,14 @@ endif; ?>
                     <tr>
                       <td width="22%" ><a id="help_for_netbios_enable" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("NetBIOS Options"); ?></td>
                       <td>
-                        <input name="netbios_enable" type="checkbox" id="netbios_enable" value="yes" <?=!empty($pconfig['netbios_enable']) ? "checked=\"checked\"" : "" ;?> onclick="netbios_change()" />
+                        <input name="netbios_enable" type="checkbox" id="netbios_enable" value="yes" <?=!empty($pconfig['netbios_enable']) ? "checked=\"checked\"" : "" ;?>  />
                         <div class="hidden" for="help_for_netbios_enable">
                           <span>
                             <?=gettext("Enable NetBIOS over TCP/IP"); ?><br />
                             <?=gettext("If this option is not set, all NetBIOS-over-TCP/IP options (including WINS) will be disabled"); ?>.
                           </span>
                         </div>
-                        <div id="netbios_data" summary="netboios options">
+                        <div id="netbios_data">
                           <span>
                             <?=gettext("Node Type"); ?>:&nbsp;
                           </span>
@@ -1615,13 +1448,13 @@ endif; ?>
                     <tr id="wins_opts">
                       <td width="22%" ><a id="help_for_wins_server" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("WINS Servers"); ?></td>
                       <td>
-                        <input name="wins_server_enable" type="checkbox" id="wins_server_enable" value="yes" <?=!empty($pconfig['wins_server1']) || !empty($pconfig['wins_server2']) ? "checked=\"checked\"" : "" ;?>  onclick="wins_server_change()" />
+                        <input name="wins_server_enable" type="checkbox" id="wins_server_enable" value="yes" <?=!empty($pconfig['wins_server1']) || !empty($pconfig['wins_server2']) ? "checked=\"checked\"" : "" ;?> />
                         <div class="hidden" for="help_for_wins_server">
                           <span>
                             <?=gettext("Provide a WINS server list to clients"); ?><br />
                           </span>
                         </div>
-                        <div id="wins_server_data" summary="wins servers">
+                        <div id="wins_server_data">
                           <span>
                             <?=gettext("Server #1:"); ?>&nbsp;
                           </span>
@@ -1636,8 +1469,8 @@ endif; ?>
                     <tr>
                       <td width="22%" ><a id="help_for_client_mgmt_port" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Client Management Port"); ?></td>
                       <td>
-                        <input name="client_mgmt_port_enable" type="checkbox" id="client_mgmt_port_enable" value="yes" <?=!empty($pconfig['client_mgmt_port']) ? "checked=\"checked\"" : "" ;?> onclick="client_mgmt_port_change()" />
-                        <div id="client_mgmt_port_data" summary="client management port">
+                        <input name="client_mgmt_port_enable" type="checkbox" id="client_mgmt_port_enable" value="yes" <?=!empty($pconfig['client_mgmt_port']) ? "checked=\"checked\"" : "" ;?> />
+                        <div id="client_mgmt_port_data">
                               <input name="client_mgmt_port" type="text" class="form-control unknown" id="client_mgmt_port" size="30" value="<?=htmlspecialchars($pconfig['client_mgmt_port']);?>" />
                         </div>
                         <div class="hidden" for="help_for_client_mgmt_port">
@@ -1647,11 +1480,16 @@ endif; ?>
                         </div>
                       </td>
                     </tr>
+                  </table>
+                </div>
+              </div>
+            </section>
+            <section class="col-xs-12">
+              <div class="tab-content content-box col-xs-12">
+                <div class="table-responsive">
+                  <table class="table table-striped opnsense_standard_table_form">
                     <tr>
-                      <td colspan="2" height="12"></td>
-                    </tr>
-                    <tr>
-                      <td colspan="2"><?=gettext("Advanced configuration"); ?></td>
+                      <td colspan="2"><strong><?=gettext("Advanced configuration"); ?></strong></td>
                     </tr>
                     <tr>
                       <td width="22%" ><a id="help_for_custom_options" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Advanced"); ?></td>
@@ -1703,9 +1541,14 @@ endif; ?>
                     </tr>
                   </table>
                 </div>
-              </form>
+               </div>
+             </section>
+           </form>
+
 <?php
               else :?>
+          <section class="col-xs-12">
+            <div class="tab-content content-box col-xs-12">
               <table class="table table-striped">
                 <thead>
                 <tr>
@@ -1754,10 +1597,10 @@ endif; ?>
                   </td></tr>
                 </tfoot>
               </table>
+            </div>
+          </section>
 <?php
               endif; ?>
-          </div>
-        </section>
       </div>
     </div>
   </section>

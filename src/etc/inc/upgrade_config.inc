@@ -42,6 +42,110 @@ function dump_rrd_to_xml($rrddatabase, $xmldumpfile)
 	return($dumpret);
 }
 
+/* This xml 2 array function is courtesy of the php.net comment section on xml_parse. */
+function xml2array($contents, $get_attributes = 1, $priority = 'tag')
+{
+    if (!function_exists('xml_parser_create'))
+    {
+        return array ();
+    }
+    $parser = xml_parser_create('');
+    xml_parser_set_option($parser, XML_OPTION_TARGET_ENCODING, "UTF-8");
+    xml_parser_set_option($parser, XML_OPTION_CASE_FOLDING, 0);
+    xml_parser_set_option($parser, XML_OPTION_SKIP_WHITE, 1);
+    xml_parse_into_struct($parser, trim($contents), $xml_values);
+    xml_parser_free($parser);
+    if (!$xml_values) {
+        return; //Hmm...
+    }
+    $xml_array = array ();
+    $parents = array ();
+    $opened_tags = array ();
+    $arr = array ();
+    $current = & $xml_array;
+    $repeated_tag_index = array ();
+    foreach ($xml_values as $data) {
+        unset ($attributes, $value);
+        extract($data);
+        $result = array ();
+        $attributes_data = array ();
+        if (isset ($value))
+        {
+            if ($priority == 'tag') {
+                $result = $value;
+            } else {
+                $result['value'] = $value;
+            }
+        }
+        if (isset ($attributes) and $get_attributes) {
+            foreach ($attributes as $attr => $val) {
+                if ($priority == 'tag') {
+                    $attributes_data[$attr] = $val;
+                } else {
+                    $result['attr'][$attr] = $val; //Set all the attributes in a array called 'attr'
+                }
+            }
+        }
+        if ($type == "open") {
+            $parent[$level -1] = & $current;
+            if (!is_array($current) || (!in_array($tag, array_keys($current)))) {
+                $current[$tag] = $result;
+                if ($attributes_data) {
+                    $current[$tag . '_attr'] = $attributes_data;
+                }
+                $repeated_tag_index[$tag . '_' . $level] = 1;
+                $current = & $current[$tag];
+            } else {
+                if (isset ($current[$tag][0])) {
+                    $current[$tag][$repeated_tag_index[$tag . '_' . $level]] = $result;
+                    $repeated_tag_index[$tag . '_' . $level]++;
+                } else {
+                    $current[$tag] = array ($current[$tag], $result );
+                    $repeated_tag_index[$tag . '_' . $level] = 2;
+                    if (isset ($current[$tag . '_attr'])) {
+                        $current[$tag]['0_attr'] = $current[$tag . '_attr'];
+                        unset ($current[$tag . '_attr']);
+                    }
+                }
+                $last_item_index = $repeated_tag_index[$tag . '_' . $level] - 1;
+                $current = & $current[$tag][$last_item_index];
+            }
+        } elseif ($type == "complete") {
+            if (!isset ($current[$tag])) {
+                $current[$tag] = $result;
+                $repeated_tag_index[$tag . '_' . $level] = 1;
+                if ($priority == 'tag' and $attributes_data) {
+                    $current[$tag . '_attr'] = $attributes_data;
+                }
+            } else {
+                if (isset ($current[$tag][0]) and is_array($current[$tag])) {
+                    $current[$tag][$repeated_tag_index[$tag . '_' . $level]] = $result;
+                    if ($priority == 'tag' and $get_attributes and $attributes_data) {
+                        $current[$tag][$repeated_tag_index[$tag . '_' . $level] . '_attr'] = $attributes_data;
+                    }
+                    $repeated_tag_index[$tag . '_' . $level]++;
+                } else {
+                    $current[$tag] = array ($current[$tag], $result );
+                    $repeated_tag_index[$tag . '_' . $level] = 1;
+                    if ($priority == 'tag' and $get_attributes) {
+                        if (isset ($current[$tag . '_attr'])) {
+                            $current[$tag]['0_attr'] = $current[$tag . '_attr'];
+                            unset ($current[$tag . '_attr']);
+                        }
+                        if ($attributes_data) {
+                            $current[$tag][$repeated_tag_index[$tag . '_' . $level] . '_attr'] = $attributes_data;
+                        }
+                    }
+                    $repeated_tag_index[$tag . '_' . $level]++; //0 and 1 index is already taken
+                }
+            }
+        } elseif ($type == 'close') {
+            $current = & $parent[$level -1];
+        }
+    }
+    return ($xml_array);
+}
+
 function migrate_rrd_format($rrdoldxml, $rrdnewxml) {
 	if(!file_exists("/tmp/rrd_notice_sent.txt")) {
 		$_gb = exec("echo 'Converting RRD configuration to new format.  This might take a bit...' | wall");
@@ -573,87 +677,87 @@ function upgrade_040_to_041() {
 		$config['sysctl']['item'] = array();
 
 		$config['sysctl']['item'][0]['tunable'] = "net.inet.tcp.blackhole";
-		$config['sysctl']['item'][0]['descr'] =    gettext("Drop packets to closed TCP ports without returning a RST");
+		$config['sysctl']['item'][0]['descr'] =   "Drop packets to closed TCP ports without returning a RST";
 		$config['sysctl']['item'][0]['value'] =   "default";
 
 		$config['sysctl']['item'][1]['tunable'] = "net.inet.udp.blackhole";
-		$config['sysctl']['item'][1]['descr'] =    gettext("Do not send ICMP port unreachable messages for closed UDP ports");
+		$config['sysctl']['item'][1]['descr'] =   "Do not send ICMP port unreachable messages for closed UDP ports";
 		$config['sysctl']['item'][1]['value'] =   "default";
 
 		$config['sysctl']['item'][2]['tunable'] = "net.inet.ip.random_id";
-		$config['sysctl']['item'][2]['descr'] =    gettext("Randomize the ID field in IP packets (default is 0: sequential IP IDs)");
+		$config['sysctl']['item'][2]['descr'] =   "Randomize the ID field in IP packets (default is 0: sequential IP IDs)";
 		$config['sysctl']['item'][2]['value'] =   "default";
 
 		$config['sysctl']['item'][3]['tunable'] = "net.inet.tcp.drop_synfin";
-		$config['sysctl']['item'][3]['descr'] =    gettext("Drop SYN-FIN packets (breaks RFC1379, but nobody uses it anyway)");
+		$config['sysctl']['item'][3]['descr'] =   "Drop SYN-FIN packets (breaks RFC1379, but nobody uses it anyway)";
 		$config['sysctl']['item'][3]['value'] =   "default";
 
 		$config['sysctl']['item'][4]['tunable'] = "net.inet.ip.redirect";
-		$config['sysctl']['item'][4]['descr'] =    gettext("Sending of IPv4 ICMP redirects");
+		$config['sysctl']['item'][4]['descr'] =   "Sending of IPv4 ICMP redirects";
 		$config['sysctl']['item'][4]['value'] =   "default";
 
 		$config['sysctl']['item'][5]['tunable'] = "net.inet6.ip6.redirect";
-		$config['sysctl']['item'][5]['descr'] =    gettext("Sending of IPv6 ICMP redirects");
+		$config['sysctl']['item'][5]['descr'] =   "Sending of IPv6 ICMP redirects";
 		$config['sysctl']['item'][5]['value'] =   "default";
 
 		$config['sysctl']['item'][6]['tunable'] = "net.inet.tcp.syncookies";
-		$config['sysctl']['item'][6]['descr'] =    gettext("Generate SYN cookies for outbound SYN-ACK packets");
+		$config['sysctl']['item'][6]['descr'] =   "Generate SYN cookies for outbound SYN-ACK packets";
 		$config['sysctl']['item'][6]['value'] =   "default";
 
 		$config['sysctl']['item'][7]['tunable'] = "net.inet.tcp.recvspace";
-		$config['sysctl']['item'][7]['descr'] =    gettext("Maximum incoming TCP datagram size");
+		$config['sysctl']['item'][7]['descr'] =   "Maximum incoming TCP datagram size";
 		$config['sysctl']['item'][7]['value'] =   "default";
 
 		$config['sysctl']['item'][8]['tunable'] = "net.inet.tcp.sendspace";
-		$config['sysctl']['item'][8]['descr'] =    gettext("Maximum outgoing TCP datagram size");
+		$config['sysctl']['item'][8]['descr'] =   "Maximum outgoing TCP datagram size";
 		$config['sysctl']['item'][8]['value'] =   "default";
 
 		$config['sysctl']['item'][9]['tunable'] = "net.inet.ip.fastforwarding";
-		$config['sysctl']['item'][9]['descr'] =    gettext("Fastforwarding (see http://lists.freebsd.org/pipermail/freebsd-net/2004-January/002534.html)");
+		$config['sysctl']['item'][9]['descr'] =   "Fastforwarding (see http://lists.freebsd.org/pipermail/freebsd-net/2004-January/002534.html)";
 		$config['sysctl']['item'][9]['value'] =   "default";
 
 		$config['sysctl']['item'][10]['tunable'] = "net.inet.tcp.delayed_ack";
-		$config['sysctl']['item'][10]['descr'] =    gettext("Do not delay ACK to try and piggyback it onto a data packet");
+		$config['sysctl']['item'][10]['descr'] =   "Do not delay ACK to try and piggyback it onto a data packet";
 		$config['sysctl']['item'][10]['value'] =   "default";
 
 		$config['sysctl']['item'][11]['tunable'] = "net.inet.udp.maxdgram";
-		$config['sysctl']['item'][11]['descr'] =    gettext("Maximum outgoing UDP datagram size");
+		$config['sysctl']['item'][11]['descr'] =   "Maximum outgoing UDP datagram size";
 		$config['sysctl']['item'][11]['value'] =   "default";
 
 		$config['sysctl']['item'][12]['tunable'] = "net.link.bridge.pfil_onlyip";
-		$config['sysctl']['item'][12]['descr'] =    gettext("Handling of non-IP packets which are not passed to pfil (see if_bridge(4))");
+		$config['sysctl']['item'][12]['descr'] =   "Handling of non-IP packets which are not passed to pfil (see if_bridge(4))";
 		$config['sysctl']['item'][12]['value'] =   "default";
 
 		$config['sysctl']['item'][13]['tunable'] = "net.link.tap.user_open";
-		$config['sysctl']['item'][13]['descr'] =    gettext("Allow unprivileged access to tap(4) device nodes");
+		$config['sysctl']['item'][13]['descr'] =   "Allow unprivileged access to tap(4) device nodes";
 		$config['sysctl']['item'][13]['value'] =   "default";
 
 		$config['sysctl']['item'][15]['tunable'] = "kern.randompid";
-		$config['sysctl']['item'][15]['descr'] =    gettext("Randomize PID's (see src/sys/kern/kern_fork.c: sysctl_kern_randompid())");
+		$config['sysctl']['item'][15]['descr'] =   "Randomize PID's (see src/sys/kern/kern_fork.c: sysctl_kern_randompid())";
 		$config['sysctl']['item'][15]['value'] =   "default";
 
 		$config['sysctl']['item'][16]['tunable'] = "net.inet.tcp.inflight.enable";
-		$config['sysctl']['item'][16]['descr'] =    gettext("The system will attempt to calculate the bandwidth delay product for each connection and limit the amount of data queued to the network to just the amount required to maintain optimum throughput. ");
+		$config['sysctl']['item'][16]['descr'] =   "The system will attempt to calculate the bandwidth delay product for each connection and limit the amount of data queued to the network to just the amount required to maintain optimum throughput.";
 		$config['sysctl']['item'][16]['value'] =   "default";
 
 		$config['sysctl']['item'][17]['tunable'] = "net.inet.icmp.icmplim";
-		$config['sysctl']['item'][17]['descr'] =    gettext("Set ICMP Limits");
+		$config['sysctl']['item'][17]['descr'] =   "Set ICMP Limits";
 		$config['sysctl']['item'][17]['value'] =   "default";
 
 		$config['sysctl']['item'][18]['tunable'] = "net.inet.tcp.tso";
-		$config['sysctl']['item'][18]['descr'] =    gettext("TCP Offload engine");
+		$config['sysctl']['item'][18]['descr'] =   "TCP Offload engine";
 		$config['sysctl']['item'][18]['value'] =   "default";
 
 		$config['sysctl']['item'][19]['tunable'] = "net.inet.ip.portrange.first";
-		$config['sysctl']['item'][19]['descr'] =    "Set the ephemeral port range starting port";
+		$config['sysctl']['item'][19]['descr'] =   "Set the ephemeral port range starting port";
 		$config['sysctl']['item'][19]['value'] =   "default";
 
 		$config['sysctl']['item'][20]['tunable'] = "hw.syscons.kbd_reboot";
-		$config['sysctl']['item'][20]['descr'] =    "Enables ctrl+alt+delete";
+		$config['sysctl']['item'][20]['descr'] =   "Enables ctrl+alt+delete";
 		$config['sysctl']['item'][20]['value'] =   "default";
 
 		$config['sysctl']['item'][21]['tunable'] = "kern.ipc.maxsockbuf";
-		$config['sysctl']['item'][21]['descr'] =    "Maximum socket buffer size";
+		$config['sysctl']['item'][21]['descr'] =   "Maximum socket buffer size";
 		$config['sysctl']['item'][21]['value'] =   "default";
 
 	}
@@ -1926,13 +2030,10 @@ function upgrade_053_to_054() {
 	}
 }
 
-
 function upgrade_054_to_055()
 {
 	global $config;
 
-	/* RRD files changed for quality, traffic and packets graphs */
-	//ini_set("max_execution_time", "1800");
 	/* convert traffic RRD file */
 	global $parsedcfg, $listtags;
 	$listtags = array("ds", "v", "rra", "row");

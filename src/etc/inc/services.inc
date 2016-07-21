@@ -412,7 +412,7 @@ function services_dhcpd_configure($family = 'all', $blacklist = array())
     }
 }
 
-function is_dhcp_server_enabled()
+function is_dhcpv4_server_enabled()
 {
     global $config;
 
@@ -432,6 +432,7 @@ function is_dhcp_server_enabled()
 function services_dhcpdv4_configure()
 {
     global $config, $g;
+
     $need_ddns_updates = false;
     $ddns_zones = array();
 
@@ -439,7 +440,7 @@ function services_dhcpdv4_configure()
     killbypid("{$g['dhcpd_chroot_path']}/var/run/dhcpd.pid");
 
     /* DHCP enabled on any interfaces? */
-    if (!is_dhcp_server_enabled()) {
+    if (!is_dhcpv4_server_enabled()) {
         return 0;
     }
 
@@ -566,8 +567,8 @@ EOPP;
 
     $Iflist = get_configured_interface_list();
     foreach ($config['dhcpd'] as $dhcpif => $dhcpifconf) {
-        $newzone = array();
         $ifcfg = $config['interfaces'][$dhcpif];
+        $newzone = array();
 
         if (!isset($dhcpifconf['enable']) || !isset($Iflist[$dhcpif])) {
             continue;
@@ -599,7 +600,6 @@ EOPP;
 
         if (isset($dhcpifconf['ddnsupdate'])) {
             $need_ddns_updates = true;
-            $newzone = array();
             if (!empty($dhcpifconf['ddnsdomain'])) {
                 $newzone['domain-name'] = $dhcpifconf['ddnsdomain'];
                 $dnscfg .= "  ddns-domainname \"{$dhcpifconf['ddnsdomain']}\";\n";
@@ -911,9 +911,9 @@ EOD;
 
                 if (isset($sm['ddnsupdate'])) {
                     if (($sm['ddnsdomain'] <> "") && ($sm['ddnsdomain'] != $dhcpifconf['ddnsdomain'])) {
-                        $pdnscfg .= "    ddns-domainname \"{$sm['ddnsdomain']}\";\n";
+                        $smdnscfg .= "    ddns-domainname \"{$sm['ddnsdomain']}\";\n";
                     }
-                    $pdnscfg .= "    ddns-update-style interim;\n";
+                    $smdnscfg .= "    ddns-update-style interim;\n";
                 }
 
                 if (!empty($sm['dnsserver']) && ($sm['dnsserver'][0]) && ($sm['dnsserver'][0] != $dhcpifconf['dnsserver'][0])) {
@@ -953,18 +953,19 @@ EOD;
 
         $dhcpdifs[] = get_real_interface($dhcpif);
         if (!empty($newzone['domain-name'])) {
-            if ($need_ddns_updates) {
+            if (isset($dhcpifconf['ddnsupdate'])) {
                 $newzone['dns-servers'] = array($dhcpifconf['ddnsdomainprimary']);
+                $newzone['ddnsdomainkeyname'] = $dhcpifconf['ddnsdomainkeyname'];
+                $newzone['ddnsdomainkey'] = $dhcpifconf['ddnsdomainkey'];
+                $ddns_zones[] = $newzone;
             }
-            $ddns_zones[] = $newzone;
         }
     }
 
     if ($need_ddns_updates) {
         $dhcpdconf .= "ddns-update-style interim;\n";
         $dhcpdconf .= "update-static-leases on;\n";
-        $dhcpdconf .= dhcpdkey($dhcpifconf);
-        $dhcpdconf .= dhcpdzones($ddns_zones, $dhcpifconf);
+        $dhcpdconf .= services_dhcpd_zones($ddns_zones);
     }
 
     /* write dhcpd.conf */
@@ -994,29 +995,18 @@ EOD;
     return 0;
 }
 
-function dhcpdkey($dhcpifconf)
+function services_dhcpd_zones($ddns_zones)
 {
-    $dhcpdconf = "";
-    if ($dhcpifconf['ddnsdomainkeyname'] <> "" && $dhcpifconf['ddnsdomainkey'] <> "") {
-        $dhcpdconf .= "key {$dhcpifconf['ddnsdomainkeyname']} {\n";
-        $dhcpdconf .= "  algorithm hmac-md5;\n";
-        $dhcpdconf .= "  secret {$dhcpifconf['ddnsdomainkey']};\n";
-        $dhcpdconf .= "}\n";
-    }
-
-    return $dhcpdconf;
-}
-
-function dhcpdzones($ddns_zones, $dhcpifconf)
-{
-    $dhcpdconf = "";
+    $dhcpdconf = '';
 
     if (is_array($ddns_zones)) {
         $added_zones = array();
+        $added_keys = array();
         foreach ($ddns_zones as $zone) {
             if (!is_array($zone) || empty($zone) || !is_array($zone['dns-servers'])) {
                 continue;
             }
+
             $primary = $zone['dns-servers'][0];
             $secondary = empty($zone['dns-servers'][1]) ? "" : $zone['dns-servers'][1];
 
@@ -1031,29 +1021,28 @@ function dhcpdzones($ddns_zones, $dhcpifconf)
             }
 
             // We don't need to add zones multiple times.
-            if ($zone['domain-name'] && !in_array($zone['domain-name'], $added_zones)) {
-                $dhcpdconf .= "zone {$zone['domain-name']}. {\n";
-                $dhcpdconf .= "  primary {$primary};\n";
-                if (is_ipaddrv4($secondary)) {
-                    $dhcpdconf .= "  secondary {$secondary};\n";
+            foreach (array($zone['domain-name'], $zone['ptr-domain']) as $domain) {
+                if (!empty($domain) && !in_array($domain, $added_zones)) {
+                    /* dhcpdconf2 is injected *after* the key */
+                    $dhcpdconf2 = "zone {$domain}. {\n";
+                    $dhcpdconf2 .= "  primary {$primary};\n";
+                    if (is_ipaddrv4($secondary)) {
+                        $dhcpdconf2 .= "  secondary {$secondary};\n";
+                    }
+                    if (!empty($zone['ddnsdomainkeyname']) && !empty($zone['ddnsdomainkey'])) {
+                        if (!in_array($zone['ddnsdomainkeyname'], $added_keys)) {
+                            $dhcpdconf .= "key {$zone['ddnsdomainkeyname']} {\n";
+                            $dhcpdconf .= "  algorithm hmac-md5;\n";
+                            $dhcpdconf .= "  secret {$zone['ddnsdomainkey']};\n";
+                            $dhcpdconf .= "}\n";
+                            $added_keys[] = $zone['ddnsdomainkeyname'];
+                        }
+                        $dhcpdconf2 .= "  key {$zone['ddnsdomainkeyname']};\n";
+                    }
+                    $dhcpdconf2 .= "}\n";
+                    $dhcpdconf .= $dhcpdconf2;
+                    $added_zones[] = $domain;
                 }
-                if ($dhcpifconf['ddnsdomainkeyname'] <> "" && $dhcpifconf['ddnsdomainkey'] <> "") {
-                    $dhcpdconf .= "  key {$dhcpifconf['ddnsdomainkeyname']};\n";
-                }
-                $dhcpdconf .= "}\n";
-                $added_zones[] = $zone['domain-name'];
-            }
-            if ($zone['ptr-domain'] && !in_array($zone['ptr-domain'], $added_zones)) {
-                $dhcpdconf .= "zone {$zone['ptr-domain']} {\n";
-                $dhcpdconf .= "  primary {$primary};\n";
-                if (is_ipaddrv4($secondary)) {
-                    $dhcpdconf .= "  secondary {$secondary};\n";
-                }
-                if ($dhcpifconf['ddnsdomainkeyname'] <> "" && $dhcpifconf['ddnsdomainkey'] <> "") {
-                    $dhcpdconf .= "  key {$dhcpifconf['ddnsdomainkeyname']};\n";
-                }
-                $dhcpdconf .= "}\n";
-                $added_zones[] = $zone['ptr-domain'];
             }
         }
     }
@@ -1065,9 +1054,10 @@ function is_dhcpv6_server_enabled()
 {
     global $config;
 
-    if (is_array($config['interfaces'])) {
-        foreach (legacy_config_get_interfaces(array("virtual" => false)) as $ifcfg) {
-            if (isset($ifcfg['enable']) && !empty($ifcfg['track6-interface'])) {
+    foreach (legacy_config_get_interfaces(array('virtual' => false)) as $ifcfg) {
+        if (isset($ifcfg['enable']) && !empty($ifcfg['track6-interface'])) {
+            $pdlen = calculate_ipv6_delegation_length($ifcfg['track6-interface']);
+            if ($pdlen > 2) {
                 return true;
             }
         }
@@ -1197,13 +1187,13 @@ authoritative;
 EOD;
 
     $dhcpdv6ifs = array();
-    $dhcpv6num = 0;
+    $ddns_zones = array();
     $nsupdate = false;
+    $dhcpv6num = 0;
 
     foreach ($dhcpdv6cfg as $dhcpv6if => $dhcpv6ifconf) {
-        $ddns_zones = array();
-
         $ifcfgv6 = $config['interfaces'][$dhcpv6if];
+        $newzone = array();
 
         if (!isset($dhcpv6ifconf['enable']) || !isset($Iflist[$dhcpv6if])) {
             continue;
@@ -1222,10 +1212,13 @@ EOD;
         }
 
         if (isset($dhcpv6ifconf['ddnsupdate'])) {
-            if ($dhcpv6ifconf['ddnsdomain'] <> "") {
+            if (!empty($dhcpv6ifconf['ddnsdomain'])) {
                 $dnscfgv6 .= "  ddns-domainname \"{$dhcpv6ifconf['ddnsdomain']}\";\n";
+                $newzone['domain-name'] = $dhcpv6ifconf['ddnsdomain'];
+            } else {
+                $newzone['domain-name'] = $config['system']['domain'];
             }
-            $dnscfgv6 .= "  ddns-update-style interim;\n";
+
             $nsupdate = true;
         }
 
@@ -1243,13 +1236,6 @@ EOD;
             if (!empty($dns_arrv6)) {
                 $dnscfgv6 .= "  option dhcp6.name-servers " . join(",", $dns_arrv6) . ";";
             }
-        }
-
-        if (!empty($dhcpv6ifconf['domain'])) {
-            $newzone = array();
-            $newzone['domain-name'] = $dhcpv6ifconf['domain'];
-            $newzone['dns-servers'][] = $dhcpv6ifconf['ddnsdomainprimary'];
-            $ddns_zones[] = $newzone;
         }
 
         if (is_ipaddrv6($ifcfgipv6)) {
@@ -1349,9 +1335,13 @@ EOD;
             }
         }
 
-        if (!empty($dhcpv6ifconf['domain'])) {
-            $dhcpdv6conf .= dhcpdkey($dhcpv6ifconf);
-            $dhcpdv6conf .= dhcpdzones($ddns_zones, $dhcpv6ifconf);
+        if (!empty($newzone['domain-name'])) {
+            if (isset($dhcpv6ifconf['ddnsupdate'])) {
+                $newzone['dns-servers'] = array($dhcpv6ifconf['ddnsdomainprimary']);
+                $newzone['ddnsdomainkeyname'] = $dhcpv6ifconf['ddnsdomainkeyname'];
+                $newzone['ddnsdomainkey'] = $dhcpv6ifconf['ddnsdomainkey'];
+                $ddns_zones[] = $newzone;
+            }
         }
 
         if (isset($config['dhcpdv6'][$dhcpv6if]['ramode']) && $config['dhcpdv6'][$dhcpv6if]['ramode'] <> "unmanaged") {
@@ -1374,6 +1364,7 @@ EOD;
 
     if ($nsupdate) {
         $dhcpdv6conf .= "ddns-update-style interim;\n";
+        $dhcpdv6conf .= services_dhcpd_zones($ddns_zones);
     } else {
         $dhcpdv6conf .= "ddns-update-style none;\n";
     }
@@ -1475,6 +1466,7 @@ EOD;
 function services_dhcrelay_configure()
 {
     global $config;
+    $dhcrelayifs = array();
 
     /* kill any running dhcrelay */
     killbypid('/var/run/dhcrelay.pid');
@@ -1596,6 +1588,7 @@ function services_dhcrelay_configure()
 function services_dhcrelay6_configure()
 {
     global $config;
+    $dhcrelayifs = array();
 
     /* kill any running dhcrelay */
     killbypid('/var/run/dhcrelay6.pid');
@@ -1836,7 +1829,7 @@ function dyndnsCheckIP($int)
     return $ip_address;
 }
 
-function services_dnsmasq_configure()
+function services_dnsmasq_configure($dhcp_reload = true)
 {
     global $config;
 
@@ -1847,14 +1840,11 @@ function services_dnsmasq_configure()
         "local-ttl" => "--local-ttl=1"
     );
 
-    /* kill any running dnsmasq */
-    killbypid('/var/run/dnsmasq.pid');
+    killbypid('/var/run/dnsmasq.pid', 'TERM', true);
 
     if (isset($config['dnsmasq']['enable'])) {
         if (file_exists("/var/run/booting")) {
             echo gettext("Starting DNS forwarder...");
-        } else {
-            sleep(1);
         }
 
         $args = "";
@@ -1984,44 +1974,41 @@ function services_dnsmasq_configure()
         }
     }
 
-    if (!file_exists("/var/run/booting")) {
-        if (services_dhcpd_configure()!=0) {
-            return 1;
-        }
+    /*
+     * XXX this is overly convoluted, potentiall
+     * restarting all of dhcp up to three times ;)
+     */
+    if (!file_exists("/var/run/booting") && $dhcp_reload) {
+        services_dhcpd_configure();
     }
-
-    return 0;
 }
 
-function services_unbound_configure()
+function services_unbound_configure($dhcp_reload = true)
 {
     global $config;
-    $return = 0;
 
-    // kill any running Unbound instance
-    killbypid('/var/run/unbound.pid');
+    killbypid('/var/run/unbound.pid', 'TERM', true);
 
     if (isset($config['unbound']['enable'])) {
         if (file_exists("/var/run/booting")) {
             echo gettext("Starting DNS Resolver...");
-        } else {
-            sleep(1);
         }
 
         sync_unbound_service();
         system_dhcpleases_configure();
+
         if (file_exists("/var/run/booting")) {
             echo gettext("done.") . "\n";
         }
     }
 
-    if (!file_exists("/var/run/booting")) {
-        if (services_dhcpd_configure()!=0) {
-            $return = 1;
-        }
+    /*
+     * XXX this is overly convoluted, potentially
+     * restarting all of dhcp up to three times ;)
+     */
+    if (!file_exists("/var/run/booting") && $dhcp_reload) {
+        services_dhcpd_configure();
     }
-
-    return $return;
 }
 
 function services_snmpd_configure()
@@ -2553,13 +2540,23 @@ function services_get()
         $services[] = $pconfig;
     }
 
-    if (is_dhcp_server_enabled()) {
+    if (is_dhcpv4_server_enabled()) {
         $pconfig = array();
-        $pconfig['name'] = "dhcpd";
-        $pconfig['description'] = gettext("DHCP Service");
-        $pconfig['php']['restart'] = array('services_dhcpd_configure');
-        $pconfig['php']['start'] = array('services_dhcpd_configure');
+        $pconfig['name'] = 'dhcpd';
+        $pconfig['description'] = gettext("DHCP Server");
+        $pconfig['php']['restart'] = array('services_dhcpdv4_configure');
+        $pconfig['php']['start'] = array('services_dhcpdv4_configure');
         $pconfig['pidfile'] = "{$g['dhcpd_chroot_path']}/var/run/dhcpd.pid";
+        $services[] = $pconfig;
+    }
+
+    if (is_dhcpv6_server_enabled()) {
+        $pconfig = array();
+        $pconfig['name'] = 'dhcpd6';
+        $pconfig['description'] = gettext("DHCPv6 Server");
+        $pconfig['php']['restart'] = array('services_dhcpdv6_configure');
+        $pconfig['php']['start'] = array('services_dhcpdv6_configure');
+        $pconfig['pidfile'] = "{$g['dhcpd_chroot_path']}/var/run/dhcpdv6.pid";
         $services[] = $pconfig;
     }
 
