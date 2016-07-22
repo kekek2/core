@@ -31,7 +31,6 @@ require_once("guiconfig.inc");
 require_once("filter.inc");
 require_once("system.inc");
 require_once("unbound.inc");
-require_once("util.inc");
 require_once("interfaces.inc");
 require_once("services.inc");
 
@@ -249,9 +248,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
       prefer_ipv4_or_ipv6();
       system_hostname_configure();
       system_hosts_generate();
+      services_dhcpleases_configure();
       system_resolvconf_generate();
-      services_dnsmasq_configure();
-      services_unbound_configure();
+      services_dnsmasq_configure(false);
+      services_unbound_configure(false);
+      services_dhcpd_configure();
       system_timezone_configure();
 
       if ($olddnsallowoverride != $config['system']['dnsallowoverride']) {

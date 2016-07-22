@@ -209,7 +209,7 @@
     </user>
     <nextuid>2000</nextuid>
     <nextgid>2000</nextgid>
-    <timezone>Europe/Amsterdam</timezone>
+    <timezone>Etc/UTC</timezone>
     <time-update-interval>300</time-update-interval>
     <timeservers>0.nl.pool.ntp.org</timeservers>
     <webgui>
@@ -249,7 +249,6 @@
       <dhcphostname/>
       <media/>
       <mediaopt/>
-      <dhcp6-duid/>
       <dhcp6-ia-pd-len>0</dhcp6-ia-pd-len>
     </wan>
     <lan>

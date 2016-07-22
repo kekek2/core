@@ -1528,7 +1528,7 @@ EOD;
         }
     }
 
-    if (($interface == "wan" && $founddefaultgw == false) || $setdefaultgw == true) {
+    if (!$founddefaultgw || $setdefaultgw) {
         $mpdconf .= "  set iface route default\n";
     }
     if (isset($ppp['ondemand'])) {
@@ -2952,6 +2952,7 @@ function interface_configure($interface = 'wan', $reloadall = false, $linkupeven
         if ($interface == 'lan') {
             /* make new hosts file */
             system_hosts_generate();
+            services_dhcpleases_configure();
         }
 
         if ($reloadall == true) {
