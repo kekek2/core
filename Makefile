@@ -75,6 +75,7 @@ CORE_DEPENDS?=		apinger \
 			bsnmp-regex \
 			bsnmp-ucd \
 			ca_root_nss \
+			cfv \
 			choparp \
 			cpustats \
 			dhcp6 \
