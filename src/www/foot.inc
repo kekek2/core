@@ -3,17 +3,17 @@
   <!-- /row-->
   <?php
   require_once("util.inc");
-  if (is_subsystem_dirty('restore_backup'))
+  require_once("dirtys_messages.inc");
+
+  foreach ($dirtys_messages as $dirty => $message)  
   {
-    print_info_box(gettext('No valid config.xml found, attempting last known config restore.'));
-    clear_subsystem_dirty("restore_backup");
+    if (is_subsystem_dirty($dirty))
+    {
+        print_info_box(gettext($message));
+        clear_subsystem_dirty($dirty);
+    }
   }
-  if (is_subsystem_dirty('restore_factory'))
-  {
-    print_info_box(gettext('No valid config.xml found, attempting to restore factory config.'));
-    clear_subsystem_dirty("restore_factory");
-  }
-  ?>
+    ?>
 </main>
 
 <?php

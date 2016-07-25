@@ -9,6 +9,7 @@ use Phalcon\Session\Adapter\Files as SessionAdapter;
 use OPNsense\Core\Config;
 
 require_once("util.inc");
+require_once("dirtys_messages.inc");
 
 /**
  * The FactoryDefault Dependency Injector automatically register the right services providing a full stack framework
@@ -47,7 +48,10 @@ $di->set('view', function () use ($config) {
             $compiler->addFunction(
                 'checkRestoreConfig',
                 function ($resolvedArgs, $exprArgs) {
-                    return " is_subsystem_dirty('restore_backup') ? clear_subsystem_dirty('restore_backup') . 'No valid config.xml found, attempting last known config restore.' : (is_subsystem_dirty('restore_factory') ? clear_subsystem_dirty('restore_factory') . 'No valid config.xml found, attempting to restore factory config.' : '')";
+                    global $dirtys_messages;
+                    $dirty = substr($resolvedArgs, 1, -1);
+                    $message = $dirtys_messages[$dirty];
+                    return " is_subsystem_dirty('$dirty') ? clear_subsystem_dirty('$dirty') . '$message' : ''";
                 }
             );
 
