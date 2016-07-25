@@ -230,7 +230,11 @@
           <div class="row">
               <section class="col-xs-12">
                   <div id="messageregion"></div>
-                      {{ checkRestoreConfig() }}
+                      {{ checkRestoreConfig('restore_backup') }}
+                      {{ checkRestoreConfig('restore_factory') }}
+                      {{ checkRestoreConfig('kernel') }}
+                      {{ checkRestoreConfig('base') }}
+                      {{ checkRestoreConfig('packages') }}
                       {{ content() }}
               </section>
           </div>
