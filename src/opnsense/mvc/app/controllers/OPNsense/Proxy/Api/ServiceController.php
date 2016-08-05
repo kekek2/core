@@ -31,6 +31,7 @@ namespace OPNsense\Proxy\Api;
 use \OPNsense\Base\ApiControllerBase;
 use \OPNsense\Core\Backend;
 use \OPNsense\Proxy\Proxy;
+use \OPNsense\Core\Config;
 
 /**
  * Class ServiceController
@@ -199,5 +200,43 @@ class ServiceController extends ApiControllerBase
         } else {
             return array("response" => array());
         }
+    }
+
+    /**
+     * show Kerberos keytab for Proxy
+     * @return array
+     */
+    public function showkeytabAction()
+    {
+        $backend = new Backend();
+
+        // download files
+        $response = $backend->configdRun("proxy showkeytab");
+        return array("response" => $response,"status" => "ok");
+    }
+
+    /**
+     * create Kerberos keytab for Proxy
+     * @return array
+     */
+    public function createkeytabAction()
+    {
+        if ($this->request->isPost()) {
+            $backend = new Backend();
+            $cnf = Config::getInstance()->toArray();
+            $hostname = 'HTTP/' . $cnf['system']['hostname'];
+            $domain = $cnf['system']['domain'];
+            $kerbname = substr(strtoupper($cnf['system']['hostname']), 0, 13) . "-K";
+
+
+            $winver = "2008";
+            $username = "administrator";
+            $pass = "Zaq!@wsX";
+
+            $response = $backend->configdRun("proxy createkeytab {$hostname} {$domain} {$kerbname} {$winver} {$username} {$pass}");
+            return array("response" => $response,"status" => "ok", "command" => "proxy createkeytab {$hostname} {$domain} {$kerbname} {$winver} {$username} {$pass}");
+        }
+
+        return array("response" => array());
     }
 }

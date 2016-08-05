@@ -136,7 +136,9 @@ CORE_DEPENDS?=		apinger \
 			unbound \
 			wol \
 			zip \
-			ting-lang
+			ting-update \
+			ting-lang \
+			msktutil
 
 WRKDIR?=${.CURDIR}/work
 WRKSRC?=${WRKDIR}/src
