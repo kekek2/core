@@ -234,7 +234,7 @@ class ServiceController extends ApiControllerBase
             $pass = "Zaq!@wsX";
 
             $response = $backend->configdRun("proxy createkeytab {$hostname} {$domain} {$kerbname} {$winver} {$username} {$pass}");
-            return array("response" => $response,"status" => "ok", "command" => "proxy createkeytab {$hostname} {$domain} {$kerbname} {$winver} {$username} {$pass}");
+            return array("response" => $response,"status" => "ok");
         }
 
         return array("response" => array());
