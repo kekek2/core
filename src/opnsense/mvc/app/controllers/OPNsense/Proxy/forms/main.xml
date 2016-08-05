@@ -532,6 +532,13 @@
                 <help><![CDATA[Select Authentication method]]></help>
             </field>
             <field>
+                <id>proxy.forward.authentication.EnableKerberos</id>
+                <label>Enable Kerberos</label>
+                <type>checkbox</type>
+                <style>tokenize</style>
+                <help>Use Kerberos to request authenticatin from LDAP</help>
+            </field>
+            <field>
                 <id>proxy.forward.authentication.realm</id>
                 <label>Authentication Prompt</label>
                 <type>text</type>

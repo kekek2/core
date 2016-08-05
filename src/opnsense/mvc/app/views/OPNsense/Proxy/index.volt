@@ -40,6 +40,11 @@ POSSIBILITY OF SUCH DAMAGE.
             ajaxCall(url="/api/proxy/service/status", sendData={}, callback=function(data,status) {
                 updateServiceStatusUI(data['status']);
             });
+
+            // get kerberos keytab
+            ajaxCall(url="/api/proxy/service/showkeytab", sendData={}, callback=function(data,status) {
+                $("#kerberos_keytab_content").html(data['response']);
+            });
         });
 
         /*************************************************************************************************************
@@ -175,6 +180,19 @@ POSSIBILITY OF SUCH DAMAGE.
             history.pushState(null, null, e.target.hash);
         });
 
+
+        $("#RefreshKeytab").click(function() {
+            ajaxCall(url="/api/proxy/service/showkeytab", sendData={}, callback=function(data,status) {
+                $("#kerberos_keytab_content").html(data['response']);
+            });
+        });
+
+        $("#CreateKeytab").click(function() {
+            ajaxCall(url="/api/proxy/service/createkeytab", sendData={}, callback=function(data,status) {
+                $("#kerberos_keytab_content").html(data['response']);
+            });
+        });
+
     });
 
 
@@ -215,6 +233,7 @@ POSSIBILITY OF SUCH DAMAGE.
 {% endfor %}
     {# add custom content #}
     <li><a data-toggle="tab" href="#remote_acls"><b>{{ lang._('Remote Access Control Lists') }}</b></a></li>
+    <li><a data-toggle="tab" href="#kerberos"><b>{{ lang._('Kerberos') }}</b></a></li>
 </ul>
 
 <div class="content-box tab-content">
@@ -297,6 +316,15 @@ POSSIBILITY OF SUCH DAMAGE.
             </tr>
             </tbody>
         </table>
+    </div>
+    <div id="kerberos" class="tab-pane fade">
+        <div class="col-md-12">
+            <p><b>{{ lang._('Output') }}</b></p>
+            <pre id="kerberos_keytab_content"></pre>
+            <hr/>
+            <button class="btn btn-primary" id="RefreshKeytab" type="button"><b>{{ lang._('Refresh keytab') }}</b></button>
+            <button class="btn btn-primary" id="CreateKeytab" type="button"><b>{{ lang._('Create keytab') }}</b></button>
+        </div>
     </div>
 </div>
 
