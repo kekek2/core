@@ -34,6 +34,9 @@ use \OPNsense\Cron\Cron;
 use \OPNsense\Core\Config;
 use \OPNsense\Base\UIModelGrid;
 
+require_once("util.inc");
+require_once("services.inc");
+
 /**
  * Class SettingsController
  * @package OPNsense\Proxy
@@ -83,6 +86,12 @@ class SettingsController extends ApiControllerBase
                 $mdlProxy->serializeToConfig();
                 $cnf = Config::getInstance();
                 $cnf->save();
+
+                // ugly hack
+                global $config;
+                $config = $cnf->toArray();
+                configure_cron();
+
                 $result["result"] = "saved";
             }
         }
