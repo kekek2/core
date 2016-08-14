@@ -94,7 +94,6 @@ CORE_DEPENDS?=		apinger \
 			ntp \
 			openssh-portable \
 			openvpn \
-			p5-Locale-Maketext-Lexicon \
 			p7zip \
 			pecl-radius \
 			pftop \
