@@ -293,6 +293,19 @@
                     <Required>N</Required>
                     <mask>/^([ \-0-9a-zA-Z:,])*/u</mask>
                 </sslPorts>
+                <groupACLs>
+                    <groupACL type="ArrayField">
+                        <groupName type="TextField">
+                            <Required>Y</Required>
+                        </groupName>
+                        <groupWhiteList type="CSVListField">
+                            <Required>N</Required>
+                        </groupWhiteList>
+                        <groupBlackList type="CSVListField">
+                            <Required>N</Required>
+                        </groupBlackList>
+                    </groupACL>
+                </groupACLs>
                 <remoteACLs>
                     <blacklists>
                         <blacklist type="ArrayField">

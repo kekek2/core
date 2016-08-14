@@ -1,0 +1,24 @@
+<form>
+    <field>
+        <id>groupACL.groupName</id>
+        <label>Group name</label>
+        <type>text</type>
+        <help>Enter a name of users group.</help>
+    </field>
+    <field>
+        <id>groupACL.groupWhiteList</id>
+        <label>White list</label>
+        <type>select_multiple</type>
+        <style>tokenize</style>
+        <allownew>true</allownew>
+        <help>List of alowed addresses</help>
+    </field>
+    <field>
+        <id>groupACL.groupBlackList</id>
+        <label>Black list</label>
+        <type>select_multiple</type>
+        <style>tokenize</style>
+        <allownew>true</allownew>
+        <help>List of blocked addresses</help>
+    </field>
+</form>

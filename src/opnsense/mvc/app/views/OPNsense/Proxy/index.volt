@@ -193,6 +193,17 @@ POSSIBILITY OF SUCH DAMAGE.
             });
         });
 
+        $('#frm_proxy-forward-acl table tr:last').before($('#groups-acl-content tbody').html());
+        $('#groups-acl-content tbody').html('');
+
+        $("#grid-groups-acl").UIBootgrid(
+            {   'search':'/api/proxy/settings/searchGroupACL',
+                'get':'/api/proxy/settings/getGroupACL/',
+                'set':'/api/proxy/settings/setGroupACL/',
+                'add':'/api/proxy/settings/addGroupACL/',
+                'del':'/api/proxy/settings/delGroupACL/',
+            }
+        );
     });
 
 
@@ -328,4 +339,37 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
 </div>
 
+<table id="groups-acl-content">
+    <tr>
+        <td>
+            <a id="help_for_proxy.forward.acl.groupsACL" href="#help_for_proxy.forward.acl.groupsACL" class="showhelp"><i class="fa fa-info-circle"></i></a>
+            <b>Groups - ACL mapping</b>
+        </td>
+        <td colspan="2">
+            <table id="grid-groups-acl" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogGroupACL">
+                <thead>
+                <tr>
+                    <th data-column-id="groupName" data-width="12em" data-type="string">{{ lang._("Group") }}</th>
+                    <th data-column-id="groupWhiteList" data-type="string" data-sortable="false"  data-visible="true">{{ lang._("White List") }}</th>
+                    <th data-column-id="groupBlackList" data-type="string" data-sortable="false"  data-visible="true">{{ lang._("Black List") }}</th>
+                    <th data-column-id="commands" data-width="7em" data-formatter="commands" data-sortable="false">{{ lang._("Commands") }}</th>
+                </tr>
+                </thead>
+                <tbody>
+                </tbody>
+                <tfoot>
+                <tr>
+                    <td></td>
+                    <td>
+                        <button data-action="add" type="button" class="btn btn-xs btn-default"><span class="fa fa-plus"></span></button>
+                        <button data-action="deleteSelected" type="button" class="btn btn-xs btn-default"><span class="fa fa-trash-o"></span></button>
+                    </td>
+                </tr>
+                </tfoot>
+            </table>
+        </td>
+    </tr>
+</table>
+
 {{ partial("layout_partials/base_dialog",['fields':formDialogEditBlacklist,'id':'DialogEditBlacklist','label':'Edit Blacklist'])}}
+{{ partial("layout_partials/base_dialog",['fields':formDialogGroupACL,'id':'DialogGroupACL','label':'Edit group white and black lists'])}}
