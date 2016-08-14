@@ -93,7 +93,6 @@ CORE_DEPENDS?=		apinger \
 			ntp \
 			openssh-portable \
 			openvpn \
-			p5-Locale-Maketext-Lexicon \
 			p7zip \
 			pecl-radius \
 			pftop \
@@ -137,7 +136,8 @@ CORE_DEPENDS?=		apinger \
 			unbound \
 			wol \
 			zip \
-			ting-lang
+			ting-lang \
+			ting-update
 
 WRKDIR?=${.CURDIR}/work
 WRKSRC=	${WRKDIR}/src
