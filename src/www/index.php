@@ -42,6 +42,8 @@ if (empty($config['widgets']) || !is_array($config['widgets'])) {
     $config['widgets'] = array();
 }
 
+$widgetCollection = array();
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = $config['widgets'];
     if (empty($pconfig['sequence'])) {
@@ -51,7 +53,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // default 2 column grid layout
     $pconfig['column_count'] = !empty($pconfig['column_count']) ? $pconfig['column_count'] : 2;
     // build list of widgets
-    $widgetCollection = array();
     $widgetSeqParts = explode(",", $pconfig['sequence']);
     foreach (glob('/usr/local/www/widgets/widgets/*.widget.php') as $php_file) {
         $widgetItem = array();

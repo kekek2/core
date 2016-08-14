@@ -1,7 +1,7 @@
 <?php
 
 /**
- *    Copyright (C) 2015 Deciso B.V.
+ *    Copyright (C) 2015-2016 Deciso B.V.
  *
  *    All rights reserved.
  *
@@ -73,6 +73,8 @@ class CertificateField extends BaseField
     {
         if (trim(strtolower($value)) == "ca") {
             $this->certificateType = "ca";
+        } elseif (trim(strtolower($value)) == "crl") {
+            $this->certificateType = "crl";
         } else {
             $this->certificateType = "cert";
         }
@@ -96,10 +98,11 @@ class CertificateField extends BaseField
      */
     public function eventPostLoading()
     {
-        if (count($this->internalOptionList) ==0) {
-            $configObj = Config::getInstance()->object();
+        if (!array_key_exists($this->certificateType, self::$internalOptionList)) {
+             self::$internalOptionList[$this->certificateType] = array();
+             $configObj = Config::getInstance()->object();
             foreach ($configObj->{$this->certificateType} as $cert) {
-                self::$internalOptionList[(string)$cert->refid] = (string)$cert->descr ;
+                self::$internalOptionList[$this->certificateType][(string)$cert->refid] = (string)$cert->descr ;
             }
         }
     }
@@ -117,7 +120,7 @@ class CertificateField extends BaseField
         }
 
         $certs = explode(',', $this->internalValue);
-        foreach (self::$internalOptionList as $optKey => $optValue) {
+        foreach (self::$internalOptionList[$this->certificateType] as $optKey => $optValue) {
             if (in_array($optKey, $certs)) {
                 $selected = 1;
             } else {
@@ -138,13 +141,13 @@ class CertificateField extends BaseField
         $validators = parent::getValidators();
         if ($this->internalValue != null) {
             if ($this->internalMultiSelect) {
-                // field may contain more than one country
+                // field may contain more than one cert
                 $validators[] = new CsvListValidator(array('message' => $this->internalValidationMessage,
-                    'domain'=>array_keys(self::$internalOptionList)));
+                    'domain'=>array_keys(self::$internalOptionList[$this->certificateType])));
             } else {
-                // single country selection
+                // single cert selection
                 $validators[] = new InclusionIn(array('message' => $this->internalValidationMessage,
-                    'domain'=>array_keys(self::$internalOptionList)));
+                    'domain'=>array_keys(self::$internalOptionList[$this->certificateType])));
             }
         }
         return $validators;

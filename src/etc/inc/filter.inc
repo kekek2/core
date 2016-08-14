@@ -128,6 +128,16 @@ function download_file($url, $destination, $verify_ssl = false, $connect_timeout
     fclose($fp);
     curl_close($ch);
 
+    /*
+     * Crash reports indicated that this can fail on bad
+     * lines, causing the download to be "ok", but not
+     * actually writing the target file.  Make it a hard
+     * failure...
+     */
+    if (!file_exists($destination)) {
+        return false;
+    }
+
     return ($http_code == 200);
 }
 
@@ -270,24 +280,32 @@ function filter_rules_sort()
     for ($i = 0; isset($config['filter']['rule'][$i]); $i++) {
         $config['filter']['rule'][$i]['seq'] = $i;
     }
-    usort($config['filter']['rule'], "filter_rules_compare");
+    usort($config['filter']['rule'], function($a, $b){
+        if (isset($a['floating']) && isset($b['floating'])) {
+            return $a['seq'] - $b['seq'];
+        } elseif (isset($a['floating'])) {
+            return -1;
+        } elseif (isset($b['floating'])) {
+            return 1;
+        } elseif ($a['interface'] == $b['interface']) {
+            return $a['seq'] - $b['seq'];
+        } elseif ($a['interface'] == $b['interface']) {
+            return 0;
+        } elseif ($a['interface'] == 'wan') {
+            return -1;
+        } elseif ($b['interface'] == 'wan') {
+            return 1;
+        } elseif ($a['interface'] == 'lan') {
+            return -1;
+        } elseif ($b['interface'] == 'lan') {
+            return 1;
+        } else {
+            return strnatcmp($a['interface'], $b['interface']);
+        }
+    });
     /* strip the sequence numbers again */
     for ($i = 0; isset($config['filter']['rule'][$i]); $i++) {
         unset($config['filter']['rule'][$i]['seq']);
-    }
-}
-
-function filter_rules_compare($a, $b) {
-    if (isset($a['floating']) && isset($b['floating'])) {
-        return $a['seq'] - $b['seq'];
-    } elseif (isset($a['floating'])) {
-        return -1;
-    } elseif (isset($b['floating'])) {
-        return 1;
-    } elseif ($a['interface'] == $b['interface']) {
-        return $a['seq'] - $b['seq'];
-    } else {
-        return compare_interface_friendly_names($a['interface'], $b['interface']);
     }
 }
 
@@ -392,7 +410,7 @@ function filter_configure_sync()
         mwexec("/sbin/pfctl -e", true);
     } else {
         mwexec("/sbin/pfctl -d", true);
-        update_filter_reload_status(gettext("Filter is disabled.  Not loading rules."));
+        update_filter_reload_status(gettext("Filter is disabled. Not loading rules."));
         if (file_exists("/var/run/booting")) {
             echo gettext("done.") . "\n";
         }
@@ -570,30 +588,13 @@ function filter_generate_scrubing(&$FilterIflist)
 
     $scrubrules = '';
 
-    /* scrub per interface options */
-    if (empty($config['system']['scrub_interface_disable'])) {
-        foreach ($FilterIflist as $scrubif => $scrubcfg) {
-            if (isset($scrubcfg['virtual']) || empty($scrubcfg['descr'])) {
-                continue;
-            } else {
-                /* set up MSS clamping */
-                if (!empty($scrubcfg['mss']) && is_numeric($scrubcfg['mss']) &&
-                    !in_array($scrubcfg['if'], array('pppoe', 'pptp', 'l2tp'))) {
-                    $mssclamp = "max-mss " . (intval($scrubcfg['mss'] - 40));
-                } else {
-                    $mssclamp = '';
-                }
-                $scrubnodf = !empty($config['system']['scrubnodf']) ? "no-df" : "";
-                $scrubrnid = !empty($config['system']['scrubrnid']) ? "random-id" : "";
-                $scrubrules .= "scrub on \${$scrubcfg['descr']} all {$scrubnodf} {$scrubrnid} {$mssclamp}\n";
-            }
-        }
-    }
-
+    /* custom rules must be first */
     if (!empty($config['filter']['scrub']['rule'])) {
         foreach ($config['filter']['scrub']['rule'] as $scrub_rule) {
             if (!isset($scrub_rule['disabled'])) {
-                $scrub_rule_out = "scrub on ";
+                $scrub_rule_out = "scrub";
+                $scrub_rule_out .= !empty($scrub_rule['direction']) ? " " . $scrub_rule['direction'] : "" ;
+                $scrub_rule_out .= " on ";
                 $interfaces = array();
                 foreach (explode(',', $scrub_rule['interface']) as $interface) {
                     if (!empty($FilterIflist[$interface]['if'])) {
@@ -612,6 +613,7 @@ function filter_generate_scrubing(&$FilterIflist)
                 } else {
                     $scrub_rule_out .= "any";
                 }
+                $scrub_rule_out .= !empty($scrub_rule['srcport']) ?  " port " . $scrub_rule['srcport'] : "";
                 $scrub_rule_out .= " to ";
                 if (is_alias($scrub_rule['dst'])) {
                     $scrub_rule_out .= !empty($scrub_rule['dstnot']) ? "!" : "";
@@ -630,6 +632,26 @@ function filter_generate_scrubing(&$FilterIflist)
                 $scrub_rule_out .= !empty($scrub_rule['set-tos']) ? " set-tos " . $scrub_rule['set-tos'] .  " " : "";
                 $scrub_rule_out .= "\n";
                 $scrubrules .= $scrub_rule_out;
+            }
+        }
+    }
+
+    /* scrub per interface options */
+    if (empty($config['system']['scrub_interface_disable'])) {
+        foreach ($FilterIflist as $scrubif => $scrubcfg) {
+            if (isset($scrubcfg['virtual']) || empty($scrubcfg['descr'])) {
+                continue;
+            } else {
+                /* set up MSS clamping */
+                if (!empty($scrubcfg['mss']) && is_numeric($scrubcfg['mss']) &&
+                    !in_array($scrubcfg['if'], array('pppoe', 'pptp', 'l2tp'))) {
+                    $mssclamp = "max-mss " . (intval($scrubcfg['mss'] - 40));
+                } else {
+                    $mssclamp = '';
+                }
+                $scrubnodf = !empty($config['system']['scrubnodf']) ? "no-df" : "";
+                $scrubrnid = !empty($config['system']['scrubrnid']) ? "random-id" : "";
+                $scrubrules .= "scrub on \${$scrubcfg['descr']} all {$scrubnodf} {$scrubrnid} {$mssclamp}\n";
             }
         }
     }
@@ -2828,7 +2850,7 @@ EOD;
         unset($alports);
     }
 
-    if ($pptpdcfg['mode'] && $pptpdcfg['mode'] == 'server' && !isset($config['system']['disablevpnrules'])) {
+    if (isset($pptpdcfg['mode']) && $pptpdcfg['mode'] == 'server' && !isset($config['system']['disablevpnrules'])) {
         if ($pptpdcfg['mode'] == "server") {
             $pptpdtarget = get_interface_ip();
         }

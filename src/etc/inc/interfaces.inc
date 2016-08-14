@@ -781,6 +781,11 @@ function interface_lagg_configure(&$lagg)
     }
 
     mwexec("/sbin/ifconfig {$laggif} laggproto " . escapeshellarg($lagg['proto']));
+    if (!empty($lagg['lacp_fast_timeout'])) {
+        mwexec("/sbin/ifconfig {$laggif} lacp_fast_timeout");
+    } elseif ($lagg['proto'] == 'lacp') {
+        mwexec("/sbin/ifconfig {$laggif} -lacp_fast_timeout");
+    }
 
     interfaces_bring_up($laggif);
 
@@ -2293,10 +2298,6 @@ function interface_wireless_configure($if, &$wl, &$wlcfg)
         $wlcmd[] = "-mediaopt turbo";
     }
 
-    /* handle txpower setting */
-    /* if($wlcfg['txpower'] <> "")
-        $wlcmd[] = "txpower " . escapeshellarg($wlcfg['txpower']);
-    */
     /* handle wme option */
     if (isset($wlcfg['wme']['enable'])) {
         $wlcmd[] = "wme";
@@ -2579,6 +2580,10 @@ EOD;
     mwexec("/sbin/ifconfig " . escapeshellarg($if) . " " . $wlcmd_args, false);
     unset($wlcmd_args, $wlcmd);
 
+    /* configure txpower setting (it has been known to fail so run it separately) */
+    if (!empty($wlcfg['txpower'])) {
+        mwexecf('/sbin/ifconfig %s txpower %s', array($if, $wlcfg['txpower']));
+    }
 
     sleep(1);
     /* execute hostapd and wpa_supplicant if required in shell */
@@ -3406,7 +3411,13 @@ function interface_dhcpv6_configure($interface = 'wan', $wancfg)
 
     // DHCP6 Config File Override
     if (!empty($wancfg['adv_dhcp6_config_file_override'])) {
-        $dhcp6cconf = DHCP6_Config_File_Override($wancfg, $wanif);
+        $dhcp6cfile = $wancfg['adv_dhcp6_config_file_override_path'];
+        if (file_exists($dhcp6cfile)) {
+            $dhcp6cconf = file_get_contents($dhcp6cfile);
+            $dhcp6cconf = DHCP6_Config_File_Substitutions($wancfg, $wanif, $dhcp6cconf);
+        } else {
+            log_error(sprintf('DHCP6 config file override does not exist: "%s"', $dhcp6cfile));
+        }
     }
 
     /* wide-dhcp6c works for now. */
@@ -3643,23 +3654,6 @@ function DHCP6_Config_File_Advanced($interface, $wancfg, $wanif)
     return $dhcp6cconf;
 }
 
-
-function DHCP6_Config_File_Override($wancfg, $wanif)
-{
-    $dhcp6cfile = $wancfg['adv_dhcp6_config_file_override_path'];
-    $dhcp6cconf = '';
-
-    if (file_exists($dhcp6cfile)) {
-        $dhcp6cconf = file_get_contents($dhcp6cfile);
-        $dhcp6cconf = DHCP6_Config_File_Substitutions($wancfg, $wanif, $dhcp6cconf);
-    } else {
-        log_error(sprintf('DHCP6 config file override does not exist: %s', $dhcp6cfile));
-    }
-
-    return $dhcp6cconf;
-}
-
-
 function DHCP6_Config_File_Substitutions($wancfg, $wanif, $dhcp6cconf)
 {
     $dhcp6cconf = DHCP_Config_File_Substitutions($wancfg, $wanif, $dhcp6cconf);
@@ -3740,7 +3734,13 @@ EOD;
 
     // DHCP Config File Override
     if (!empty($wancfg['adv_dhcp_config_file_override'])) {
-        $dhclientconf = DHCP_Config_File_Override($wancfg, $wanif);
+        $dhclientfile = $wancfg['adv_dhcp_config_file_override_path'];
+        if (file_exists($dhclientfile)) {
+            $dhclientconf = file_get_contents($dhclientfile);
+            $dhclientconf = DHCP_Config_File_Substitutions($wancfg, $wanif, $dhclientconf);
+        } else {
+            log_error(sprintf('DHCP config file override does not exist: "%s"', $dhclientfile));
+        }
     }
 
     fwrite($fd, $dhclientconf);
@@ -3829,23 +3829,6 @@ function DHCP_Config_File_Advanced($interface, $wancfg, $wanif)
 
     return $dhclientconf;
 }
-
-
-function DHCP_Config_File_Override($wancfg, $wanif)
-{
-    $dhclientfile = $wancfg['adv_dhcp_config_file_override_path'];
-    $dhclientconf = '';
-
-    if (file_exists($dhclientfile)) {
-        $dhclientconf = file_get_contents($dhclientfile);
-        $dhclientconf = DHCP_Config_File_Substitutions($wancfg, $wanif, $dhclientconf);
-    } else {
-        log_error(sprintf('DHCP config file override does not exist: %s', $dhclientfile));
-    }
-
-    return $dhclientconf;
-}
-
 
 function DHCP_Config_File_Substitutions($wancfg, $wanif, $dhclientconf)
 {
@@ -4907,10 +4890,11 @@ function get_interface_info($ifdescr)
     global $config;
 
     $ifinfo = array();
+
     if (empty($config['interfaces'][$ifdescr])) {
         return;
     }
-    $ifinfo['hwif'] = $config['interfaces'][$ifdescr]['if'];
+
     $ifinfo['if'] = get_real_interface($ifdescr);
 
     $chkif = $ifinfo['if'];
@@ -4920,7 +4904,7 @@ function get_interface_info($ifdescr)
     $ifinfo['subnet'] = $ifinfotmp['subnet'];
 
     $ifup = legacy_interface_listget('up');
-    $ifinfo['status'] = in_array($chkif, $ifup) ? 'up' : 'down';
+    $ifinfo['status'] = (is_array($ifup) && in_array($chkif, $ifup)) ? 'up' : 'down';
 
     $ifinfo['linklocal'] = get_interface_linklocal($ifdescr);
     $ifinfo['ipaddrv6'] = get_interface_ipv6($ifdescr);
@@ -5332,43 +5316,24 @@ function load_mac_manufacturer_table() {
  *   returns true if the IP Address is
  *   configured and present on this device.
 */
-function is_ipaddr_configured($ipaddr, $ignore_if = "", $check_localip = false, $check_subnets = false) {
+function is_ipaddr_configured($ipaddr, $ignore_if = '')
+{
     global $config;
 
     $isipv6 = is_ipaddrv6($ipaddr);
-    if ($check_subnets) {
-        $iflist = get_configured_interface_list();
-        foreach ($iflist as $if => $ifname) {
-            if ($ignore_if == $if) {
-                continue;
-            }
-
-            if ($isipv6 === true) {
-                $bitmask = get_interface_subnetv6($if);
-                $subnet = gen_subnetv6(get_interface_ipv6($if), $bitmask);
-            } else {
-                $bitmask = get_interface_subnet($if);
-                $subnet = gen_subnet(get_interface_ip($if), $bitmask);
-            }
-
-            if (ip_in_subnet($ipaddr, $subnet . '/' . $bitmask)) {
-                return true;
-            }
-        }
+    if ($isipv6 === true) {
+        $interface_list_ips = get_configured_ipv6_addresses();
     } else {
-        if ($isipv6 === true) {
-            $interface_list_ips = get_configured_ipv6_addresses();
-        } else {
-            $interface_list_ips = get_configured_ip_addresses();
+        $interface_list_ips = get_configured_ip_addresses();
+    }
+
+    foreach($interface_list_ips as $if => $ilips) {
+        /* Also ignore CARP interfaces, it'll be checked below */
+        if ($ignore_if == $if || strstr($ignore_if, "_vip")) {
+            continue;
         }
-        foreach($interface_list_ips as $if => $ilips) {
-            /* Also ignore CARP interfaces, it'll be checked below */
-            if ($ignore_if == $if || strstr($ignore_if, "_vip")) {
-                continue;
-            }
-            if (strcasecmp($ipaddr, $ilips) == 0) {
-                return true;
-            }
+        if (strcasecmp($ipaddr, $ilips) == 0) {
+            return true;
         }
     }
 
@@ -5378,16 +5343,6 @@ function is_ipaddr_configured($ipaddr, $ignore_if = "", $check_localip = false, 
             continue;
         }
         if (strcasecmp($ipaddr, $vip['ipaddr']) == 0) {
-            return true;
-        }
-    }
-
-    if ($check_localip) {
-        if (is_array($config['pptpd']) && !empty($config['pptpd']['localip']) && (strcasecmp($ipaddr, $config['pptpd']['localip']) == 0)) {
-            return true;
-        }
-
-        if (!is_array($config['l2tp']) && !empty($config['l2tp']['localip']) && (strcasecmp($ipaddr, $config['l2tp']['localip']) == 0)) {
             return true;
         }
     }

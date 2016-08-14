@@ -75,6 +75,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
     }
 
+    if (empty($pconfig['members'])) {
+        $input_errors[] = gettext("At least one group member must be specified.");
+        $pconfig['members'] = array();
+    }
+
     if (count($input_errors) == 0) {
       $ifgroupentry = array();
       $ifgroupentry['members'] = implode(' ', $pconfig['members']);
@@ -120,9 +125,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
           // add new item
           $a_ifgroups[] = $ifgroupentry;
       }
+      plugins_interfaces(false);
       write_config();
       interface_group_setup($ifgroupentry);
-      plugins_interfaces();
       header("Location: interfaces_groups.php");
       exit;
     }
