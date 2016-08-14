@@ -33,6 +33,7 @@ use \OPNsense\Cron\Cron;
 use \OPNsense\Core\Config;
 use \OPNsense\Base\UIModelGrid;
 
+// For configure root crontab
 require_once("util.inc");
 require_once("services.inc");
 
@@ -49,7 +50,7 @@ class SettingsController extends ApiMutableModelControllerBase
     {
         // ugly hack
         global $config;
-        $config = $this->getModel()->toArray();
+        $config = Config::getInstance()->toArray();
         configure_cron();
     }
 
@@ -249,6 +250,138 @@ class SettingsController extends ApiMutableModelControllerBase
             }
         }
 
+        return $result;
+    }
+
+    /**
+     *
+     * search group ACLs
+     * @return array
+     */
+    public function searchGroupACLAction()
+    {
+        $this->sessionClose();
+        $mdlProxy = $this->getModel();
+        $grid = new UIModelGrid($mdlProxy->forward->acl->groupACLs->groupACL);
+        return $grid->fetchBindRequest(
+            $this->request,
+            array("groupName", "groupWhiteList", "groupBlackList"),
+            "description"
+        );
+    }
+
+    /**
+     * add new group ACL and set with attributes from post
+     * @return array
+     */
+    public function addGroupACLAction()
+    {
+        $result = array("result" => "failed");
+        if ($this->request->isPost() && $this->request->hasPost("groupACL")) {
+            $result = array("result" => "failed", "validations" => array());
+            $mdlProxy = $this->getModel();
+            $node = $mdlProxy->forward->acl->groupACLs->groupACL->Add();
+            $node->setNodes($this->request->getPost("groupACL"));
+            $valMsgs = $mdlProxy->performValidation();
+
+            foreach ($valMsgs as $field => $msg) {
+                $fieldnm = str_replace($node->__reference, "groupACL", $msg->getField());
+                $result["validations"][$fieldnm] = $msg->getMessage();
+            }
+
+            if (count($result['validations']) == 0) {
+                // save config if validated correctly
+                $mdlProxy->serializeToConfig();
+                Config::getInstance()->save();
+                $result = array("result" => "saved");
+            }
+            return $result;
+        }
+        return $result;
+    }
+
+    /**
+     * retrieve groupACL settings or return defaults
+     * @param $uuid item unique id
+     * @return array
+     */
+    public function getGroupACLAction($uuid = null)
+    {
+        $mdlProxy = $this->getModel();
+        if ($uuid != null) {
+            $node = $mdlProxy->getNodeByReference('forward.acl.groupACLs.groupACL.' . $uuid);
+            if ($node != null) {
+                // return node
+                return array("groupACL" => $node->getNodes());
+            }
+        } else {
+            // generate new node, but don't save to disc
+            $node = $mdlProxy->forward->acl->groupACLs->groupACL->add();
+            return array("groupACL" => $node->getNodes());
+        }
+        return array();
+    }
+
+
+    /**
+     * update groupACL item
+     * @param string $uuid
+     * @return array result status
+     * @throws \Phalcon\Validation\Exception
+     */
+    public function setGroupACLAction($uuid)
+    {
+        if ($this->request->isPost() && $this->request->hasPost("groupACL")) {
+            $mdlProxy = $this->getModel();
+            if ($uuid != null) {
+                $node = $mdlProxy->getNodeByReference('forward.acl.groupACLs.groupACL.' . $uuid);
+                if ($node != null) {
+                    $result = array("result" => "failed", "validations" => array());
+                    $groupACLInfo = $this->request->getPost("groupACL");
+
+                    $node->setNodes($groupACLInfo);
+                    $valMsgs = $mdlProxy->performValidation();
+                    foreach ($valMsgs as $field => $msg) {
+                        $fieldnm = str_replace($node->__reference, "groupACL", $msg->getField());
+                        $result["validations"][$fieldnm] = $msg->getMessage();
+                    }
+
+                    if (count($result['validations']) == 0) {
+                        // save config if validated correctly
+                        $mdlProxy->serializeToConfig();
+                        Config::getInstance()->save();
+                        $result = array("result" => "saved");
+                    }
+                    return $result;
+                }
+            }
+        }
+        return array("result" => "failed");
+    }
+
+    /**
+     * delete group ACL by uuid
+     * @param $uuid item unique id
+     * @return array status
+     */
+    public function delGroupACLAction($uuid)
+    {
+
+        $result = array("result" => "failed");
+
+        if ($this->request->isPost()) {
+            $mdlProxy = $this->getModel();
+            if ($uuid != null) {
+                if ($mdlProxy->forward->acl->groupACLs->groupACL->del($uuid)) {
+                    // if item is removed, serialize to config and save
+                    $mdlProxy->serializeToConfig();
+                    Config::getInstance()->save();
+                    $result['result'] = 'deleted';
+                } else {
+                    $result['result'] = 'not found';
+                }
+            }
+        }
         return $result;
     }
 }
