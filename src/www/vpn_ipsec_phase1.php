@@ -123,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if (isset($config['interfaces']['lan'])) {
             $pconfig['localnet'] = "lan";
         }
-        $pconfig['mode'] = "aggressive";
+        $pconfig['mode'] = "main";
         $pconfig['protocol'] = "inet";
         $pconfig['myid_type'] = "myaddress";
         $pconfig['peerid_type'] = "peeraddress";
@@ -178,6 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // For RSA methods, require the CA/Cert.
     switch ($method) {
         case "eap-tls":
+        case "eap-mschapv2":
           if ($pconfig['iketype'] != 'ikev2') {
               $input_errors[] = sprintf(gettext("%s can only be used with IKEv2 type VPNs."), strtoupper($method));
           }
@@ -424,26 +425,27 @@ include("head.inc");
 
         $("#authentication_method").change(function(){
             $(".auth_opt").hide();
-            $(".auth_opt select,input").prop( "disabled", true );
+            $(".auth_opt :input").prop( "disabled", true );
             switch ($("#authentication_method").val()) {
                 case 'eap-tls':
                 case 'hybrid_rsa_server':
                 case 'xauth_rsa_server':
                 case 'rsasig':
+                case 'eap-mschapv2':
                     $(".auth_eap_tls").show();
-                    $(".auth_eap_tls select,input").prop( "disabled", false );
+                    $(".auth_eap_tls :input").prop( "disabled", false );
                     $(".auth_eap_tls_caref").show();
-                    $(".auth_eap_tls_caref select,input").prop( "disabled", false );
+                    $(".auth_eap_tls_caref :input").prop( "disabled", false );
                     break;
                 case 'pre_shared_key':
                     if ($("#mobile").val() == undefined) {
                         $(".auth_psk").show();
-                        $(".auth_psk select,input").prop( "disabled", false );
+                        $(".auth_psk :input").prop( "disabled", false );
                     }
                     break;
                 default: /* psk modes*/
                     $(".auth_psk").show();
-                    $(".auth_psk select,input").prop( "disabled", false );
+                    $(".auth_psk :input").prop( "disabled", false );
                     break;
             }
         });
@@ -651,6 +653,7 @@ include("head.inc");
                         'xauth_rsa_server' => array( 'name' => 'Mutual RSA + Xauth', 'mobile' => true ),
                         'xauth_psk_server' => array( 'name' => 'Mutual PSK + Xauth', 'mobile' => true ),
                         'eap-tls' => array( 'name' => 'EAP-TLS', 'mobile' => true),
+                        'eap-mschapv2' => array( 'name' => 'EAP-MSCHAPV2', 'mobile' => true),
                         'rsasig' => array( 'name' => 'Mutual RSA', 'mobile' => false ),
                         'pre_shared_key' => array( 'name' => 'Mutual PSK', 'mobile' => false ) );
                       foreach ($p1_authentication_methods as $method_type => $method_params) :
@@ -716,6 +719,8 @@ endforeach; ?>
                       </div>
                     </td>
                   </tr>
+<?php
+                  if (empty($pconfig['mobile'])):?>
                   <tr class="auth_opt auth_eap_tls auth_psk">
                     <td ><i class="fa fa-info-circle text-muted"></i> <?=gettext("Peer identifier"); ?></td>
                     <td>
@@ -747,6 +752,8 @@ endforeach; ?>
 } ?>
                     </td>
                   </tr>
+<?php
+                  endif;?>
                   <tr class="auth_opt auth_psk">
                     <td ><a id="help_for_psk" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Pre-Shared Key"); ?></td>
                     <td>
