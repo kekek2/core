@@ -341,11 +341,12 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <table id="groups-acl-content">
     <tr>
-        <td>
+        <td colspan="3">
             <a id="help_for_proxy.forward.acl.groupsACL" href="#help_for_proxy.forward.acl.groupsACL" class="showhelp"><i class="fa fa-info-circle"></i></a>
             <b>Groups - ACL mapping</b>
-        </td>
-        <td colspan="2">
+            <small class="hidden" for="help_for_proxy.forward.acl.groupsACL">
+                {{ lang._('Here you can assign white-list or black-list to user groups.') }}
+            </small>
             <table id="grid-groups-acl" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogGroupACL">
                 <thead>
                 <tr>
