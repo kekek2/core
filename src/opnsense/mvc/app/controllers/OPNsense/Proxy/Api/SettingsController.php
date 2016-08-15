@@ -303,11 +303,30 @@ class SettingsController extends ApiMutableModelControllerBase
         $this->sessionClose();
         $mdlProxy = $this->getModel();
         $grid = new UIModelGrid($mdlProxy->forward->acl->groupACLs->groupACL);
-        return $grid->fetchBindRequest(
+        $data = $grid->fetchBindRequest(
             $this->request,
-            array("groupName", "groupWhiteList", "groupBlackList"),
-            "description"
+            array("groupName", "groupWhiteList", "groupBlackList", "uuid")
         );
+        // expand lists
+        foreach ($data['rows'] as $key => $value) {
+            $uuid = $data['rows'][$key]['uuid'];
+            if($uuid != null) {
+                $group = $mdlProxy->getNodeByReference('forward.acl.groupACLs.groupACL.' . $uuid);
+                if($group != null) {
+                    $items = $group->getNodes();
+                    $wls = array();
+                    foreach ($items['groupWhiteList'] as $item_key => $item_val)
+                        $wls[] = $item_val['value'];
+                    $bls = array();
+                    foreach ($items['groupBlackList'] as $item_key => $item_val)
+                        $bls[] = $item_val['value'];
+
+                    $data['rows'][$key]['groupWhiteList'] = implode(', ', $wls);
+                    $data['rows'][$key]['groupBlackList'] = implode(', ', $bls);
+                }
+            }
+        }
+        return $data;
     }
 
     /**
