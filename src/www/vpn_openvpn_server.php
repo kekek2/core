@@ -1022,7 +1022,7 @@ endif; ?>
                         <input name="strictusercn" type="checkbox" value="yes" <?=!empty($pconfig['strictusercn']) ? "checked=\"checked\"" : "" ;?> />
                         <div class="hidden" for="help_for_strictusercn">
                           <span>
-                              <?=gettext("When authenticating users, enforce a match between the common name of the client certificate and the username given at login."); ?>
+                              <?=gettext("When authenticating users, enforce a match between the Common Name of the client certificate and the username given at login."); ?>
                           </span>
                         </div>
                       </td>
@@ -1230,7 +1230,7 @@ endif; ?>
                         endforeach; ?>
                         </select>
                         <div class="hidden" for="help_for_compression">
-                            <?=gettext("Compress tunnel packets using the LZO algorithm. Adaptive compression will dynamically disable compression for a period of time if OpenVPN detects that the data in the packets is not being compressed efficiently"); ?>.
+                            <?=gettext("Compress tunnel packets using the LZO algorithm. Adaptive compression will dynamically disable compression for a period of time if OpenVPN detects that the data in the packets is not being compressed efficiently."); ?>
                         </div>
                       </td>
                     </tr>
@@ -1438,9 +1438,9 @@ endif; ?>
                           <div class="hidden" for="help_for_netbios_enable">
                             <?=gettext("A NetBIOS Scope ID provides an extended naming " .
                                                         "service for NetBIOS over TCP/IP. The NetBIOS " .
-                                                        "scope ID isolates NetBIOS traffic on a single " .
+                                                        "Scope ID isolates NetBIOS traffic on a single " .
                                                         "network to only those nodes with the same " .
-                                                        "NetBIOS scope ID."); ?>
+                                                        "NetBIOS Scope ID."); ?>
                           </div>
                         </div>
                       </td>

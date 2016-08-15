@@ -47,6 +47,9 @@ CORE_HASH=	${CORE_COMMIT:C/^.*-//1}
 
 CORE_ABI?=	16.7
 
+_FLAVOUR!=	/usr/local/bin/openssl version
+FLAVOUR?=	${_FLAVOUR:[1]}
+
 .if "${FLAVOUR}" == OpenSSL || "${FLAVOUR}" == ""
 CORE_REPOSITORY?=	${CORE_ABI}/latest
 .elif "${FLAVOUR}" == LibreSSL
@@ -178,6 +181,7 @@ manifest: want-git
 	@echo "licenselogic: \"single\""
 	@echo "licenses: [ \"BSD2CLAUSE\" ]"
 	@echo "prefix: /usr/local"
+	@echo "vital: true"
 	@echo "deps: {"
 	@for CORE_DEPEND in ${CORE_DEPENDS}; do \
 		if ! ${PKG} query '  %n: { version: "%v", origin: "%o" }' \
@@ -240,7 +244,7 @@ package-keywords: force
 	fi
 	@echo ">>> Installed /usr/ports/Keywords/sample.ucl"
 
-package: force
+package-check: force
 	@if [ -f ${WRKDIR}/.mount_done ]; then \
 		echo ">>> Cannot continue with live mount.  Please run 'make umount'." >&2; \
 		exit 1; \
@@ -249,16 +253,24 @@ package: force
 		echo ">>> Missing required file(s).  Please run 'make package-keywords'" >&2; \
 		exit 1; \
 	fi
+
+package: package-check
 	@rm -rf ${WRKSRC} ${PKGDIR}
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} metadata
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} install
 	@${PKG} create -v -m ${WRKSRC} -r ${WRKSRC} \
 	    -p ${WRKSRC}/plist -o ${PKGDIR}
-	@echo -n "Sucessfully built "
+	@echo -n "Successfully built "
 	@cd ${PKGDIR}; find . -name "*.txz" | cut -c3-
 
-upgrade: package
-	${PKG} delete -y ${CORE_NAME}
+upgrade-check: force
+	@if ! ${PKG} info ${CORE_NAME} > /dev/null; then \
+		echo ">>> Cannot find package.  Please run 'opnsense-update -t ${CORE_NAME}'" >&2; \
+		exit 1; \
+	fi
+
+upgrade: upgrade-check package
+	@${PKG} delete -fy ${CORE_NAME}
 	@${PKG} add ${PKGDIR}/*.txz
 	@/usr/local/etc/rc.restart_webgui
 
@@ -286,6 +298,8 @@ sweep: force
 	    ! -name "*.ser" -type f -print0 | \
 	    xargs -0 -n1 scripts/cleanfile
 	find ${.CURDIR}/scripts -type f -print0 | \
+	    xargs -0 -n1 scripts/cleanfile
+	find ${.CURDIR} -type f -depth 1 -print0 | \
 	    xargs -0 -n1 scripts/cleanfile
 
 style: want-pear-PHP_CodeSniffer

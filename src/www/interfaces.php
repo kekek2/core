@@ -611,6 +611,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 if (in_array($a_interfaces[$if]['ipaddr'], array("ppp", "pppoe", "pptp", "l2tp"))) {
                     $input_errors[] = sprintf(gettext("You have to reassign the interface to be able to configure as %s."),$pconfig['type']);
                 }
+                if (!empty($pconfig['adv_dhcp_config_file_override'] && !file_exists($pconfig['adv_dhcp_config_file_override_path']))) {
+                    $input_errors[] = sprintf(gettext('The DHCP override file "%s" does not exist.'), $pconfig['adv_dhcp_config_file_override_path']);
+                }
                 break;
             case "ppp":
                 $reqdfields = explode(" ", "ports phone");
@@ -653,6 +656,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $reqdfields = explode(" ", "ipaddrv6 subnetv6 gatewayv6");
                 $reqdfieldsn = array(gettext("IPv6 address"),gettext("Subnet bit count"),gettext("Gateway"));
                 do_input_validation($pconfig, $reqdfields, $reqdfieldsn, $input_errors);
+                break;
+            case "dhcp6":
+                if (!empty($pconfig['adv_dhcp6_config_file_override'] && !file_exists($pconfig['adv_dhcp6_config_file_override_path']))) {
+                    $input_errors[] = sprintf(gettext('The DHCPv6 override file "%s" does not exist.'), $pconfig['adv_dhcp6_config_file_override_path']);
+                }
                 break;
             case "none":
                 if (isset($config['virtualip']['vip'])) {
@@ -702,7 +710,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             if (!is_ipaddrv4($pconfig['ipaddr'])) {
                 $input_errors[] = gettext("A valid IPv4 address must be specified.");
             } else {
-                if (is_ipaddr_configured($pconfig['ipaddr'], $if, true)) {
+                if (is_ipaddr_configured($pconfig['ipaddr'], $if)) {
                     $input_errors[] = gettext("This IPv4 address is being used by another interface or VIP.");
                 }
                 /* Do not accept network or broadcast address, except if subnet is 31 or 32 */
@@ -728,7 +736,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             if (!is_ipaddrv6($pconfig['ipaddrv6'])) {
                 $input_errors[] = gettext("A valid IPv6 address must be specified.");
             } else {
-                if (is_ipaddr_configured($pconfig['ipaddrv6'], $if, true)) {
+                if (is_ipaddr_configured($pconfig['ipaddrv6'], $if)) {
                     $input_errors[] = gettext("This IPv6 address is being used by another interface or VIP.");
                 }
 
@@ -868,7 +876,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                       $old_wireless_mode = $a_interfaces[$if]['wireless']['mode'];
                       $a_interfaces[$if]['wireless']['mode'] = $pconfig['mode'];
                       if (!interface_wireless_clone("{$wlanif}_", $a_interfaces[$if])) {
-                          $input_errors[] = sprintf(gettext("Unable to change mode to %s.  You may already have the maximum number of wireless clones supported in this mode."), $wlan_modes[$a_interfaces[$if]['wireless']['mode']]);
+                          $input_errors[] = sprintf(gettext("Unable to change mode to %s. You may already have the maximum number of wireless clones supported in this mode."), $wlan_modes[$a_interfaces[$if]['wireless']['mode']]);
                       } else {
                           mwexec("/sbin/ifconfig " . escapeshellarg($wlanif) . "_ destroy");
                       }
@@ -904,7 +912,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     } elseif (strlen($pconfig['key' . $i]) == 28) {
                         continue;
                     } else {
-                        $input_errors[] =  gettext("Invalid WEP key size.   Sizes should be 40 (64) bit keys or 104 (128) bit.");
+                        $input_errors[] =  gettext("Invalid WEP key size. Sizes should be 40 (64) bit keys or 104 (128) bit.");
                     }
                 }
             }
@@ -916,7 +924,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 }
             }
         }
-        // save  form data
+        // save form data
         if (count($input_errors) == 0) {
             $old_config = $a_interfaces[$if];
             $new_config = array();
@@ -1508,7 +1516,7 @@ include("head.inc");
       });
 
 
-      // Identity Association Statement -> Non-Temporary Address Allocation  change
+      // Identity Association Statement -> Non-Temporary Address Allocation change
       $("#adv_dhcp6_id_assoc_statement_address_enable").change(function(){
         if ($("#adv_dhcp6_id_assoc_statement_address_enable").prop('checked')) {
             $("#show_adv_dhcp6_id_assoc_statement_address").removeClass("hidden");
@@ -1908,7 +1916,7 @@ include("head.inc");
                       </thead>
                       <tbody>
                         <tr>
-                          <td width="22%"></td>
+                          <td width="22%"><a id="help_for_dhcp_mode" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Configuration Mode"); ?></td>
                           <td width="78%">
                             <div id="dhcp_mode" class="btn-group" data-toggle="buttons">
                               <label class="btn btn-default <?=empty($pconfig['adv_dhcp_config_advanced']) && empty($pconfig['adv_dhcp_config_file_override']) ? "active" : "";?>">
@@ -1923,6 +1931,11 @@ include("head.inc");
                                 <input name="adv_dhcp_config_file_override" type="radio" value="file" <?=!empty($pconfig['adv_dhcp_config_file_override']) ? "checked=\"\"" : "";?> />
                                 <?=gettext("Config File Override");?>
                               </label>
+                            </div>
+                            <div class="hidden" for="help_for_dhcp_mode">
+                              <?= gettext('The basic mode auto-configures DHCP using default values and optional user input.') ?><br/>
+                              <?= gettext('The advanced mode does not provide any default values, you will need to fill out any values you would like to use.') ?></br>
+                              <?= gettext('The configuration file override mode may point to a fully customised file on the system instead.') ?>
                             </div>
                           </td>
                         </tr>
@@ -2046,7 +2059,7 @@ include("head.inc");
                           </td>
                         </tr>
                         <tr class="dhcp_file_override">
-                          <td><a id="help_for_dhcp_config_file_override_path" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a>  <?=gettext("Config File Override");?>
+                          <td><a id="help_for_dhcp_config_file_override_path" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Configuration File Override");?>
                           <td>
                             <input name="adv_dhcp_config_file_override_path"   type="text" id="adv_dhcp_config_file_override_path"  value="<?=$pconfig['adv_dhcp_config_file_override_path'];?>" />
                             <div class="hidden" for="help_for_dhcp_config_file_override_path">
@@ -2233,7 +2246,7 @@ include("head.inc");
                 <!-- Section : PPTP / L2TP -->
                 <div class="tab-content content-box col-xs-12 __mb" id="pptp" style="display:none">
                   <div class="table-responsive">
-                    <table  class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-striped opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("PPTP/L2TP configuration"); ?></th>
@@ -2418,7 +2431,7 @@ include("head.inc");
                       </thead>
                       <tbody>
                         <tr>
-                          <td width="22%"></td>
+                          <td width="22%"><a id="help_for_dhcpv6_mode" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Configuration Mode"); ?></td>
                           <td width="78%">
                             <div id="dhcpv6_mode" class="btn-group" data-toggle="buttons">
                               <label class="btn btn-default <?=empty($pconfig['adv_dhcp6_config_advanced']) && empty($pconfig['adv_dhcp6_config_file_override']) ? "active" : "";?>">
@@ -2433,6 +2446,11 @@ include("head.inc");
                                 <input name="adv_dhcp6_config_file_override" type="radio" value="file" <?=!empty($pconfig['adv_dhcp6_config_file_override']) ? "checked=\"\"" : "";?> />
                                 <?=gettext("Config File Override");?>
                               </label>
+                            </div>
+                            <div class="hidden" for="help_for_dhcpv6_mode">
+                              <?= gettext('The basic mode auto-configures DHCP using default values and optional user input.') ?><br/>
+                              <?= gettext('The advanced mode does not provide any default values, you will need to fill out any values you would like to use.') ?></br>
+                              <?= gettext('The configuration file override mode may point to a fully customised file on the system instead.') ?>
                             </div>
                           </td>
                         </tr>
@@ -2504,12 +2522,12 @@ include("head.inc");
                             <input name="adv_dhcp6_interface_statement_information_only_enable" type="checkbox" id="adv_dhcp6_interface_statement_information_only_enable" <?=!empty($pconfig['adv_dhcp6_interface_statement_information_only_enable']) ? "checked=\"checked\"" : "";?> />
                             <strong><?=gettext("Information Only"); ?></strong><br/>
                             <div class="hidden" for="help_for_dhcp6_intf_stmt">
-                              <?=gettext("This statement specifies dhcp6c to  only exchange informational configuration parameters with servers. ".
-                              "A list of DNS server  addresses is an  example  of such  parameters. ".
+                              <?=gettext("This statement specifies dhcp6c to only exchange informational configuration parameters with servers. ".
+                              "A list of DNS server addresses is an example of such parameters. ".
                               "This statement is useful when the client does not need ".
-                              "stateful configuration parameters such as IPv6 addresses or  prefixes.");?><br/>
+                              "stateful configuration parameters such as IPv6 addresses or prefixes.");?><br/>
                               <small>
-                                <?=gettext("source: FreeBSD man page");?>
+                                <?=gettext("Source: FreeBSD man page");?>
                               </small>
                             </div>
                             <br/>
@@ -2519,7 +2537,7 @@ include("head.inc");
                               <?=gettext("The values in this field are DHCP send options to be sent when requesting a DHCP lease.  [option declaration [, ...]] <br />" .
                               "Value Substitutions: {interface}, {hostname}, {mac_addr_asciiCD}, {mac_addr_hexCD} <br />" .
                               "Where C is U(pper) or L(ower) Case, and D is \" :-.\" Delimiter (space, colon, hyphen, or period) (omitted for none). <br />" .
-                              "Some DHCP services may require certain options be or not be sent. "); ?>
+                              "Some DHCP services may require certain options be or not be sent."); ?>
                             </div>
                             <br />
                             <br />
@@ -2792,14 +2810,15 @@ include("head.inc");
                           <td><a id="help_for_txpower" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Transmit power"); ?></td>
                           <td>
                             <select name="txpower" class="selectpicker" data-size="10" data-style="btn-default" id="txpower">
+                              <option value=""><?= gettext('default') ?></option>
 <?php
                             for($x = 99; $x > 0; $x--):?>
-                              <option value="<?=$x;?>" <?=$pconfig["txpower"] == $x ? "selected=\"selected\"" : "";?> ><?=$x;?></option>
+                              <option value="<?=$x;?>" <?=$pconfig['txpower'] == $x ? 'selected="selected"' : '';?>><?=$x;?></option>
 <?php
                               endfor;?>
                             </select>
                             <div class="hidden" for="help_for_txpower">
-                              <?=gettext("Note: Typically only a few discreet power settings are available and the driver will use the setting closest to the specified value.  Not all adapters support changing the transmit power setting."); ?>
+                              <?=gettext("Typically only a few discreet power settings are available and the driver will use the setting closest to the specified value. Not all adapters support changing the transmit power setting."); ?>
                             </div>
                           </td>
                         </tr>
@@ -2823,7 +2842,7 @@ include("head.inc");
                             <div class="hidden" for="help_for_channel">
                               <?=gettext("Legend: wireless standards - channel # (frequency @ max TX power / TX power allowed in reg. domain)"); ?>
                               <br />
-                              <?=gettext("Note: Not all channels may be supported by your card.  Auto may override the wireless standard selected above."); ?>
+                              <?=gettext("Not all channels may be supported by your card. Auto may override the wireless standard selected above."); ?>
                             </div>
                           </td>
                         </tr>
@@ -2925,9 +2944,9 @@ include("head.inc");
                             </select>
                             <br /><br />
                             <div class="hidden" for="help_for_regdomain">
-                              <?=gettext("These settings may affect which channels are available and the maximum transmit power allowed on those channels.  Using the correct settings to comply with local regulatory requirements is recommended."); ?>
+                              <?=gettext("These settings may affect which channels are available and the maximum transmit power allowed on those channels. Using the correct settings to comply with local regulatory requirements is recommended."); ?>
                               <br />
-                              <?=gettext("Note: All wireless networks on this interface will be temporarily brought down when changing regulatory settings. Some of the regulatory domains or country codes may not be allowed by some cards. These settings may not be able to add additional channels that are not already supported."); ?>
+                              <?=gettext("All wireless networks on this interface will be temporarily brought down when changing regulatory settings. Some of the regulatory domains or country codes may not be allowed by some cards. These settings may not be able to add additional channels that are not already supported."); ?>
                             </div>
                           </td>
                         </tr>
@@ -3018,9 +3037,7 @@ include("head.inc");
                           <td>
                             <input name="hidessid_enable" type="checkbox" id="hidessid_enable" value="yes" <?=!empty($pconfig['hidessid_enable']) ? "checked=\"checked\"" : "";?> />
                             <div class="hidden" for="help_for_hidessid_enable">
-                              <?=gettext("Setting this option will force the card to NOT broadcast its SSID"); ?>
-                              <br />
-                              <?=gettext("(this might create problems for some clients)."); ?>
+                              <?=gettext("Setting this option will force the card to NOT broadcast its SSID (this might create problems for some clients)."); ?>
                             </div>
                           </td>
                         </tr>
@@ -3176,7 +3193,7 @@ include("head.inc");
                           <td>
                             <input name="auth_server_addr" id="auth_server_addr" type="text" value="<?=$pconfig['auth_server_addr'];?>" />
                             <div class="hidden" for="help_for_auth_server_addr">
-                              <?=gettext("Enter the IP address of the 802.1X Authentication Server.  This is commonly a Radius server (FreeRadius, Internet Authentication Services, etc.)"); ?>
+                              <?=gettext("Enter the IP address of the 802.1X Authentication Server. This is commonly a Radius server (FreeRadius, Internet Authentication Services, etc.)"); ?>
                             </div>
                           </td>
                         </tr>
@@ -3201,7 +3218,7 @@ include("head.inc");
                             <input name="auth_server_addr2" id="auth_server_addr2" type="text" value="<?=$pconfig['auth_server_addr2'];?>" />
                             <div class="hidden" for="help_for_auth_server_addr2">
                               <?=gettext("Secondary 802.1X Authentication Server IP Address"); ?></br>
-                              <?=gettext("Enter the IP address of the 802.1X Authentication Server.  This is commonly a Radius server (FreeRadius, Internet Authentication Services, etc.)"); ?>
+                              <?=gettext("Enter the IP address of the 802.1X Authentication Server. This is commonly a Radius server (FreeRadius, Internet Authentication Services, etc.)"); ?>
                             </div>
                           </td>
                         </tr>

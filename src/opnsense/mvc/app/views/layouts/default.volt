@@ -7,7 +7,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 
-    <meta name="robots" content="index, follow, noodp, noydir" />
+    <meta name="robots" content="noindex, nofollow, noodp, noydir" />
     <meta name="keywords" content="" />
     <meta name="description" content="" />
     <meta name="copyright" content="" />
@@ -51,6 +51,22 @@
                     'beforeSend': function(xhr) {
                         xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
                         xhr.setRequestHeader("X-CSRFTokenKey", "{{ csrf_tokenKey }}" );
+                    }
+                });
+                // propagate ajax error messages
+                $( document ).ajaxError(function( event, request ) {
+                    if (request.responseJSON.errorMessage != undefined) {
+                        BootstrapDialog.show({
+                            type: BootstrapDialog.TYPE_DANGER,
+                            title: '{{ lang._('An API exception occured') }}',
+                            message:request.responseJSON.errorMessage,
+                            buttons: [{
+                                label: '{{ lang._('Close') }}',
+                                action: function(dialogItself){
+                                    dialogItself.close();
+                                }
+                            }]
+                        });
                     }
                 });
 
