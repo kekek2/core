@@ -25,7 +25,8 @@ done
 [ "$ENCTYPES" == "2008" ] && ENCTYPES="--enctypes 28";
 
 
-echo "${PASSWORD}" > ${PASS_TMP}
+PASSWORD="${PASSWORD%\'}"
+echo "${PASSWORD}" | sed 's/\\//g' > ${PASS_TMP}
 
 /usr/bin/kinit --password-file=${PASS_TMP} ${USERNAME}
 TICKET=$?

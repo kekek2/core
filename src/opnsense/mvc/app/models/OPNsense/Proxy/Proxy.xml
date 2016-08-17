@@ -417,6 +417,14 @@
                     <default>0</default>
                     <Required>Y</Required>
                 </EnableKerberos>
+                <ADKerberosImplementation type="OptionField">
+                    <default>W2008</default>
+                    <Required>Y</Required>
+                    <OptionValues>
+                        <W2003>Windows 2003</W2003>
+                        <W2008>Windows 2008 with AES</W2008>
+                    </OptionValues>
+                </ADKerberosImplementation>
                 <realm type="TextField">
                     <default>OPNsense proxy authentication</default>
                     <mask>/^([\t\n\v\f\r 0-9a-zA-Z.,_\x{00A0}-\x{FFFF}]){0,255}$/u</mask>
