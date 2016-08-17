@@ -210,8 +210,19 @@ class ServiceController extends ApiControllerBase
     {
         $backend = new Backend();
 
-        // download files
         $response = $backend->configdRun("proxy showkeytab");
+        return array("response" => $response,"status" => "ok");
+    }
+
+    /**
+     * delete Kerberos keytab for Proxy
+     * @return array
+     */
+    public function deletekeytabAction()
+    {
+        $backend = new Backend();
+
+        $response = $backend->configdRun("proxy deletekeytab");
         return array("response" => $response,"status" => "ok");
     }
 
@@ -227,13 +238,31 @@ class ServiceController extends ApiControllerBase
             $hostname = 'HTTP/' . $cnf['system']['hostname'];
             $domain = $cnf['system']['domain'];
             $kerbname = substr(strtoupper($cnf['system']['hostname']), 0, 13) . "-K";
-
-
-            $winver = "2008";
-            $username = "administrator";
-            $pass = "Zaq!@wsX";
+            $winver = $cnf['OPNsense']['proxy']['forward']['authentication']['ADKerberosImplementation'] == 'W2008' ? '2008' : '2003';
+            $username = escapeshellarg($this->request->get("admin_login"));
+            $pass = escapeshellarg($this->request->get("admin_password"));
 
             $response = $backend->configdRun("proxy createkeytab {$hostname} {$domain} {$kerbname} {$winver} {$username} {$pass}");
+            return array("response" => $response,"status" => "ok");
+        }
+
+        return array("response" => array());
+    }
+
+    /**
+     * test Kerberos login
+     * @return array
+     */
+    public function testkerbloginAction()
+    {
+        if ($this->request->isPost()) {
+            $backend = new Backend();
+            $cnf = Config::getInstance()->toArray();
+            $fqdn = $cnf['system']['hostname'].'.'.$cnf['system']['domain'];
+            $username = escapeshellarg($this->request->get("login"));
+            $pass = escapeshellarg($this->request->get("password"));
+
+            $response = $backend->configdRun("proxy testkerblogin {$username} {$pass} {$fqdn}");
             return array("response" => $response,"status" => "ok");
         }
 

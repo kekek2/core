@@ -539,6 +539,12 @@
                 <help>Use Kerberos to request authenticatin from LDAP</help>
             </field>
             <field>
+                <id>proxy.forward.authentication.ADKerberosImplementation</id>
+                <label>AD Kerberos implementation</label>
+                <type>dropdown</type>
+                <help>Select Windows Server version for AD controller</help>
+            </field>
+            <field>
                 <id>proxy.forward.authentication.realm</id>
                 <label>Authentication Prompt</label>
                 <type>text</type>
