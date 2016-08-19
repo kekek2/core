@@ -61,6 +61,7 @@ audit:*:77:
 www:*:80:
 hast:*:845:
 clamav:*:106:                                                                   
+havp:*:1002:   
 nogroup:*:65533:
 nobody:*:65534:
 
@@ -93,6 +94,7 @@ pop:*:68:6::0:0:Post Office Owner:/nonexistent:/usr/sbin/nologin
 auditdistd:*:78:77::0:0:Auditdistd unprivileged user:/var/empty:/usr/sbin/nologin
 www:*:80:80::0:0:World Wide Web Owner:/nonexistent:/usr/sbin/nologin
 hast:*:845:845::0:0:HAST unprivileged user:/var/empty:/usr/sbin/nologin
+havp:*:1001:1002::0:0:havp daemon:/nonexistent:/sbin/nologin                    
 clamav:*:106:106::0:0:Clamav Antivirus:/nonexistent:/usr/sbin/nologin           
 nobody:*:65534:65534::0:0:Unprivileged user:/nonexistent:/usr/sbin/nologin
 
