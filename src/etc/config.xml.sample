@@ -196,6 +196,7 @@
       <scope>system</scope>
       <gid>1999</gid>
       <member>0</member>
+      <priv>user-shell-access</priv>
       <priv>page-all</priv>
     </group>
     <user>
@@ -205,7 +206,6 @@
       <groupname>admins</groupname>
       <password>$6$$7KcNJxzaD0IeabfizNg9SD24weSBHJiMpvh0U0Oc3SdCpfNhxuj/8o4hIFLd4/xEB9y/iGTKyaloPf2LeyAVa.</password>
       <uid>0</uid>
-      <priv>user-shell-access</priv>
     </user>
     <nextuid>2000</nextuid>
     <nextgid>2000</nextgid>
