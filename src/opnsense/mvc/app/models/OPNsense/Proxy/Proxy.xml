@@ -138,13 +138,13 @@
                 <maxDownloadSize type="IntegerField">
                     <default>2048</default>
                     <MinimumValue>1</MinimumValue>
-                    <ValidationMessage>Specify the maximum download size. (number of KBs)</ValidationMessage>
+                    <ValidationMessage>Specify the maximum download size (kB).</ValidationMessage>
                     <Required>N</Required>
                 </maxDownloadSize>
                 <maxUploadSize type="IntegerField">
                     <default>1024</default>
                     <MinimumValue>1</MinimumValue>
-                    <ValidationMessage>Specify the maximum upload size. (number of KBs)</ValidationMessage>
+                    <ValidationMessage>Specify the maximum upload size (kB).</ValidationMessage>
                     <Required>N</Required>
                 </maxUploadSize>
                 <OverallBandwidthTrotteling type="IntegerField">
@@ -298,7 +298,13 @@
                             <filename type="TextField">
                                 <Required>Y</Required>
                                 <Mask>/^[a-zA-Z0-9]{1,245}\.?[a-zA-z0-9]{1,10}$/</Mask>
-                                <ValidationMessage>The filename may only contain letters,digits and one dot (not required).</ValidationMessage>
+                                <ValidationMessage>The filename may only contain letters, digits and one dot (not required).</ValidationMessage>
+                                <Constraints>
+                                    <check001>
+                                        <ValidationMessage>Filename should be unique</ValidationMessage>
+                                        <type>OPNsense\Base\Constraints\UniqueConstraint</type>
+                                    </check001>
+                                </Constraints>
                             </filename>
                             <url type="UrlField">
                                 <Required>Y</Required>

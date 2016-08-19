@@ -172,7 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $userdeleted = $a_user[$id]['name'];
             unset($a_user[$id]);
             write_config();
-            $savemsg = gettext("User")." {$userdeleted} ". gettext("successfully deleted");
+            $savemsg = sprintf(gettext('The user "%s" was successfully removed.'), $userdeleted);
             header("Location: system_usermanager.php?savemsg=".$savemsg);
             exit;
         }
@@ -182,8 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $certdeleted = $certdeleted['descr'];
         unset($a_user[$id]['cert'][$pconfig['certid']]);
         write_config();
-        $savemsg = gettext("Certificate")." {$certdeleted} ".
-                    gettext("association removed.");
+        $savemsg = sprintf(gettext('The certificate association "%s" was successfully removed.'), $certdeleted);
         header("Location: system_usermanager.php?savemsg=".$savemsg."&act=edit&userid=".$id);
         exit;
     } elseif ($act == "newApiKey" && isset($id)) {
@@ -205,8 +204,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $authFactory = new \OPNsense\Auth\AuthenticationFactory();
             $authenticator = $authFactory->get("Local API");
             $authenticator->dropKey($username, $pconfig['api_delete']);
-            $savemsg = gettext("API key")." {$pconfig['api_delete']} ".
-                        gettext("removed.");
+            $savemsg = sprintf(gettext('The API key "%s" was successfully removed.'), $pconfig['api_delete']);
         } else {
             $savemsg = gettext('No API key found');
         }
@@ -221,9 +219,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $reqdfieldsn = array(gettext("Username"));
         } else {
             $reqdfields = explode(" ", "usernamefld passwordfld1");
-            $reqdfieldsn = array(
-                gettext("Username"),
-                gettext("Password"));
+            $reqdfieldsn = array(gettext("Username"), gettext("Password"));
         }
 
         do_input_validation($pconfig, $reqdfields, $reqdfieldsn, $input_errors);
@@ -784,7 +780,7 @@ $( document ).ready(function() {
                                   <tr>
                                     <td colspan="2">
                                       <button type="button" class="btn btn-default btn-xs" id="newApiKey"
-                                          title="<?=gettext("create API key");?>" data-toggle="tooltip">
+                                          title="<?=gettext('Create API key');?>" data-toggle="tooltip">
                                         <span class="glyphicon glyphicon-plus"></span>
                                       </button>
                                     </td>
@@ -793,7 +789,7 @@ $( document ).ready(function() {
                           </table>
                           <div class="hidden" for="help_for_apikeys">
                               <hr/>
-                              <?=gettext('manage API keys here for machine to machine interaction using this users credentials');?>
+                              <?=gettext('Manage API keys here for machine to machine interaction using this user\'s credentials.');?>
                           </div>
                       </td>
                   </tr>

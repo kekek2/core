@@ -1,5 +1,4 @@
 <?php
-
 /**
  *    Copyright (C) 2016 Deciso B.V.
  *
@@ -27,20 +26,28 @@
  *    POSSIBILITY OF SUCH DAMAGE.
  *
  */
+namespace OPNsense\Base\Constraints;
 
-namespace OPNsense\Diagnostics;
+use \Phalcon\Validation\Validator;
+use \Phalcon\Validation\ValidatorInterface;
+use \Phalcon\Validation\Message;
 
-use OPNsense\Base\IndexController;
-
-/**
- * Class Networkinsight
- * @package OPNsense\Diagnostics
- */
-class NetworkinsightController extends IndexController
+abstract class BaseConstraint extends Validator implements ValidatorInterface
 {
-    public function indexAction()
+    /**
+     * @param \Phalcon\Validation $validator
+     * @param $attribute
+     */
+    protected function appendMessage(\Phalcon\Validation $validator, $attribute)
     {
-        $this->view->title = gettext('Network Insight');
-        $this->view->pick('OPNsense/Diagnostics/networkinsight');
+        $message = $this->getOption('ValidationMessage');
+        $name = $this->getOption('name');
+        if (empty($message)) {
+            $message = 'validation failure ' . get_class($this);
+        }
+        if (empty($name)) {
+            $name =  get_class($this);
+        }
+        $validator->appendMessage(new Message($message, $attribute, $name));
     }
 }

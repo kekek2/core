@@ -92,7 +92,7 @@ class SettingsController extends ApiControllerBase
             }
         } else {
             // generate new node, but don't save to disc
-            $node = $mdlShaper->pipes->pipe->add() ;
+            $node = $mdlShaper->pipes->pipe->add();
             return array("pipe" => $node->getNodes());
         }
         return array();
@@ -245,7 +245,7 @@ class SettingsController extends ApiControllerBase
             }
         } else {
             // generate new node, but don't save to disc
-            $node = $mdlShaper->queues->queue->add() ;
+            $node = $mdlShaper->queues->queue->add();
             return array("queue" => $node->getNodes());
         }
         return array();
@@ -382,7 +382,7 @@ class SettingsController extends ApiControllerBase
             }
         } else {
             // generate new node, but don't save to disc
-            $node = $mdlShaper->rules->rule->add() ;
+            $node = $mdlShaper->rules->rule->add();
             $node->sequence = $mdlShaper->getMaxRuleSequence() + 10;
             return array("rule" => $node->getNodes());
         }
