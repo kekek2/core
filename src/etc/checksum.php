@@ -1,6 +1,7 @@
 #!/usr/local/bin/php
 <?php
 require_once("util.inc");
+require_once("config.inc");
 
 $commands = [
     "kernel" => "/usr/local/bin/cfv -VV -f boot/kernel.sum",
