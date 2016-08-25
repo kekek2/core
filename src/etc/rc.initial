@@ -18,6 +18,7 @@ fi
 # endless loop
 while : ; do
 
+/usr/local/etc/checkflags.php
 echo
 
 echo " 0) Logout                             7) Ping host"
