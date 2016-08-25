@@ -9,7 +9,7 @@
   {
     if (is_subsystem_dirty($dirty))
     {
-        print_info_box(gettext($message));
+        print_info_box($message);
         clear_subsystem_dirty($dirty);
     }
   }
