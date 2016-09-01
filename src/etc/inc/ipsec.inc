@@ -29,7 +29,6 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-/* IPsec defines */
 $ipsec_loglevels = array("dmn" => "Daemon", "mgr" => "SA Manager", "ike" => "IKE SA", "chd" => "IKE Child SA",
     "job" => "Job Processing", "cfg" => "Configuration backend", "knl" => "Kernel Interface",
     "net" => "Networking", "asn" => "ASN encoding", "enc" => "Message encoding",
@@ -38,11 +37,22 @@ $ipsec_loglevels = array("dmn" => "Daemon", "mgr" => "SA Manager", "ike" => "IKE
 );
 
 $p1_ealgos = array(
-    'aes' => array( 'name' => 'AES', 'keysel' => array( 'lo' => 128, 'hi' => 256, 'step' => 64 ) ),
-    'blowfish' => array( 'name' => 'Blowfish', 'keysel' => array( 'lo' => 128, 'hi' => 256, 'step' => 64 ) ),
-    '3des' => array( 'name' => '3DES' ),
-    'cast128' => array( 'name' => 'CAST128' ),
-    'des' => array( 'name' => 'DES' )
+    'aes' => array( 'name' => 'AES', 'keysel' => array( 'lo' => 128, 'hi' => 256, 'step' => 64 ), 'iketype' => null ),
+    'camellia' => array( 'name' => 'Camellia', 'keysel' => array( 'lo' => 128, 'hi' => 256, 'step' => 64 ), 'iketype' => 'ikev2' ),
+    'blowfish' => array( 'name' => 'Blowfish', 'keysel' => array( 'lo' => 128, 'hi' => 256, 'step' => 64 ), 'iketype' => null ),
+    '3des' => array( 'name' => '3DES', 'iketype' => null ),
+    'cast128' => array( 'name' => 'CAST128', 'iketype' => null ),
+    'des' => array( 'name' => 'DES', 'iketype' => null )
+);
+
+$p1_authentication_methods = array(
+    'hybrid_rsa_server' => array( 'name' => 'Hybrid RSA + Xauth', 'mobile' => true ),
+    'xauth_rsa_server' => array( 'name' => 'Mutual RSA + Xauth', 'mobile' => true ),
+    'xauth_psk_server' => array( 'name' => 'Mutual PSK + Xauth', 'mobile' => true ),
+    'eap-tls' => array( 'name' => 'EAP-TLS', 'mobile' => true),
+    'eap-mschapv2' => array( 'name' => 'EAP-MSCHAPV2', 'mobile' => true),
+    'rsasig' => array( 'name' => 'Mutual RSA', 'mobile' => false ),
+    'pre_shared_key' => array( 'name' => 'Mutual PSK', 'mobile' => false ),
 );
 
 $p2_ealgos = array(
@@ -62,7 +72,6 @@ $p2_halgos = array(
     'hmac_sha512' => 'SHA512',
     'aesxcbc' => 'AES-XCBC'
 );
-
 
 $p2_protos = array(
     'esp' => 'ESP',
@@ -84,7 +93,8 @@ $p2_pfskeygroups = array(
 /*
  * Return phase1 local address
  */
-function ipsec_get_phase1_src(& $ph1ent) {
+function ipsec_get_phase1_src(&$ph1ent)
+{
     if (!empty($ph1ent['interface'])) {
         if ($ph1ent['interface'] == 'any') {
             return '%any';
@@ -114,11 +124,11 @@ function ipsec_get_phase1_src(& $ph1ent) {
     }
 }
 
-
 /*
  * Return phase2 idinfo in cidr format
  */
-function ipsec_idinfo_to_cidr(& $idinfo, $addrbits = false, $mode = "") {
+function ipsec_idinfo_to_cidr(&$idinfo, $addrbits = false, $mode = '')
+{
     global $config;
 
     switch ($idinfo['type']) {
@@ -160,7 +170,6 @@ function ipsec_idinfo_to_cidr(& $idinfo, $addrbits = false, $mode = "") {
     }
 }
 
-
 /*
  * Return phase1 association for phase2
  */
@@ -191,7 +200,8 @@ function ipsec_lookup_phase1(&$ph2ent, &$ph1ent)
 /*
  * Check phase1 communications status
  */
-function ipsec_phase1_status($ipsec_status, $ikeid) {
+function ipsec_phase1_status($ipsec_status, $ikeid)
+{
     foreach ($ipsec_status as $ike) {
         if ($ike['id'] != $ikeid) {
             continue;
@@ -314,7 +324,8 @@ function ipsec_dump_sad()
     return $sad;
 }
 
-function ipsec_mobilekey_sort() {
+function ipsec_mobilekey_sort()
+{
     global $config;
 
     function mobilekeycmp($a, $b) {
@@ -324,7 +335,8 @@ function ipsec_mobilekey_sort() {
     usort($config['ipsec']['mobilekey'], "mobilekeycmp");
 }
 
-function ipsec_get_number_of_phase2($ikeid) {
+function ipsec_get_number_of_phase2($ikeid)
+{
     global $config;
     $a_phase2 = $config['ipsec']['phase2'];
     $nbph2=0;
@@ -338,8 +350,8 @@ function ipsec_get_number_of_phase2($ikeid) {
     return $nbph2;
 }
 
-
-function ipsec_find_id(& $ph1ent, $side = "local", $rgmap = array()) {
+function ipsec_find_id(&$ph1ent, $side = 'local', $rgmap = array())
+{
     $id_data = null;
     if ($side == "local") {
         $id_type = $ph1ent['myid_type'];
@@ -427,7 +439,7 @@ function ipsec_configure()
     $a_phase1 = isset($config['ipsec']['phase1']) ? $config['ipsec']['phase1'] : array();
     $a_phase2 = isset($config['ipsec']['phase2']) ? $config['ipsec']['phase2'] : array();
     $a_client = isset($config['ipsec']['client']) ? $config['ipsec']['client'] : array();
-    $aggressive_psk = false ; // if one of the phase 1 entries has aggressive/psk combination, this will be set true
+    $aggressive_psk = false; // if one of the phase 1 entries has aggressive/psk combination, this will be set true
 
     if (!isset($ipseccfg['enable'])) {
         /* try to stop charon */
@@ -812,7 +824,7 @@ EOD;
                 foreach ($ipsec_loglevels as $lkey => $ldescr) {
                     if (isset($config['ipsec']["ipsec_{$lkey}"]) && is_numeric($config['ipsec']["ipsec_{$lkey}"]) &&
                       intval($config['ipsec']["ipsec_{$lkey}"]) >= 1 && intval($config['ipsec']["ipsec_{$lkey}"]) <= 5) {
-                          $cfg_loglevels[] = "${lkey} " . (intval($config['ipsec']["ipsec_{$lkey}"]) - 1) ;
+                          $cfg_loglevels[] = "${lkey} " . (intval($config['ipsec']["ipsec_{$lkey}"]) - 1);
                     }
                 }
             }
@@ -949,7 +961,7 @@ EOD;
                     $rekey = "rekey = yes";
                 }
 
-                $forceencaps = 'forceencaps = no' ;
+                $forceencaps = 'forceencaps = no';
                 if (!empty($ph1ent['nat_traversal']) && $ph1ent['nat_traversal'] == 'force') {
                     $forceencaps = 'forceencaps = yes';
                 }
@@ -959,7 +971,6 @@ EOD;
                 $leftsubnet_spec = array();
                 $ealgoAHsp2arr = array();
                 $ealgoESPsp2arr = array();
-
 
                 if (count($a_phase2)) {
                     foreach ($a_phase2 as $ph2ent) {
@@ -1114,7 +1125,6 @@ conn con<<connectionId>>
   installpolicy = yes
   {$tunneltype}
   {$dpdline}
-  auto = {$conn_auto}
   left = {$left_spec}
   right = {$right_spec}
   leftid = {$myid_data}
@@ -1141,14 +1151,14 @@ EOD;
                 // append ipsec connections
                 if (!isset($ph1ent['mobile']) && $keyexchange == 'ikev1') {
                     // ikev1 not mobile
-                    for ($idx = 0 ; $idx < count($leftsubnet_spec) ; ++$idx) {
+                    for ($idx = 0; $idx < count($leftsubnet_spec); ++$idx) {
                         if (count($leftsubnet_spec) == 1) {
-                            $tmpconf =  str_replace('<<connectionId>>', "{$ph1ent['ikeid']}", $connEntry);
+                            $tmpconf = str_replace('<<connectionId>>', "{$ph1ent['ikeid']}", $connEntry);
                         } else {
                             // suffix connection with sequence number
-                            $tmpconf =  str_replace('<<connectionId>>', "{$ph1ent['ikeid']}-00{$idx}", $connEntry);
+                            $tmpconf = str_replace('<<connectionId>>', sprintf('%s-%03d', $ph1ent['ikeid'], $idx), $connEntry);
                         }
-                        $tmpconf .= "\trightsubnet =" . $rightsubnet_spec[$idx]. "\n" ;
+                        $tmpconf .= "\trightsubnet = " . $rightsubnet_spec[$idx]. "\n";
                         $tmpconf .= "\tleftsubnet = " . $leftsubnet_spec[$idx] . "\n";
                         if (!empty($ealgoESPsp2arr[$idx])) {
                             $tmpconf .= "\tesp = " . join(',', $ealgoESPsp2arr[$idx]) . "!\n";
@@ -1156,42 +1166,69 @@ EOD;
                         if (!empty($ealgoAHsp2arr[$idx])) {
                             $tmpconf .= "\tah = " . join(',', $ealgoAHsp2arr[$idx]) . "!\n";
                         }
+                        $tmpconf .= "\tauto = {$conn_auto}\n";
                         $ipsecconf .= $tmpconf;
                     }
                 } else {
                     // mobile and ikev2
-                    $tmpconf =  str_replace('<<connectionId>>', "{$ph1ent['ikeid']}", $connEntry);
-                    if (!empty($rightsubnet_spec)) {
-                        $tmpconf .= "\trightsubnet = " . join(",", $rightsubnet_spec) . "\n";
-                    }
-                    if (!empty($leftsubnet_spec)) {
-                        $tmpconf .= "\tleftsubnet = " . join(",", $leftsubnet_spec) . "\n";
-                    }
-                    // merge esp phase 2 arrays.
-                    $esp_content = array();
-                    foreach ($ealgoESPsp2arr as $ealgoESPsp2arr_details) {
-                        foreach ($ealgoESPsp2arr_details as $esp_item) {
-                            if (!in_array($esp_item, $esp_content)) {
-                                $esp_content[] = $esp_item;
+                    if (isset($ph1ent['tunnel_isolation'])) {
+                        $ipsecconf .= str_replace('<<connectionId>>', "{$ph1ent['ikeid']}-000", $connEntry);
+                        for ($idx = 0; $idx < count($leftsubnet_spec); ++$idx) {
+                            // requires leading empty line:
+                            $tmpconf = array('');
+                            // fix for strongSwan to pick up the correct connection
+                            // name from the first configured tunnel ($idx == 0):
+                            $conn_suffix = $idx ? sprintf('-%03d', $idx) : '';
+                            $tmpconf[] = "conn con{$ph1ent['ikeid']}{$conn_suffix}";
+                            $tmpconf[] = "\trightsubnet = {$rightsubnet_spec[$idx]}";
+                            $tmpconf[] = "\tleftsubnet = {$leftsubnet_spec[$idx]}";
+                            if (!empty($ealgoESPsp2arr[$idx])) {
+                                $tmpconf[] = "\tesp = " . join(',', $ealgoESPsp2arr[$idx]) . '!';
+                            }
+                            if (!empty($ealgoAHsp2arr[$idx])) {
+                                $tmpconf[] = "\tah = " . join(',', $ealgoAHsp2arr[$idx]) . '!';
+                            }
+                            $tmpconf[] = "\talso = con{$ph1ent['ikeid']}-000";
+                            $tmpconf[] = "\tauto = {$conn_auto}";
+                            // requires trailing empty line:
+                            $tmpconf[] = '';
+                            $ipsecconf .= join("\n", $tmpconf);
+                        }
+                    } else {
+                        $tmpconf = str_replace('<<connectionId>>', "{$ph1ent['ikeid']}", $connEntry);
+                        if (!empty($rightsubnet_spec)) {
+                            $tmpconf .= "\trightsubnet = " . join(',', array_unique($rightsubnet_spec)) . "\n";
+                        }
+                        if (!empty($leftsubnet_spec)) {
+                            $tmpconf .= "\tleftsubnet = " . join(',', array_unique($leftsubnet_spec)) . "\n";
+                        }
+                        // merge esp phase 2 arrays.
+                        $esp_content = array();
+                        foreach ($ealgoESPsp2arr as $ealgoESPsp2arr_details) {
+                            foreach ($ealgoESPsp2arr_details as $esp_item) {
+                                if (!in_array($esp_item, $esp_content)) {
+                                    $esp_content[] = $esp_item;
+                                }
                             }
                         }
-                    }
-                    // merge ah phase 2 arrays.
-                    $ah_content = array();
-                    foreach ($ealgoAHsp2arr as $ealgoAHsp2arr_details) {
-                        foreach ($ealgoAHsp2arr_details as $ah_item) {
-                            if (!in_array($ah_item, $ah_content)) {
-                                $ah_content[] = $ah_item;
+                        // merge ah phase 2 arrays.
+                        $ah_content = array();
+                        foreach ($ealgoAHsp2arr as $ealgoAHsp2arr_details) {
+                            foreach ($ealgoAHsp2arr_details as $ah_item) {
+                                if (!in_array($ah_item, $ah_content)) {
+                                    $ah_content[] = $ah_item;
+                                }
                             }
                         }
+                        if (!empty($esp_content)) {
+                            $tmpconf .= "\tesp = " . join(',', $esp_content) . "!\n";
+                        }
+                        if (!empty($ah_content)) {
+                            $tmpconf .= "\tah = " . join(',', $ah_content) . "!\n";
+                        }
+                        $tmpconf .= "\tauto = {$conn_auto}\n";
+                        $ipsecconf .= $tmpconf;
                     }
-                    if (!empty($esp_content)) {
-                        $tmpconf .= "\tesp = " . join(',', $esp_content) . "!\n";
-                    }
-                    if (!empty($ah_content)) {
-                        $tmpconf .= "\tah = " . join(',', $ah_content) . "!\n";
-                    }
-                    $ipsecconf .= $tmpconf;
                 }
             }
         }

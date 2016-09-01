@@ -31,6 +31,7 @@ require_once("guiconfig.inc");
 require_once("openvpn.inc");
 require_once("services.inc");
 require_once("interfaces.inc");
+require_once("plugins.inc");
 
 if (!isset($config['openvpn']['openvpn-server'])) {
     $config['openvpn']['openvpn-server'] = array();
@@ -69,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             ,ntp_server2,netbios_enable,netbios_ntype,netbios_scope,wins_server1
             ,wins_server2,no_tun_ipv6,push_register_dns,dns_domain
             ,client_mgmt_port,verbosity_level,caref,crlref,certref,dh_length
-            ,cert_depth,strictusercn,digest,disable,duplicate_cn,vpnid";
+            ,cert_depth,strictusercn,digest,disable,duplicate_cn,vpnid,reneg-sec,use-common-name";
 
         foreach (explode(",", $copy_fields) as $fieldname) {
             $fieldname = trim($fieldname);
@@ -116,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             ,ntp_server2,netbios_enable,netbios_ntype,netbios_scope,wins_server1
             ,wins_server2,no_tun_ipv6,push_register_dns,dns_domain
             ,client_mgmt_port,verbosity_level,caref,crlref,certref,dh_length
-            ,cert_depth,strictusercn,digest,disable,duplicate_cn,vpnid,shared_key,tls";
+            ,cert_depth,strictusercn,digest,disable,duplicate_cn,vpnid,shared_key,tls,reneg-sec,use-common-name";
         foreach (explode(",", $init_fields) as $fieldname) {
             $fieldname = trim($fieldname);
             if (!isset($pconfig[$fieldname])) {
@@ -318,6 +319,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $input_errors[] = gettext("The Server Bridge DHCP range is invalid (start higher than end).");
             }
         }
+        if (!empty($pconfig['reneg-sec']) && (string)((int)$pconfig['reneg-sec']) != $pconfig['reneg-sec']) {
+            $input_errors[] = gettext("Renegotiate time should contain a valid number of seconds.");
+        }
         do_input_validation($pconfig, $reqdfields, $reqdfieldsn, $input_errors);
 
         if (count($input_errors) == 0) {
@@ -337,11 +341,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 ,serverbridge_dhcp_end,dns_domain,dns_server1,dns_server2,dns_server3
                 ,dns_server4,push_register_dns,ntp_server1,ntp_server2,netbios_enable
                 ,netbios_ntype,netbios_scope,no_tun_ipv6,verbosity_level,wins_server1
-                ,wins_server2,client_mgmt_port,strictusercn";
+                ,wins_server2,client_mgmt_port,strictusercn,reneg-sec,use-common-name";
 
             foreach (explode(",", $copy_fields) as $fieldname) {
                 $fieldname = trim($fieldname);
-                if (!empty($pconfig[$fieldname])) {
+                if (!empty($pconfig[$fieldname]) || $pconfig[$fieldname] == '0') {
                     $server[$fieldname] = $pconfig[$fieldname];
                 }
             }
@@ -461,11 +465,14 @@ $( document ).ready(function() {
   if ($("#iform").length) {
       $("#mode,#gwredir").change(function(){
           $(".opt_mode").hide();
+          $(".opt_mode :input").prop( "disabled", true );
           $(".opt_mode_"+$("#mode").val()).show();
+          $(".opt_mode_"+$("#mode").val()+" :input").prop( "disabled", false );
           if ($("#gwredir").is(":checked")) {
               $(".opt_gwredir").hide();
           }
           $("#dev_mode").change();
+          $(window).resize();
       });
       $("#mode").change();
 
@@ -568,7 +575,7 @@ $( document ).ready(function() {
           }
       });
       $("#client_mgmt_port_enable").change();
-
+      $(window).resize();
   }
 
 });
@@ -1148,7 +1155,7 @@ endif; ?>
                       </td>
                     </tr>
                     <tr class="opt_mode opt_mode_p2p_tls opt_mode_server_tls opt_mode_server_user opt_mode_server_tls_user opt_gwredir">
-                      <td width="22%" ><a id="help_local_network" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPv4 Local Network/s"); ?></td>
+                      <td width="22%" ><a id="help_local_network" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPv4 Local Network"); ?></td>
                       <td>
                         <input name="local_network" type="text" class="form-control unknown" size="40" value="<?=$pconfig['local_network'];?>" />
                         <div class="hidden" for="help_local_network">
@@ -1162,7 +1169,7 @@ endif; ?>
                       </td>
                     </tr>
                     <tr class="opt_mode opt_mode_p2p_tls opt_mode_server_tls opt_mode_server_user opt_mode_server_tls_user opt_gwredir">
-                      <td width="22%" ><a id="help_for_local_networkv6" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a><?=gettext("IPv6 Local Network/s"); ?></td>
+                      <td width="22%" ><a id="help_for_local_networkv6" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a><?=gettext("IPv6 Local Network"); ?></td>
                       <td>
                         <input name="local_networkv6" type="text" class="form-control unknown" size="40" value="<?=$pconfig['local_networkv6'];?>" />
                         <div class="hidden" for="help_for_local_networkv6">
@@ -1176,7 +1183,7 @@ endif; ?>
                       </td>
                     </tr>
                     <tr class="opt_mode opt_mode_p2p_tls opt_mode_p2p_shared_key">
-                      <td width="22%" ><a id="help_for_remote_network" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPv4 Remote Network/s"); ?></td>
+                      <td width="22%" ><a id="help_for_remote_network" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPv4 Remote Network"); ?></td>
                       <td>
                         <input name="remote_network" type="text" class="form-control unknown" size="40" value="<?=$pconfig['remote_network'];?>" />
                         <div class="hidden" for="help_for_remote_network">
@@ -1191,7 +1198,7 @@ endif; ?>
                       </td>
                     </tr>
                     <tr class="opt_mode opt_mode_p2p_tls opt_mode_p2p_shared_key">
-                      <td width="22%" ><a id="help_for_remote_networkv6" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPv6 Remote Network/s"); ?></td>
+                      <td width="22%" ><a id="help_for_remote_networkv6" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPv6 Remote Network"); ?></td>
                       <td>
                         <input name="remote_networkv6" type="text" class="form-control unknown" size="40" value="<?=$pconfig['remote_networkv6'];?>" />
                         <div class="hidden" for="help_for_remote_networkv6">
@@ -1480,6 +1487,17 @@ endif; ?>
                         </div>
                       </td>
                     </tr>
+                    <tr class="opt_mode opt_mode_server_tls_user">
+                      <td width="22%" ><a id="help_for_use-common-name" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Use common name"); ?></td>
+                      <td>
+                        <input name="use-common-name" type="checkbox" value="1" <?=!empty($pconfig['use-common-name']) ? "checked=\"checked\"" : "" ;?> />
+                        <div class="hidden" for="help_for_use-common-name">
+                          <span>
+                            <?=gettext("When using a client certificate, use certificate common name for indexing purposes instead of username"); ?><br />
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
                   </table>
                 </div>
               </div>
@@ -1524,6 +1542,18 @@ endif; ?>
                           <?=sprintf(gettext("%s4%s -- Normal usage range."),'<strong>','</strong>') ?> <br />
                           <?=sprintf(gettext("%s5%s -- Output R and W characters to the console for each packet read and write, uppercase is used for TCP/UDP packets and lowercase is used for TUN/TAP packets."),'<strong>','</strong>') ?> <br />
                           <?=sprintf(gettext("%s6%s-%s11%s -- Debug info range."),'<strong>','</strong>','<strong>','</strong>') ?>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr class="opt_mode opt_mode_server_tls_user opt_mode_server_user">
+                      <td><a id="help_for_reneg-sec" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Renegotiate time"); ?></td>
+                      <td>
+                        <input type="text" name="reneg-sec" value="<?=$pconfig['reneg-sec'];?>">
+                        <div class="hidden" for="help_for_reneg-sec">
+                          <?=sprintf(
+                              gettext('Renegotiate data channel key after n seconds (default=3600).%s' .
+                                     'When using a one time password, be advised that your connection will automatically drop because your password is not valid anymore.%sSet to 0 to disable, remember to change your client as well.'),
+                                     '<br/>','<br/>');?>
                         </div>
                       </td>
                     </tr>

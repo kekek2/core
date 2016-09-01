@@ -144,8 +144,8 @@ CORE_DEPENDS?=		apinger \
 			msktutil
 
 WRKDIR?=${.CURDIR}/work
-WRKSRC=	${WRKDIR}/src
-PKGDIR=	${WRKDIR}/pkg
+WRKSRC?=${WRKDIR}/src
+PKGDIR?=${WRKDIR}/pkg
 
 mount: want-git
 	@if [ ! -f ${WRKDIR}/.mount_done ]; then \
@@ -237,38 +237,25 @@ metadata: force
 	@${MAKE} DESTDIR=${DESTDIR} manifest > ${DESTDIR}/+MANIFEST
 	@${MAKE} DESTDIR=${DESTDIR} plist > ${DESTDIR}/plist
 
-package-keywords: force
-	@if [ ! -f /usr/ports/Keywords/sample.ucl ]; then \
-		mkdir -p /usr/ports/Keywords; \
-		cd /usr/ports/Keywords; \
-		fetch https://raw.githubusercontent.com/opnsense/ports/master/Keywords/sample.ucl; \
-	fi
-	@echo ">>> Installed /usr/ports/Keywords/sample.ucl"
-
 package-check: force
 	@if [ -f ${WRKDIR}/.mount_done ]; then \
 		echo ">>> Cannot continue with live mount.  Please run 'make umount'." >&2; \
 		exit 1; \
 	fi
-	@if [ ! -f /usr/ports/Keywords/sample.ucl ]; then \
-		echo ">>> Missing required file(s).  Please run 'make package-keywords'" >&2; \
-		exit 1; \
-	fi
 
 package: package-check
-	@rm -rf ${WRKSRC} ${PKGDIR}
+	@rm -rf ${WRKSRC}
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} metadata
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} install
-	@${PKG} create -v -m ${WRKSRC} -r ${WRKSRC} \
+	@PORTSDIR=${.CURDIR} ${PKG} create -v -m ${WRKSRC} -r ${WRKSRC} \
 	    -p ${WRKSRC}/plist -o ${PKGDIR}
-	@echo -n "Successfully built "
-	@cd ${PKGDIR}; find . -name "*.txz" | cut -c3-
 
 upgrade-check: force
 	@if ! ${PKG} info ${CORE_NAME} > /dev/null; then \
 		echo ">>> Cannot find package.  Please run 'opnsense-update -t ${CORE_NAME}'" >&2; \
 		exit 1; \
 	fi
+	@rm -rf ${PKGDIR}
 
 upgrade: upgrade-check package
 	@${PKG} delete -fy ${CORE_NAME}

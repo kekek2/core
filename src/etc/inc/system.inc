@@ -981,7 +981,7 @@ function system_webgui_configure()
             cert_import($cert, $crt, $key);
             $a_cert[] = $cert;
             $config['system']['webgui']['ssl-certref'] = $cert['refid'];
-            write_config(gettext("Importing HTTPS certificate"));
+            write_config('Importing HTTPS certificate');
         } else {
             $crt = base64_decode($cert['crt']);
             $key = base64_decode($cert['prv']);
@@ -2018,6 +2018,8 @@ function reset_factory_defaults($sync = true)
 {
     mwexec('/bin/rm -r /conf/*');
     disable_security_checks();
+
+    mwexec('/usr/local/sbin/beep.sh stop');
 
     /* as we go through a special case directly reboot */
     $shutdown_cmd = '/sbin/shutdown -or now';

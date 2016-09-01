@@ -79,14 +79,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $a_phase2 = &$config['ipsec']['phase2'];
     if (isset($_POST['apply'])) {
         ipsec_configure();
-        /* reload the filter in the background */
         filter_configure();
         $savemsg = get_std_save_message();
         clear_subsystem_dirty('ipsec');
     } elseif (isset($_POST['save'])) {
-        $config['ipsec']['enable'] = !empty($_POST['enable']) ? true : false;
+        if (!empty($_POST['enable'])) {
+            $config['ipsec']['enable'] = true;
+        } elseif (isset($config['ipsec']['enable'])) {
+            unset($config['ipsec']['enable']);
+        }
         write_config();
         ipsec_configure();
+        filter_configure();
+        clear_subsystem_dirty('ipsec');
         header("Location: vpn_ipsec.php");
         exit;
     } elseif (!empty($_POST['act']) && $_POST['act'] == "delphase1" ) {
@@ -112,9 +117,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             unset($config['ipsec']['phase1'][$p1entrydel]);
         }
 
-        if (write_config()) {
-            mark_subsystem_dirty('ipsec');
-        }
+        write_config();
+        mark_subsystem_dirty('ipsec');
         header("Location: vpn_ipsec.php");
         exit;
     } elseif (!empty($_POST['act']) && $_POST['act'] == "delphase2" ) {
@@ -125,9 +129,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 unset($config['ipsec']['phase2'][$p1entrydel]);
             }
         }
-        if (write_config()) {
-            mark_subsystem_dirty('ipsec');
-        }
+        write_config();
+        mark_subsystem_dirty('ipsec');
         header("Location: vpn_ipsec.php");
         exit;
     } elseif (!empty($_POST['act']) && $_POST['act'] == "movep1" ) {
@@ -141,9 +144,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $a_phase1 = legacy_move_config_list_items($a_phase1, $id,  $_POST['p1entry']);
         }
-        if (write_config()) {
-            mark_subsystem_dirty('ipsec');
-        }
+        write_config();
+        mark_subsystem_dirty('ipsec');
         header("Location: vpn_ipsec.php");
         exit;
     } elseif (!empty($_POST['act']) && $_POST['act'] == "movep2" ) {
@@ -157,9 +159,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $a_phase2 = legacy_move_config_list_items($a_phase2, $id,  $_POST['p2entry']);
         }
-        if (write_config()) {
-            mark_subsystem_dirty('ipsec');
-        }
+        write_config();
+        mark_subsystem_dirty('ipsec');
         header("Location: vpn_ipsec.php");
         exit;
     } elseif (!empty($_POST['act']) && $_POST['act'] == "togglep1" && isset($a_phase1[$_POST['id']]) ) {
@@ -169,9 +170,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $a_phase1[$_POST['id']]['disabled'] = true;
         }
-        if (write_config()) {
-            mark_subsystem_dirty('ipsec');
-        }
+        write_config();
+        mark_subsystem_dirty('ipsec');
         header("Location: vpn_ipsec.php");
         exit;
     } elseif (!empty($_POST['act']) && $_POST['act'] == "togglep2" && isset($a_phase2[$_POST['id']]) ) {
@@ -181,9 +181,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $a_phase2[$_POST['id']]['disabled'] = true;
         }
-        if (write_config()) {
-            mark_subsystem_dirty('ipsec');
-        }
+        write_config();
+        mark_subsystem_dirty('ipsec');
         header("Location: vpn_ipsec.php");
         exit;
     }
@@ -317,7 +316,7 @@ $( document ).ready(function() {
       if (isset($savemsg)) {
           print_info_box($savemsg);
       }
-      if ($pconfig['enable'] && is_subsystem_dirty('ipsec')) {
+      if (is_subsystem_dirty('ipsec')) {
           print_info_box_apply(gettext("The IPsec tunnel configuration has been changed.") . "<br />" . gettext("You must apply the changes in order for them to take effect."));
       }?>
       <section class="col-xs-12">
@@ -429,7 +428,7 @@ $( document ).ready(function() {
                           <?=gettext("DH Group"); ?>&nbsp;<?=$p1_dhgroups[$ph1ent['dhgroup']];?>
                       </td>
                       <td class="hidden-xs">
-                          <?=str_replace('_', ' ', $ph1ent['authentication_method']);?>
+                          <?= html_safe($p1_authentication_methods[$ph1ent['authentication_method']]['name']) ?>
                       </td>
                       <td>
                           <?=$ph1ent['descr'];?>&nbsp;

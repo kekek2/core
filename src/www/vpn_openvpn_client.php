@@ -31,6 +31,7 @@ require_once("guiconfig.inc");
 require_once("openvpn.inc");
 require_once("services.inc");
 require_once("interfaces.inc");
+require_once("plugins.inc");
 
 if (!isset($config['openvpn']['openvpn-client'])) {
     $config['openvpn']['openvpn-client'] = array();
@@ -301,7 +302,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 }
             }
 
-                    // attributes containing some kind of logic
+            // attributes containing some kind of logic
             if ($vpnid) {
                 $client['vpnid'] = $vpnid;
             } else {
@@ -883,7 +884,7 @@ $( document ).ready(function() {
             <td width="78%">
               <input name="tunnel_network" type="text" class="form-control unknown" size="20" value="<?=$pconfig['tunnel_network'];?>" />
               <div class="hidden" for="help_for_tunnel_network">
-                <?=gettext("This is the virtual network used for private " .
+                <?=gettext("This is the IPv4 virtual network used for private " .
                                 "communications between this client and the " .
                                 "server expressed using CIDR (eg. 10.0.8.0/24). " .
                                 "The first network address is assumed to be the " .
@@ -909,7 +910,7 @@ $( document ).ready(function() {
             </td>
           </tr>
           <tr>
-            <td><a id="help_for_remote_network" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPv4 Remote Network/s"); ?></td>
+            <td><a id="help_for_remote_network" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPv4 Remote Network"); ?></td>
             <td>
               <input name="remote_network" type="text" class="form-control unknown" size="40" value="<?=$pconfig['remote_network'];?>" />
               <div class="hidden" for="help_for_remote_network">
@@ -924,7 +925,7 @@ $( document ).ready(function() {
             </td>
           </tr>
           <tr>
-            <td><a id="help_for_remote_networkv6" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPv6 Remote Network/s"); ?></td>
+            <td><a id="help_for_remote_networkv6" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPv6 Remote Network"); ?></td>
             <td>
               <input name="remote_networkv6" type="text" class="form-control unknown" size="40" value="<?=$pconfig['remote_networkv6'];?>" />
               <div class="hidden" for="help_for_remote_networkv6">
