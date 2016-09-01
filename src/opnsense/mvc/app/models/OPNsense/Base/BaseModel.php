@@ -122,7 +122,16 @@ abstract class BaseModel
             if (class_exists($classname)) {
                 // construct field type object
                 $field_rfcls = new \ReflectionClass($classname);
-                if ($field_rfcls->getParentClass()->name != 'OPNsense\Base\FieldTypes\BaseField') {
+                $check_derived = $field_rfcls->getParentClass();
+                $is_derived_from_basefield = false;
+                while ($check_derived != false) {
+                    if ($check_derived->name == 'OPNsense\Base\FieldTypes\BaseField') {
+                        $is_derived_from_basefield = true;
+                        break;
+                    }
+                    $check_derived = $check_derived->getParentClass();
+                }
+                if (!$is_derived_from_basefield) {
                     // class found, but of wrong type. raise an exception.
                     throw new ModelException("class ".$field_rfcls->name." of wrong type in model definition");
                 }
@@ -559,7 +568,11 @@ abstract class BaseModel
             // serialize to config after last migration step, keep the config data static as long as not all
             // migrations have completed.
             if ($upgradePerfomed) {
-                $this->serializeToConfig();
+                try {
+                    $this->serializeToConfig();
+                } catch (\Exception $e) {
+                    $logger->error("Model ".$class_info->getName() ." can't be saved, skip ( " .$e . " )");
+                }
             }
         }
     }

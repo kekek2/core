@@ -32,6 +32,7 @@ require_once("openvpn.inc");
 require_once("services.inc");
 require_once("filter.inc");
 require_once("interfaces.inc");
+require_once("plugins.inc");
 require_once("openvpn-client-export.inc");
 
 global $current_openvpn_version, $current_openvpn_version_rev;
@@ -274,11 +275,11 @@ include("head.inc");
             $('tr[data-server-index="'+$(this).val()+'"]').show();
             switch ($("#server :selected").data('mode')) {
                 case "p2p_shared_key":
-                    $(".mode_server select,input").prop( "disabled", true );
+                    $(".mode_server :input").prop( "disabled", true );
                     $(".mode_server").hide();
                     break;
                 default:
-                    $(".mode_server select,input").prop( "disabled", false );
+                    $(".mode_server :input").prop( "disabled", false );
                     $(".mode_server").show();
             }
             $(window).resize(); // force zebra re-stripe (opnsense_standard_table_form)
@@ -434,8 +435,8 @@ if (isset($savemsg)) {
                 <td>
                       <select name="useaddr" id="useaddr">
                         <option value="serveraddr" ><?=gettext("Interface IP Address");?></option>
-                        <option value="servermagic" ><?=gettext("Automagic Multi-WAN IPs (port forward targets)");?></option>
-                        <option value="servermagichost" ><?=gettext("Automagic Multi-WAN dynamic DNS Hostnames (port forward targets)");?></option>
+                        <option value="servermagic" ><?=gettext("Automatic Multi-WAN IPs (port forward targets)");?></option>
+                        <option value="servermagichost" ><?=gettext("Automatic Multi-WAN dynamic DNS Hostnames (port forward targets)");?></option>
                         <option value="serverhostname" ><?=gettext("Installation hostname");?></option>
                         <?php if (isset($config['dyndnses']['dyndns'])) :
 ?>

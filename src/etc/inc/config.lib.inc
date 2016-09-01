@@ -71,6 +71,14 @@ function alias_make_table($config)
     }
   }
 
+/**
+ * parse config into array and return
+ */
+function load_config_from_file($filename)
+{
+    return OPNsense\Core\Config::getInstance()->toArrayFromFile($filename, listtags());
+}
+
 /****f* config/parse_config
  * NAME
  *   parse_config - Read in config.xml if needed and return $config array
@@ -130,7 +138,7 @@ function convert_config()
     }
 
     if ($prev_version != $config['version']) {
-        write_config(sprintf(gettext('Upgraded config version level from %s to %s'), $prev_version, $config['version']));
+        write_config(sprintf('Upgraded config version level from %s to %s', $prev_version, $config['version']));
     }
 }
 
@@ -169,9 +177,15 @@ function write_config($desc = '', $backup = true)
         return -1;
     }
 
+    if (function_exists('plugins_interfaces')) {
+        /* only pull plugins if plugins.inc was included before */
+        plugins_interfaces();
+    }
+
     $cnf = OPNsense\Core\Config::getInstance();
     $cnf->fromArray($config);
     $revision_info = make_config_revision_entry($desc);
+
     try {
         $cnf->save($revision_info, $backup);
     } catch (OPNsense\Core\ConfigException $e) {
@@ -208,7 +222,7 @@ function config_restore($conffile)
 
     $config = parse_config();
 
-    write_config(gettext("Reverted to") . " " . array_pop(explode("/", $conffile)) . ".", false);
+    write_config(sprintf('Reverted to %s', array_pop(explode('/', $conffile))), false);
 
     return 0;
 }
@@ -298,7 +312,7 @@ function make_config_revision_entry($desc = '')
     }
 
     if (empty($desc)) {
-        $desc = sprintf(gettext('%s made changes'), $_SERVER['SCRIPT_NAME']);
+        $desc = sprintf('%s made changes', $_SERVER['SCRIPT_NAME']);
     }
 
     $revision = array();

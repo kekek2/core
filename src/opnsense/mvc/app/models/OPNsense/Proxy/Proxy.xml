@@ -152,12 +152,26 @@
                     <MinimumValue>1</MinimumValue>
                     <ValidationMessage>Specify the overall bandwidth for downloads in kilobits per second.</ValidationMessage>
                     <Required>N</Required>
+                    <Constraints>
+                        <check001>
+                            <ValidationMessage>Both throttling parameters should either be filled or empty</ValidationMessage>
+                            <type>AllOrNoneConstraint</type>
+                            <addFields>
+                                <field1>perHostTrotteling</field1>
+                            </addFields>
+                        </check001>
+                    </Constraints>
                 </OverallBandwidthTrotteling>
                 <perHostTrotteling type="IntegerField">
                     <default>256</default>
                     <MinimumValue>1</MinimumValue>
                     <ValidationMessage>Specify the per host bandwidth for downloads in kilobits per second.</ValidationMessage>
                     <Required>N</Required>
+                    <Constraints>
+                        <check001>
+                            <reference>OverallBandwidthTrotteling.check001</reference>
+                        </check001>
+                    </Constraints>
                 </perHostTrotteling>
             </traffic>
         </general>
@@ -189,6 +203,10 @@
                 <default>0</default>
                 <Required>Y</Required>
             </sslbump>
+            <sslurlonly type="BooleanField">
+		<default>0</default>
+		<Required>Y</Required>
+            </sslurlonly>
             <sslcertificate type="CertificateField">
                 <Required>N</Required>
                 <Type>ca</Type>
@@ -302,7 +320,7 @@
                                 <Constraints>
                                     <check001>
                                         <ValidationMessage>Filename should be unique</ValidationMessage>
-                                        <type>OPNsense\Base\Constraints\UniqueConstraint</type>
+                                        <type>UniqueConstraint</type>
                                     </check001>
                                 </Constraints>
                             </filename>

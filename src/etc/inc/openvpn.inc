@@ -82,6 +82,7 @@ function openvpn_create_key()
 function openvpn_vpnid_used($vpnid)
 {
     global $config;
+
     if (isset($config['openvpn']['openvpn-server'])) {
         foreach ($config['openvpn']['openvpn-server'] as &$settings) {
             if ($vpnid == $settings['vpnid']) {
@@ -99,7 +100,7 @@ function openvpn_vpnid_used($vpnid)
     }
 
     return false;
-  }
+}
 
 function openvpn_vpnid_next()
 {
@@ -580,7 +581,7 @@ function openvpn_reconfigure($mode, $settings, $device_only = false)
                 $conf .= "client-cert-not-required\n";
             case 'server_tls_user':
                 /* username-as-common-name is not compatible with server-bridge */
-                if (stristr($conf, "server-bridge") === false) {
+                if (stristr($conf, "server-bridge") === false && empty($settings['use-common-name'])) {
                     $conf .= "username-as-common-name\n";
                 }
                 if (!empty($settings['authmode'])) {
@@ -792,6 +793,10 @@ function openvpn_reconfigure($mode, $settings, $device_only = false)
         if ($settings['route_no_exec']) {
             $conf .= "route-noexec\n";
         }
+    }
+
+    if (isset($settings['reneg-sec']) && $settings['reneg-sec'] != "") {
+        $conf .= "reneg-sec ".$settings['reneg-sec'].";\n";
     }
 
     openvpn_add_custom($settings, $conf);

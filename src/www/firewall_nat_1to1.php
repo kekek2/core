@@ -52,10 +52,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (isset($pconfig['action']) && $pconfig['action'] == 'del' && isset($id)) {
         // delete single entry
         unset($a_1to1[$id]);
-        if (write_config()) {
-            mark_subsystem_dirty('natconf');
-            firewall_syslog("Delete Firewall/NAT/One-to-One", $id);
-        }
+        write_config();
+        mark_subsystem_dirty('natconf');
+        firewall_syslog("Delete Firewall/NAT/One-to-One", $id);
         header("Location: firewall_nat_1to1.php");
         exit;
     } elseif (isset($pconfig['action']) && $pconfig['action'] == 'del_x' && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
@@ -65,11 +64,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             unset($a_1to1[$rulei]);
             $id_for_delete[] = $rulei;
         }
-        if (write_config()) {
-            mark_subsystem_dirty('natconf');
-            foreach ($id_for_delete as $idk)
-                firewall_syslog("Delete Firewall/NAT/One-to-One", $idk);
-        }
+        write_config();
+        mark_subsystem_dirty('natconf');
+        foreach ($id_for_delete as $idk) {
+            firewall_syslog("Delete Firewall/NAT/One-to-One", $idk);
+        };
         header("Location: firewall_nat_1to1.php");
         exit;
     } elseif (isset($pconfig['action']) && $pconfig['action'] == 'move') {
@@ -81,10 +80,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $a_1to1 = legacy_move_config_list_items($a_1to1, $id,  $pconfig['rule']);
 
-            if (write_config()) {
-                mark_subsystem_dirty('natconf');
-                firewall_syslog("Move Firewall/NAT/One-to-One", $id);
-            }
+            write_config();
+            mark_subsystem_dirty('natconf');
+            firewall_syslog("Move Firewall/NAT/One-to-One", $id);
             header("Location: firewall_nat_1to1.php");
             exit;
         }
@@ -97,10 +95,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $a_1to1[$id]['disabled'] = true;
             $a_1to1_action = "Disable Firewall/NAT/One-to-One";
         }
-        if (write_config(gettext('Toggled NAT rule'))) {
-            mark_subsystem_dirty('natconf');
-            firewall_syslog($a_1to1_action, $id);
-        }
+        write_config(gettext('Toggled NAT rule'));
+        mark_subsystem_dirty('natconf');
+        firewall_syslog($a_1to1_action, $id);
         header("Location: firewall_nat_1to1.php");
         exit;
     }
