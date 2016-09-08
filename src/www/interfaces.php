@@ -428,6 +428,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['pptp_subnet'] = $a_ppps[$pppid]['subnet'];
     $pconfig['pptp_remote'] = $a_ppps[$pppid]['gateway'];
     $pconfig['pptp_idletimeout'] = $a_ppps[$pppid]['timeout'];
+    $pconfig['pptp_mschap'] = isset($a_ppps[$pppid]['mschap']);
 
     if (isset($a_ppps[$pppid])) {
         $pconfig['pppid'] = $pppid;
@@ -638,6 +639,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     $reqdfields = explode(" ", "pptp_username pptp_password localip pptp_subnet pptp_remote");
                     $reqdfieldsn = array(gettext("PPTP username"),gettext("PPTP password"),gettext("PPTP local IP address"),gettext("PPTP subnet"),gettext("PPTP remote IP address"));
                 }
+                if (!empty($pconfig['pptp_mschap'])) {
+                    $reqdfields[] = 'pptp_mschap';
+                    $reqdfieldsn[] = gettext("PPTP MS CHAP");
+                }
                 do_input_validation($pconfig, $reqdfields, $reqdfieldsn, $input_errors);
                 break;
             case "l2tp":
@@ -647,6 +652,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 } else {
                     $reqdfields = explode(" ", "pptp_username pptp_password pptp_remote");
                     $reqdfieldsn = array(gettext("L2TP username"),gettext("L2TP password"),gettext("L2TP remote IP address"));
+                }
+                if (!empty($pconfig['pptp_mschap'])) {
+                    $reqdfields[] = 'pptp_mschap';
+                    $reqdfieldsn[] = gettext("L2TP MS CHAP");
                 }
                 do_input_validation($pconfig, $reqdfields, $reqdfieldsn, $input_errors);
                 break;
@@ -1042,6 +1051,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     if (!empty($pconfig['pptp_idletimeout'])) {
                         $new_ppp_config['idletimeout'] = $pconfig['pptp_idletimeout'];
                     }
+                    $new_ppp_config['mschap'] = !empty($pconfig['pptp_mschap']);
                     break;
             }
 
@@ -2304,6 +2314,16 @@ include("head.inc");
                           <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Idle timeout"); ?></td>
                           <td>
                             <input name="pptp_idletimeout" type="text" id="pptp_idletimeout" value="<?=htmlspecialchars($pconfig['pptp_idletimeout']);?>" /> <?=gettext("seconds"); ?><br /><?=gettext("If no qualifying outgoing packets are transmitted for the specified number of seconds, the connection is brought down. An idle timeout of zero disables this feature."); ?>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td><a id="help_for_pptp_mschap" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Enable mschap authentication"); ?></td>
+                          <td>
+                            <input name="pptp_mschap" type="checkbox" id="pptp_mschap" value="enable" <?=!empty($pconfig['pptp_mschap']) ? 'checked="checked"' : '' ?> />
+                            <?=gettext("Enable MS Chap authentication protocol (not safe)"); ?><br />
+                            <div class="hidden" for="help_for_pptp_mschap">
+                              <?=gettext("Enable Microsoft mschap protocol for authentication to remote point. It is not safe method and is not recommended."); ?>
+                            </div>
                           </td>
                         </tr>
                         <tr>

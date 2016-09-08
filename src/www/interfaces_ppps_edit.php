@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     // boolean fields
-    $bool_fields = array('ondemand', 'shortseq', 'acfcomp', 'protocomp', 'vjcomp', 'tcpmssfix');
+    $bool_fields = array('ondemand', 'mschap', 'shortseq', 'acfcomp', 'protocomp', 'vjcomp', 'tcpmssfix');
     foreach ($bool_fields as $fieldname) {
         $pconfig[$fieldname] = isset($a_ppps[$id][$fieldname]);
     }
@@ -113,6 +113,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             } else {
                 $reqdfields = explode(" ", "ports username password localip subnet gateway");
                 $reqdfieldsn = array(gettext("Link Interface(s)"),gettext("Username"),gettext("Password"),gettext("Local IP address"),gettext("Subnet"),gettext("Remote IP address"));
+            }
+            if (!empty($pconfig['mschap'])) {
+                $reqdfields[] = "mschap";
+                $reqdfieldsn[] = gettext("MS CHAP");
             }
             do_input_validation($pconfig, $reqdfields, $reqdfieldsn, $input_errors);
             break;
@@ -169,6 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if (!empty($pconfig['idletimeout'])) {
             $ppp['idletimeout'] = $pconfig['idletimeout'];
         }
+        $ppp['mschap'] = !empty($pconfig['mschap']);
         $ppp['uptime'] = !empty($pconfig['uptime']);
         if (!empty($pconfig['descr'])) {
             $ppp['descr'] = $pconfig['descr'];
@@ -688,6 +693,16 @@ include("head.inc");
                             <?= gettext("(seconds) Default is 0, which disables the timeout feature."); ?><br /><br />
                             <?= gettext("If no incoming or outgoing packets are transmitted for the entered number of seconds the connection is brought down.");?>
                             <br /><?=gettext("When the idle timeout occurs, if the dial-on-demand option is enabled, mpd goes back into dial-on-demand mode. Otherwise, the interface is brought down and all associated routes removed."); ?>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr style="display:none" class="act_show_advanced">
+                        <td width="22%"><a id="help_for_mschap" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Enable mschap authentication"); ?></td>
+                        <td width="78%">
+                          <input type="checkbox" value="on" id="mschap" name="mschap" <?=!empty($pconfig['mschap']) ? "checked=\"checked\"" : ""; ?> />
+                          <?= gettext("Enable Microsoft chap authentication protocol (not safe)"); ?>
+                          <div class="hidden" for="help_for_mschap">
+                            <?= gettext("Enable Microsoft mschap protocol for authentication to remote point. It is not safe method and is not recommended."); ?> </span>
                           </div>
                         </td>
                       </tr>
