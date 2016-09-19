@@ -415,5 +415,5 @@ POSSIBILITY OF SUCH DAMAGE.
     </tr>
 </table>
 
-{{ partial("layout_partials/base_dialog",['fields':formDialogEditBlacklist,'id':'DialogEditBlacklist','label':'Edit Blacklist'])}}
-{{ partial("layout_partials/base_dialog",['fields':formDialogGroupACL,'id':'DialogGroupACL','label':'Edit group white and black lists'])}}
+{{ partial("layout_partials/base_dialog",['fields':formDialogEditBlacklist,'id':'DialogEditBlacklist','label':lang._("Edit Blacklist")])}}
+{{ partial("layout_partials/base_dialog",['fields':formDialogGroupACL,'id':'DialogGroupACL','label':lang._("Edit group white and black lists")])}}
