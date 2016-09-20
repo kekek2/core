@@ -790,7 +790,7 @@ function system_syslogd_start($verbose = false)
         flush();
     }
 
-    $log_directive = '%';
+    $log_directive = '';
     $syslogd_extra = '';
 
     if (isset($syslogcfg)) {
