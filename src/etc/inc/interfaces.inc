@@ -324,17 +324,16 @@ function interface_qinq_configure(&$vlan, $fd = null)
     legacy_netgraph_attach($qinqif);
 
     if (!empty($vlanif) && does_interface_exist($vlanif)) {
-        fwrite($fd, "shutdown {$qinqif}qinq:\n");
-        exec("/usr/sbin/ngctl msg {$qinqif}qinq: gettable", $result);
+        exec("/usr/sbin/ngctl msg {$vlanif}qinq: gettable", $result);
         if (empty($result)) {
-            fwrite($fd, "mkpeer {$qinqif}: vlan lower downstream\n");
-            fwrite($fd, "name {$qinqif}:lower {$vlanif}qinq\n");
-            fwrite($fd, "connect {$qinqif}: {$vlanif}qinq: upper nomatch\n");
+            fwrite($fd, "mkpeer {$vlanif}: vlan lower downstream\n");
+            fwrite($fd, "name {$vlanif}:lower {$vlanif}qinq\n");
+            fwrite($fd, "connect {$vlanif}: {$vlanif}qinq: upper nomatch\n");
         }
     } else {
-        fwrite($fd, "mkpeer {$qinqif}: vlan lower downstream\n");
-        fwrite($fd, "name {$qinqif}:lower {$vlanif}qinq\n");
-        fwrite($fd, "connect {$qinqif}: {$vlanif}qinq: upper nomatch\n");
+        fwrite($fd, "mkpeer {$vlanif}: vlan lower downstream\n");
+        fwrite($fd, "name {$vlanif}:lower {$vlanif}qinq\n");
+        fwrite($fd, "connect {$vlanif}: {$vlanif}qinq: upper nomatch\n");
     }
 
     if (!stristr($qinqif, "_vlan")) {
@@ -400,7 +399,6 @@ function interface_qinq2_configure(&$qinq, $fd, $macaddr)
         return;
     }
 
-    fwrite($fd, "shutdown {$if}h{$tag}:\n");
     fwrite($fd, "mkpeer {$if}qinq: eiface {$if}{$tag} ether\n");
     fwrite($fd, "name {$if}qinq:{$if}{$tag} {$if}h{$tag}\n");
     fwrite($fd, "msg {$if}qinq: addfilter { vlan={$tag} hook=\"{$if}{$tag}\" }\n");
@@ -1778,65 +1776,23 @@ function interfaces_carp_setup()
         echo gettext("Configuring CARP settings...");
         mute_kernel_msgs();
     }
+    set_single_sysctl("net.inet.carp.preempt", "1");
 
-    /* suck in configuration items */
-    if (isset($config['hasync'])) {
-        if (isset($config['hasync']['pfsyncenabled'])) {
-            $pfsyncenabled = $config['hasync']['pfsyncenabled'];
-        }
-        if (isset($config['hasync']['pfsyncinterface'])) {
-            $pfsyncinterface = $config['hasync']['pfsyncinterface'];
-        }
-        if (isset($config['hasync']['pfsyncpeerip'])) {
-            $pfsyncpeerip = $config['hasync']['pfsyncpeerip'];
-        }
-    } else {
-        unset($pfsyncinterface);
-        unset($pfsyncenabled);
-    }
-
-    set_sysctl(array(
-            "net.inet.carp.preempt" => "1",
-            "net.inet.carp.log" => "1"
-    ));
-
-    if (!empty($pfsyncinterface)) {
-        $carp_sync_int = get_real_interface($pfsyncinterface);
-    } else {
-        unset($carp_sync_int);
+    if (!empty($config['hasync']['pfsyncinterface'])) {
+        $carp_sync_int = get_real_interface($config['hasync']['pfsyncinterface']);
     }
 
     /* setup pfsync interface */
-    if (!empty($carp_sync_int) && isset($pfsyncenabled)) {
-        if (is_ipaddr($pfsyncpeerip)) {
-            $syncpeer = "syncpeer {$pfsyncpeerip}";
+    if (!empty($carp_sync_int) && isset($config['hasync']['pfsyncenabled'])) {
+        if (isset($config['hasync']['pfsyncpeerip']) && is_ipaddr($config['hasync']['pfsyncpeerip'])) {
+            $syncpeer = "syncpeer " . $config['hasync']['pfsyncpeerip'];
         } else {
             $syncpeer = "-syncpeer";
         }
 
         mwexec("/sbin/ifconfig pfsync0 syncdev {$carp_sync_int} {$syncpeer} up", false);
-
-        sleep(1);
-
-        /* XXX: Handle an issue with pfsync(4) and carp(4). In a cluster carp will come up before pfsync(4) has updated and so will cause issues
-         * for existing sessions.
-         */
-        log_error("waiting for pfsync...");
-        $i = 0;
-        while (intval(trim(`/sbin/ifconfig pfsync0 | /usr/bin/grep 'syncok: 0' | /usr/bin/grep -v grep | /usr/bin/wc -l`)) == 0 && $i < 30) {
-            $i++;
-            sleep(1);
-        }
-        log_error("pfsync done in $i seconds.");
-        log_error("Configuring CARP settings finalize...");
     } else {
         mwexec("/sbin/ifconfig pfsync0 -syncdev -syncpeer down", false);
-    }
-
-    if (isset($config['virtualip']['vip']) && $config['virtualip']['vip']) {
-        set_single_sysctl("net.inet.carp.allow", "1");
-    } else {
-        set_single_sysctl("net.inet.carp.allow", "0");
     }
 
     if (file_exists("/var/run/booting")) {
@@ -1914,29 +1870,21 @@ function interfaces_vips_configure($interface = '')
         $carp_setuped = false;
         $anyproxyarp = false;
         foreach ($config['virtualip']['vip'] as $vip) {
-            switch ($vip['mode']) {
-                case "proxyarp":
-                    /* nothing it is handled on interface_proxyarp_configure() */
-                    if ($interface <> "" && $vip['interface'] <> $interface) {
-                        continue;
-                    }
-                    $anyproxyarp = true;
-                    break;
-                case "ipalias":
-                    if ($interface <> "" && $vip['interface'] <> $interface) {
-                        continue;
-                    }
-                    interface_ipalias_configure($vip);
-                    break;
-                case "carp":
-                    if ($interface <> "" && $vip['interface'] <> $interface) {
-                        continue;
-                    }
-                    if ($carp_setuped == false) {
-                        $carp_setuped = true;
-                    }
-                    interface_carp_configure($vip);
-                    break;
+            if ($interface == "" || $vip['interface'] == $interface) {
+                switch ($vip['mode']) {
+                    case "proxyarp":
+                        $anyproxyarp = true;
+                        break;
+                    case "ipalias":
+                        interface_ipalias_configure($vip);
+                        break;
+                    case "carp":
+                        if ($carp_setuped == false) {
+                            $carp_setuped = true;
+                        }
+                        interface_carp_configure($vip);
+                        break;
+                }
             }
         }
         if ($carp_setuped == true) {
@@ -1953,10 +1901,6 @@ function interface_ipalias_configure(&$vip)
     global $config;
 
     if ($vip['mode'] != "ipalias") {
-        return;
-    }
-
-    if ($vip['interface'] != 'lo0' && !isset($config['interfaces'][$vip['interface']])) {
         return;
     }
 
@@ -1977,6 +1921,11 @@ function interface_carp_configure(&$vip)
     global $config;
 
     if ($vip['mode'] != 'carp') {
+        return;
+    }
+
+    // when CARP is temporary disabled, don't try to configure on any interface-up events
+    if (get_single_sysctl('net.inet.carp.allow') == '0') {
         return;
     }
 
@@ -2819,19 +2768,6 @@ function interface_configure($interface = 'wan', $reloadall = false, $linkupeven
                 }
             }
         }
-    } else {
-        if ($mac == "ff:ff:ff:ff:ff:ff") {
-            /*   this is not a valid mac address.  generate a
-             *   temporary mac address so the machine can get online.
-             */
-            echo gettext("Generating new MAC address.");
-            $random_mac = generate_random_mac_address();
-            mwexec("/sbin/ifconfig " . escapeshellarg($realhwif) .
-                " link " . escapeshellarg($random_mac));
-            $wancfg['spoofmac'] = $random_mac;
-            write_config();
-            file_notice("MAC Address altered", sprintf(gettext('The INVALID MAC address (ff:ff:ff:ff:ff:ff) on interface %s has been automatically replaced with %s'), $realif, $random_mac), "Interfaces");
-        }
     }
 
     /* media */
@@ -3058,10 +2994,6 @@ function interface_track6_6rd_configure($interface = 'lan', $lancfg)
 {
     global $config;
 
-    if (!is_array($lancfg)) {
-        return;
-    }
-
     /* If the interface is not configured via another, exit */
     if (empty($lancfg['track6-interface'])) {
         return;
@@ -3118,10 +3050,6 @@ function interface_track6_6rd_configure($interface = 'lan', $lancfg)
 function interface_track6_6to4_configure($interface = 'lan', $lancfg)
 {
     global $config;
-
-    if (!is_array($lancfg)) {
-        return;
-    }
 
     /* If the interface is not configured via another, exit */
     if (empty($lancfg['track6-interface'])) {
@@ -4270,45 +4198,6 @@ function guess_interface_from_ip($ipaddress)
 }
 
 
-
-/****f* interfaces/link_ip_to_carp_interface
- * NAME
- *   link_ip_to_carp_interface - Find where a CARP interface links to.
- * INPUTS
- *   $ip
- * RESULT
- *   $carp_ints
- ******/
-function link_ip_to_carp_interface($ip)
-{
-    global $config;
-
-    if (!is_ipaddr($ip)) {
-        return;
-    }
-
-    $carp_ints = '';
-    if (isset($config['virtualip']['vip'])) {
-        $first = 0;
-        $carp_int = array();
-        foreach ($config['virtualip']['vip'] as $vip) {
-            if ($vip['mode'] == "carp") {
-                $carp_ip = $vip['subnet'];
-                $carp_sn = $vip['subnet_bits'];
-                $carp_nw = gen_subnet($carp_ip, $carp_sn);
-                if (ip_in_subnet($ip, "{$carp_nw}/{$carp_sn}")) {
-                    $carp_int[] = get_real_interface($vip['interface']);
-                }
-            }
-        }
-        if (!empty($carp_int)) {
-            $carp_ints = implode(" ", array_unique($carp_int));
-        }
-    }
-
-    return $carp_ints;
-}
-
 function link_interface_to_track6($int, $action = '')
 {
     global $config;
@@ -4514,17 +4403,6 @@ function find_interface_subnet($interface)
     return null;
 }
 
-function find_interface_subnetv6($interface)
-{
-    $interface = trim($interface);
-    if (does_interface_exist($interface)) {
-        $ifinfo = legacy_get_interface_addresses($interface);
-        if (isset($ifinfo['subnetbits6'])) {
-            return $ifinfo['subnetbits6'];
-        }
-    }
-    return null;
-}
 
 function ip_in_interface_alias_subnet($interface, $ipalias)
 {
@@ -4669,9 +4547,11 @@ function get_interface_subnetv6($interface = "wan")
         }
     }
 
-    $cursn = find_interface_subnetv6($realif);
-    if (!empty($cursn)) {
-        return $cursn;
+    if (does_interface_exist($realif)) {
+        $ifinfo = legacy_get_interface_addresses($realif);
+        if (isset($ifinfo['subnetbits6'])) {
+            return $ifinfo['subnetbits6'];
+        }
     }
 
     return null;
@@ -4776,23 +4656,6 @@ function get_interface_mac($interface)
     $macinfo = legacy_get_interface_addresses($interface);
 
     return $macinfo["macaddr"];
-}
-
-/****f* legacy/generate_random_mac_address
- * NAME
- *   generate_random_mac - generates a random mac address
- * INPUTS
- *   none
- * RESULT
- *   $mac - a random mac address
- ******/
-function generate_random_mac_address()
-{
-    $mac = "02";
-    for ($x=0; $x<5; $x++) {
-        $mac .= ":" . dechex(rand(16, 255));
-    }
-    return $mac;
 }
 
 /****f* interfaces/is_jumbo_capable
@@ -5283,33 +5146,6 @@ function get_ppp_uptime($port)
     } else {
         $total_time = gettext("No history data found!");
         return $total_time;
-    }
-}
-
-/****f* legacy/load_mac_manufacturer_table
- * NAME
- *   load_mac_manufacturer_table
- * INPUTS
- *   none
- * RESULT
- *   returns associative array with MAC-Manufacturer pairs
- ******/
-function load_mac_manufacturer_table() {
-    /* load MAC-Manufacture data from the file */
-    $macs = false;
-    if (file_exists("/usr/local/share/nmap/nmap-mac-prefixes")) {
-        $macs=file("/usr/local/share/nmap/nmap-mac-prefixes");
-    }
-    if ($macs){
-        foreach ($macs as $line){
-            if (preg_match('/([0-9A-Fa-f]{6}) (.*)$/', $line, $matches)){
-                /* store values like this $mac_man['000C29']='VMware' */
-                $mac_man["$matches[1]"]=$matches[2];
-            }
-        }
-        return $mac_man;
-    } else {
-        return -1;
     }
 }
 

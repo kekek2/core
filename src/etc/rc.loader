@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (c) 2015-2016 Franco Fichtner <franco@opnsense.org>
+# Copyright (c) 2016 Franco Fichtner <franco@opnsense.org>
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,41 +25,36 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-# Scripts are sorted and should adhere to the
-# following rule of thumb: "dd-identifier.level", for
-# core package syshooks generally "20-mycorehook.start"
-# and for plugin packages rather "50-mypluginhook.stop".
+# Files are sorted and should adhere to the following
+# rule of thumb: "dd-identifier", for core package
+# loader.conf chunks should generally use something
+# like "20-mycorevars" and for plugin packages rather
+# "50-mypluginvars".
 #
-# It could be useful for the user to order scripts
+# It could be useful for the user to order variables
 # or set a higher/lower priority in case some
 # use case requires a slightly different setup.
 
-SYSDIR="/usr/local/etc/rc.syshook.d"
-SYSLEVEL="${1}"
+LOADERDIR="/usr/local/etc/rc.loader.d"
+LOADERCONF="/boot/loader.conf"
 
-if [ -z "${SYSLEVEL}" ]; then
-	# we don't know of a default
-	exit 1;
-fi
+: > ${LOADERCONF}
 
-if [ ! -d ${SYSDIR} ]; then
+if [ ! -d ${LOADERDIR} ]; then
 	# no dir no fun
 	exit 0;
 fi
 
 # collect all matching scripts
-SYSHOOKS=$(find -s ${SYSDIR} -type f -name "*.${SYSLEVEL}")
+LOADERCHUNKS=$(find -s ${LOADERDIR} -type f)
 
-for SYSHOOK in ${SYSHOOKS}; do
-	# extract syshook origin
-	SYSHOOK=${SYSHOOK##"${SYSDIR}/"}
-	SYSHOOK=${SYSHOOK%%".${SYSLEVEL}"}
+for LOADERCHUNK in ${LOADERCHUNKS}; do
+	# extract loader chunk origin
+	LOADERCHUNK=${LOADERCHUNK##"${LOADERDIR}/"}
 
-	echo "rc.syshook(${SYSLEVEL}): running ${SYSHOOK#??-}"
+	echo "rc.loader: assembling ${LOADERCHUNK#??-}"
 
-	if ! ${SYSDIR}/${SYSHOOK}.${SYSLEVEL}; then
-		echo "rc.syshook(${SYSLEVEL}): error in ${SYSHOOK#??-}"
-	fi
+	cat ${LOADERDIR}/${LOADERCHUNK} >> ${LOADERCONF}
 done
 
 exit 0
