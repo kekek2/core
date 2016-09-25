@@ -5501,8 +5501,7 @@ body {
     height: 100%; }
 
 .page-content-head, .content-box-head {
-  background: #FBFBFB;
-  border-bottom: 1px solid rgba(217, 217, 217, 0.5);
+  background: #FDFDFD;
   padding-bottom: 15px;
   padding-top: 20px; }
   .page-content-head .navbar-nav, .content-box-head .navbar-nav {
@@ -5512,7 +5511,7 @@ body {
     margin: 0; }
 
 .page-content-main {
-  background: #F7F7F7;
+  background: #FDFDFD;
   min-height: calc(100% - 64px);
   padding: 15px 0 73px; }
 
@@ -5739,6 +5738,7 @@ table {
   margin-right: 15px; }
 
 .__iconspacer {
+  min-width: 26px;
   padding-right: 10px; }
 
 #mainmenu .glyphicon {
