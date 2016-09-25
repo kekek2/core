@@ -2049,6 +2049,27 @@ th {
   .table .table {
     background-color: #fff; }
 
+.table-clean-form {
+  border-top: 1px solid #f6f6f6; }
+.table-clean-form > thead > tr > th,
+.table-clean-form > thead > tr > td,
+.table-clean-form > tbody > tr > th,
+.table-clean-form > tbody > tr > td,
+.table-clean-form > tfoot > tr > th,
+.table-clean-form > tfoot > tr > td {
+  padding: 10px 0px 10px 20px;
+  line-height: 1.5;
+  vertical-align: top; }
+.table-clean-form > thead > tr > th,
+.table-clean-form > tbody > tr > th,
+.table-clean-form > tfoot > tr > th {
+  padding-top: 20px;
+  border-top: none; }
+.table-clean-form > thead > tr > td,
+.table-clean-form > tbody > tr > td,
+.table-clean-form > tfoot > tr > td {
+  border-top: none; }
+
 .table-condensed > thead > tr > th,
 .table-condensed > thead > tr > td,
 .table-condensed > tbody > tr > th,
