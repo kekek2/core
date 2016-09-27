@@ -5835,7 +5835,7 @@ select {
 .table-clean-form > tfoot > tr > th,
 .table-clean-form > tfoot > tr > td {
   padding: 10px 0px 10px 20px;
-  line-height: 1.5;
+  line-height: 2;
   vertical-align: top; }
 .table-clean-form > thead > tr > th,
 .table-clean-form > tbody > tr > th,
@@ -5855,6 +5855,17 @@ select {
 .table-clean-form thead > tr > td small.formhelp,
 .table-clean-form tbody > tr > td small.formhelp,
 .table-clean-form tfoot > tr > td small.formhelp {
+  line-height: 1.5;
   padding: 5px;
   display: inline-block;
   max-width: 600px; }
+
+.table-borderless {
+  border: none; }
+.table-borderless > thead > tr > th,
+.table-borderless > thead > tr > td,
+.table-borderless > tbody > tr > th,
+.table-borderless > tbody > tr > td,
+.table-borderless > tfoot > tr > th,
+.table-borderless > tfoot > tr > td {
+  border: none; }
