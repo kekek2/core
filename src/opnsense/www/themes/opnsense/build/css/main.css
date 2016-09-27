@@ -5868,4 +5868,5 @@ select {
 .table-borderless > tbody > tr > td,
 .table-borderless > tfoot > tr > th,
 .table-borderless > tfoot > tr > td {
-  border: none; }
+  border: none;
+  line-height: 2; }
