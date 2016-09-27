@@ -2049,31 +2049,6 @@ th {
   .table .table {
     background-color: #fff; }
 
-.table-clean-form {
-  border-top: 1px solid #f6f6f6; }
-.table-clean-form > thead > tr > th,
-.table-clean-form > thead > tr > td,
-.table-clean-form > tbody > tr > th,
-.table-clean-form > tbody > tr > td,
-.table-clean-form > tfoot > tr > th,
-.table-clean-form > tfoot > tr > td {
-  padding: 10px 0px 10px 20px;
-  line-height: 1.5;
-  vertical-align: top; }
-.table-clean-form > thead > tr > th,
-.table-clean-form > tbody > tr > th,
-.table-clean-form > tfoot > tr > th {
-  padding-top: 20px;
-  border-top: none; }
-.table-clean-form > thead > tr > td,
-.table-clean-form > tbody > tr > td,
-.table-clean-form > tfoot > tr > td {
-  border-top: none; }
-.table-clean-form small.formhelp {
-  padding: 5px;
-  display: inline-block;
-  max-width: 600px; }
-
 .table-condensed > thead > tr > th,
 .table-condensed > thead > tr > td,
 .table-condensed > tbody > tr > th,
@@ -5848,3 +5823,38 @@ select {
   background-repeat: no-repeat;
   background-position: right;
   background-image: url(/ui/themes/opnsense/build/images/caret.png) !important; }
+
+/* TING FLAVORED */
+
+.table-clean-form {
+  border-top: 1px solid #f6f6f6; }
+.table-clean-form > thead > tr > th,
+.table-clean-form > thead > tr > td,
+.table-clean-form > tbody > tr > th,
+.table-clean-form > tbody > tr > td,
+.table-clean-form > tfoot > tr > th,
+.table-clean-form > tfoot > tr > td {
+  padding: 10px 0px 10px 20px;
+  line-height: 1.5;
+  vertical-align: top; }
+.table-clean-form > thead > tr > th,
+.table-clean-form > tbody > tr > th,
+.table-clean-form > tfoot > tr > th {
+  padding-top: 20px;
+  border-top: none; }
+.table-clean-form > thead > tr > td,
+.table-clean-form > tbody > tr > td,
+.table-clean-form > tfoot > tr > td {
+  border-top: none; }
+
+.table-clean-form > tbody > tr > td > a.showhelp > i.fa-info-circle {
+  color: #777777; }
+.table-clean-form > tbody > tr > td > i.fa-info-circle.text-muted {
+  color: #DDDDDD; }
+
+.table-clean-form thead > tr > td small.formhelp,
+.table-clean-form tbody > tr > td small.formhelp,
+.table-clean-form tfoot > tr > td small.formhelp {
+  padding: 5px;
+  display: inline-block;
+  max-width: 600px; }
