@@ -2069,6 +2069,10 @@ th {
 .table-clean-form > tbody > tr > td,
 .table-clean-form > tfoot > tr > td {
   border-top: none; }
+.table-clean-form small.formhelp {
+  padding: 5px;
+  display: inline-block;
+  max-width: 600px; }
 
 .table-condensed > thead > tr > th,
 .table-condensed > thead > tr > td,
