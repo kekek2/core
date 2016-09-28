@@ -36,6 +36,7 @@ use \OPNsense\Base\UIModelGrid;
 // For configure root crontab
 require_once("util.inc");
 require_once("services.inc");
+include_once('/usr/local/opnsense/contrib/simplepie/idn/idna_convert.class.php');
 
 /**
  * Class SettingsController
@@ -398,6 +399,61 @@ class SettingsController extends ApiMutableModelControllerBase
                     $result['result'] = 'deleted';
                 } else {
                     $result['result'] = 'not found';
+                }
+            }
+        }
+        return $result;
+    }
+
+    public function encode($node, $list)
+    {
+        if (!isset($node['forward']['acl']))
+            return $node;
+        $IDN = new \idna_convert();
+        $new_list = [];
+        foreach (explode(",", $node['forward']['acl'][$list]) as $site)
+            $new_list[] = $IDN->encode($site);
+        $node['forward']['acl'][$list] = implode(",", $new_list);
+        return $node;
+    }
+    
+    public function decode($node, $list)
+    {
+        $IDN = new \idna_convert();
+        foreach ($node['forward']['acl'][$list] as $site => $selected)
+        {
+            unset($node['forward']['acl'][$list][$site]);
+            $cyr = $IDN->decode($site);
+            $node['forward']['acl'][$list][$cyr] = ['value' => $cyr, 'selected' => $selected['selected']];
+        }
+        return $node;
+    }
+
+    public function getAction()
+    {
+        // define list of configurable settings
+        $result = array();
+        if ($this->request->isGet()) {
+            $result[static::$internalModelName] = $this->decode($this->decode($this->getModelNodes(), 'whiteList'), 'blackList');
+        }
+        return $result;
+    }
+    
+
+    public function setAction()
+    {
+        $result = array("result"=>"failed");
+        if ($this->request->isPost()) {
+            // load model and update with provided data
+            $mdl = $this->getModel();
+            $mdl->setNodes($this->encode($this->encode($this->request->getPost(static::$internalModelName), 'whiteList'), 'blackList'));
+            $result = $this->validate();
+            if (empty($result['result'])) {
+                $errorMessage = $this->setActionHook();
+                if (!empty($errorMessage)) {
+                    $result['error'] = $errorMessage;
+                } else {
+                    return $this->save();
                 }
             }
         }
