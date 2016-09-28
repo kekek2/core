@@ -33,6 +33,7 @@ use \OPNsense\Cron\Cron;
 use \OPNsense\Core\Config;
 use \OPNsense\Base\UIModelGrid;
 
+include_once('/usr/local/opnsense/contrib/simplepie/idn/idna_convert.class.php');
 
 /**
  * Class SettingsController
@@ -43,56 +44,6 @@ class SettingsController extends ApiMutableModelControllerBase
     static protected $internalModelName = 'proxy';
     static protected $internalModelClass = '\OPNsense\Proxy\Proxy';
 
-    /**
-     * retrieve proxy settings
-     * @return array
-     */
-    public function getAction()
-    {
-        $result = array();
-        if ($this->request->isGet()) {
-            $mdlProxy = new Proxy();
-            $result['proxy'] = $mdlProxy->getNodes();
-        }
-
-        return $result;
-    }
-
-
-    /**
-     * update proxy configuration fields
-     * @return array
-     * @throws \Phalcon\Validation\Exception
-     */
-    public function setAction()
-    {
-        $result = array("result"=>"failed");
-        if ($this->request->hasPost("proxy")) {
-            // load model and update with provided data
-            $mdlProxy = new Proxy();
-            $mdlProxy->setNodes($this->request->getPost("proxy"));
-
-            // perform validation
-            $valMsgs = $mdlProxy->performValidation();
-            foreach ($valMsgs as $field => $msg) {
-                if (!array_key_exists("validations", $result)) {
-                    $result["validations"] = array();
-                }
-                $result["validations"]["proxy.".$msg->getField()] = $msg->getMessage();
-            }
-
-            // serialize model to config and save
-            if ($valMsgs->count() == 0) {
-                $mdlProxy->serializeToConfig();
-                $cnf = Config::getInstance();
-                $cnf->save();
-
-                $result["result"] = "saved";
-            }
-        }
-
-        return $result;
-    }
 
     /**
      *
@@ -438,6 +389,61 @@ class SettingsController extends ApiMutableModelControllerBase
                     $result['result'] = 'deleted';
                 } else {
                     $result['result'] = 'not found';
+                }
+            }
+        }
+        return $result;
+    }
+
+    public function encode($node, $list)
+    {
+        if (!isset($node['forward']['acl']))
+            return $node;
+        $IDN = new \idna_convert();
+        $new_list = [];
+        foreach (explode(",", $node['forward']['acl'][$list]) as $site)
+            $new_list[] = $IDN->encode($site);
+        $node['forward']['acl'][$list] = implode(",", $new_list);
+        return $node;
+    }
+    
+    public function decode($node, $list)
+    {
+        $IDN = new \idna_convert();
+        foreach ($node['forward']['acl'][$list] as $site => $selected)
+        {
+            unset($node['forward']['acl'][$list][$site]);
+            $cyr = $IDN->decode($site);
+            $node['forward']['acl'][$list][$cyr] = ['value' => $cyr, 'selected' => $selected['selected']];
+        }
+        return $node;
+    }
+
+    public function getAction()
+    {
+        // define list of configurable settings
+        $result = array();
+        if ($this->request->isGet()) {
+            $result[static::$internalModelName] = $this->decode($this->decode($this->getModelNodes(), 'whiteList'), 'blackList');
+        }
+        return $result;
+    }
+    
+
+    public function setAction()
+    {
+        $result = array("result"=>"failed");
+        if ($this->request->isPost()) {
+            // load model and update with provided data
+            $mdl = $this->getModel();
+            $mdl->setNodes($this->encode($this->encode($this->request->getPost(static::$internalModelName), 'whiteList'), 'blackList'));
+            $result = $this->validate();
+            if (empty($result['result'])) {
+                $errorMessage = $this->setActionHook();
+                if (!empty($errorMessage)) {
+                    $result['error'] = $errorMessage;
+                } else {
+                    return $this->save();
                 }
             }
         }
