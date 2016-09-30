@@ -94,11 +94,11 @@ CORE_DEPENDS?=		apinger \
 			lighttpd \
 			miniupnpd \
 			mpd5 \
-			ngattach \
 			ntp \
 			openssh-portable \
 			openvpn \
 			p7zip \
+			pam_opnsense \
 			pecl-radius \
 			pftop \
 			phalcon \
