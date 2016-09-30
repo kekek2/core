@@ -35,7 +35,6 @@ require_once("interfaces.inc");
 require_once("services.inc");
 
 /* expects $logfile to point to the system path */
-/* expects $logclog to be true or false */
 
 require_once 'diag_logs_common.inc';
 
@@ -96,11 +95,7 @@ include("head.inc");
                   </tr>
                   <?php endif; ?>
                   <?php
-                    if ($logclog) {
-                        dump_clog($logfile, $nentries, $filtertext);
-                    } else {
                         dump_log($logfile, $nentries, $filtertext);
-                    }
                   ?>
                   <tr>
                     <td colspan="2">
