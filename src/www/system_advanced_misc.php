@@ -222,6 +222,7 @@ include("head.inc");
                     endforeach; ?>
                   </select>
                   <div class="hidden" for="help_for_crypto_hardware">
+                    <small class="formhelp">
                     <?=gettext("A cryptographic accelerator module will use hardware support to speed up some " .
                                             "cryptographic functions on systems which have the chip. Do not enable this " .
                                             "option if you have a Hifn cryptographic acceleration card, as this will take " .
@@ -229,22 +230,26 @@ include("head.inc");
                                             "for IPsec when using a cipher supported by your chip, such as AES-128. OpenVPN " .
                                             "should be set for AES-128-CBC and have cryptodev enabled for hardware " .
                                             "acceleration."); ?>
-                  <br /><br />
-                  <?=gettext("If you do not have a crypto chip in your system, this option will have no " .
+                    <br /><br />
+                    <?=gettext("If you do not have a crypto chip in your system, this option will have no " .
                                       "effect. To unload the selected module, set this option to 'none' and then reboot."); ?>
+                    </small>
+                  </div>
                 </td>
               </tr>
               <tr>
                 <td><a id="help_for_cryptodev_enable" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Use /dev/crypto");?> </td>
                 <td>
                   <input name="cryptodev_enable" type="checkbox" id="cryptodev_enable" value="yes" <?= !empty($pconfig['cryptodev_enable']) ? "checked=\"checked\"" : "";?> />
-                  <strong><?=gettext("Enable old userland device for cryptographic acceleration"); ?></strong>
+                  <?=gettext("Enable old userland device for cryptographic acceleration"); ?>
                   <div class="hidden" for="help_for_cryptodev_enable">
+                    <small class="formhelp">
                     <?=gettext("Old hardware accelerators like 'safe', 'hifn' or 'ubsec' may only provide userland acceleration to e.g. " .
                                             "OpenVPN by means of the /dev/crypto interface, which can be accessed via the OpenSSL " .
                                             "engine framework. Note that LibreSSL does not have support for this device and " .
                                             "instead solely relies on embedded acceleration methods e.g. AES-NI. The default is " .
                                             "to disable this device as it is likely not needed on modern systems."); ?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -265,12 +270,14 @@ include("head.inc");
                     endforeach; ?>
                   </select>
                   <div class="hidden" for="help_for_thermal_hardware">
+                    <small class="formhelp">
                     <?=gettext("If you have a supported CPU, selecting a themal sensor will load the appropriate " .
                                               "driver to read its temperature. Setting this to 'None' will attempt to read the " .
                                               "temperature from an ACPI-compliant motherboard sensor instead, if one is present."); ?>
                     <br /><br />
                     <?=gettext("If you do not have a supported thermal sensor chip in your system, this option will have no " .
                                           "effect. To unload the selected module, set this option to 'none' and then reboot."); ?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -292,7 +299,9 @@ include("head.inc");
                   </select>
                   <br />
                   <div class="hidden" for="help_for_rrdbackup">
+                    <small class="formhelp">
                     <?=gettext("This will periodically backup the RRD data so it can be restored automatically on the next boot.");?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -310,7 +319,9 @@ include("head.inc");
                     endfor; ?>
                   </select>
                   <div class="hidden" for="help_for_dhcpbackup">
+                    <small class="formhelp">
                     <?=gettext("This will periodically backup the DHCP leases data so it can be restored automatically on the next boot.");?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -328,7 +339,9 @@ include("head.inc");
                     endfor; ?>
                   </select>
                   <div class="hidden" for="help_for_netflowbackup">
+                    <small class="formhelp">
                     <?=gettext("This will periodically backup the NetFlow data aggregation so it can be restored automatically on the next boot.");?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -340,6 +353,7 @@ include("head.inc");
                 <td>
                   <input name="powerd_enable" type="checkbox" id="powerd_enable" value="yes" <?=!empty($pconfig['powerd_enable']) ? "checked=\"checked\"" : "";?> />
                   <div class="hidden" for="help_for_powerd_enable">
+                    <small class="formhelp">
                     <?=gettext("The powerd utility monitors the system state and sets various power control " .
                                         "options accordingly. It offers four modes (maximum, minimum, adaptive " .
                                         "and hiadaptive) that can be individually selected while on AC power or batteries. " .
@@ -353,6 +367,7 @@ include("head.inc");
                                         "tuned for systems where performance and interactivity are more important " .
                                         "than power consumption. It raises frequency faster, drops slower and " .
                                         "keeps twice lower CPU load."); ?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -400,10 +415,12 @@ include("head.inc");
                 <td><a id="help_for_use_mfs_tmpvar" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('/tmp and /var RAM disks'); ?></td>
                 <td>
                   <input name="use_mfs_tmpvar" type="checkbox" id="use_mfs_tmpvar" value="yes" <?=!empty($pconfig['use_mfs_tmpvar']) ? 'checked="checked"' : '';?>/>
-                  <strong><?=gettext("Use memory file system for /tmp and /var"); ?></strong>
+                  <?=gettext("Use memory file system for /tmp and /var"); ?>
                   <div class="hidden" for="help_for_use_mfs_tmpvar">
+                    <small class="formhelp">
                     <?=gettext("Set this if you wish to use /tmp and /var as RAM disks (memory file system disks) " .
                       "rather than use the hard disk. Setting this will cause the data /var to be lost on reboot, including log data."); ?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -411,9 +428,11 @@ include("head.inc");
                 <td><a id="help_for_use_mfs_tmp" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('/tmp RAM disk'); ?></td>
                 <td>
                   <input name="use_mfs_tmp" type="checkbox" id="use_mfs_tmp" value="yes" <?=!empty($pconfig['use_mfs_tmp']) ? 'checked="checked"' : '';?>/>
-                  <strong><?=gettext('Use memory file system for /tmp'); ?></strong>
+                  <?=gettext('Use memory file system for /tmp'); ?>
                   <div class="hidden" for="help_for_use_mfs_tmp">
+                    <small class="formhelp">
                     <?= gettext('Set this if you wish to use /tmp as a RAM disk (memory file system disk) rather than use the hard disk.') ?>
+                    </small>
                   </div>
                 </td>
               </tr>
