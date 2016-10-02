@@ -151,7 +151,7 @@ $(document).ready(function() {
           <section class="col-xs-12">
             <div class="tab-content content-box col-xs-12 __mb">
               <div class="table-responsive">
-                <table class="table table-striped opnsense_standard_table_form">
+                <table class="table table-clean-form opnsense_standard_table_form">
                   <tr>
                     <td colspan="2"><strong><?=gettext('Reporting Database Options');?></strong></td>
                   </tr>
@@ -159,7 +159,7 @@ $(document).ready(function() {
                     <td width="22%"><i class="fa fa-info-circle text-muted"></i> <?=gettext("Round-Robin-Database");?></td>
                     <td>
                       <input name="rrdenable" type="checkbox" id="rrdenable" value="yes" <?=!empty($pconfig['rrdenable']) ? "checked=\"checked\"" : ""?> />
-                      &nbsp;<strong><?=gettext("Enables the RRD graphing backend.");?></strong>
+                      &nbsp;<?=gettext("Enables the RRD graphing backend.");?>
                     </td>
                   </tr>
                   <tr>
@@ -183,14 +183,14 @@ $(document).ready(function() {
           <section class="col-xs-12">
             <div class="tab-content content-box col-xs-12 __mb">
               <div class="table-responsive">
-                <table class="table table-striped opnsense_standard_table_form">
+                <table class="table table-clean-form opnsense_standard_table_form">
                   <tr>
                     <td colspan="2"><strong><?=gettext('Collected reports');?></strong></td>
                   </tr>
                   <tr>
                     <td width="22%"><i class="fa fa-info-circle text-muted"></i> <?=gettext("Reports");?> </td>
                     <td>
-                      <table class="table table-condensed">
+                      <table class="table table-borderless table-condensed">
 <?php
                         foreach ($all_rrd_files as $rrd_name => $rrd_file):?>
                         <tr>
