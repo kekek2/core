@@ -1649,7 +1649,7 @@ include("head.inc");
           <form method="post" name="iform" id="iform">
               <div class="tab-content content-box col-xs-12 __mb">
                 <div class="table-responsive">
-                  <table class="table table-striped opnsense_standard_table_form">
+                  <table class="table table-clean-form opnsense_standard_table_form">
                     <thead>
                       <tr>
                         <td width="22%"><strong><?=gettext("General configuration"); ?></strong></td>
@@ -1676,7 +1676,7 @@ include("head.inc");
                 <div class="tab-content content-box col-xs-12 __mb">
                   <div class="table-responsive">
                     <!-- Section : All -->
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("General configuration"); ?></th>
@@ -1688,7 +1688,9 @@ include("head.inc");
                           <td width="78%">
                             <input name="descr" type="text" id="descr" value="<?=$pconfig['descr'];?>" />
                             <div class="hidden" for="help_for_descr">
+                              <small class="formhelp">
                               <?= gettext("Enter a description (name) for the interface here."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -1697,10 +1699,12 @@ include("head.inc");
                           <td width="78%">
                             <input name="blockpriv" type="checkbox" id="blockpriv" value="yes" <?=!empty($pconfig['blockpriv']) ? "checked=\"checked\"" : ""; ?> />
                             <div class="hidden" for="help_for_blockpriv">
+                              <small class="formhelp">
                               <?=gettext("When set, this option blocks traffic from IP addresses that are reserved " .
                                 "for private networks as per RFC 1918 (10/8, 172.16/12, 192.168/16) as well as loopback " .
                                 "addresses (127/8). This option should only be set for WAN type interfaces that use " .
                                 "public IP address space.");?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -1709,12 +1713,14 @@ include("head.inc");
                           <td>
                             <input name="blockbogons" type="checkbox" id="blockbogons" value="yes" <?=!empty($pconfig['blockbogons']) ? "checked=\"checked\"" : ""; ?> />
                             <div class="hidden" for="help_for_blockbogons">
+                              <small class="formhelp">
                               <?=gettext("When set, this option blocks traffic from IP addresses that are reserved " .
                               "(but not RFC 1918) or not yet assigned by IANA."); ?>&nbsp;&nbsp;
                               <?=gettext("Bogons are prefixes that should never appear in the Internet routing table, " .
                               "and obviously should not appear as the source address in any packets you receive."); ?>
                               <br /><br />
                               <?=gettext("Note: The update frequency can be changed under System->Advanced Firewall/NAT settings.")?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -1749,6 +1755,7 @@ include("head.inc");
                           <td>
                             <input name="spoofmac" type="text" id="spoofmac" value="<?=htmlspecialchars($pconfig['spoofmac']);?>" />
                             <div class="hidden" for="help_for_spoofmac">
+                              <small class="formhelp">
 <?php
                               $ip = getenv('REMOTE_ADDR');
                               $mac = `/usr/sbin/arp -an | grep {$ip} | cut -d" " -f4`;
@@ -1761,6 +1768,7 @@ include("head.inc");
                               <?= gettext('This field can be used to modify ("spoof") the MAC address of ' .
                                     'this interface. This may be required with some cable connections.') ?><br />
                               <?=gettext('Enter a MAC address in the following format: xx:xx:xx:xx:xx:xx or leave blank.') ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -1774,8 +1782,10 @@ include("head.inc");
                               <label></label>
                             </div>
                             <div class="hidden" for="help_for_mtu">
+                              <small class="formhelp">
                               <?= gettext("If you leave this field blank, the adapter's default MTU will " .
                                 "be used. This is typically 1500 bytes but can vary in some circumstances.");?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -1784,9 +1794,11 @@ include("head.inc");
                           <td>
                             <input name="mss" type="text" id="mss" value="<?=$pconfig['mss'];?>" />
                             <div class="hidden" for="help_for_mss">
+                              <small class="formhelp">
                               <?=gettext("If you enter a value in this field, then MSS clamping for " .
                               "TCP connections to the value entered above minus 40 (TCP/IP " .
                               "header size) will be in effect."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -1806,7 +1818,9 @@ include("head.inc");
                                   endforeach;?>
                                 </select>
                                 <div class="hidden" for="help_for_mediaopt">
+                                  <small class="formhelp">
                                   <?=gettext("Here you can explicitly set speed and duplex mode for this interface. WARNING: You MUST leave this set to autoselect (automatically negotiate speed) unless the port this interface connects to has its speed and duplex forced.");?>
+                                  </small>
                                 </div>
                             </td>
                         </tr>
@@ -1819,7 +1833,7 @@ include("head.inc");
                 <!-- static IPv4 -->
                 <div class="tab-content content-box col-xs-12 __mb" id="staticv4" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("Static IPv4 configuration"); ?></th>
@@ -1869,7 +1883,7 @@ include("head.inc");
                             <button type="button" class="btn btn-sm" id="btn_show_add_gateway" title="<?=gettext("Add a new one.");?>"  data-toggle="tooltip"><span class="glyphicon glyphicon-plus"></span></button>
                             <div class="hidden" id="addgateway">
                               <br/>
-                              <table class="table table-striped table-condensed">
+                              <table class="table table-borderless table-condensed">
                                 <tbody>
                                   <tr>
                                     <td colspan="2"><b><?=gettext("Add new gateway"); ?></b></td>
@@ -1903,9 +1917,11 @@ include("head.inc");
                               </table>
                             </div>
                             <div class="hidden" for="help_for_gateway">
+                              <small class="formhelp">
                               <?=gettext("If this interface is an Internet connection, select an existing Gateway from the list or add a new one using the link above."); ?><br />
                               <?=gettext("On local LANs the upstream gateway should be \"none\"."); ?>
                               <p><?= sprintf(gettext("You can manage Gateways %shere%s."),'<a target="_blank" href="system_gateways.php">','</a>') ?></p>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -1916,7 +1932,7 @@ include("head.inc");
                 <!-- Section : dhcp v4 -->
                 <div class="tab-content content-box col-xs-12 __mb" id="dhcp" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("DHCP client configuration");?></th>
@@ -1941,9 +1957,11 @@ include("head.inc");
                               </label>
                             </div>
                             <div class="hidden" for="help_for_dhcp_mode">
+                              <small class="formhelp">
                               <?= gettext('The basic mode auto-configures DHCP using default values and optional user input.') ?><br/>
                               <?= gettext('The advanced mode does not provide any default values, you will need to fill out any values you would like to use.') ?></br>
                               <?= gettext('The configuration file override mode may point to a fully customised file on the system instead.') ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -1952,9 +1970,11 @@ include("head.inc");
                           <td>
                             <input name="dhcphostname" type="text" id="dhcphostname" value="<?=$pconfig['dhcphostname'];?>" />
                             <div class="hidden" for="help_for_dhcphostname">
+                              <small class="formhelp">
                               <?=gettext("The value in this field is sent as the DHCP client identifier " .
                               "and hostname when requesting a DHCP lease. Some ISPs may require " .
                               "this (for client identification)."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -1980,8 +2000,10 @@ include("head.inc");
                               </tr>
                             </table>
                             <div class="hidden" for="help_for_alias_address">
+                              <small class="formhelp">
                               <?=gettext("The value in this field is used as a fixed alias IPv4 address by the " .
                               "DHCP client."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -1990,8 +2012,10 @@ include("head.inc");
                           <td>
                             <input name="dhcprejectfrom" type="text" id="dhcprejectfrom" value="<?=htmlspecialchars($pconfig['dhcprejectfrom']);?>" />
                             <div class="hidden" for="help_for_dhcprejectfrom">
+                              <small class="formhelp">
                               <?=gettext("If there is a certain upstream DHCP server that should be ignored, place the IP address or subnet of the DHCP server to be ignored here."); ?>
                               <?=gettext("This is useful for rejecting leases from cable modems that offer private IPs when they lose upstream sync."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2021,7 +2045,9 @@ include("head.inc");
                               </label>
                             </div>
                             <div class="hidden" for="help_for_dhcpprotocol_timing">
+                              <small class="formhelp">
                               <?=sprintf(gettext("The values in these fields are DHCP %sprotocol timings%s used when requesting a lease."),'<a target="_blank" href="http://www.freebsd.org/cgi/man.cgi?query=dhclient.conf&amp;sektion=5#PROTOCOL_TIMING">','</a>') ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2029,21 +2055,25 @@ include("head.inc");
                           <td><a id="help_for_dhcp_lease_requirements_and_requests" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Lease Requirements");?> </td>
                           <td>
                             <div class="hidden" for="help_for_dhcp_lease_requirements_and_requests">
-                              <?=sprintf(gettext("More detailed information about lease requirements and requests can be found in the %sFreeBSD Manual%s."),'<a target="FreeBSD_DHCP" href="http://www.freebsd.org/cgi/man.cgi?query=dhclient.conf&amp;sektion=5#LEASE_REQUIREMENTS_AND_REQUESTS">','</a>')?><br/>
-                              <hr/>
+                              <small class="formhelp">
+                              <?=sprintf(gettext("More detailed information about lease requirements and requests can be found in the %sFreeBSD Manual%s."),'<a target="FreeBSD_DHCP" href="http://www.freebsd.org/cgi/man.cgi?query=dhclient.conf&amp;sektion=5#LEASE_REQUIREMENTS_AND_REQUESTS">','</a>')?>
+                              </small>
                             </div>
                             <?=gettext("Send Options"); ?><br />
                             <input name="adv_dhcp_send_options" type="text" id="adv_dhcp_send_options" value="<?=$pconfig['adv_dhcp_send_options'];?>" />
                             <div class="hidden" for="help_for_dhcp_lease_requirements_and_requests">
+                              <small class="formhelp">
                               <?=gettext("The values in this field are DHCP options to be sent when requesting a DHCP lease. [option declaration [, ...]] <br />" .
                               "Value Substitutions: {interface}, {hostname}, {mac_addr_asciiCD}, {mac_addr_hexCD} <br />" .
                               "Where C is U(pper) or L(ower) Case, and D is \" :-.\" Delimiter (space, colon, hyphen, or period) (omitted for none). <br />" .
                               "Some ISPs may require certain options be or not be sent."); ?>
+                              </small>
                             </div>
                             <hr/>
                             <?=gettext("Request Options");?>
                             <input name="adv_dhcp_request_options" type="text" id="adv_dhcp_request_options" value="<?=$pconfig['adv_dhcp_request_options'];?>" />
                             <div class="hidden" for="help_for_dhcp_lease_requirements_and_requests">
+                              <small class="formhelp">
                               <?=gettext("The values in this field are DHCP option 55 to be sent when requesting a DHCP lease. [option [, ...]] <br />" .
                               "Some ISPs may require certain options be or not be requested."); ?>
                             </div>
@@ -2051,7 +2081,9 @@ include("head.inc");
                             <?=gettext("Require Options");?>
                             <input name="adv_dhcp_required_options" type="text" id="adv_dhcp_required_options" value="<?=htmlspecialchars($pconfig['adv_dhcp_required_options']);?>" />
                             <div class="hidden" for="help_for_dhcp_lease_requirements_and_requests">
+                              <small class="formhelp">
                               <?=gettext("The values in this field are DHCP options required by the client when requesting a DHCP lease. [option [, ...]]"); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2060,9 +2092,11 @@ include("head.inc");
                           <td>
                             <input name="adv_dhcp_option_modifiers" type="text" id="adv_dhcp_option_modifiers" value="<?=$pconfig['adv_dhcp_option_modifiers'];?>" />
                             <div class="hidden" for="help_for_dhcp_option_modifiers">
+                              <small class="formhelp">
                               <?=gettext("The values in this field are DHCP option modifiers applied to obtained DHCP lease. [modifier option declaration [, ...]] <br />" .
                               "modifiers: (default, supersede, prepend, append)"); ?><br/>
                               <a target="FreeBSD_DHCP" href="http://www.freebsd.org/cgi/man.cgi?query=dhcp-options&amp;sektion=5"><?=gettext("FreeBSD manual");?></a>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2071,11 +2105,13 @@ include("head.inc");
                           <td>
                             <input name="adv_dhcp_config_file_override_path"   type="text" id="adv_dhcp_config_file_override_path"  value="<?=$pconfig['adv_dhcp_config_file_override_path'];?>" />
                             <div class="hidden" for="help_for_dhcp_config_file_override_path">
+                              <small class="formhelp">
                               <?=gettext("The value in this field is the full absolute path to a DHCP client configuration file.  [/[dirname/[.../]]filename[.ext]] <br /> " .
                               "Value Substitutions in Config File: {interface}, {hostname}, {mac_addr_asciiCD}, {mac_addr_hexCD} <br />" .
                               "Where C is U(pper) or L(ower) Case, and D is \" :-.\" Delimiter (space, colon, hyphen, or period) (omitted for none). <br />" .
                               "Some ISPs may require certain options be or not be sent."); ?>
                               <a target="FreeBSD_DHCP" href="http://www.freebsd.org/cgi/man.cgi?query=dhclient.conf&amp;sektion=5"><?=gettext("FreeBSD manual");?></a>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2086,7 +2122,7 @@ include("head.inc");
                 <!-- Section : PPP -->
                 <div class="tab-content content-box col-xs-12 __mb" id="ppp" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("PPP configuration"); ?></th>
@@ -2096,7 +2132,7 @@ include("head.inc");
                         <tr>
                           <td width="22%"><a id="help_for_country" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Service Provider"); ?></td>
                           <td width="78%">
-                            <table class="table table-condensed">
+                            <table class="table table-borderless table-condensed">
                               <tr id="trcountry" class="hidden">
                                 <td><?=gettext("Country:"); ?></td>
                                 <td>
@@ -2123,7 +2159,9 @@ include("head.inc");
                               </tr>
                             </table>
                             <div class="hidden" for="help_for_country">
+                              <small class="formhelp">
                               <?=gettext("Select to fill in data for your service provider."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2188,7 +2226,7 @@ include("head.inc");
                 <!-- Section : PPPOE -->
                 <div class="tab-content content-box col-xs-12 __mb" id="pppoe" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("PPPoE configuration"); ?></th>
@@ -2212,7 +2250,9 @@ include("head.inc");
                           <td>
                             <input name="provider" type="text" id="provider" value="<?=$pconfig['provider'];?>" />
                             <div class="hidden" for="help_for_provider">
+                              <small class="formhelp">
                               <?=gettext("Hint: this field can usually be left empty"); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2222,7 +2262,9 @@ include("head.inc");
                             <input name="pppoe_dialondemand" type="checkbox" id="pppoe_dialondemand" value="enable" <?= !empty($pconfig['pppoe_dialondemand']) ? "checked=\"checked\"" : ""; ?> />
                             <strong><?=gettext("Enable Dial-On-Demand mode"); ?></strong><br />
                             <div class="hidden" for="help_for_pppoe_dialondemand">
+                              <small class="formhelp">
                               <?=gettext("This option causes the interface to operate in dial-on-demand mode, allowing you to have a 'virtual full time' connection. The interface is configured, but the actual connection of the link is delayed until qualifying outgoing traffic is detected."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2231,7 +2273,9 @@ include("head.inc");
                           <td>
                             <input name="pppoe_idletimeout" type="text" id="pppoe_idletimeout" value="<?=$pconfig['pppoe_idletimeout'];?>" /> <?=gettext("seconds"); ?>
                             <div class="hidden" for="help_for_pppoe_idletimeout">
+                              <small class="formhelp">
                               <?=gettext("If no qualifying outgoing packets are transmitted for the specified number of seconds, the connection is brought down. An idle timeout of zero disables this feature."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2254,7 +2298,7 @@ include("head.inc");
                 <!-- Section : PPTP / L2TP -->
                 <div class="tab-content content-box col-xs-12 __mb" id="pptp" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("PPTP/L2TP configuration"); ?></th>
@@ -2306,7 +2350,9 @@ include("head.inc");
                             <input name="pptp_dialondemand" type="checkbox" id="pptp_dialondemand" value="enable" <?=!empty($pconfig['pptp_dialondemand']) ? 'checked="checked"' : '' ?> />
                             <strong><?=gettext("Enable Dial-On-Demand mode"); ?></strong><br />
                             <div class="hidden" for="help_for_pptp_dialondemand">
+                              <small class="formhelp">
                               <?=gettext("This option causes the interface to operate in dial-on-demand mode, allowing you to have a 'virtual full time' connection. The interface is configured, but the actual connection of the link is delayed until qualifying outgoing traffic is detected."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2322,7 +2368,9 @@ include("head.inc");
                             <input name="pptp_mschap" type="checkbox" id="pptp_mschap" value="enable" <?=!empty($pconfig['pptp_mschap']) ? 'checked="checked"' : '' ?> />
                             <?=gettext("Enable MS Chap authentication protocol (not safe)"); ?><br />
                             <div class="hidden" for="help_for_pptp_mschap">
+                              <small class="formhelp">
                               <?=gettext("Enable Microsoft mschap protocol for authentication to remote point. It is not safe method and is not recommended."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2343,7 +2391,7 @@ include("head.inc");
                 <!-- Section : static IPv6 -->
                 <div class="tab-content content-box col-xs-12 __mb" id="staticv6" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("Static IPv6 configuration"); ?></th>
@@ -2393,13 +2441,15 @@ include("head.inc");
                             </select>
                             <button type="button" class="btn btn-sm" id="btn_show_add_gatewayv6" title="<?=gettext("Add a new one.");?>"  data-toggle="tooltip"><span class="glyphicon glyphicon-plus"></span></button>
                             <div class="hidden" for="help_for_gatewayv6">
+                              <small class="formhelp">
                               <?=gettext("If this interface is an Internet connection, select an existing Gateway from the list or add a new one using the link above."); ?><br />
                               <?=gettext('On local LANs the upstream gateway should be "none".'); ?>
                               <p><?= sprintf(gettext("You can manage Gateways %shere%s."),'<a target="_blank" href="system_gateways.php">','</a>') ?></p>
+                              </small>
                             </div>
                             <div class="hidden" id="addgatewayv6">
                               <br/>
-                              <table class="table table-striped table-condensed">
+                              <table class="table table-borderless table-condensed">
                                 <thead>
                                   <tr>
                                     <th colspan="2"><?=gettext("Add new v6 gateway:"); ?></th>
@@ -2441,7 +2491,7 @@ include("head.inc");
                 <!-- Section : dhcp v6 -->
                 <div class="tab-content content-box col-xs-12 __mb" id="dhcp6" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("DHCPv6 client configuration");?></th>
@@ -2466,9 +2516,11 @@ include("head.inc");
                               </label>
                             </div>
                             <div class="hidden" for="help_for_dhcpv6_mode">
+                              <small class="formhelp">
                               <?= gettext('The basic mode auto-configures DHCP using default values and optional user input.') ?><br/>
                               <?= gettext('The advanced mode does not provide any default values, you will need to fill out any values you would like to use.') ?></br>
                               <?= gettext('The configuration file override mode may point to a fully customised file on the system instead.') ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2477,7 +2529,9 @@ include("head.inc");
                             <td>
                               <input name="adv_dhcp6_debug" type="checkbox" id="adv_dhcp6_debug" value="yes" <?=!empty($pconfig['adv_dhcp6_debug']) ? "checked=\"checked\"" : ""; ?> />
                               <div class="hidden" for="help_for_dhcp6_debug">
+                                <small class="formhelp">
                                 <?=gettext("Enable debug mode for DHCPv6 client"); ?>
+                                </small>
                               </div>
                             </td>
                         </tr>
@@ -2486,7 +2540,9 @@ include("head.inc");
                           <td>
                             <input name="dhcp6usev4iface" type="checkbox" id="dhcp6usev4iface" value="yes" <?=!empty($pconfig['dhcp6usev4iface']) ? "checked=\"checked\"" : ""; ?> />
                             <div class="hidden" for="help_for_dhcp6usev4iface">
+                              <small class="formhelp">
                               <?=gettext("Request a IPv6 prefix/information through the IPv4 connectivity link"); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2495,7 +2551,9 @@ include("head.inc");
                           <td>
                             <input name="dhcp6prefixonly" type="checkbox" id="dhcp6prefixonly" value="yes" <?=!empty($pconfig['dhcp6prefixonly']) ? "checked=\"checked\"" : "";?> />
                             <div class="hidden" for="help_for_dhcp6prefixonly">
+                              <small class="formhelp">
                               <?=gettext("Only request a IPv6 prefix, do not request a IPv6 address"); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2504,7 +2562,9 @@ include("head.inc");
                           <td>
                             <input name="dhcp6sendsolicit" type="checkbox" id="dhcp6sendsolicit" value="yes" <?= !empty($pconfig['dhcp6sendsolicit']) ? 'checked="checked"' : '' ?>/>
                             <div class="hidden" for="help_for_dhcp6sendsolicit">
+                              <small class="formhelp">
                               <?= gettext('In case the ISP requires a SOLICIT message for authentication, select this option to prevent indefinite waiting for a router advertisement.') ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2521,7 +2581,9 @@ include("head.inc");
                             endforeach;?>
                             </select>
                             <div class="hidden" for="help_for_dhcp6-ia-pd-len">
+                              <small class="formhelp">
                               <?=gettext("The value in this field is the delegated prefix length provided by the DHCPv6 server. Normally specified by the ISP."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2530,7 +2592,9 @@ include("head.inc");
                           <td>
                             <input name="dhcp6-ia-pd-send-hint" type="checkbox" id="dhcp6-ia-pd-send-hint" value="yes" <?=!empty($pconfig['dhcp6-ia-pd-send-hint']) ? "checked=\"checked\"" : "";?> />
                             <div class="hidden" for="help_for_dhcp6-ia-pd-send-hint">
+                              <small class="formhelp">
                               <?=gettext("Send an IPv6 prefix hint to indicate the desired prefix size for delegation"); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2540,11 +2604,11 @@ include("head.inc");
                             <input name="adv_dhcp6_interface_statement_information_only_enable" type="checkbox" id="adv_dhcp6_interface_statement_information_only_enable" <?=!empty($pconfig['adv_dhcp6_interface_statement_information_only_enable']) ? "checked=\"checked\"" : "";?> />
                             <strong><?=gettext("Information Only"); ?></strong><br/>
                             <div class="hidden" for="help_for_dhcp6_intf_stmt">
+                              <small class="formhelp">
                               <?=gettext("This statement specifies dhcp6c to only exchange informational configuration parameters with servers. ".
                               "A list of DNS server addresses is an example of such parameters. ".
                               "This statement is useful when the client does not need ".
                               "stateful configuration parameters such as IPv6 addresses or prefixes.");?><br/>
-                              <small>
                                 <?=gettext("Source: FreeBSD man page");?>
                               </small>
                             </div>
@@ -2552,26 +2616,32 @@ include("head.inc");
                             <strong><?=gettext("Send Options"); ?></strong><br />
                             <input name="adv_dhcp6_interface_statement_send_options" type="text" id="adv_dhcp6_interface_statement_send_options" value="<?=$pconfig['adv_dhcp6_interface_statement_send_options'];?>" />
                             <div class="hidden" for="help_for_dhcp6_intf_stmt">
+                              <small class="formhelp">
                               <?=gettext("The values in this field are DHCP send options to be sent when requesting a DHCP lease.  [option declaration [, ...]] <br />" .
                               "Value Substitutions: {interface}, {hostname}, {mac_addr_asciiCD}, {mac_addr_hexCD} <br />" .
                               "Where C is U(pper) or L(ower) Case, and D is \" :-.\" Delimiter (space, colon, hyphen, or period) (omitted for none). <br />" .
                               "Some DHCP services may require certain options be or not be sent."); ?>
+                              </small>
                             </div>
                             <br />
                             <br />
                             <strong><?=gettext("Request Options"); ?></strong><br />
                             <input name="adv_dhcp6_interface_statement_request_options" type="text" id="adv_dhcp6_interface_statement_request_options" value="<?=$pconfig['adv_dhcp6_interface_statement_request_options'];?>" />
                             <div class="hidden" for="help_for_dhcp6_intf_stmt">
+                              <small class="formhelp">
                               <?=gettext("The values in this field are DHCP request options to be sent when requesting a DHCP lease.  [option [, ...]] <br />" .
                               "Some DHCP services may require certain options be or not be requested. "); ?>
+                              </small>
                             </div>
                             <br />
                             <br />
                             <strong><?=gettext("Script"); ?></strong><br />
                             <input name="adv_dhcp6_interface_statement_script" type="text" id="adv_dhcp6_interface_statement_script" value="<?=htmlspecialchars($pconfig['adv_dhcp6_interface_statement_script']);?>" />
                             <div class="hidden" for="help_for_dhcp6_intf_stmt">
+                              <small class="formhelp">
                                 <?=gettext("The value in this field is the absolute path to a script invoked on certain conditions including when a reply message is received. <br />" .
                                 "[/[dirname/[.../]]filename[.ext]] "); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2655,9 +2725,11 @@ include("head.inc");
                           <td>
                             <input name="adv_dhcp6_config_file_override_path" type="text" id="adv_dhcp6_config_file_override_path"  value="<?=$pconfig['adv_dhcp6_config_file_override_path'];?>" />
                             <div class="hidden" for="help_for_adv_dhcp6_config_file_override_path">
+                              <small class="formhelp">
                               <?=sprintf(gettext('The value in this field is the full absolute path to a DHCP client configuration file.  [/[dirname/[.../]]filename[.ext]] %s' .
                               'Value Substitutions in Config File: {interface}, {hostname}, {mac_addr_asciiCD}, {mac_addr_hexCD} %sWhere C is U(pper) or L(ower) Case, and D is " :-." Delimiter (space, colon, hyphen, or period) (omitted for none).%s' .
                               'Some ISPs may require certain options be or not be sent.'),'<br />','<br />','<br />') ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2668,7 +2740,7 @@ include("head.inc");
                 <!-- Section : 6RD-->
                 <div class="tab-content content-box col-xs-12 __mb" id="6rd" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("6RD Rapid Deployment"); ?></th>
@@ -2680,7 +2752,9 @@ include("head.inc");
                           <td width="78%">
                             <input name="prefix-6rd" type="text" id="prefix-6rd" value="<?=$pconfig['prefix-6rd'];?>" />
                             <div class="hidden" for="help_for_prefix-6rd">
+                              <small class="formhelp">
                               <?=gettext("The value in this field is the 6RD IPv6 prefix assigned by your ISP. e.g. '2001:db8::/32'") ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2707,7 +2781,9 @@ include("head.inc");
                               ?>
                             </select>
                             <div class="hidden" for="help_for_prefix-6rd-v4plen">
+                              <small class="formhelp">
                               <?=gettext("The value in this field is the 6RD IPv4 prefix length. Normally specified by the ISP. A value of 0 means we embed the entire IPv4 address in the 6RD prefix."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2718,7 +2794,7 @@ include("head.inc");
                 <!-- Section : Track 6 -->
                 <div class="tab-content content-box col-xs-12 __mb" id="track6" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("Track IPv6 Interface"); ?></th>
@@ -2744,7 +2820,9 @@ include("head.inc");
                             endforeach;?>
                             </select>
                             <div class="hidden" for="help_for_track6-interface">
+                              <small class="formhelp">
                               <?=gettext("This selects the dynamic IPv6 WAN interface to track for configuration") ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2758,9 +2836,11 @@ include("head.inc");
                             $track6_prefix_id_hex = !empty($pconfig['track6-prefix-id--hex']) ? $pconfig['track6-prefix-id--hex']: sprintf("%x", $pconfig['track6-prefix-id']);?>
                             <input name="track6-prefix-id--hex" type="text" id="track6-prefix-id--hex" value="<?= $track6_prefix_id_hex ?>" />
                             <div class="hidden" for="help_for_track6-prefix-id">
+                              <small class="formhelp">
                               <?= gettext("The value in this field is the (Delegated) IPv6 prefix id. This determines the configurable network ID based on the dynamic IPv6 connection"); ?>
                               <br />
                               <?= sprintf(gettext("Enter a hexadecimal value between %x and %x here, default value is 0."), 0, pow(2, calculate_ipv6_delegation_length($pconfig['track6-interface'])) - 1); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2774,7 +2854,7 @@ include("head.inc");
                 <!-- Section : Wireless -->
                 <div class="tab-content content-box col-xs-12 __mb">
                   <div class="table-responsive">
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("Common wireless configuration - Settings apply to all wireless networks on"); ?> <?=$wlanbaseif;?> </th>
@@ -2786,7 +2866,9 @@ include("head.inc");
                           <td width="78%">
                             <input name="persistcommonwireless" type="checkbox" value="yes"  id="persistcommonwireless" <?=!empty($pconfig['persistcommonwireless']) ? "checked=\"checked\"" : "";?> />
                             <div class="hidden" for="help_for_persistcommonwireless">
+                              <small class="formhelp">
                               <?=gettext("Enabling this preserves the common wireless configuration through interface deletions and reassignments.");?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2815,7 +2897,9 @@ include("head.inc");
                               <option <?=$pconfig['protmode'] == 'rtscts' ? "selected=\"selected\"" : "";?> value="rtscts"><?=gettext("Protection mode RTS and CTS"); ?></option>
                             </select>
                             <div class="hidden" for="help_for_protmode">
+                              <small class="formhelp">
                               <?=gettext("For IEEE 802.11g, use the specified technique for protecting OFDM frames in a mixed 11b/11g network."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2836,7 +2920,9 @@ include("head.inc");
                               endfor;?>
                             </select>
                             <div class="hidden" for="help_for_txpower">
+                              <small class="formhelp">
                               <?=gettext("Typically only a few discreet power settings are available and the driver will use the setting closest to the specified value. Not all adapters support changing the transmit power setting."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2858,9 +2944,11 @@ include("head.inc");
                               endforeach;?>
                             </select>
                             <div class="hidden" for="help_for_channel">
+                              <small class="formhelp">
                               <?=gettext("Legend: wireless standards - channel # (frequency @ max TX power / TX power allowed in reg. domain)"); ?>
                               <br />
                               <?=gettext("Not all channels may be supported by your card. Auto may override the wireless standard selected above."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2869,7 +2957,7 @@ include("head.inc");
                         <tr>
                           <td><a id="help_for_antenna_settings" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Antenna settings"); ?></td>
                           <td>
-                            <table class="table table-condensed">
+                            <table class="table table-borderless table-condensed">
                               <tr>
 <?php
                               if (isset($wl_sysctl["{$wl_sysctl_prefix}.diversity"])): ?>
@@ -2912,7 +3000,9 @@ include("head.inc");
                               </tr>
                             </table>
                             <div class="hidden" for="help_for_antenna_settings">
+                              <small class="formhelp">
                               <?=gettext("Note: The antenna numbers do not always match up with the labels on the card."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2933,7 +3023,9 @@ include("head.inc");
                               endforeach;?>
                             </select>
                             <div class="hidden" for="help_for_regdomain">
+                              <small class="formhelp">
                               <?=gettext("Note: Some cards have a default that is not recognized and require changing the regulatory domain to one in this list for the changes to other regulatory settings to work."); ?>
+                              </small>
                             </div>
 
                             <br /><br />
@@ -2950,6 +3042,7 @@ include("head.inc");
                             </select>
                             <br />
                             <div class="hidden" for="help_for_regdomain">
+                              <small class="formhelp">
                               <?=gettext("Note: Any country setting other than \"Default\" will override the regulatory domain setting"); ?>.
                             </div>
                             <br /><br />
@@ -2962,9 +3055,11 @@ include("head.inc");
                             </select>
                             <br /><br />
                             <div class="hidden" for="help_for_regdomain">
+                              <small class="formhelp">
                               <?=gettext("These settings may affect which channels are available and the maximum transmit power allowed on those channels. Using the correct settings to comply with local regulatory requirements is recommended."); ?>
                               <br />
                               <?=gettext("All wireless networks on this interface will be temporarily brought down when changing regulatory settings. Some of the regulatory domains or country codes may not be allowed by some cards. These settings may not be able to add additional channels that are not already supported."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2994,7 +3089,9 @@ include("head.inc");
                           <td>
                             <input name="ssid" type="text" id="ssid" value="<?=$pconfig['ssid'];?>" />
                             <div class="hidden" for="help_for_ssid">
+                              <small class="formhelp">
                               <?=gettext("Note: Only required in Access Point mode. If left blank in Ad-hoc or Infrastructure mode, this interface will connect to any available SSID"); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -3013,7 +3110,9 @@ include("head.inc");
                               <option <?=$pconfig['puremode'] == '11n' ? "selected=\"selected\"" : "";?> value="11n"><?=gettext("802.11n"); ?></option>
                             </select>
                             <div class="hidden" for="help_for_puremode">
+                              <small class="formhelp">
                               <?=gettext("When operating as an access point, allow only stations capable of the selected wireless standard to associate (stations not capable are not permitted to associate)."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -3024,7 +3123,9 @@ include("head.inc");
                           <td>
                             <input name="puremode" type="checkbox" value="11g"  id="puremode" <?php if ($pconfig['puremode'] == '11g') echo "checked=\"checked\"";?> />
                             <div class="hidden" for="help_for_puremode">
+                              <small class="formhelp">
                               <?=gettext("When operating as an access point in 802.11g mode, allow only 11g-capable stations to associate (11b-only stations are not permitted to associate)."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -3035,9 +3136,11 @@ include("head.inc");
                           <td>
                             <input name="apbridge_enable" type="checkbox" value="yes"  id="apbridge_enable" <?=!empty($pconfig['apbridge_enable']) ? "checked=\"checked\"" : "";?> />
                             <div class="hidden" for="help_for_apbridge_enable">
+                              <small class="formhelp">
                               <?=gettext("When operating as an access point, enable this if you want to pass packets between wireless clients directly."); ?>
                               <br />
                               <?=gettext("Disabling the internal bridging is useful when traffic is to be processed with packet filtering."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -3046,7 +3149,9 @@ include("head.inc");
                           <td>
                             <input name="wme_enable" type="checkbox" id="wme_enable" value="yes" <?=!empty($pconfig['wme_enable']) ? "checked=\"checked\"" : "";?> />
                             <div class="hidden" for="help_for_wme_enable">
+                              <small class="formhelp">
                               <?=gettext("Setting this option will force the card to use WME (wireless QoS)."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -3055,7 +3160,9 @@ include("head.inc");
                           <td>
                             <input name="hidessid_enable" type="checkbox" id="hidessid_enable" value="yes" <?=!empty($pconfig['hidessid_enable']) ? "checked=\"checked\"" : "";?> />
                             <div class="hidden" for="help_for_hidessid_enable">
+                              <small class="formhelp">
                               <?=gettext("Setting this option will force the card to NOT broadcast its SSID (this might create problems for some clients)."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -3064,7 +3171,7 @@ include("head.inc");
                           <td>
                             <input name="wep_enable" type="checkbox" id="wep_enable" value="yes" <?= $pconfig['wep_enable'] ? "checked=\"checked\"" : ""; ?> />
                             <strong><?=gettext("Enable WEP"); ?></strong>
-                            <table class="table table-condensed">
+                            <table class="table table-borderless table-condensed">
                               <tr>
                                 <td></td>
                                 <td></td>
@@ -3108,8 +3215,10 @@ include("head.inc");
                               </tr>
                             </table>
                             <div class="hidden" for="help_for_wep">
+                              <small class="formhelp">
                               <?=gettext("40 (64) bit keys may be entered as 5 ASCII characters or 10 hex digits preceded by '0x'."); ?><br />
                               <?=gettext("104 (128) bit keys may be entered as 13 ASCII characters or 26 hex digits preceded by '0x'."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -3122,7 +3231,9 @@ include("head.inc");
                             <?=gettext("WPA Pre-Shared Key"); ?><br/>
                             <input name="passphrase" type="text" id="passphrase" value="<?=$pconfig['passphrase'];?>" />
                             <div class="hidden" for="help_for_wpa_enable">
+                              <small class="formhelp">
                               <?=gettext("Passphrase must be from 8 to 63 characters."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -3155,7 +3266,9 @@ include("head.inc");
                               <option <?=$pconfig['auth_algs'] == '3' ? "selected=\"selected\"" : "";?> value="3"><?=gettext("Both"); ?></option>
                             </select>
                             <div class="hidden" for="help_for_auth_algs">
+                              <small class="formhelp">
                               <?=gettext("Note: Shared Key Authentication requires WEP."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -3174,7 +3287,9 @@ include("head.inc");
                           <td>
                             <input name="wpa_group_rekey" type="text" id="wpa_group_rekey" value="<?=!empty($pconfig['wpa_group_rekey']) ? $pconfig['wpa_group_rekey'] : "60";?>" />
                             <div class="hidden" for="help_for_wpa_group_rekey">
+                              <small class="formhelp">
                               <?=gettext("Allowed values are 1-9999 but should not be longer than Master Key Regeneration time."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -3183,7 +3298,9 @@ include("head.inc");
                           <td>
                             <input name="wpa_gmk_rekey" type="text" id="wpa_gmk_rekey" value="<?=!empty($pconfig['wpa_gmk_rekey']) ? $pconfig['wpa_gmk_rekey'] : "3600";?>" />
                             <div class="hidden" for="help_for_wpa_gmk_rekey">
+                              <small class="formhelp">
                               <?=gettext("Allowed values are 1-9999 but should not be shorter than Key Rotation time."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -3192,7 +3309,9 @@ include("head.inc");
                           <td>
                             <input name="wpa_strict_rekey" type="checkbox" value="yes"  id="wpa_strict_rekey" <?php if ($pconfig['wpa_strict_rekey']) echo "checked=\"checked\""; ?> />
                             <div class="hidden" for="help_for_wpa_strict_rekey">
+                              <small class="formhelp">
                               <?=gettext("Setting this option will force the AP to rekey whenever a client disassociates."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -3201,8 +3320,10 @@ include("head.inc");
                           <td>
                             <input name="ieee8021x" type="checkbox" value="yes"  id="ieee8021x" <?=!empty($pconfig['ieee8021x']) ? "checked=\"checked\"" : "";?> />
                             <div class="hidden" for="help_for_ieee8021x">
+                              <small class="formhelp">
                               <?=gettext("Setting this option will enable 802.1x authentication."); ?><br/>
                               <span class="text-danger"><strong><?=gettext("NOTE"); ?>:</strong></span> <?=gettext("this option requires checking the \"Enable WPA box\"."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -3211,7 +3332,9 @@ include("head.inc");
                           <td>
                             <input name="auth_server_addr" id="auth_server_addr" type="text" value="<?=$pconfig['auth_server_addr'];?>" />
                             <div class="hidden" for="help_for_auth_server_addr">
+                              <small class="formhelp">
                               <?=gettext("Enter the IP address of the 802.1X Authentication Server. This is commonly a Radius server (FreeRadius, Internet Authentication Services, etc.)"); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -3220,7 +3343,9 @@ include("head.inc");
                           <td>
                             <input name="auth_server_port" id="auth_server_port" type="text" value="<?=$pconfig['auth_server_port'];?>" />
                             <div class="hidden" for="help_for_auth_server_port">
+                              <small class="formhelp">
                               <?=gettext("Leave blank for the default 1812 port."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -3235,8 +3360,10 @@ include("head.inc");
                           <td>
                             <input name="auth_server_addr2" id="auth_server_addr2" type="text" value="<?=$pconfig['auth_server_addr2'];?>" />
                             <div class="hidden" for="help_for_auth_server_addr2">
+                              <small class="formhelp">
                               <?=gettext("Secondary 802.1X Authentication Server IP Address"); ?></br>
                               <?=gettext("Enter the IP address of the 802.1X Authentication Server. This is commonly a Radius server (FreeRadius, Internet Authentication Services, etc.)"); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -3245,8 +3372,10 @@ include("head.inc");
                           <td>
                             <input name="auth_server_port2" id="auth_server_port2" type="text" value="<?=$pconfig['auth_server_port2'];?>" />
                             <div class="hidden" for="help_for_auth_server_port2">
+                              <small class="formhelp">
                               <?=gettext("Secondary 802.1X Authentication Server Port"); ?><br />
                               <?=gettext("Leave blank for the default 1812 port."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -3255,7 +3384,9 @@ include("head.inc");
                           <td>
                             <input name="auth_server_shared_secret2" id="auth_server_shared_secret2" type="text" value="<?=$pconfig['auth_server_shared_secret2'];?>" />
                             <div class="hidden" for="help_for_auth_server_shared_secret2">
+                              <small class="formhelp">
                               <?=gettext("Secondary 802.1X Authentication Server Shared Secret"); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -3275,7 +3406,7 @@ include("head.inc");
               </div>
               <div class="tab-content content-box col-xs-12 __mb">
                 <div class="table-responsive">
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <tr>
                         <td width="22%"></td>
                         <td width="78%">
