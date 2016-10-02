@@ -48,7 +48,7 @@ include("head.inc");
         <section class="col-xs-12">
           <div class="tab-content content-box col-xs-12">
             <div class="responsive-table">
-              <table class="table table-striped">
+              <table class="table table-clean-form table-striped">
                 <thead>
                   <tr>
                     <td><?=gettext("Name"); ?></td>
@@ -107,7 +107,7 @@ include("head.inc");
                         $bgcolor = "#D3D3D3";  // lightgray
                     }
 ?>
-                      <div style="background: <?=$bgcolor;?>">
+                      <div>
                         <i class="fa fa-globe"></i>
                         <?=$online;?>
                       </div>
