@@ -562,9 +562,9 @@ $( document ).ready(function() {
 <?php
             endif;?>
               <input type='hidden' name='friendlyiface' id='friendlyiface' value="<?=$pconfig['friendlyiface'];?>"/>
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <tr>
-                  <td width="22%"><?=gettext("Edit gateway");?></td>
+                  <td width="22%"><strong><?=gettext("Edit gateway");?></strong></td>
                   <td  width="78%" align="right">
                     <small><?=gettext("full help"); ?> </small>
                     <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
@@ -575,7 +575,6 @@ $( document ).ready(function() {
                   <td>
                     <input name="disabled" type="checkbox" id="disabled" value="yes" <?= !empty($pconfig['disabled']) ? "checked=\"checked\"" : ""; ?> />
                     <div class="hidden" for="help_for_disabled">
-                      <strong><?=gettext("Disable this gateway");?></strong><br />
                       <?=gettext("Set this option to disable this gateway without removing it from the list.");?>
                     </div>
                   </td>
@@ -593,7 +592,9 @@ $( document ).ready(function() {
                       endforeach;?>
                     </select>
                       <div class="hidden" for="help_for_interface">
+                        <small class="formhelp">
                         <?=gettext("Choose which interface this gateway applies to."); ?>
+                        </small>
                       </div>
                   </td>
                 </tr>
@@ -609,7 +610,9 @@ $( document ).ready(function() {
                       </option>
                     </select>
                     <div class="hidden" for="help_for_ipprotocol">
+                      <small class="formhelp">
                         <?=gettext("Choose the Internet Protocol this gateway uses."); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -618,7 +621,9 @@ $( document ).ready(function() {
                   <td>
                     <input name="name" type="text" size="20" value="<?=$pconfig['name'];?>" />
                     <div class="hidden" for="help_for_name">
+                      <small class="formhelp">
                       <?=gettext("Gateway name"); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -627,7 +632,9 @@ $( document ).ready(function() {
                   <td>
                     <input name="gateway" type="text" size="28" value="<?=!empty($pconfig['dynamic']) ? "dynamic" : $pconfig['gateway'];?>"/>
                     <div class="hidden" for="help_for_gateway">
+                      <small class="formhelp">
                       <?=gettext("Gateway IP address"); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -636,7 +643,9 @@ $( document ).ready(function() {
                   <td>
                     <input name="defaultgw" type="checkbox" value="yes" <?=!empty($pconfig['defaultgw']) ? "checked=\"checked\"" : "";?> />
                     <div class="hidden" for="help_for_defaultgw">
+                      <small class="formhelp">
                       <?=gettext("This will select the above gateway as the default gateway"); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -645,7 +654,9 @@ $( document ).ready(function() {
                   <td>
                     <input name="fargw" type="checkbox" value="yes" <?=!empty($pconfig['fargw']) ? 'checked="checked"' : '';?> />
                     <div class="hidden" for="help_for_fargw">
+                      <small class="formhelp">
                       <?=gettext("This will allow the gateway to exist outside of the interface subnet."); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -654,7 +665,9 @@ $( document ).ready(function() {
                   <td>
                     <input name="monitor_disable" type="checkbox" value="yes" <?=!empty($pconfig['monitor_disable']) ? "checked=\"checked\"" : "";?>/>
                     <div class="hidden" for="help_for_monitor_disable">
+                      <small class="formhelp">
                       <?=gettext("This will consider this gateway as always being up"); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -663,10 +676,12 @@ $( document ).ready(function() {
                   <td>
                       <input name="monitor" type="text" value="<?=$pconfig['gateway'] == $pconfig['monitor'] ? "" : $pconfig['monitor'] ;?>" size="28" />
                       <div class="hidden" for="help_for_monitor">
+                        <small class="formhelp">
                         <strong><?=gettext("Alternative monitor IP"); ?></strong> <br />
                         <?=gettext("Enter an alternative address here to be used to monitor the link. This is used for the " .
                                                 "quality RRD graphs as well as the load balancer entries. Use this if the gateway does not respond " .
                                                 "to ICMP echo requests (pings)"); ?>.
+                        </small>
                       </div>
                   </td>
                 </tr>
@@ -675,8 +690,9 @@ $( document ).ready(function() {
                   <td>
                     <input name="force_down" type="checkbox" value="yes" <?=!empty($pconfig['force_down']) ? "checked=\"checked\"" : "";?>/>
                     <div class="hidden" for="help_for_force_down">
-                      <strong><?=gettext("Mark Gateway as Down"); ?></strong><br />
+                      <small class="formhelp">
                       <?=gettext("This will force this gateway to be considered Down"); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -702,7 +718,9 @@ $( document ).ready(function() {
                     endfor;?>
                     </select>
                     <div class="hidden" for="help_for_weight">
+                      <small class="formhelp">
                       <?=gettext("Weight for this gateway when used in a Gateway Group.");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -728,7 +746,9 @@ $( document ).ready(function() {
                         </tbody>
                     </table>
                     <div class="hidden" for="help_for_latency">
+                      <small class="formhelp">
                         <?= sprintf(gettext('Low and high thresholds for latency in milliseconds. Default is %d/%d.'), $apinger_default['latencylow'], $apinger_default['latencyhigh']) ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -754,7 +774,9 @@ $( document ).ready(function() {
                         </tbody>
                     </table>
                     <div class="hidden" for="help_for_loss">
+                      <small class="formhelp">
                       <?= sprintf(gettext('Low and high thresholds for packet loss in %%. Default is %d/%d.'), $apinger_default['losslow'], $apinger_default['losshigh']) ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -763,8 +785,10 @@ $( document ).ready(function() {
                   <td>
                     <input name="interval" id="interval" type="text" value="<?=$pconfig['interval'];?>" onclick="calculated_change()" />
                     <div class="hidden" for="help_for_interval">
+                      <small class="formhelp">
                       <?= sprintf(gettext('How often that an ICMP probe will be sent in seconds. Default is %d.'), $apinger_default['interval']) ?><br /><br />
                       <?=gettext("NOTE: The quality graph is averaged over seconds, not intervals, so as the probe interval is increased the accuracy of the quality graph is decreased.");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -773,7 +797,9 @@ $( document ).ready(function() {
                   <td>
                     <input name="down" type="text" value="<?=$pconfig['down'];?>" />
                     <div class="hidden" for="help_for_down">
+                      <small class="formhelp">
                       <?= sprintf(gettext('The number of seconds of failed probes before the alarm will fire. Default is %d.'), $apinger_default['down']) ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -784,7 +810,9 @@ $( document ).ready(function() {
                     <input name="avg_delay_samples_calculated" type="checkbox" id="avg_delay_samples_calculated" value="yes" <?=!empty($pconfig['avg_delay_samples_calculated']) ? "checked=\"checked\"" : "";?> onclick="calculated_change()" />
                     <?=gettext("Use calculated value."); ?>
                     <div class="hidden" for="help_for_avg_delay_samples">
+                      <small class="formhelp">
                       <?= sprintf(gettext('How many replies should be used to compute average delay for controlling "delay" alarms? Default is %d.'), $apinger_default['avg_delay_samples']) ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -796,7 +824,9 @@ $( document ).ready(function() {
                     <?=gettext("Use calculated value."); ?>
 
                     <div class="hidden" for="help_for_avg_loss_samples">
+                      <small class="formhelp">
                       <?= sprintf(gettext('How many probes should be used to compute average packet loss? Default is %d.'), $apinger_default['avg_loss_samples']) ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -808,7 +838,9 @@ $( document ).ready(function() {
                     <?=gettext("Use calculated value."); ?>
 
                     <div class="hidden" for="help_for_avg_loss_delay_samples">
+                      <small class="formhelp">
                       <?= sprintf(gettext('The delay (in qty of probe samples) after which loss is computed. Without this, delays longer than the probe interval would be treated as packet loss. Default is %d.'), $apinger_default['avg_loss_delay_samples']) ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -826,7 +858,9 @@ $( document ).ready(function() {
                   <td>
                     <input name="descr" type="text" value="<?=$pconfig['descr'];?>" />
                     <div class="hidden" for="help_for_descr">
+                      <small class="formhelp">
                       <?=gettext("You may enter a description here for your reference (not parsed)"); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
