@@ -48,7 +48,7 @@ class M1_0_0 extends BaseModelMigration
 		}
 
 		// restart syslogd to generate new plain text logfiles
-		$backend->configdRun("syslog stop");
+		$backend->configdRun("syslog kill_by_pid");
 		$backend->configdRun("syslog start");
 
 		// import settings from legacy config section
