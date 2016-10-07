@@ -131,7 +131,7 @@ CORE_DEPENDS?=		apinger \
 			strongswan \
 			sudo \
 			suricata \
-			syslogd \
+			syslog-ng \
 			unbound \
 			wol \
 			zip \

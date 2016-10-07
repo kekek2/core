@@ -361,7 +361,7 @@ $( document ).ready(function() {
                     <td>
                       <span class="glyphicon glyphicon-remove text-danger"></span>
 <?php
-                      if (!isset($config['syslog']['nologprivatenets'])):?>
+                      if ($config['OPNsense']['Syslog']['Firewall']['LogPrivateNets'] == 1):?>
                       <span class="glyphicon glyphicon-info-sign text-info"></span>
 <?php
                       endif; ?>
@@ -386,7 +386,7 @@ $( document ).ready(function() {
                     <td>
                       <span class="glyphicon glyphicon-remove text-danger"></span>
 <?php
-                      if (!isset($config['syslog']['nologbogons'])):?>
+                      if ($config['OPNsense']['Syslog']['Firewall']['LogBogons'] == 1):?>
                       <span class="glyphicon glyphicon-info-sign text-info"></span>
 <?php
                       endif; ?>
