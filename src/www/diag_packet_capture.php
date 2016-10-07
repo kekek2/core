@@ -1,7 +1,8 @@
 <?php
 
 /*
-    Copyright (C) 2016 Deciso B.V.
+    Copyright (C) 2014-2016 Deciso B.V.
+    Copyright (C) 2007 Scott Dale
 
     Redistribution and use in source and binary forms, with or without
     modification, are permitted provided that the following conditions are met:
@@ -249,7 +250,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         stop_capture();
     } elseif (!empty($pconfig['remove'])) {
         @unlink('/tmp/packetcapture.cap');
-        header("Location: diag_packet_capture.php");
+        header(url_safe('Location: /diag_packet_capture.php'));
         exit;
     }
 }
