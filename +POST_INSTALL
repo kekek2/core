@@ -21,20 +21,6 @@ EOF
 cat /etc/rc.bak >> /etc/rc
 rm -f /etc/rc.bak
 
-echo "Updating /boot/loader.conf"
-touch /boot/loader.conf
-cp /boot/loader.conf /boot/loader.conf.bak
-(grep -v loader_brand /boot/loader.conf.bak; \
-    echo 'loader_brand="ting"') > /boot/loader.conf
-cp /boot/loader.conf /boot/loader.conf.bak
-(grep -v loader_logo /boot/loader.conf.bak; \
-    echo 'loader_logo="ting"') > /boot/loader.conf
-rm -f /boot/loader.conf.bak
-cp /boot/loader.conf /boot/loader.conf.bak
-(grep -v loader_menu_title /boot/loader.conf.bak; \
-    echo 'loader_menu_title=""') > /boot/loader.conf
-rm -f /boot/loader.conf.bak
-
 echo "Writing package version"
 mkdir -p /usr/local/opnsense/version
 if [ -f /usr/local/opnsense/version/opnsense ]; then
@@ -60,3 +46,6 @@ echo "Reloading GUI configuration"
 if pgrep -q php-cgi; then
 	pkill -HUP php-cgi
 fi
+
+echo "Reloading firmware configuration"
+/usr/local/etc/rc.configure_firmware

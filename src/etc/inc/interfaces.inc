@@ -1280,11 +1280,7 @@ function interface_bring_down($interface = "wan", $destroy = false, $ifacecfg = 
     switch ($ipaddrv6) {
         case "slaac":
         case "dhcp6":
-            $pidv6 = find_dhcp6c_process($realif);
-            if ($pidv6) {
-                exec('/bin/kill ' . $pidv6);
-            }
-            sleep(3);
+            killbypid("/var/run/dhcp6c_{$realif}.pid", 'TERM', true);
             @unlink("/var/etc/dhcp6c_{$interface}.conf");
             if (does_interface_exist($realifv6)) {
                 $ip6 = find_interface_ipv6($realifv6);
@@ -2585,16 +2581,6 @@ function kill_dhclient_process($interface)
     unset($i);
 }
 
-function find_dhcp6c_process($interface)
-{
-    if ($interface && isvalidpid("/var/run/dhcp6c_{$interface}.pid")) {
-        $pid = trim(file_get_contents("/var/run/dhcp6c_{$interface}.pid"), " \n");
-        return intval($pid);
-    }
-
-    return false;
-}
-
 function interface_vlan_mtu_configured($realhwif, $mtu)
 {
     global $config;
@@ -2975,10 +2961,7 @@ function interface_track6_configure($interface = 'lan', $wancfg, $linkupevent = 
                  * XXX: Probably DHCPv6 client should handle this autmagically itself?
                  */
                 $parentrealif = get_real_interface($wancfg['track6-interface']);
-                $pidv6 = find_dhcp6c_process($parentrealif);
-                if ($pidv6) {
-                    exec('/bin/kill -HUP ' . $pidv6);
-                }
+                killbypid("/var/run/dhcp6c_{$parentrealif}.pid", 'HUP');
             }
             break;
     }
@@ -5213,4 +5196,22 @@ function get_carp_interface_status($carpinterface)
         }
     }
     return;
+}
+
+function is_interface_mismatch()
+{
+    global $config;
+
+    if (isset($config['interfaces'])) {
+        foreach (legacy_config_get_interfaces(array("virtual" => false)) as $ifname => $ifcfg) {
+            if (preg_match("/^enc|^cua|^tun|^tap|^l2tp|^pptp|^ppp|^ovpn|^gif|^gre|^lagg|^bridge|vlan|_wlan/i", $ifcfg['if'])) {
+                /* Do not check these interfaces */
+                continue;
+            } elseif (does_interface_exist($ifcfg['if']) == false) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }

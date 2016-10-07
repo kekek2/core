@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         unset($config['widgets']['column_count']);
     }
     write_config('Widget configuration has been changed');
-    header('Location: index.php');
+    header(url_safe('Location: /index.php'));
     exit;
 }
 
@@ -311,6 +311,7 @@ include("fbegin.inc");?>
       <div class="row">
         <div class="col-md-12 col-xs-12">
 <?php
+          print_service_banner('livecd');
           $crash_report = get_crash_report();
           if ($crash_report != '') {
               print_info_box($crash_report);

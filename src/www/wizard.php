@@ -33,7 +33,6 @@ require_once("filter.inc");
 require_once("rrd.inc");
 require_once("system.inc");
 require_once("interfaces.inc");
-require_once("plugins.inc");
 
 /*
  * find_ip_interface($ip): return the interface where an ip is defined
@@ -742,6 +741,35 @@ function showchange() {
 						$CHECKED = '';
 					}
 					echo ">{$x}</option>\n";
+				}
+				echo "</select>\n";
+
+				if($field['description'] <> "") {
+					echo "<br /> " . $field['description'];
+				}
+
+				break;
+			case "language_select":
+				$languagelist = get_locale_list();
+
+				if ($field['displayname']) {
+					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
+					echo $field['displayname'];
+					echo ":</td>\n";
+				} else if(!$field['dontdisplayname']) {
+					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
+					echo fixup_string($field['name']);
+					echo ":</td>";
+				}
+				if(!$field['dontcombinecells'])
+					echo "<td class=\"vtable\">";
+				echo "<select class='form-control' name='{$name}'>\n";
+				foreach ($languagelist as $langkey => $langval) {
+					$SELECTED = "";
+					if ($value == $langkey) $SELECTED = " selected=\"selected\"";
+					echo "<option value=\"" . htmlspecialchars($langkey) . "\" {$SELECTED}>";
+					echo htmlspecialchars($langval);
+					echo "</option>\n";
 				}
 				echo "</select>\n";
 

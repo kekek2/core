@@ -34,7 +34,6 @@ require_once("filter.inc");
 require_once("ipsec.inc");
 require_once("services.inc");
 require_once("interfaces.inc");
-require_once("plugins.inc");
 
 /*
  * ikeid management functions
@@ -397,7 +396,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         write_config();
         mark_subsystem_dirty('ipsec');
-        header("Location: vpn_ipsec.php");
+        header(url_safe('Location: /vpn_ipsec.php'));
         exit;
     }
 }

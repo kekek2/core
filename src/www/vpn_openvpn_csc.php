@@ -31,7 +31,6 @@ require_once("guiconfig.inc");
 require_once("openvpn.inc");
 require_once("services.inc");
 require_once("interfaces.inc");
-require_once("plugins.inc");
 
 // define all fields used in this form
 $all_form_fields = "custom_options,disable,common_name,block,description
@@ -90,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             unset($a_csc[$id]);
             write_config();
         }
-        header("Location: vpn_openvpn_csc.php");
+        header(url_safe('Location: /vpn_openvpn_csc.php'));
         exit;
     } elseif ($act == "del_x") {
         if (!empty($pconfig['rule']) && is_array($pconfig['rule'])) {
@@ -102,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
             write_config();
         }
-        header("Location: vpn_openvpn_csc.php");
+        header(url_safe('Location: /vpn_openvpn_csc.php'));
         exit;
     } elseif ($act == "move"){
       // move selected items
@@ -112,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
       }
       $a_csc = legacy_move_config_list_items($a_csc, $id,  $pconfig['rule']);
       write_config();
-      header("Location: vpn_openvpn_csc.php");
+      header(url_safe('Location: /vpn_openvpn_csc.php'));
       exit;
     } elseif ($act == "toggle") {
         if (isset($id)) {
@@ -124,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             write_config();
             openvpn_resync_csc();
         }
-        header("Location: vpn_openvpn_csc.php");
+        header(url_safe('Location: /vpn_openvpn_csc.php'));
         exit;
     } else {
         /* perform validations */
@@ -225,7 +224,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             write_config();
             openvpn_resync_csc();
 
-            header("Location: vpn_openvpn_csc.php");
+            header(url_safe('Location: /vpn_openvpn_csc.php'));
             exit;
         }
     }

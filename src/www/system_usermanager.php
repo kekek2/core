@@ -173,7 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             unset($a_user[$id]);
             write_config();
             $savemsg = sprintf(gettext('The user "%s" was successfully removed.'), $userdeleted);
-            header(url_safe('Location: system_usermanager.php?savemsg=%s', $savemsg));
+            header(url_safe('Location: /system_usermanager.php?savemsg=%s', array($savemsg)));
             exit;
         }
     } elseif ($act == "delcert" && isset($id)) {
@@ -183,7 +183,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         unset($a_user[$id]['cert'][$pconfig['certid']]);
         write_config();
         $savemsg = sprintf(gettext('The certificate association "%s" was successfully removed.'), $certdeleted);
-        header(url_safe('Location: system_usermanager.php?savemsg=%s&act=edit&userid=%s', array($savemsg, $id)));
+        header(url_safe('Location: /system_usermanager.php?savemsg=%s&act=edit&userid=%s', array($savemsg, $id)));
         exit;
     } elseif ($act == "newApiKey" && isset($id)) {
         // every action is using the sequence of the user, to keep it understandable, we will use
@@ -209,7 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $savemsg = gettext('No API key found');
         }
         // redirect
-        header(url_safe('Location: system_usermanager.php?savemsg=%s&act=edit&userid=%s', array($savemsg, $id)));
+        header(url_safe('Location: /system_usermanager.php?savemsg=%s&act=edit&userid=%s', array($savemsg, $id)));
         exit;
     } elseif (isset($pconfig['save'])) {
         // save user
@@ -351,17 +351,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
             if (!empty($pconfig['chkNewCert'])) {
                 // redirect to cert manager when a new cert is requested for this user
-                header(url_safe('Location: system_certmanager.php?act=new&userid=%s', count($a_user) - 1));
+                header(url_safe('Location: /system_certmanager.php?act=new&userid=%s', array(count($a_user) - 1)));
             } else {
-                header(url_safe('Location: system_usermanager.php'));
+                header(url_safe('Location: /system_usermanager.php'));
                 exit;
             }
         }
     } elseif (isset($id)) {
-        header(url_safe('Location: system_usermanager.php?userid=%s', $id));
+        header(url_safe('Location: /system_usermanager.php?userid=%s', array($id)));
         exit;
     } else {
-        header(url_safe('Location: system_usermanager.php'));
+        header(url_safe('Location: /system_usermanager.php'));
         exit;
     }
 }
@@ -964,9 +964,6 @@ $( document ).ready(function() {
                                         "the webConfigurator can be assigned directly or inherited from group memberships. " .
                                         "An icon that appears grey indicates that it is a system defined object. " .
                                         "Some system object properties can be modified but they cannot be deleted."); ?>
-                          <br /><br />
-                          <?=gettext("Accounts created here are also used for other parts of the system " .
-                                        "such as OpenVPN, IPsec, and Captive Portal.");?>
                       </td>
                     </tr>
                   </tbody>

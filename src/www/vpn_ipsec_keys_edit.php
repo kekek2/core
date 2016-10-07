@@ -31,7 +31,6 @@ require_once("interfaces.inc");
 require_once("guiconfig.inc");
 require_once("ipsec.inc");
 require_once("services.inc");
-require_once("plugins.inc");
 
 if (!isset($config['ipsec']) || !is_array($config['ipsec'])) {
     $config['ipsec'] = array();
@@ -111,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         write_config("{$config_write_text} IPsec Pre-Shared Keys");
         mark_subsystem_dirty('ipsec');
 
-        header("Location: vpn_ipsec_keys.php");
+        header(url_safe('Location: /vpn_ipsec_keys.php'));
         exit;
     }
 }

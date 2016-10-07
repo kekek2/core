@@ -31,7 +31,6 @@
 
 require_once("guiconfig.inc");
 require_once("services.inc");
-require_once("plugins.inc");
 
 /**
  * search config for phase 1 description
@@ -73,8 +72,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           break;
     }
 
-    header("Location: diag_ipsec.php");
-    exit(0);
+    header(url_safe('Location: /diag_ipsec.php'));
+    exit;
 }
 
 $ipsec_status = json_decode(configd_run("ipsec list status"), true);
