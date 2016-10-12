@@ -91,7 +91,6 @@ CORE_DEPENDS?=		apinger \
 			ntp \
 			openssh-portable \
 			openvpn \
-			p7zip \
 			pam_opnsense \
 			pecl-radius \
 			pftop \
