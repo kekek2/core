@@ -1,5 +1,5 @@
 \ Copyright (c) 2006-2015 Devin Teske <dteske@FreeBSD.org>
-\ Copyright (c) 2016 Deciso B.V.
+\ Copyright (c) 2016 Tobias Boertitz <tbor87@gmail.com>
 \ All rights reserved.
 \
 \ Redistribution and use in source and binary forms, with or without
@@ -25,32 +25,22 @@
 \
 \ $FreeBSD$
 
-48 logoX ! 9 logoY ! \ Initialize logo placement defaults
+7 brandX ! 2 brandY ! \ Initialize brand placement defaults
 
-: logo+ ( x y c-addr/u -- x y' )
+: brand+ ( x y c-addr/u -- x y' )
 	2swap 2dup at-xy 2swap \ position the cursor
-	[char] # escc! \ replace # with Esc
 	type \ print to the screen
 	1+ \ increase y for next time we're called
 ;
 
-: logo ( x y -- ) \ color hourglass logo (15 rows x 32 columns)
+: brand ( x y -- ) \ "TING" [wide] logo in B/W (6 rows x 47 columns)
 
-	s" #[37;1m  @@@@@@@@@@@@@@@@@@@@@@@@@@@@" logo+
-	s" @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" logo+
-	s" @@@@@                    @@@@@" logo+
-	s"     @@@@@            @@@@@    " logo+
-	s"  @@@@@@@@@@@       @@@@@@@@@@@" logo+
-	s"       #[31;1m\\\\\         /////     " logo+
-	s" ))))))))))))       (((((((((((" logo+
-	s"       /////         \\\\\     #[m" logo+
-	s" #[37;1m @@@@@@@@@@@       @@@@@@@@@@@" logo+
-	s"     @@@@@            @@@@@    " logo+
-	s" @@@@@                    @@@@@" logo+
-	s" @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" logo+
-	s" @@@@@@@@@@@@@@@@@@@@@@@@@@@@  " logo+
-	s"  #[m                              " logo+
-	s"    16.7 ``Dancing Dolphin''   #[m" logo+
+	s"  _______   _    __    _    _____              " brand+
+	s" |__   __| | |  |  \  | |  / ___ \             " brand+
+	s"    | |    | |  | \ \ | | | /   \_|            " brand+
+	s"    | |    | |  | |\ \| | | |  ___             " brand+
+	s"    | |    | |  | | \ \ | | \_|_  |            " brand+
+	s"    |_|    |_|  |_|  \__|  \____/_|            " brand+
 
 	2drop
 ;
