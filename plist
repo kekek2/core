@@ -1,5 +1,5 @@
-/boot/brand-opnsense.4th
-/boot/logo-hourglass.4th
+/boot/brand-ting.4th
+/boot/logo-ting.4th
 /usr/local/etc/ddb.conf
 /usr/local/etc/devd/carp.conf
 /usr/local/etc/devd/ifnet.conf
