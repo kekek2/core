@@ -281,6 +281,10 @@ TING_CLIENT_KEY=/usr/local/etc/ssl/ting-client.key
 [ -d /usr/local/etc/ssl ] || mkdir -p /usr/local/etc/ssl
 [ -f ${TING_CLIENT_KEY} ] || openssl genrsa -out ${TING_CLIENT_KEY} 2048
 
+# Check pkg cache dir
+PKG_CACHEDIR=`/usr/sbin/pkg config PKG_CACHEDIR`
+[ -d ${PKG_CACHEDIR} ] || mkdir ${PKG_CACHEDIR}
+
 /usr/local/sbin/beep.sh start
 
 /usr/local/etc/rc.initial.banner
