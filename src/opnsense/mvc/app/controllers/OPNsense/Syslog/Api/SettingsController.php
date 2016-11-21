@@ -31,6 +31,7 @@ namespace OPNsense\Syslog\Api;
 use \OPNsense\Base\ApiControllerBase;
 use \OPNsense\Syslog\Syslog;
 use \OPNsense\Core\Config;
+use \OPNsense\Core\Backend;     // for run firewall and web-server reconfigure actions
 use \OPNsense\Base\UIModelGrid;
 
 /**
@@ -65,9 +66,37 @@ class SettingsController extends ApiControllerBase
         $result = array("result"=>"failed");
         try{
             if ($this->request->hasPost("syslog")) {
+                $this->sessionClose();
+
                 // load model and update with provided data
                 $mdl = new Syslog();
-                $mdl->setNodes($this->request->getPost("syslog"));
+                $formData = $this->request->getPost("syslog");
+                $mdl->setNodes($formData);
+
+                $firewallChanged =  $mdl->Firewall->LogDefaultBlock->isFieldChanged() ||
+                                    $mdl->Firewall->LogDefaultPass->isFieldChanged() ||
+                                    $mdl->Firewall->LogBogons->isFieldChanged() ||
+                                    $mdl->Firewall->LogPrivateNets->isFieldChanged();
+
+                $webConfigChanged = $mdl->LogWebServer->isFieldChanged();
+
+                // for bad dependencies
+                $backend = new Backend();
+
+                // hook to calculate bind Source IP
+                $bindip = "";
+                if(isset($formData["Remote"]["SourceIP"]) && $formData["Remote"]["SourceIP"] != "")
+                {
+                    $sourceip = $formData["Remote"]["SourceIP"];
+                    $proto = $formData["Remote"]["Proto"];
+                    $bindip = chop($backend->configdRun("syslog get_bind_address {$sourceip} {$proto}")); 
+                    
+                    // additional sanity check
+                    if($bindip != "" && inet_pton($bindip) === false)
+                        $bindip = "";
+                }
+                if($bindip != $mdl->Remote->BindAddress->__toString())
+                    $mdl->Remote->BindAddress = $bindip;
 
                 // perform validation
                 $valMsgs = $mdl->performValidation();
@@ -81,7 +110,15 @@ class SettingsController extends ApiControllerBase
                     $mdl->serializeToConfig();
                     $cnf = Config::getInstance();
                     $cnf->save();
-                    $result["result"] = "saved";
+                    $result["result"] = "ok";
+
+                    if ($firewallChanged)
+                        $result["reload-firewall"] = $backend->configdRun("filter reload", true);
+
+                    if ($webConfigChanged)
+                        $result["reload-web"] = $backend->configdRun("syslog restart_web", true);
+
+                    $result["reload-pflog"] = $backend->configdRun("filter pflog start", true);
                 }
             }
         }
@@ -145,5 +182,4 @@ class SettingsController extends ApiControllerBase
         }
         return $result;
     }
-
 }

@@ -94,7 +94,6 @@ CORE_DEPENDS?=		apinger \
 			ntp \
 			openssh-portable \
 			openvpn \
-			p7zip \
 			pecl-radius \
 			pftop \
 			phalcon \
@@ -131,7 +130,7 @@ CORE_DEPENDS?=		apinger \
 			strongswan \
 			sudo \
 			suricata \
-			syslogd \
+			syslog-ng \
 			unbound \
 			wol \
 			zip \

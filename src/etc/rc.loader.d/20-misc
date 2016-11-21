@@ -1,2 +1,2 @@
-autoboot_delay="3"
+autoboot_delay="2"
 hw.usb.no_pf="1"

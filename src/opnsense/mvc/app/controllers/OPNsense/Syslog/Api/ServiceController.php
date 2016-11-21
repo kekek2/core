@@ -34,6 +34,7 @@ use \OPNsense\Base\ApiControllerBase;
 use \OPNsense\Core\Backend;
 use \OPNsense\Syslog\Syslog;
 use \OPNsense\Core\Config;
+use \Phalcon\Filter;
 
 /**
  * Class ServiceController
@@ -59,9 +60,10 @@ class ServiceController extends ApiControllerBase
 
             // (res)start daemon
             $backend->configdRun("syslog stop");
-            $message = $backend->configdRun("syslog start");
+            $status = $backend->configdRun("syslog start");
+            $message = chop($status) == "OK" ? gettext("Service reloaded") : "";
 
-            return array("status" => "ok", "message" => $message);
+            return array("status" => $status, "message" => $message);
         } else {
             return array("status" => "failed", "message" => gettext("Wrong request"));
         }
@@ -77,12 +79,27 @@ class ServiceController extends ApiControllerBase
 
             $this->sessionClose();
 
+            $backend = new Backend();
+            $backend->configdRun("syslog stop");
+
             $mdl = new Syslog();
-            $result = $mdl->resetLogFiles();
+            $result = array();
+            $deleted = array();
+            foreach($mdl->LogTargets->Target->__items as $uuid => $target) {
+                if($target->ActionType == 'file') {
+                    $pathname = $target->Target->__toString();
+                    if(!in_array($pathname, $deleted)) {
+                        $status = $backend->configdRun("syslog clearlog {$pathname}");
+                        $result[] = array('name' => $pathname, 'status' => $status);
+                        $deleted[] = $pathname;
+                    }
+                }
+            }
 
-            $message = gettext("Log Files Deleted");
+            $backend->configdRun("syslog start");
+            $backend->configdRun("syslog restart_dhcpd"); // restart dhcpd in legacy way. logic from legacy code, does it needed ?
 
-            return array("status" => "ok", "message" => $message);
+            return array("status" => "ok", "message" => gettext("The log files have been reset."), "details" => $result);
         } else {
             return array("status" => "failed", "message" => gettext("Wrong request"));
         }
@@ -98,10 +115,20 @@ class ServiceController extends ApiControllerBase
 
             $this->sessionClose();
 
-            $mdl = new Syslog();
-            $message = $mdl->clearLog($this->request->getPost('logname'));
+            $filter = new Filter();
+            $filter->add('logfilename', function($value){ return preg_replace("/[^0-9,a-z,A-Z,_]/", "", $value);});
 
-            return array("status" => "ok", "message" => $message);
+            $name = $this->request->getPost('logname');
+            $name = $filter->sanitize($name, 'logfilename');
+
+            $mdl = new Syslog();
+            $fullname = $mdl->getLogFileName($name);
+
+            $backend = new Backend();
+            $backend->configdRun("syslog clearlog {$fullname}");
+            $backend->configdRun("syslog start");
+
+            return array("status" => "ok", "message" => gettext("The log file has been reset."));
         } else {
             return array("status" => "failed", "message" => gettext("Wrong request"));
         }
@@ -126,6 +153,9 @@ class ServiceController extends ApiControllerBase
             $numentries = intval($mdl->NumEntries->__toString());
             $hostname = Config::getInstance()->toArray()['system']['hostname'];
 
+            if(!file_exists($filename))
+                return array("status" => "ok", "data" => array(array('time' => gettext("No data found"), 'filter' => "", 'message' => "")), 'filters' => '');
+
             $logdata = array();
             $formatted = array();
             if($filename != '') {
@@ -134,7 +164,7 @@ class ServiceController extends ApiControllerBase
                 $logdata = explode("\n", $logdatastr);
             }
 
-            $filters = preg_split('/\s+/', trim($filter));
+            $filters = preg_split('/\s+/', trim(preg_quote($filter,'/')));
             foreach ($filters as $pattern) {
                 if(trim($pattern) == '')
                     continue;
@@ -151,13 +181,16 @@ class ServiceController extends ApiControllerBase
 
                 $logent = preg_split("/\s+/", $logent, 6);
                 $entry_date_time = join(" ", array_slice($logent, 0, 3));
-                $entry_text = ($logent[3] == $hostname) ? "" : $logent[3] . " ";
+                $entry_text = isset($logent[3]) ? (($logent[3] == $hostname) ? "" : $logent[3] . " ") : "";
                 $entry_text .= (isset($logent[4]) ?  $logent[4] : '') . (isset($logent[5]) ? " " . $logent[5] : '');
-                $formatted[] = array('time' => $entry_date_time, 'filter' => $filter, 'message' => $entry_text);
+                $formatted[] = array('time' => utf8_encode($entry_date_time), 'filter' => $filter, 'message' => utf8_encode($entry_text));
 
                 if(++$counter > $numentries)
                     break; 
             }
+
+            if(count($formatted) == 0)
+                return array("status" => "ok", "data" => array(array('time' => gettext("No data found"), 'filter' => "", 'message' => "")), 'filters' => '');
 
             return array("status" => "ok", "data" => $formatted, 'filters' => $filters);
 

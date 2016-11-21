@@ -34,10 +34,8 @@ use OPNsense\Core\Config;
 use OPNsense\Core\Backend;
 use OPNsense\Base\BaseModel;
 use OPNsense\Base\ModelException;
-use Phalcon\Filter;
 
 
-// TODO: remote log all (!* -> *.* @server)
 // TODO: bind_address select in UI
 // TODO: sanitize socket path, see setLocalSocket()
 
@@ -54,10 +52,7 @@ class Syslog extends BaseModel
 
     private function getPredefinedTargets()
     {
-        $systemLog = self::$LOGS_DIRECTORY.'/system.log';
-
         return array(
-        array('program' => 'dhcpd,dhcrelay,dhclient,dhcp6c',                      'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/dhcpd.log',   'category' => 'dhcpd'),
         array('program' => 'filterlog',                                           'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/filter.log',  'category' => 'filter'),
         array('program' => 'apinger',                                             'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/gateways.log','category' => 'gateways'),
         array('program' => 'ntp,ntpd,ntpdate',                                    'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/ntpd.log',    'category' => 'ntpd'),
@@ -69,12 +64,9 @@ class Syslog extends BaseModel
         array('program' => 'hostapd',                                             'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/wireless.log','category' => 'wireless'),
 
         array('program' => null,  'filter' => 'local3.*',                             'type' => 'file',   'target' => self::$LOGS_DIRECTORY.'/vpn.log',   'category' => 'vpn'),
-        array('program' => null,  'filter' => 'local7.*',                             'type' => 'file',   'target' => self::$LOGS_DIRECTORY.'/dhcpd.log', 'category' => 'dhcpd'),
-        array('program' => null,  'filter' => '*.notice;kern.debug;lpr.info;mail.crit;daemon.none', 'type' => 'file', 'target' => $systemLog,             'category' => 'system'),
-        array('program' => null,  'filter' => 'news.err;local0.none;local3.none;local4.none', 'type' => 'file', 'target' => $systemLog,                   'category' => 'system'),
-        array('program' => null,  'filter' => 'local7.none',                          'type' => 'file',   'target' => $systemLog,                         'category' => null),
-        array('program' => null,  'filter' => 'security.*',                           'type' => 'file',   'target' => $systemLog,                         'category' => 'system'),
-        array('program' => null,  'filter' => 'auth.info;authpriv.info;daemon.info',  'type' => 'file',   'target' => $systemLog,                         'category' => 'system'),
+        array('program' => null,  'filter' => 'local7.*',                             'type' => 'file',   'target' => self::$LOGS_DIRECTORY.'/dhcpd.log', 'category' => 'dhcp'),
+        array('program' => null,  'filter' => '*.notice;kern.debug;lpr.info;mail.crit;news.err;local0.none;local3.none;local4.none;local7.none;security.*;auth.info;authpriv.info;daemon.info', 
+                                                                                      'type' => 'file',   'target' => self::$LOGS_DIRECTORY.'/system.log','category' => 'system'),
         array('program' => null,  'filter' => 'auth.info;authpriv.info;user.*',       'type' => 'pipe',   'target' => 'exec /usr/local/sbin/sshlockout_pf 15','category' => null),
         array('program' => null,  'filter' => '*.emerg',                              'type' => 'all',    'target' => '*',                                'category' => 'system'),
         );
@@ -185,7 +177,6 @@ class Syslog extends BaseModel
         $category = $this->LogCategories->Category->add();
         $category->Name = $name;
         $category->Description = $description;
-        $category->LogRemote = $logRemote;
         $this->Modified = true;
         $this->saveIfModified();
     }
@@ -206,53 +197,15 @@ class Syslog extends BaseModel
                 return;
         }
 
+        $socketdir = dirname($path);
+        if (!is_dir($socketdir)) {
+            mkdir($socketdir, 0777, true);
+        }
+
         $socket = $this->LocalSockets->Socket->add();
         $socket->Path = $path;
         $this->Modified = true;
         $this->saveIfModified();
-    }
-
-    /**
-     * Delete all logfiles for given name
-     * @param $name log name without path and suffix ( for example 'system' to delete /var/log/system.log* )
-     */
-    public function clearLog($name)
-    {
-        $filter = new Filter();
-        $filter->add('logfilename', function($value){ return preg_replace("/[^0-9,a-z,A-Z,_]/", "", $value);});
-
-        $name = $filter->sanitize($name, 'logfilename');
-        $name = self::$LOGS_DIRECTORY . "/$name.log";
-
-        $backend = new Backend();
-        $status = $backend->configdRun("syslog clearlog {$name}");
-        $backend->configdRun("syslog start");
-
-        return array("status" => $status);
-    }
-
-    /**
-     * Reset all logfiles
-     */
-    public function resetLogFiles()
-    {
-        $backend = new Backend();
-        $result = array();
-        $deleted = array();
-        foreach($this->LogTargets->Target->__items as $uuid => $target) {
-            if($target->ActionType == 'file') {
-                $pathname = $target->Target->__toString();
-                if(!in_array($pathname, $deleted)) {
-                    $status = $backend->configdRun("syslog clearlog {$pathname}");
-                    $result[] = array('name' => $pathname, 'status' => $status);
-                    $deleted[] = $pathname;
-                }
-            }
-        }
-
-        $backend->configdRun("syslog start");
-
-        return array("status" => $result);
     }
 
     /**
@@ -285,7 +238,7 @@ class Syslog extends BaseModel
     private function checkPredefinedCategories()
     {
         $this->setCategory('system',    gettext('System events'));
-        $this->setCategory('dhcpd',     gettext('DHCP service events'));
+        $this->setCategory('dhcp',      gettext('DHCP service events'));
         $this->setCategory('filter',    gettext('Firewall events'));
         $this->setCategory('gateways',  gettext('Gateway Monitor events'));
         $this->setCategory('ntpd',      gettext('Internet time events'));
@@ -311,7 +264,12 @@ class Syslog extends BaseModel
         {
             $program = join(",", $params['facility']);
             $target =  self::$LOGS_DIRECTORY."/".$name.".log";
-            $this->setTarget($program, '*.*', 'file', $target, null);
+            $category = isset($params['remote']) ? $params['remote'] : null;
+            $this->setTarget($program, '*.*', 'file', $target, $category);
+            if(isset($params['local']))
+            {
+                $this->setLocalSocket($params['local']);
+            }
         }
     }
 
@@ -340,6 +298,10 @@ class Syslog extends BaseModel
         return;
     }
 
+    /**
+    * Save Syslog config if modified.
+    * @throws \Phalcon\Validation\Exception
+    */
     private function saveIfModified()
     {
        
@@ -348,14 +310,6 @@ class Syslog extends BaseModel
         
         if($this->Modified === false)
             return;
-
-        $valMsgs = $this->performValidation();
-        $errorMsg = "Validation error: ";
-        foreach ($valMsgs as $field => $msg) {
-            $errorMsg .= $msg->getField() . '(' . $msg->getMessage() .'); ';
-        }
-        if($valMsgs->count() > 0)
-            throw new ModelException($errorMsg);
 
         $this->serializeToConfig();
         Config::getInstance()->save();
