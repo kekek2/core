@@ -225,6 +225,13 @@ class LDAP implements IAuthConnector
      */
     public function connect($bind_url, $userdn = null, $password = null, $timeout = 30)
     {
+        $retval = false;
+        set_error_handler(
+            function () {
+                null;
+            }
+        );
+
         $this->closeLDAPHandle();
         $this->ldapHandle = @ldap_connect($bind_url);
 
@@ -235,14 +242,17 @@ class LDAP implements IAuthConnector
             ldap_set_option($this->ldapHandle, LDAP_OPT_PROTOCOL_VERSION, (int)$this->ldapVersion);
             $bindResult = @ldap_bind($this->ldapHandle, $userdn, $password);
             if ($bindResult) {
-                return true;
+                $retval = true;
             } else {
                 syslog(LOG_ERR, 'LDAP bind error (' .  ldap_error($this->ldapHandle).')');
             }
         }
 
-        $this->ldapHandle = null;
-        return false;
+        restore_error_handler();
+        if (!$retval) {
+            $this->ldapHandle = null;
+        }
+        return $retval;
     }
 
     /**
@@ -271,9 +281,12 @@ class LDAP implements IAuthConnector
                     // fetch distinguished name and most likely username (try the search field first)
                     foreach (array($userNameAttribute, "name") as $ldapAttr) {
                         if (isset($searchResults[$i][$ldapAttr]) && $searchResults[$i][$ldapAttr]['count'] > 0) {
-                            $result[] = array("name" => $searchResults[$i][$ldapAttr][0]
-                                        , "fullname" => !empty($searchResults[$i]['name'][0]) ? $searchResults[$i]['name'][0] : ""
-                                        , "dn" => $searchResults[$i]['dn']);
+                            $result[] = array(
+                                'name' => $searchResults[$i][$ldapAttr][0],
+                                'fullname' => !empty($searchResults[$i]['name'][0]) ?
+                                    $searchResults[$i]['name'][0] : "",
+                                'dn' => $searchResults[$i]['dn']
+                            );
                             break;
                         }
                     }
