@@ -81,22 +81,6 @@ function get_pppoes_child_interfaces($ifpattern)
     return $if_arr;
 }
 
-function get_configured_pppoe_server_interfaces()
-{
-    global $config;
-
-    $iflist = array();
-    if (isset($config['pppoes']['pppoe'])) {
-        foreach($config['pppoes']['pppoe'] as $pppoe) {
-            if ($pppoe['mode'] == 'server') {
-                $int = 'poes'. $pppoe['pppoeid'];
-                $iflist[$int] = strtoupper($int);
-            }
-        }
-    }
-    return $iflist;
-}
-
 /* implement ipv6 route advertising deamon */
 function services_radvd_configure($blacklist = array())
 {
@@ -106,10 +90,6 @@ function services_radvd_configure($blacklist = array())
         $config['dhcpdv6'] = array();
     }
 
-    $Iflist = get_configured_interface_list();
-    $Iflist = array_merge($Iflist, get_configured_pppoe_server_interfaces());
-    $carplist = get_configured_carp_interface_list();
-
     $radvdconf = "# Automatically Generated, do not edit\n";
 
     /* Process all links which need the router advertise daemon */
@@ -117,40 +97,22 @@ function services_radvd_configure($blacklist = array())
 
     /* handle manually configured DHCP6 server settings first */
     foreach ($config['dhcpdv6'] as $dhcpv6if => $dhcpv6ifconf) {
-        if (!is_array($config['interfaces'][$dhcpv6if])) {
-            continue;
-        } elseif (!isset($config['interfaces'][$dhcpv6if]['enable'])) {
+        if (!isset($config['interfaces'][$dhcpv6if]['enable'])) {
             continue;
         } elseif (isset($blacklist[$dhcpv6if])) {
             /* Do not put in the config an interface which is down */
             continue;
-        }
-        if (!isset($dhcpv6ifconf['ramode'])) {
-            $dhcpv6ifconf['ramode'] = $dhcpv6ifconf['mode'];
-        }
-
-        /* are router advertisements enabled? */
-        if ($dhcpv6ifconf['ramode'] == "disabled") {
+        } elseif ($dhcpv6ifconf['ramode'] == "disabled") {
             continue;
         }
 
-        if (!isset($dhcpv6ifconf['rapriority'])) {
-            $dhcpv6ifconf['rapriority'] = "medium";
-        }
-
-        /* always start with the real parent, we override with the carp if later */
-        $carpif = false;
         /* check if we need to listen on a CARP interface */
-        if (!empty($dhcpv6ifconf['rainterface'])) {
-            if (!empty($carplist[$dhcpv6ifconf['rainterface']])) {
-                $dhcpv6if = $dhcpv6ifconf['rainterface'];
-                $carpif = true;
-            }
-        }
-
         $realif = get_real_interface($dhcpv6if, "inet6");
-        if (isset($radvdifs[$realif])) {
-            continue;
+        if (!empty($dhcpv6ifconf['rainterface']) && $dhcpv6ifconf['rainterface'] != 'interface') {
+            $dhcpv6if = $dhcpv6ifconf['rainterface'];
+        } elseif (!empty($dhcpv6ifconf['rainterface'])) {
+            // backward compatibilty mode, unset invalid options
+            unset($dhcpv6ifconf['rainterface']);
         }
 
         $ifcfgipv6 = get_interface_ipv6($dhcpv6if);
@@ -168,11 +130,7 @@ function services_radvd_configure($blacklist = array())
         $radvdconf .= sprintf("\tMinRtrAdvInterval %s;\n", !empty($dhcpv6ifconf['ramininterval']) ? $dhcpv6ifconf['ramininterval'] : '200');
         $radvdconf .= sprintf("\tMaxRtrAdvInterval %s;\n", !empty($dhcpv6ifconf['ramaxinterval']) ? $dhcpv6ifconf['ramaxinterval'] : '600');
         $mtu = legacy_interface_stats($realif)['mtu'];
-        if (is_numeric($mtu)) {
-            $radvdconf .= "\tAdvLinkMTU {$mtu};\n";
-        } else {
-            $radvdconf .= "\tAdvLinkMTU 1280;\n";
-        }
+        $radvdconf .= "\tAdvLinkMTU ". (is_numeric($mtu) ? $mtu : 1280) .";\n";
 
         switch($dhcpv6ifconf['rapriority']) {
             case "low":
@@ -193,11 +151,7 @@ function services_radvd_configure($blacklist = array())
                 break;
         }
         $radvdconf .= "\tprefix {$subnetv6}/{$ifcfgsnv6} {\n";
-        if ($carpif == true) {
-            $radvdconf .= "\t\tDeprecatePrefix off;\n";
-        } else {
-            $radvdconf .= "\t\tDeprecatePrefix on;\n";
-        }
+        $radvdconf .= "\t\tDeprecatePrefix ". (!empty($dhcpv6ifconf['rainterface']) ? "off" : "on").";\n";
         switch($dhcpv6ifconf['ramode']) {
             case "managed":
                 $radvdconf .= "\t\tAdvOnLink on;\n";
@@ -210,10 +164,6 @@ function services_radvd_configure($blacklist = array())
                 $radvdconf .= "\t\tAdvRouterAddr on;\n";
                 break;
             case "assist":
-                $radvdconf .= "\t\tAdvOnLink on;\n";
-                $radvdconf .= "\t\tAdvAutonomous on;\n";
-                $radvdconf .= "\t\tAdvRouterAddr on;\n";
-                break;
             case "unmanaged":
                 $radvdconf .= "\t\tAdvOnLink on;\n";
                 $radvdconf .= "\t\tAdvAutonomous on;\n";
@@ -222,7 +172,7 @@ function services_radvd_configure($blacklist = array())
         }
         $radvdconf .= "\t};\n";
 
-        if ($carpif === true) {
+        if (!empty($dhcpv6ifconf['rainterface'])) {
             $radvdconf .= "\troute ::/0 {\n";
             $radvdconf .= "\t\tRemoveRoute off;\n";
             $radvdconf .= "\t};\n";
@@ -233,33 +183,25 @@ function services_radvd_configure($blacklist = array())
         }
 
         /* add DNS servers */
-        $dnslist = array();
-        if (isset($dhcpv6ifconf['rasamednsasdhcp6']) && is_array($dhcpv6ifconf['dnsserver']) && !empty($dhcpv6ifconf['dnsserver'])) {
-            foreach($dhcpv6ifconf['dnsserver'] as $server) {
-                if (is_ipaddrv6($server)) {
-                    $dnslist[] = $server;
-                }
-            }
-        } elseif (!isset($dhcpv6ifconf['rasamednsasdhcp6']) && isset($dhcpv6ifconf['radnsserver']) && is_array($dhcpv6ifconf['radnsserver'])) {
-            foreach($dhcpv6ifconf['radnsserver'] as $server) {
-                if (is_ipaddrv6($server)) {
-                    $dnslist[] = $server;
-                }
-            }
+        $dnslist_tmp = array();
+        if (isset($dhcpv6ifconf['rasamednsasdhcp6']) && !empty($dhcpv6ifconf['dnsserver'][0])) {
+            array_merge($dnslist_tmp, $dhcpv6ifconf['dnsserver']);
+        } elseif (!isset($dhcpv6ifconf['rasamednsasdhcp6']) && !empty($dhcpv6ifconf['radnsserver'][0])) {
+            array_merge($dnslist_tmp, $dhcpv6ifconf['radnsserver']);
         } elseif (isset($config['dnsmasq']['enable']) || isset($config['unbound']['enable'])) {
-            $dnslist[] = get_interface_ipv6($realif);
-        } elseif (!empty($config['system']['dnsserver'])) {
-            foreach($config['system']['dnsserver'] as $server) {
-                if (is_ipaddrv6($server)) {
-                    $dnslist[] = $server;
-                }
+            $dnslist_tmp[] = get_interface_ipv6($realif);
+        } elseif (!empty($config['system']['dnsserver'][0])) {
+            array_merge($dnslist_tmp, $config['system']['dnsserver']);
+        }
+        $dnslist = array();
+        foreach($dnslist_tmp as $server) {
+            if (is_ipaddrv6($server)) {
+                $dnslist[] = $server;
             }
         }
+
         if (count($dnslist) > 0) {
-            $dnsstring = implode(" ", $dnslist);
-            if ($dnsstring <> "") {
-                $radvdconf .= "\tRDNSS {$dnsstring} { };\n";
-            }
+            $radvdconf .= "\tRDNSS ".implode(" ", $dnslist)." { };\n";
         }
         if (!empty($dhcpv6ifconf['domain'])) {
             $radvdconf .= "\tDNSSL {$dhcpv6ifconf['domain']} { };\n";
@@ -270,8 +212,10 @@ function services_radvd_configure($blacklist = array())
     }
 
     /* handle DHCP-PD prefixes and 6RD dynamic interfaces */
-    foreach ($Iflist as $if => $ifdescr) {
+    foreach (get_configured_interface_list() as $if => $ifdescr) {
         if (!isset($config['interfaces'][$if]['track6-interface'])) {
+            continue;
+        } elseif (empty($config['interfaces'][$config['interfaces'][$if]['track6-interface']])) {
             continue;
         } elseif (!isset($config['interfaces'][$if]['enable'])) {
             continue;
@@ -280,10 +224,6 @@ function services_radvd_configure($blacklist = array())
             continue;
         }
         $trackif = $config['interfaces'][$if]['track6-interface'];
-        if (empty($config['interfaces'][$trackif])) {
-            continue;
-        }
-
         $realif = get_real_interface($if, "inet6");
         /* prevent duplicate entries, manual overrides */
         if (isset($radvdifs[$realif])) {
@@ -298,7 +238,6 @@ function services_radvd_configure($blacklist = array())
             $ifcfgsnv6 = get_interface_subnetv6($if);
             $subnetv6 = gen_subnetv6($ifcfgipv6, $ifcfgsnv6);
         }
-        $radvdifs[$realif] = $realif;
 
         if (isset($config['interfaces'][$trackif]['ipaddrv6'])) {
             $autotype = $config['interfaces'][$trackif]['ipaddrv6'];
@@ -310,11 +249,7 @@ function services_radvd_configure($blacklist = array())
         $radvdconf .= "\tMinRtrAdvInterval 3;\n";
         $radvdconf .= "\tMaxRtrAdvInterval 10;\n";
         $mtu = legacy_interface_stats($realif)['mtu'];
-        if (is_numeric($mtu)) {
-            $radvdconf .= "\tAdvLinkMTU {$mtu};\n";
-        } else {
-            $radvdconf .= "\tAdvLinkMTU 1280;\n";
-        }
+        $radvdconf .= "\tAdvLinkMTU ". (is_numeric($mtu) ? $mtu : 1280) .";\n";
         $radvdconf .= "\tAdvOtherConfigFlag on;\n";
         $radvdconf .= "\t\tprefix {$subnetv6}/{$ifcfgsnv6} {\n";
         $radvdconf .= "\t\tAdvOnLink on;\n";
@@ -334,10 +269,7 @@ function services_radvd_configure($blacklist = array())
             }
         }
         if (count($dnslist) > 0) {
-            $dnsstring = implode(" ", $dnslist);
-            if (!empty($dnsstring)) {
-                $radvdconf .= "\tRDNSS {$dnsstring} { };\n";
-            }
+            $radvdconf .= "\tRDNSS ".implode(" ", $dnslist)." { };\n";
         }
         if (!empty($config['system']['domain'])) {
             $radvdconf .= "\tDNSSL {$config['system']['domain']} { };\n";
@@ -352,7 +284,6 @@ function services_radvd_configure($blacklist = array())
             printf("Error: cannot open radvd.conf in services_radvd_configure().\n");
         }
     }
-    unset($radvdconf);
 
     if (count($radvdifs) > 0) {
         if (isvalidpid('/var/run/radvd.pid')) {
@@ -1119,7 +1050,6 @@ function services_dhcpdv6_configure($blacklist = array())
     }
     $dhcpdv6cfg = $config['dhcpdv6'];
     $Iflist = get_configured_interface_list();
-    $Iflist = array_merge($Iflist, get_configured_pppoe_server_interfaces());
 
     if (file_exists("/var/run/booting")) {
         echo "Starting DHCPv6 service...";
@@ -1354,6 +1284,10 @@ EOD;
                     $dhcpdv6conf .= "  option root-path \"{$sm['rootpath']}\";\n";
                 }
 
+                if (!empty($sm['domain']) && ($sm['domain'] != $dhcpv6ifconf['domain'])) {
+                    $dhcpdv6conf .= "  option domain-name \"{$sm['domain']}\";\n";
+                }
+
                 $dhcpdv6conf .= "}\n";
                 $i++;
             }
@@ -1422,67 +1356,6 @@ EOD;
     if (file_exists("/var/run/booting")) {
         print gettext("done.") . "\n";
     }
-
-    return 0;
-}
-
-function services_igmpproxy_configure()
-{
-    global $config;
-
-    /* kill any running igmpproxy */
-    killbyname("igmpproxy");
-
-    if (!isset($config['igmpproxy']['igmpentry']) || !is_array($config['igmpproxy']['igmpentry']) || (count($config['igmpproxy']['igmpentry']) == 0)) {
-        return 1;
-    }
-
-    $iflist = get_configured_interface_list();
-
-    $igmpconf = <<<EOD
-
-##------------------------------------------------------
-## Enable Quickleave mode (Sends Leave instantly)
-##------------------------------------------------------
-quickleave
-
-EOD;
-
-    foreach ($config['igmpproxy']['igmpentry'] as $igmpcf) {
-        unset($iflist[$igmpcf['ifname']]);
-        $realif = get_real_interface($igmpcf['ifname']);
-        if (empty($igmpcf['threshold'])) {
-            $threshld = 1;
-        } else {
-            $threshld = $igmpcf['threshold'];
-        }
-        $igmpconf .= "phyint {$realif} {$igmpcf['type']} ratelimit 0 threshold {$threshld}\n";
-
-        if ($igmpcf['address'] <> "") {
-            $item = explode(" ", $igmpcf['address']);
-            foreach($item as $iww) {
-                $igmpconf .= "altnet {$iww}\n";
-            }
-        }
-        $igmpconf .= "\n";
-    }
-    foreach ($iflist as $ifn) {
-        $realif = get_real_interface($ifn);
-        $igmpconf .= "phyint {$realif} disabled\n";
-    }
-    $igmpconf .= "\n";
-
-    $igmpfl = fopen('/usr/local/etc/igmpproxy.conf', 'w');
-    if (!$igmpfl) {
-        log_error('Could not write Igmpproxy configuration file!');
-        return;
-    }
-    fwrite($igmpfl, $igmpconf);
-    fclose($igmpfl);
-    unset($igmpconf);
-
-    mwexec('/usr/local/etc/rc.d/igmpproxy onestart');
-    log_error('Started IGMP proxy service.');
 
     return 0;
 }
@@ -2003,181 +1876,6 @@ function services_unbound_configure($verbose = false)
     }
 }
 
-function services_snmpd_configure()
-{
-    global $config, $g;
-
-    /* kill any running snmpd */
-    killbypid('/var/run/snmpd.pid');
-    sleep(2);
-
-    if (is_process_running('bsnmpd')) {
-        mwexec('/usr/bin/killall bsnmpd', true);
-    }
-
-    if (isset($config['snmpd']['enable'])) {
-        if (file_exists("/var/run/booting")) {
-            echo gettext("Starting SNMP daemon... ");
-        }
-
-        /* generate snmpd.conf */
-        $fd = fopen("/var/etc/snmpd.conf", "w");
-        if (!$fd) {
-            printf(gettext("Error: cannot open snmpd.conf in services_snmpd_configure().%s"),"\n");
-            return 1;
-        }
-
-
-        $snmpdconf = <<<EOD
-location := "{$config['snmpd']['syslocation']}"
-contact := "{$config['snmpd']['syscontact']}"
-read := "{$config['snmpd']['rocommunity']}"
-
-EOD;
-
-
-        if (isset($config['snmpd']['trapenable']) && preg_match('/^\S+$/', $config['snmpd']['trapserver'])){
-            $snmpdconf .= <<<EOD
-# SNMP Trap support.
-traphost := {$config['snmpd']['trapserver']}
-trapport := {$config['snmpd']['trapserverport']}
-trap := "{$config['snmpd']['trapstring']}"
-
-
-EOD;
-        }
-
-        $version = trim(file_get_contents('/usr/local/opnsense/version/opnsense'));
-        $platform = $g['product_name'];
-        $sysDescr = "{$g['product_name']} " . php_uname("n") .
-                    " {$version} {$platform} " . php_uname("s") .
-                    " " . php_uname("r") . " " . trim(shell_exec('uname -p'));
-
-        $snmpdconf .= <<<EOD
-system := 1
-%snmpd
-sysDescr      = "{$sysDescr}"
-begemotSnmpdDebugDumpPdus       = 2
-begemotSnmpdDebugSyslogPri      = 7
-begemotSnmpdCommunityString.0.1 = $(read)
-
-EOD;
-
-        if (isset($config['snmpd']['trapenable']) && preg_match('/^\S+$/', $config['snmpd']['trapserver'])){
-            $snmpdconf .= <<<EOD
-begemotTrapSinkStatus.[$(traphost)].$(trapport) = 4
-begemotTrapSinkVersion.[$(traphost)].$(trapport) = 2
-begemotTrapSinkComm.[$(traphost)].$(trapport) = $(trap)
-
-EOD;
-        }
-
-
-        $snmpdconf .= <<<EOD
-begemotSnmpdCommunityDisable    = 1
-
-EOD;
-
-        $bind_to_ip = "0.0.0.0";
-        if (isset($config['snmpd']['bindip'])) {
-            if (is_ipaddr($config['snmpd']['bindip'])) {
-                $bind_to_ip = $config['snmpd']['bindip'];
-            } else {
-                $if = get_real_interface($config['snmpd']['bindip']);
-                if (does_interface_exist($if)) {
-                    $bind_to_ip = find_interface_ip($if);
-                }
-            }
-        }
-
-        if (is_port( $config['snmpd']['pollport'] )) {
-            $snmpdconf .= <<<EOD
-begemotSnmpdPortStatus.{$bind_to_ip}.{$config['snmpd']['pollport']} = 1
-
-EOD;
-
-        }
-
-        $snmpdconf .= <<<EOD
-begemotSnmpdLocalPortStatus."/var/run/snmpd.sock" = 1
-begemotSnmpdLocalPortType."/var/run/snmpd.sock" = 4
-
-# These are bsnmp macros not php vars.
-sysContact      = $(contact)
-sysLocation     = $(location)
-sysObjectId     = 1.3.6.1.4.1.12325.1.1.2.1.$(system)
-
-snmpEnableAuthenTraps = 2
-
-EOD;
-
-        if (is_array( $config['snmpd']['modules'] )) {
-            if (isset($config['snmpd']['modules']['mibii'])) {
-                $snmpdconf .= <<<EOD
-begemotSnmpdModulePath."mibII"  = "/usr/lib/snmp_mibII.so"
-
-EOD;
-            }
-
-            if (isset($config['snmpd']['modules']['netgraph'])) {
-                $snmpdconf .= <<<EOD
-begemotSnmpdModulePath."netgraph" = "/usr/lib/snmp_netgraph.so"
-%netgraph
-begemotNgControlNodeName = "snmpd"
-
-EOD;
-            }
-
-            if (isset($config['snmpd']['modules']['pf'])) {
-                $snmpdconf .= <<<EOD
-begemotSnmpdModulePath."pf"     = "/usr/lib/snmp_pf.so"
-
-EOD;
-            }
-
-            if (isset($config['snmpd']['modules']['hostres'])) {
-                $snmpdconf .= <<<EOD
-begemotSnmpdModulePath."hostres"     = "/usr/lib/snmp_hostres.so"
-
-EOD;
-            }
-            if (isset($config['snmpd']['modules']['bridge'])) {
-                $snmpdconf .= <<<EOD
-begemotSnmpdModulePath."bridge"     = "/usr/lib/snmp_bridge.so"
-# config must end with blank line
-
-EOD;
-            }
-            if (isset($config['snmpd']['modules']['ucd'])) {
-                $snmpdconf .= <<<EOD
-begemotSnmpdModulePath."ucd"     = "/usr/local/lib/snmp_ucd.so"
-
-EOD;
-            }
-            if (isset($config['snmpd']['modules']['regex'])) {
-                $snmpdconf .= <<<EOD
-begemotSnmpdModulePath."regex"     = "/usr/local/lib/snmp_regex.so"
-
-EOD;
-            }
-        }
-
-        fwrite($fd, $snmpdconf);
-        fclose($fd);
-        unset($snmpdconf);
-
-
-        /* run bsnmpd */
-        mwexec("/usr/sbin/bsnmpd -c /var/etc/snmpd.conf -p /var/run/snmpd.pid");
-
-        if (file_exists("/var/run/booting")) {
-            echo gettext("done.") . "\n";
-        }
-    }
-
-    return 0;
-}
-
 function services_dnsupdate_process($int = '', $updatehost = '', $forced = false)
 {
     global $config;
@@ -2319,98 +2017,6 @@ EOD;
     return 0;
 }
 
-function configure_cron()
-{
-    global $config;
-
-    $autocron = array();
-
-    /* hourly */
-    $autocron[] = generate_cron_job('/usr/local/sbin/expiretable -v -t 3600 webConfiguratorlockout', '1');
-    $autocron[] = generate_cron_job('/usr/local/sbin/expiretable -v -t 3600 sshlockout', '2');
-    $autocron[] = generate_cron_job('/usr/local/sbin/expiretable -v -t 3600 virusprot', '3');
-    $autocron[] = generate_cron_job('/usr/local/etc/rc.expireaccounts', '5');
-
-    /* daily */
-    $autocron[] = generate_cron_job('/usr/local/etc/rc.update_alias_url_data', '1', '1');
-    $autocron[] = generate_cron_job('/usr/local/etc/rc.update_urltables', '5', '1');
-    $autocron[] = generate_cron_job('/usr/local/etc/rc.dyndns.update', '11', '1');
-
-    /* every now and then */
-    $autocron[] = generate_cron_job('/usr/local/sbin/ping_hosts.sh', '*/4');
-
-    if (!empty($config['system']['rrdbackup'])) {
-       $autocron[] = generate_cron_job('/usr/local/etc/rc.backup_rrd', '0', '*/' . $config['system']['rrdbackup']);
-    }
-
-    if (!empty($config['system']['dhcpbackup'])) {
-        $autocron[] = generate_cron_job('/usr/local/etc/rc.backup_dhcpleases', '0', '*/' . $config['system']['dhcpbackup']);
-    }
-
-    if (!empty($config['system']['netflowbackup'])) {
-        $autocron[] = generate_cron_job('/usr/local/etc/rc.backup_netflow', '0', '*/' . $config['system']['netflowbackup']);
-    }
-
-    if (!empty($config['system']['remotebackup']['GDriveEnabled'])) {
-        $autocron[] = generate_cron_job('/usr/local/opnsense/scripts/remote_backup.php', 0, 1);
-    }
-
-    if (isset($config['filter']['rule'])) {
-        foreach ($config['filter']['rule'] as $rule) {
-            if (!empty($rule['sched'])) {
-                $autocron[] = generate_cron_job('/usr/local/etc/rc.filter_configure_sync', '0,15,30,45');
-                break;
-            }
-        }
-    }
-
-    /* bogons fetch always set in default config.xml */
-    switch ($config['system']['bogons']['interval']) {
-        case 'daily':
-            $autocron[] = generate_cron_job('/usr/local/etc/rc.update_bogons cron', '1', '3', '*', '*', '*');
-            break;
-        case 'weekly':
-            $autocron[] = generate_cron_job('/usr/local/etc/rc.update_bogons cron', '1', '3', '*', '*', '0');
-            break;
-        case 'monthly':
-        default:
-            $autocron[] = generate_cron_job('/usr/local/etc/rc.update_bogons cron', '1', '3', '1', '*', '*');
-            break;
-    }
-
-    $crontab_contents = "# DO NOT EDIT THIS FILE -- OPNsense auto-generated file\n";
-    $crontab_contents .= "# Please use /etc/crontab for your overrides instead.\n";
-    $crontab_contents .= "SHELL=/bin/sh\n";
-    $crontab_contents .= "PATH=/etc:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin\n";
-    $crontab_contents .= "#minute\thour\tmday\tmonth\twday\tcommand\n";
-
-    foreach ($autocron as $item) {
-        $crontab_contents .= "{$item['minute']}\t";
-        $crontab_contents .= "{$item['hour']}\t";
-        $crontab_contents .= "{$item['mday']}\t";
-        $crontab_contents .= "{$item['month']}\t";
-        $crontab_contents .= "{$item['wday']}\t";
-        $crontab_contents .= "{$item['command']}\n";
-    }
-
-    file_put_contents('/var/cron/tabs/root', $crontab_contents);
-    killbypid('/var/run/cron.pid', 'HUP');
-}
-
-function generate_cron_job($command, $minute = '0', $hour = '*', $monthday = '*', $month = '*', $weekday = '*')
-{
-    $cron_item = array();
-
-    $cron_item['minute'] = $minute;
-    $cron_item['hour'] = $hour;
-    $cron_item['mday'] = $monthday;
-    $cron_item['month'] = $month;
-    $cron_item['wday'] = $weekday;
-    $cron_item['command'] = $command;
-
-    return $cron_item;
-}
-
 function is_apinger_enabled()
 {
     global $config;
@@ -2478,15 +2084,6 @@ function services_get()
         $services[] = $pconfig;
     }
 
-    $iflist = array();
-    $ifdescrs = get_configured_interface_list();
-    foreach ($ifdescrs as $if) {
-        $oc = $config['interfaces'][$if];
-        if ($oc['if'] && (!link_interface_to_bridge($if))) {
-            $iflist[$if] = $if;
-        }
-    }
-
     if (isset($config['dhcrelay']['enable'])) {
         $pconfig = array();
         $pconfig['name'] = "dhcrelay";
@@ -2534,25 +2131,6 @@ function services_get()
         $pconfig['php']['restart'] = array('setup_gateways_monitor');
         $pconfig['php']['start'] = array('setup_gateways_monitor');
         $pconfig['pidfile'] = '/var/run/apinger.pid';
-        $services[] = $pconfig;
-    }
-
-    if (isset($config['snmpd']['enable'])) {
-        $pconfig = array();
-        $pconfig['name'] = "bsnmpd";
-        $pconfig['description'] = gettext("SNMP Service");
-        $pconfig['php']['restart'] = array('services_snmpd_configure');
-        $pconfig['php']['start'] = array('services_snmpd_configure');
-        $pconfig['pidfile'] = '/var/run/snmpd.pid';
-        $services[] = $pconfig;
-    }
-
-    if (isset($config['igmpproxy']['igmpentry']) && is_array($config['igmpproxy']['igmpentry']) && (count($config['igmpproxy']['igmpentry']) > 0)) {
-        $pconfig = array();
-        $pconfig['name'] = "igmpproxy";
-        $pconfig['description'] = gettext("IGMP proxy");
-        $pconfig['php']['restart'] = array('services_igmpproxy_configure');
-        $pconfig['php']['start'] = array('services_igmpproxy_configure');
         $services[] = $pconfig;
     }
 
@@ -2609,6 +2187,10 @@ function services_get()
         }
     }
 
+    uasort($services, function ($a, $b) {
+        return strcasecmp($a['name'], $b['name']);
+    });
+
     return $services;
 }
 
@@ -2645,20 +2227,14 @@ function find_service_by_name($names, $filter = array())
     return array();
 }
 
-function service_name_compare($a, $b) {
-    if (strtolower($a['name']) == strtolower($b['name'])) {
-        return 0;
-    }
-    return (strtolower($a['name']) < strtolower($b['name'])) ? -1 : 1;
-}
-
-
 function get_service_status($service)
 {
+    if (!empty($service['nocheck'])) {
+        return true;
+    }
+
     if (isset($service['pidfile'])) {
         return isvalidpid($service['pidfile']);
-    } elseif (!empty($service['nocheck'])) {
-        return true;
     }
 
     return is_process_running($service['name']);
