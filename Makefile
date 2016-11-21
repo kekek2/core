@@ -57,10 +57,10 @@ CORE_REPOSITORY?=	${FLAVOUR}
 
 CORE_PACKAGESITE?=	http://pkg.opnsense.org
 
-CORE_NAME?=		opnsense-stable
-CORE_FAMILY?=		stable
-CORE_ORIGIN?=		opnsense/${CORE_NAME}
-CORE_COMMENT?=		OPNsense ${CORE_FAMILY} package
+CORE_NAME?=		ting
+CORE_FAMILY?=		development
+CORE_ORIGIN?=		${CORE_NAME}
+CORE_COMMENT?=		TING ${CORE_FAMILY} package
 CORE_MAINTAINER?=	franco@opnsense.org
 CORE_WWW?=		https://opnsense.org/
 CORE_MESSAGE?=		Thanks for all the fish...
@@ -94,8 +94,7 @@ CORE_DEPENDS?=		apinger \
 			ntp \
 			openssh-portable \
 			openvpn \
-			opnsense-lang \
-			opnsense-update \
+			p7zip \
 			pecl-radius \
 			pftop \
 			phalcon \
@@ -135,7 +134,11 @@ CORE_DEPENDS?=		apinger \
 			syslogd \
 			unbound \
 			wol \
-			zip
+			zip \
+			ting-update \
+			ting-lang \
+			msktutil \
+			cyrus-sasl-gssapi
 
 WRKDIR?=${.CURDIR}/work
 WRKSRC?=${WRKDIR}/src

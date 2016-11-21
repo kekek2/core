@@ -1,0 +1,229 @@
+#!/usr/local/bin/php
+
+<?php
+require_once('util.inc');
+require_once('config.inc');
+require_once('certs.inc');
+
+$ovpn_ca_keyfile  = '/usr/local/etc/ssl/TING-ovpn-default-CA.key';
+$ovpn_ca_certfile = '/usr/local/etc/ssl/TING-ovpn-default-CA.crt';
+$ovpn_srv_keyfile  = '/usr/local/etc/ssl/TING-ovpn-default-srv.key';
+$ovpn_srv_certfile = '/usr/local/etc/ssl/TING-ovpn-default-srv.crt';
+
+$ca_name = "TING default VPN CA";
+$srv_name = "TING default VPN server certificate";
+
+
+$ca_found = false;
+if(isset($config['ca']))
+{
+	foreach($config['ca'] as $ca)
+	{
+	    if($ca['descr'] == $ca_name)
+	    {
+			print "CA certificate '$ca_name' found in config\n";
+			$ca_found = true;
+			$ca_refid = $ca['refid'];
+
+			if(!file_exists($ovpn_ca_keyfile))
+			{
+			    print "File $ovpn_ca_keyfile not found. Write CA from config.\n";
+			    $key = base64_decode($ca['prv']);
+			    if(!file_put_contents($ovpn_ca_keyfile, $key))
+			    {
+					print "Error writing file $ovpn_ca_keyfile\n";
+					exit(1);
+			    }
+			}
+			if(!file_exists($ovpn_ca_certfile))
+			{
+			    print "File $ovpn_ca_certfile not found. Write CA from config.\n";
+			    $cert = base64_decode($ca['crt']);
+			    if(!file_put_contents($ovpn_ca_certfile, $cert))
+			    {
+					print "Error writing file $ovpn_ca_certfile\n";
+					exit(1);
+			    }
+			}
+	    }
+	}
+}
+
+// No CA in config: import or generate
+if(!$ca_found)
+{
+	if(file_exists($ovpn_ca_keyfile) && file_exists($ovpn_ca_certfile))
+	{
+	    // import
+	    print "Import CA certificate and key from disk\n";
+
+	    $key = file_get_contents($ovpn_ca_keyfile);
+	    $crt = file_get_contents($ovpn_ca_certfile);
+	    $ca = array();
+	    $ca['refid'] = uniqid();
+	    $ca['descr'] = $ca_name;
+	    $ca['prv'] = base64_encode($key);
+	    $ca['crt'] = base64_encode($crt);
+	    $ca['serial'] = 0;
+	    
+	    $ca_refid = $ca['refid'];
+
+	    if(!isset($config['ca']))
+	    	$config['ca'] = array();
+
+	    $config['ca'][] = $ca;
+	    write_config();
+	}
+	else
+	{
+	    // generate
+		print "Generate $ca_name\n";
+
+	    $ca = array();
+	    $ca['refid'] = uniqid();
+	    $ca['descr'] = $ca_name;
+	    $dn = array(
+			'countryName'		=> 'RU',
+			'stateOrProvinceName'	=> '-',
+			'localityName'		=> '-',
+			'organizationName'	=> '-',
+			'commonName'		=> $ca_name
+	    );
+	    if (!ca_create($ca, 2048, 3650, $dn))
+	    {
+			print "Error creating certificate\n";
+			exit(1);
+	    }
+
+	    $ca_refid = $ca['refid'];
+
+	    if(!isset($config['ca']))
+	    	$config['ca'] = array();
+
+	    $config['ca'][] = $ca;
+	    write_config();
+
+	    // Update certificate on disk
+	    print "Write $ovpn_ca_keyfile.\n";
+	    $key = base64_decode($ca['prv']);
+	    if(!file_put_contents($ovpn_ca_keyfile, $key))
+	    {
+			print "Error writing file $ovpn_ca_keyfile\n";
+			exit(1);
+	    }
+	    print "Write $ovpn_ca_certfile.\n";
+	    $cert = base64_decode($ca['crt']);
+	    if(!file_put_contents($ovpn_ca_certfile, $cert))
+	    {
+			print "Error writing file $ovpn_ca_certfile\n";
+			exit(1);
+	    }
+	}
+}
+
+$srv_found = false;
+if(isset($config['cert']))
+{
+	foreach($config['cert'] as $cert)
+	{
+	    if($cert['descr'] == $srv_name)
+	    {
+			print "VPN server certificate '$srv_name' found in config\n";
+			$srv_found = true;
+
+			if(!file_exists($ovpn_srv_keyfile))
+			{
+			    print "File $ovpn_srv_keyfile not found. Write server certificate from config.\n";
+			    $key = base64_decode($cert['prv']);
+			    if(!file_put_contents($ovpn_srv_keyfile, $key))
+			    {
+					print "Error writing file $ovpn_srv_keyfile\n";
+					exit(1);
+			    }
+			}
+			if(!file_exists($ovpn_srv_certfile))
+			{
+			    print "File $ovpn_srv_certfile not found. Write server certificate from config.\n";
+			    $cert = base64_decode($cert['crt']);
+			    if(!file_put_contents($ovpn_srv_certfile, $cert))
+			    {
+					print "Error writing file $ovpn_srv_certfile\n";
+					exit(1);
+			    }
+			}
+	    }
+	}
+}
+
+// No VPN server certificate in config: import or generate
+if(!$srv_found)
+{
+	if(file_exists($ovpn_srv_keyfile) && file_exists($ovpn_srv_certfile))
+	{
+	    // import
+	    print "Import VPN server certificate and key from disk\n";
+
+	    $key = file_get_contents($ovpn_srv_keyfile);
+	    $crt = file_get_contents($ovpn_srv_certfile);
+	    $cert = array();
+	    $cert['refid'] = uniqid();
+	    $cert['descr'] = $srv_name;
+	    if(!cert_import($cert, $crt, $key))
+	    {
+	    	print "Error importing certificate\n";
+	    	exit(1);
+	    }
+	    $cert['serial'] = 0;
+
+	    if(!isset($config['cert']))
+	    	$config['cert'] = array();
+
+	    $config['cert'][] = $cert;
+	    write_config();
+	}
+	else
+	{
+	    // generate
+		print "Generate $srv_name\n";
+
+	    $cert = array();
+	    $cert['refid'] = uniqid();
+	    $cert['descr'] = $srv_name;
+	    $dn = array(
+			'countryName'		=> 'RU',
+			'stateOrProvinceName'	=> '-',
+			'localityName'		=> '-',
+			'organizationName'	=> '-',
+			'commonName'		=> $srv_name
+	    );
+	    if (!cert_create($cert, $ca_refid, 2048, 365, $dn))
+	    {
+			print "Error creating certificate\n";
+			exit(1);
+	    }
+
+	    if(!isset($config['cert']))
+	    	$config['cert'] = array();
+
+	    $config['cert'][] = $cert;
+	    write_config();
+
+	    // Update certificate on disk
+	    print "Write $ovpn_srv_keyfile.\n";
+	    $key = base64_decode($cert['prv']);
+	    if(!file_put_contents($ovpn_srv_keyfile, $key))
+	    {
+			print "Error writing file $ovpn_srv_keyfile\n";
+			exit(1);
+	    }
+	    print "Write $ovpn_srv_certfile.\n";
+	    $crt = base64_decode($cert['crt']);
+	    if(!file_put_contents($ovpn_srv_certfile, $crt))
+	    {
+			print "Error writing file $ovpn_srv_certfile\n";
+			exit(1);
+	    }
+	}
+}
+
+?>

@@ -1515,6 +1515,7 @@ default:
   set iface name {$ifcfg['if']}
 
 EOD;
+
     $setdefaultgw = false;
     $founddefaultgw = false;
     if (isset($config['gateways']['gateway_item'])) {
@@ -1604,8 +1605,13 @@ EOD;
         if (isset($ppp['protocomp'])) {
             $mpdconf_arr[] = "set link no protocomp";
         }
-        $mpdconf_arr[] = "set link disable chap pap";
-        $mpdconf_arr[] = "set link accept chap pap eap";
+        if (isset($ppp['mschap'])) {
+            $mpdconf_arr[] = "set link no pap eap";
+        }
+        else {
+            $mpdconf_arr[] = "set link disable chap pap";
+            $mpdconf_arr[] = "set link accept chap pap eap";
+        }
         $mpdconf_arr[] = "set link disable incoming";
         $bandwidths = !empty($ppp['bandwidth']) ? explode(',', $ppp['bandwidth']) : null;
         if (!empty($bandwidths[$pid])) {

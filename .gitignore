@@ -1,3 +1,8 @@
+/src/etc/pkg/**
+/src/etc/ssh/**
+/src/etc/php/**
+/src/etc/php.ini
+/src/lib/**
 *.DS_Store
 *.codekit
 *.mo
