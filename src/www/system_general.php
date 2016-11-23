@@ -33,7 +33,7 @@ require_once("system.inc");
 require_once("interfaces.inc");
 require_once("services.inc");
 
-// $no_change_config['theme'] = 'opnsense';
+$no_change_config['theme'] = 'opnsense';
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = array();
@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['dns2gw'] = null;
     $pconfig['dns3gw'] = null;
     $pconfig['dns4gw'] = null ;
-    $pconfig['theme'] = null;
+    $pconfig['theme'] = 'opnsense';
     $pconfig['language'] = null;
     $pconfig['timezone'] = "Etc/UTC";
     $pconfig['prefer_ipv4'] = isset($config['system']['prefer_ipv4']);
@@ -321,9 +321,6 @@ include("head.inc");
               </td>
             </tr>
             <tr>
-              <th colspan="2" valign="top" class="listtopic"><?=gettext("Firmware"); ?></th>
-            </tr>
-            <tr>
               <td><a id="help_for_language" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Language");?></td>
               <td>
                 <select name="language" class="selectpicker" data-size="10" data-style="btn-default" data-width="auto">
@@ -338,26 +335,6 @@ include("head.inc");
                 <div class="hidden" for="help_for_language">
                   <strong>
                     <?=gettext("Choose a language for the webConfigurator"); ?>
-                  </strong>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td><a id="help_for_theme" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Theme"); ?></td>
-              <td>
-                <select name="theme" class="selectpicker" data-size="10" data-width="auto">
-<?php
-                  $curtheme = get_current_theme();
-                  foreach (return_dir_as_array('/usr/local/opnsense/www/themes/') as $file):?>
-                  <option <?=$file == $curtheme ? "selected=\"selected\"" : "";?>>
-                    <?=$file;?>
-                  </option>
-<?php
-                  endforeach; ?>
-                </select>
-                <div class="hidden" for="help_for_theme">
-                  <strong>
-                    <?= gettext('This will change the look and feel of the GUI.') ?>
                   </strong>
                 </div>
               </td>
