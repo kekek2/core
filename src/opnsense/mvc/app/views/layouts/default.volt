@@ -189,8 +189,7 @@
       <div class="container-fluid">
         <div class="navbar-header">
           <a class="navbar-brand" href="/">
-            <img class="brand-logo" src="/ui/themes/{{theme_name}}/build/images/default-logo.png" height="30" alt="logo"/>
-            <img class="brand-icon" src="/ui/themes/{{theme_name}}/build/images/icon-logo.png" height="30" alt="icon"/>
+            <img class="brand-logo" src="/ui/themes/{{ui_theme|default('opnsense')}}/build/images/ting-green.png" height="30" alt="logo"/>
           </a>
           <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navigation">
             <span class="sr-only">Toggle navigation</span>
@@ -202,14 +201,7 @@
         <div class="collapse navbar-collapse">
           <ul class="nav navbar-nav navbar-right">
             <li id="menu_messages"><a href="#">{{session_username}}@{{system_hostname}}.{{system_domain}}</a></li>
-            <li>
-              <form class="navbar-form" role="search">
-                <div class="input-group">
-                  <div class="input-group-addon"><i class="fa fa-search"></i></div>
-                  <input type="text" style="width: 250px;" class="form-control" tabindex="1" data-provide="typeahead" id="menu_search_box">
-                </div>
-              </form>
-            </li>
+            <li><a href="/index.php?logout"><span class="fa fa-sign-out fa-fw"></span>Logout</a></li>
           </ul>
         </div>
       </div>
@@ -247,13 +239,6 @@
       </section>
 
     </div>
-
-        <!-- page footer -->
-    <footer class="page-foot col-sm-push-3 col-lg-push-2">
-      <div class="container-fluid">
-        <a target="_blank" href="https://opnsense.org/" class="redlnk">OPNsense</a> (c) 2014-2016 <a href="https://www.deciso.com" class="tblnk">Deciso B.V.</a>
-      </div>
-    </footer>
 
   </main>
 
