@@ -31,9 +31,9 @@
 <totalsteps>9</totalsteps>
 <step>
 	<id>1</id>
-	<title>OPNsense Setup Wizard</title>
+	<title>TING Setup Wizard</title>
 	<disableheader>true</disableheader>
-	<description>This wizard will guide you through the initial configuration of OPNsense.&lt;br/&gt;&lt;br/&gt; The wizard may be stopped at any time by clicking the logo image at the top of the screen.</description>
+	<description>This wizard will guide you through the initial configuration of TING.</description>
 	<fields>
 		<field>
 			<name>Next</name>
@@ -50,7 +50,7 @@
 <step>
 	<id>2</id>
 	<title>General Information</title>
-	<description>On this screen you will set the general OPNsense parameters.</description>
+	<description>On this screen you will set the general TING parameters.</description>
 	<fields>
 		<field>
 			<name>Hostname</name>
@@ -578,7 +578,7 @@
 	<id>7</id>
 	<title>Reload configuration</title>
 	<disableheader>true</disableheader>
-	<description>Click 'Reload' to reload OPNsense with new changes.</description>
+	<description>Click 'Reload' to reload TING with new changes.</description>
 	<fields>
 		<field>
 			<name>Reload</name>
@@ -646,10 +646,8 @@
 	<title>Wizard completed.</title>
 	<description>
 	<![CDATA[
-		Congratulations!  OPNsense is now configured.<p/>
-		Please consider donating to the project to help us with our overhead costs.<p/>
-		See <a target='_new' href='https://opnsense.org/'>OPNsense.org</a> to donate or purchase services offered by the OPNsense team.<p/>
-		Click <a href='$myurl'>here</a> to continue on to OPNsense webConfigurator.
+		Congratulations! TING is now configured.<p/>
+		Click <a href='$myurl'>here</a> to continue on to TING webConfigurator.
 	]]>
 	</description>
 </step>
