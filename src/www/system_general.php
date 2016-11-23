@@ -45,8 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['dns1gw'] = null;
     $pconfig['dns2gw'] = null;
     $pconfig['dns3gw'] = null;
-    $pconfig['dns4gw'] = null ;
-    $pconfig['theme'] = 'opnsense';
+    $pconfig['dns4gw'] = null;
+    $pconfig['theme']  = $no_change_config['theme'];
     $pconfig['language'] = null;
     $pconfig['timezone'] = "Etc/UTC";
     $pconfig['prefer_ipv4'] = isset($config['system']['prefer_ipv4']);
