@@ -582,7 +582,7 @@
 
 
 
-<div class="content-box tab-content">
+<div class="tab-content">
     <div id="tab_1" class="tab-pane fade in">
         <div class="panel panel-primary">
             <div class="panel-heading panel-heading-sm">
