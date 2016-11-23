@@ -189,8 +189,7 @@
       <div class="container-fluid">
         <div class="navbar-header">
           <a class="navbar-brand" href="/">
-            <img class="brand-logo" src="/ui/themes/{{theme_name}}/build/images/default-logo.png" height="30" alt="logo"/>
-            <img class="brand-icon" src="/ui/themes/{{theme_name}}/build/images/icon-logo.png" height="30" alt="icon"/>
+            <img class="brand-logo" src="/ui/themes/{{ui_theme|default('opnsense')}}/build/images/ting-green.png" height="30" alt="logo"/>
           </a>
           <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navigation">
             <span class="sr-only">Toggle navigation</span>

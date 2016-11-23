@@ -3633,7 +3633,7 @@ tbody.collapse.in {
     text-decoration: none; }
   @media (min-width: 768px) {
     .navbar > .container .navbar-brand, .navbar > .container-fluid .navbar-brand {
-      margin-left: -20px; } }
+      margin-left: -35px; } }
 
 .navbar-toggle {
   position: relative;

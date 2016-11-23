@@ -430,7 +430,7 @@ function display_login_form($Login_Error = '')
                 $loginautocomplete = isset($config['system']['webgui']['loginautocomplete']) ? '' : 'autocomplete="off"';
             ?>
 
-    <main class="login-modal-container" style="border: none; margin-top: 50px;">
+    <main class="login-modal-container">
       <div class="login-modal-content">
         <div><img src="/ui/themes/opnsense/build/images/ting_full.png" /></div>
 
@@ -448,7 +448,9 @@ function display_login_form($Login_Error = '')
           <input id="passwordfld" type="password" name="passwordfld" class="form-control pwd" tabindex="2" />
         </div>
 
-        <button type="submit" name="login" value="1" class="btn btn-primary pull-right"><?=gettext("Login"); ?></button>
+        <div class="form-group text-center">
+          <button type="submit" name="login" value="1" class="btn btn-primary"><?=gettext("Login"); ?></button>
+        </div>
 
       </form>
 
@@ -462,10 +464,6 @@ function display_login_form($Login_Error = '')
           </div>
 
       </main>
-      <div class="login-foot text-center">
-        <a target="_blank" href="<?=$g['product_website']?>" class="redlnk"><?=$g['product_name']?></a> (c) <?=$g['product_copyright_years']?>
-        <a href="<?=$g['product_copyright_url']?>" class="tblnk"><?=$g['product_copyright_owner']?></a>
-      </div>
 
     </div>
 
