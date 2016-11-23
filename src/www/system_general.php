@@ -33,26 +33,6 @@ require_once("system.inc");
 require_once("interfaces.inc");
 require_once("services.inc");
 
-function get_locale_list()
-{
-    $locales = array();
-
-    /* first one is the default */
-    $locales['en_US'] = gettext('English');
-    $locales['zh_CN'] = gettext('Chinese (Simplified)');
-    $locales['nl_NL'] = gettext('Dutch');
-    $locales['fr_FR'] = gettext('French');
-    $locales['de_DE'] = gettext('German');
-    $locales['ja_JP'] = gettext('Japanese');
-    $locales['mn_MN'] = gettext('Mongolian');
-    $locales['pt_BR'] = gettext('Portuguese');
-    $locales['ru_RU'] = gettext('Russian');
-    $locales['es_CO'] = gettext('Spanish');
-    $locales['tr_TR'] = gettext('Turkish');
-
-    return $locales;
-}
-
 // $no_change_config['theme'] = 'opnsense';
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -118,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $ignore_posted_dnsgw = array();
 
-    for ($dnscounter=1; $dnscounter<5; $dnscounter++){
+    for ($dnscounter=1; $dnscounter<3; $dnscounter++){
       $dnsname="dns{$dnscounter}";
       $dnsgwname="dns{$dnscounter}gw";
       if (!empty($pconfig[$dnsname]) && !is_ipaddr($pconfig[$dnsname])) {
@@ -140,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
     /* XXX cranky low-level call, please refactor */
     $direct_networks_list = explode(' ', filter_get_direct_networks_list(filter_generate_optcfg_array()));
-    for ($dnscounter=1; $dnscounter<5; $dnscounter++) {
+    for ($dnscounter=1; $dnscounter<3; $dnscounter++) {
         $dnsitem = "dns{$dnscounter}";
         $dnsgwitem = "dns{$dnscounter}gw";
         if (!empty($pconfig[$dnsgwitem])) {
@@ -204,7 +184,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         /* which interface should the dns servers resolve through? */
         $outdnscounter = 0;
-        for ($dnscounter=1; $dnscounter<5; $dnscounter++) {
+        for ($dnscounter=1; $dnscounter<3; $dnscounter++) {
             $dnsname="dns{$dnscounter}";
             $dnsgwname="dns{$dnscounter}gw";
             $olddnsgwname = !empty($config['system'][$dnsgwname]) ? $config['system'][$dnsgwname] : "none" ;
@@ -420,7 +400,7 @@ include("head.inc");
                   </thead>
                   <tbody>
 <?php
-                    for ($dnscounter=1; $dnscounter<5; $dnscounter++):
+                    for ($dnscounter=1; $dnscounter<3; $dnscounter++):
                       $dnsgw = "dns{$dnscounter}gw";?>
                     <tr>
                       <td>
