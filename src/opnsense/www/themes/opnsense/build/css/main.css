@@ -5501,8 +5501,7 @@ body {
     height: 100%; }
 
 .page-content-head, .content-box-head {
-  background: #FBFBFB;
-  border-bottom: 1px solid rgba(217, 217, 217, 0.5);
+  background: #FDFDFD;
   padding-bottom: 15px;
   padding-top: 20px; }
   .page-content-head .navbar-nav, .content-box-head .navbar-nav {
@@ -5512,7 +5511,7 @@ body {
     margin: 0; }
 
 .page-content-main {
-  background: #F7F7F7;
+  background: #FDFDFD;
   min-height: calc(100% - 64px);
   padding: 15px 0 73px; }
 
@@ -5627,6 +5626,19 @@ body {
   max-width: 174px;
   width: 100%; }
 
+.table-sort > tbody > tr > th {
+  border-top: 0;
+  height: 50px; }
+  .table-sort > tbody > tr > th:hover {
+    background: #F2F2F2;
+    cursor: pointer; }
+.table-sort > tbody > tr > td, .table-sort > tbody > tr > th {
+  vertical-align: middle; }
+.table-sort-icon {
+  font-size: 10px; }
+.table-sort .btn-group-table {
+  padding-right: 15px; }
+
 .progress-bar-placeholder {
   font-size: 12px;
   position: absolute;
@@ -5726,6 +5738,7 @@ table {
   margin-right: 15px; }
 
 .__iconspacer {
+  min-width: 26px;
   padding-right: 10px; }
 
 #mainmenu .glyphicon {
@@ -5810,3 +5823,50 @@ select {
   background-repeat: no-repeat;
   background-position: right;
   background-image: url(/ui/themes/opnsense/build/images/caret.png) !important; }
+
+/* TING FLAVORED */
+
+.table-clean-form {
+  border-top: 1px solid #f6f6f6; }
+.table-clean-form > thead > tr > th,
+.table-clean-form > thead > tr > td,
+.table-clean-form > tbody > tr > th,
+.table-clean-form > tbody > tr > td,
+.table-clean-form > tfoot > tr > th,
+.table-clean-form > tfoot > tr > td {
+  padding: 10px 0px 10px 20px;
+  line-height: 2;
+  vertical-align: top; }
+.table-clean-form > thead > tr > th,
+.table-clean-form > tbody > tr > th,
+.table-clean-form > tfoot > tr > th {
+  padding-top: 20px;
+  border-top: none; }
+.table-clean-form > thead > tr > td,
+.table-clean-form > tbody > tr > td,
+.table-clean-form > tfoot > tr > td {
+  border-top: none; }
+
+.table-clean-form > tbody > tr > td > a.showhelp > i.fa-info-circle {
+  color: #777777; }
+.table-clean-form > tbody > tr > td > i.fa-info-circle.text-muted {
+  color: #DDDDDD; }
+
+.table-clean-form thead > tr > td small.formhelp,
+.table-clean-form tbody > tr > td small.formhelp,
+.table-clean-form tfoot > tr > td small.formhelp {
+  line-height: 1.5;
+  padding: 5px;
+  display: inline-block;
+  max-width: 600px; }
+
+.table-borderless {
+  border: none; }
+.table-borderless > thead > tr > th,
+.table-borderless > thead > tr > td,
+.table-borderless > tbody > tr > th,
+.table-borderless > tbody > tr > td,
+.table-borderless > tfoot > tr > th,
+.table-borderless > tfoot > tr > td {
+  border: none;
+  line-height: 2; }
