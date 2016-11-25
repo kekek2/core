@@ -30,6 +30,8 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
+require_once('filter.lib.inc');
+
 /* Create a global array to avoid errors on rulesets. */
 $GatewaysList = array();
 
@@ -374,6 +376,8 @@ function filter_configure_sync($verbose = false)
 
     // initialize fw plugin object
     $fw = new \OPNsense\Firewall\Plugin();
+    $fw->setInterfaceMapping(legacy_config_get_interfaces(array("enable" => true)));
+    filter_core_bootstrap($fw);
 
     if (function_exists('plugins_firewall')) {
         plugins_firewall($fw);
@@ -467,6 +471,9 @@ function filter_configure_sync($verbose = false)
         $limitrules .= "set limit states {$max_states}\n";
         $limitrules .= "set limit src-nodes {$max_states}\n";
     }
+    if (!empty($config['system']['maximumfrags'])) {
+        $limitrules .= "set limit frags {$config['system']['maximumfrags']}\n";
+    }
 
     if (isset($config['system']['lb_use_sticky']) && is_numeric($config['system']['srctrack']) && ($config['system']['srctrack'] > 0)) {
         $limitrules .= "set timeout src.track {$config['system']['srctrack']}\n";
@@ -487,6 +494,8 @@ function filter_configure_sync($verbose = false)
     $rules .= "{$natrules}\n";
     $rules .= $fw->anchorToText('nat,binat,rdr', 'tail');
     $rules .= $fw->anchorToText('fw', 'head');
+    $rules .= filter_rules_legacy($FilterIflist);
+    $rules .= $fw->outputFilterRules();
     $rules .= "{$pfrules}\n";
     $rules .= $fw->anchorToText('fw', 'tail');
 
@@ -1724,7 +1733,7 @@ function filter_nat_rules_generate(&$FilterIflist)
 
     // prevent redirection on ports with "lock out" protection
     if (!isset($config['system']['webgui']['noantilockout'])) {
-        $alports = filter_get_antilockout_ports();
+        $alports = implode(" ", filter_core_antilockout_ports());
         if ( !empty($FilterIflist['lan']['if']) ) {
             $alintrf = $FilterIflist['lan']['if'];
         } elseif ( !empty($FilterIflist['wan']['if']) ) {
@@ -2173,7 +2182,6 @@ function filter_generate_user_rule(&$FilterIflist, $rule)
         return "# rule " . $rule['descr'] . " disabled \n";
     }
     update_filter_reload_status("Creating filter rules {$rule['descr']} ...");
-    $pptpdcfg = $config['pptpd'];
     $int = "";
     $aline = array();
     // initialize array with empty tags
@@ -2488,6 +2496,30 @@ function filter_generate_user_rule(&$FilterIflist, $rule)
     return $line;
 }
 
+function filter_rules_legacy(&$FilterIflist)
+{
+    global $config;
+    $log = array();
+    $log['block'] = $config['OPNsense']['Syslog']['Firewall']['LogDefaultBlock'] == 1 ? "log" : "";
+
+    $ipfrules = "";
+    $isbridged = false;
+    if (isset($config['bridges']['bridged'])) {
+        foreach ($config['bridges']['bridged'] as $oc2) {
+            if (stristr($oc2['members'], $on)) {
+                $isbridged = true;
+                break;
+            }
+        }
+    }
+    foreach ($FilterIflist as $on => $oc) {
+        if ($oc['ip'] && !($isbridged) && !isset($oc['internal_dynamic'])) {
+            $ipfrules .= "antispoof {$log['block']} for {$oc['if']} \n";
+        }
+    }
+    return $ipfrules;
+}
+
 function filter_rules_generate(&$FilterIflist)
 {
     global $config, $GatewaysList;
@@ -2496,312 +2528,15 @@ function filter_rules_generate(&$FilterIflist)
 
     update_filter_reload_status(gettext("Creating default rules"));
 
-    $pptpdcfg = $config['pptpd'];
-
     $ipfrules = "";
 
     # BEGIN OF firewall rules
     /* default block logging? */
-    $log = array("block"=>null,"pass"=>null);
-    if ($config['OPNsense']['Syslog']['Firewall']['LogDefaultBlock'] == 1) {
-        $log['block'] = "log";
-    }
-    if ($config['OPNsense']['Syslog']['Firewall']['LogDefaultPass'] == 1) {
-        $log['pass'] = "log";
-    }
+    $log = array();
+    $log['block'] =  $config['OPNsense']['Syslog']['Firewall']['LogDefaultBlock'] == 1 ? "log" : "";
+    $log['pass'] = $config['OPNsense']['Syslog']['Firewall']['LogDefaultPass'] == 1  ? "log" : "";
 
-    if (!isset($config['system']['ipv6allow'])) {
-        $ipfrules .= "\n# Block all IPv6 except loopback traffic\n";
-        $ipfrules .= "pass {$log['pass']} quick on \$loopback inet6\n";
-        $ipfrules .= "block {$log['block']} quick inet6 all label \"Block all IPv6\"\n";
-    }
-
-    $ipfrules .= <<<EOD
-
-#---------------------------------------------------------------------------
-# default deny rules
-#---------------------------------------------------------------------------
-block in {$log['block']} inet all label "Default deny rule IPv4"
-block out {$log['block']} inet all label "Default deny rule IPv4"
-block in {$log['block']} inet6 all  label "Default deny rule IPv6"
-block out {$log['block']} inet6 all  label "Default deny rule IPv6"
-
-# IPv6 ICMP is not auxilary, it is required for operation
-# See man icmp6(4)
-# 1    unreach         Destination unreachable
-# 2    toobig          Packet too big
-# 128  echoreq         Echo service request
-# 129  echorep         Echo service reply
-# 133  routersol       Router solicitation
-# 134  routeradv       Router advertisement
-# 135  neighbrsol      Neighbor solicitation
-# 136  neighbradv      Neighbor advertisement
-pass {$log['pass']} quick inet6 proto ipv6-icmp from any to any icmp6-type {1,2,135,136}  keep state
-
-# Allow only bare essential icmpv6 packets (NS, NA, and RA, echoreq, echorep)
-pass out {$log['pass']} quick inet6 proto ipv6-icmp from fe80::/10 to fe80::/10 icmp6-type {129,133,134,135,136}  keep state
-pass out {$log['pass']} quick inet6 proto ipv6-icmp from fe80::/10 to ff02::/16 icmp6-type {129,133,134,135,136}  keep state
-pass in {$log['pass']} quick inet6 proto ipv6-icmp from fe80::/10 to fe80::/10 icmp6-type {128,133,134,135,136}  keep state
-pass in {$log['pass']} quick inet6 proto ipv6-icmp from ff02::/16 to fe80::/10 icmp6-type {128,133,134,135,136}  keep state
-pass in {$log['pass']} quick inet6 proto ipv6-icmp from fe80::/10 to ff02::/16 icmp6-type {128,133,134,135,136}  keep state
-
-# We use the mighty pf, we cannot be fooled.
-block {$log['block']} quick inet proto { tcp, udp } from any port = 0 to any
-block {$log['block']} quick inet proto { tcp, udp } from any to any port = 0
-block {$log['block']} quick inet6 proto { tcp, udp } from any port = 0 to any
-block {$log['block']} quick inet6 proto { tcp, udp } from any to any port = 0
-
-EOD;
-
-
-    $ipfrules .= filter_process_carp_rules($log);
-
-
-    $ipfrules .= "\n# SSH lockout\n";
-    if (!empty($config['system']['ssh']['port'])) {
-        $ipfrules .= "block in {$log['block']} quick proto tcp from <sshlockout> to (self) port ";
-        $ipfrules .= $config['system']['ssh']['port'];
-        $ipfrules .= "  label \"sshlockout\"\n";
-    } else {
-        if (!empty($config['system']['ssh']['port'])) {
-            $sshport = $config['system']['ssh']['port'];
-        } else {
-            $sshport = 22;
-        }
-        $ipfrules .= "block in {$log['block']} quick proto tcp from <sshlockout> to (self) port {$sshport} label \"sshlockout\"\n";
-    }
-
-
-    $ipfrules .= "\n# webConfigurator lockout\n";
-    if (!$config['system']['webgui']['port']) {
-        if ($config['system']['webgui']['protocol'] == "http") {
-            $webConfiguratorlockoutport = "80";
-        } else {
-            $webConfiguratorlockoutport = "443";
-        }
-    } else {
-        $webConfiguratorlockoutport = $config['system']['webgui']['port'];
-    }
-    if ($webConfiguratorlockoutport) {
-        $ipfrules .= "block in {$log['block']} quick proto tcp from <webConfiguratorlockout> to (self) port {$webConfiguratorlockoutport}  label \"webConfiguratorlockout\"\n";
-    }
-
-    /*
-     * Support for allow limiting of TCP connections by establishment rate
-     * Useful for protecting against sudden outburts, etc.
-     */
-    $ipfrules .= "block in {$log['block']} quick from <virusprot> to any label \"virusprot overload table\"\n";
-
-    foreach ($FilterIflist as $on => $oc) {
-      /*
-       * Block bogon networks via the following list.  Note that "bogons"
-       * are excluding the four private address ranges for one reason or
-       * another.  They exist in the upstream files but are stripped during
-       * the upgrade stage.
-       *
-       * http://www.cymru.com/Documents/bogon-bn-nonagg.txt
-       */
-      if ($config['OPNsense']['Syslog']['Firewall']['LogBogons'] == 1) {
-          $bogonlog = 'log';
-      } else {
-          $bogonlog = '';
-      }
-
-      if (isset($config['interfaces'][$on]['blockbogons'])) {
-        $ipfrules .= <<<EOD
-# block bogon networks (IPv4)
-# http://www.cymru.com/Documents/bogon-bn-nonagg.txt
-block in {$bogonlog} quick on \${$oc['descr']} from <bogons> to any  label "{$fix_rule_label("block bogon IPv4 networks from {$oc['descr']}")}"
-
-EOD;
-    }
-
-      if (isset($config['system']['ipv6allow']) && isset($oc['type6']) && ($oc['type6'] == "slaac" || $oc['type6'] == "dhcp6")) {
-          $ipfrules .= <<<EOD
-# allow our DHCPv6 client out to the {$oc['descr']}
-pass in {$log['pass']} quick on \${$oc['descr']} proto udp from fe80::/10 port = 546 to fe80::/10 port = 546  label "{$fix_rule_label("allow dhcpv6 client in {$oc['descr']}")}"
-pass in {$log['pass']} quick on \${$oc['descr']} proto udp from any port = 547 to any port = 546 label "{$fix_rule_label("allow dhcpv6 client in {$oc['descr']}")}"
-pass out {$log['pass']} quick on \${$oc['descr']} proto udp from any port = 546 to any port = 547 label "{$fix_rule_label("allow dhcpv6 client out {$oc['descr']}")}"
-
-EOD;
-    }
-
-      if (isset($config['interfaces'][$on]['blockbogons'])) {
-          if (isset($config['system']['ipv6allow'])) {
-              $ipfrules .= <<<EOD
-# block bogon networks (IPv6)
-# http://www.team-cymru.org/Services/Bogons/fullbogons-ipv6.txt
-block in {$bogonlog} quick on \${$oc['descr']} from <bogonsv6> to any label "{$fix_rule_label("block bogon IPv6 networks from {$oc['descr']}")}"
-
-EOD;
-          }
-      }
-
-      $isbridged = false;
-      if (isset($config['bridges']['bridged'])) {
-          foreach ($config['bridges']['bridged'] as $oc2) {
-              if (stristr($oc2['members'], $on)) {
-                  $isbridged = true;
-                  break;
-              }
-          }
-      }
-
-      if ($oc['ip'] && !($isbridged) && !isset($oc['internal_dynamic'])) {
-          $ipfrules .= "antispoof {$log['block']} for \${$oc['descr']} \n";
-      }
-
-      /* block private networks ? */
-      if ($config['OPNsense']['Syslog']['Filter']['LogPrivateNets'] == 1) {
-          $privnetlog = "log";
-      } else {
-          $privnetlog = "";
-      }
-
-      if (isset($config['interfaces'][$on]['blockpriv'])) {
-          if ($isbridged == false) {
-              $ipfrules .= <<<EOD
-# block anything from private networks on interfaces with the option set
-block in $privnetlog quick on \${$oc['descr']} from 10.0.0.0/8 to any label "{$fix_rule_label("Block private networks from {$oc['descr']} block 10/8")}"
-block in $privnetlog quick on \${$oc['descr']} from 127.0.0.0/8 to any label "{$fix_rule_label("Block private networks from {$oc['descr']} block 127/8")}"
-block in $privnetlog quick on \${$oc['descr']} from 100.64.0.0/10 to any label "{$fix_rule_label("Block private networks from {$oc['descr']} block 100.64/10")}"
-block in $privnetlog quick on \${$oc['descr']} from 172.16.0.0/12 to any label "{$fix_rule_label("Block private networks from {$oc['descr']} block 172.16/12")}"
-block in $privnetlog quick on \${$oc['descr']} from 192.168.0.0/16 to any label "{$fix_rule_label("Block private networks from {$oc['descr']} block 192.168/16")}"
-block in $privnetlog quick on \${$oc['descr']} from fc00::/7 to any label "{$fix_rule_label("Block ULA networks from {$oc['descr']} block fc00::/7")}"
-
-EOD;
-          }
-      }
-
-      switch (isset($oc['type']) ? $oc['type'] : null) {
-        case "pptp":
-            $ipfrules .= <<<EOD
-# allow PPTP client
-pass in {$log['pass']} on \${$oc['descr']} proto tcp from any to any port = 1723 flags S/SA modulate state label "{$fix_rule_label("allow PPTP client on {$oc['descr']}")}"
-pass in {$log['pass']} on \${$oc['descr']} proto gre from any to any keep state label "{$fix_rule_label("allow PPTP client on {$oc['descr']}")}"
-
-EOD;
-            break;
-        case "dhcp":
-            $ipfrules .= <<<EOD
-# allow our DHCP client out to the {$oc['descr']}
-pass in {$log['pass']} on \${$oc['descr']} proto udp from any port = 67 to any port = 68 label "{$fix_rule_label("allow dhcp client out {$oc['descr']}")}"
-pass out {$log['pass']} on \${$oc['descr']} proto udp from any port = 68 to any port = 67 label "{$fix_rule_label("allow dhcp client out {$oc['descr']}")}"
-# Not installing DHCP server firewall rules for {$oc['descr']} which is configured for DHCP.
-
-EOD;
-
-            break;
-        case "pppoe":
-        case "none":
-            /* XXX: Nothing to do in this case?! */
-            break;
-        default:
-            /* allow access to DHCP server on interfaces */
-            if (isset($config['dhcpd'][$on]['enable'])) {
-                $ipfrules .= <<<EOD
-# allow access to DHCP server on {$oc['descr']}
-pass in {$log['pass']} quick on \${$oc['descr']} proto udp from any port = 68 to 255.255.255.255 port = 67  label "allow access to DHCP server"
-
-EOD;
-                if (is_ipaddrv4($oc['ip'])) {
-                    $ipfrules .= <<<EOD
-pass in {$log['pass']} quick on \${$oc['descr']} proto udp from any port = 68 to {$oc['ip']} port = 67 label "allow access to DHCP server"
-pass out {$log['pass']} quick on \${$oc['descr']} proto udp from {$oc['ip']} port = 67 to any port = 68 label "allow access to DHCP server"
-
-EOD;
-                }
-
-                if (is_ipaddrv4($oc['ip']) && $config['dhcpd'][$on]['failover_peerip'] <> "") {
-                    $ipfrules .= <<<EOD
-# allow access to DHCP failover on {$oc['descr']} from {$config['dhcpd'][$on]['failover_peerip']}
-pass in {$log['pass']} quick on \${$oc['descr']} proto { tcp udp } from {$config['dhcpd'][$on]['failover_peerip']} to {$oc['ip']} port = 519 label "allow access to DHCP failover"
-pass in {$log['pass']} quick on \${$oc['descr']} proto { tcp udp } from {$config['dhcpd'][$on]['failover_peerip']} to {$oc['ip']} port = 520 label "allow access to DHCP failover"
-
-EOD;
-                }
-
-            }
-            break;
-        }
-    switch(isset($oc['type6']) ? $oc['type6'] : null ) {
-        case "6rd":
-            $ipfrules .= <<<EOD
-# allow our proto 41 traffic from the 6RD border relay in
-pass in {$log['pass']} on \${$oc['descr']} proto 41 from {$config['interfaces'][$on]['gateway-6rd']} to any  label "{$fix_rule_label("Allow 6in4 traffic in for 6rd on {$oc['descr']}")}"
-pass out {$log['pass']} on \${$oc['descr']} proto 41 from any to {$config['interfaces'][$on]['gateway-6rd']} label "{$fix_rule_label("Allow 6in4 traffic out for 6rd on {$oc['descr']}")}"
-
-EOD;
-            /* XXX: Really need to allow 6rd traffic coming in for v6 this is against default behaviour! */
-            if (0 && is_ipaddrv6($oc['ipv6'])) {
-                $ipfrules .= <<<EOD
-pass in {$log['pass']} on \${$oc['descr']} inet6 from any to {$oc['ipv6']}/{$oc['snv6']} label "{$fix_rule_label("Allow 6rd traffic in for 6rd on {$oc['descr']}")}"
-pass out {$log['pass']} on \${$oc['descr']} inet6 from {$oc['ipv6']}/{$oc['snv6']} to any label "{$fix_rule_label("Allow 6rd traffic out for 6rd on {$oc['descr']}")}"
-
-EOD;
-            }
-            break;
-        case "6to4":
-            if (is_ipaddrv4($oc['ip'])) {
-                $ipfrules .= <<<EOD
-# allow our proto 41 traffic from the 6to4 border relay in
-pass in {$log['pass']} on \${$oc['descr']} proto 41 from any to {$oc['ip']} label "{$fix_rule_label("Allow 6in4 traffic in for 6to4 on {$oc['descr']}")}"
-pass out {$log['pass']} on \${$oc['descr']} proto 41 from {$oc['ip']} to any label "{$fix_rule_label("Allow 6in4 traffic out for 6to4 on {$oc['descr']}")}"
-
-EOD;
-            }
-            /* XXX: Really need to allow 6to4 traffic coming in for v6 this is against default behaviour! */
-            if (0 && is_ipaddrv6($oc['ipv6'])) {
-                $ipfrules .= <<<EOD
-pass in {$log['pass']} on \${$oc['descr']} inet6 from any to {$oc['ipv6']}/{$oc['snv6']} label "{$fix_rule_label("Allow 6in4 traffic in for 6to4 on {$oc['descr']}")}"
-pass out {$log['pass']} on \${$oc['descr']} inet6 from {$oc['ipv6']}/{$oc['snv6']} to any label "{$fix_rule_label("Allow 6in4 traffic out for 6to4 on {$oc['descr']}")}"
-
-EOD;
-            }
-            break;
-        default:
-            if (isset($config['dhcpdv6'][$on]['enable']) || isset($oc['track6-interface'])
-              || (!empty($config['dhcrelay6']['interface']) && in_array($on, explode(',', $config['dhcrelay6']['interface'])))) {
-                $ipfrules .= <<<EOD
-# allow access to DHCPv6 server on {$oc['descr']}
-# We need inet6 icmp for stateless autoconfig and dhcpv6
-pass {$log['pass']} quick on \${$oc['descr']} inet6 proto udp from fe80::/10 to fe80::/10 port = 546 label "allow access to DHCPv6 server"
-pass {$log['pass']} quick on \${$oc['descr']} inet6 proto udp from fe80::/10 to ff02::/16 port = 546 label "allow access to DHCPv6 server"
-pass {$log['pass']} quick on \${$oc['descr']} inet6 proto udp from fe80::/10 to ff02::/16 port = 547 label "allow access to DHCPv6 server"
-pass {$log['pass']} quick on \${$oc['descr']} inet6 proto udp from ff02::/16 to fe80::/10 port = 547 label "allow access to DHCPv6 server"
-
-EOD;
-              if (is_ipaddrv6($oc['ipv6'])) {
-                  $ipfrules .= <<<EOD
-pass in {$log['pass']} quick on \${$oc['descr']} inet6 proto udp from fe80::/10 to {$oc['ipv6']} port = 546 label "allow access to DHCPv6 server"
-pass out {$log['pass']} quick on \${$oc['descr']} inet6 proto udp from {$oc['ipv6']} port = 547 to fe80::/10 label "allow access to DHCPv6 server"
-
-EOD;
-                }
-            }
-            break;
-        }
-    }
-
-    /*
-     * NB: The loopback rules are needed here since the antispoof would take precedence then.
-     *  If you ever add the 'quick' keyword to the antispoof rules above move the looback
-     *  rules before them.
-     */
-    $ipfrules .= <<<EOD
-
-# loopback
-pass in {$log['pass']} on \$loopback inet all label "pass IPv4 loopback"
-pass out {$log['pass']} on \$loopback inet all label "pass IPv4 loopback"
-pass in {$log['pass']} on \$loopback inet6 all label "pass IPv6 loopback"
-pass out {$log['pass']} on \$loopback inet6 all label "pass IPv6 loopback"
-
-# let out anything from the firewall host itself and decrypted IPsec traffic
-pass out {$log['pass']} inet all keep state allow-opts label "let out anything IPv4 from firewall host itself"
-pass out {$log['pass']} inet6 all keep state allow-opts label "let out anything IPv6 from firewall host itself"
-
-EOD;
-
+    // TODO : route-to needs to be refactored / simplified.
     foreach ($FilterIflist as $ifdescr => $ifcfg) {
         if (isset($ifcfg['virtual'])) {
             continue;
@@ -2830,58 +2565,6 @@ EOD;
               foreach ($ifcfg['vips6'] as $vip)
                 $ipfrules .= "pass out {$log['pass']} route-to ( {$stf} {$gwv6} ) inet6 from {$vip['ip']} to !{$vip['ip']}/{$pdlen} keep state allow-opts label \"let out anything from firewall host itself\"\n";
             }
-        }
-    }
-
-    /* add ipsec interfaces */
-    if (!empty($FilterIflist['enc0']['descr'])) {
-        $ipfrules .= "pass out {$log['pass']} on \${$FilterIflist['enc0']['descr']} all keep state label \"IPsec internal host to host\"\n";
-    }
-
-    if (is_array($config['system']['webgui']) && !isset($config['system']['webgui']['noantilockout'])) {
-        $alports = filter_get_antilockout_ports();
-
-        if (count($config['interfaces']) > 1 && !empty($FilterIflist['lan']['if'])) {
-            /* if antilockout is enabled, LAN exists and has
-             * an IP and subnet mask assigned
-             */
-            $lanif = $FilterIflist['lan']['if'];
-            $ipfrules .= <<<EOD
-
-# make sure the user cannot lock himself out of the webConfigurator or SSH
-pass in {$log['pass']} quick on {$lanif} proto tcp from any to ({$lanif}) port { {$alports} } keep state label "anti-lockout rule"
-
-EOD;
-        } elseif (count($config['interfaces']) == 1  && !empty($FilterIflist['wan']['if'])) {
-            /* single-interface deployment, add to WAN  */
-            $wanif = $FilterIflist["wan"]['if'];
-            $ipfrules .= <<<EOD
-
-# make sure the user cannot lock himself out of the webConfigurator or SSH
-pass in {$log['pass']} quick on {$wanif} proto tcp from any to ({$wanif}) port { {$alports} } keep state label "anti-lockout rule"
-
-EOD;
-        }
-        unset($alports);
-    }
-
-    if (isset($pptpdcfg['mode']) && $pptpdcfg['mode'] == 'server' && !isset($config['system']['disablevpnrules'])) {
-        if ($pptpdcfg['mode'] == "server") {
-            $pptpdtarget = get_interface_ip();
-        }
-        if (is_ipaddr($pptpdtarget) && is_array($FilterIflist['wan'])) {
-            $ipfrules .= <<<EOD
-# PPTPd rules
-pass in {$log['pass']} on \${$FilterIflist['wan']['descr']} proto tcp from any to $pptpdtarget port = 1723 modulate state label "{$fix_rule_label("allow pptpd {$pptpdtarget}")}"
-pass in {$log['pass']} on \${$FilterIflist['wan']['descr']} proto gre from any to any keep state label "allow gre pptpd"
-
-EOD;
-
-        } else {
-            /*    this shouldnt ever happen but instead of breaking the clients ruleset
-             *    log an error.
-             */
-            log_error("ERROR!  PPTP enabled but could not resolve the \$pptpdtarget");
         }
     }
 
@@ -2959,49 +2642,6 @@ EOD;
             $ipfrules .= "{$rule['rule']} {$rule['descr']}\n";
         }
         unset($rule_arr1, $rule_arr2, $rule_arr3);
-    }
-
-    /*  pass traffic between statically routed subnets and the subnet on the
-     *  interface in question to avoid problems with complicated routing
-     *  topologies
-     */
-    if (isset($config['filter']['bypassstaticroutes']) && isset($config['staticroutes']['route']) && count($config['staticroutes']['route'])) {
-        $ipfrules .= "# Add rules to bypass firewall rules for static routes\n";
-        foreach (get_staticroutes() as $route) {
-            $friendly = $GatewaysList[$route['gateway']]['friendlyiface'];
-            if (is_array($FilterIflist[$friendly])) {
-                $oc = $FilterIflist[$friendly];
-                $routeent = explode("/", $route['network']);
-                unset($sa);
-                if (is_ipaddrv4($oc['ip'])) {
-                    $sa = $oc['sa'];
-                    $sn = $oc['sn'];
-                }
-                if ($sa && is_ipaddrv4($routeent[0])) {
-                    $ipfrules .= <<<EOD
-pass {$log['pass']} quick on \${$oc['descr']} proto tcp from {$sa}/{$sn} to {$route['network']} flags any keep state(sloppy) label "pass traffic between statically routed subnets"
-pass {$log['pass']} quick on \${$oc['descr']} from {$sa}/{$sn} to {$route['network']} keep state(sloppy) label "pass traffic between statically routed subnets"
-pass {$log['pass']} quick on \${$oc['descr']} proto tcp from {$route['network']} to {$sa}/{$sn} flags any keep state(sloppy) label "pass traffic between statically routed subnets"
-pass {$log['pass']} quick on \${$oc['descr']} from {$route['network']} to {$sa}/{$sn} keep state(sloppy) label "pass traffic between statically routed subnets"
-
-EOD;
-                }
-                unset($sa);
-                if (is_ipaddrv6($oc['ipv6'])) {
-                    $sa = $oc['sav6'];
-                    $sn = $oc['snv6'];
-                }
-                if ($sa && is_ipaddrv6($routeent[0])) {
-                    $ipfrules .= <<<EOD
-pass {$log['pass']} quick on \${$oc['descr']} inet6 proto tcp from {$sa}/{$sn} to {$route['network']} flags any keep state(sloppy) label "pass traffic between statically routed subnets"
-pass {$log['pass']} quick on \${$oc['descr']} inet6 from {$sa}/{$sn} to {$route['network']} keep state(sloppy) label "pass traffic between statically routed subnets"
-pass {$log['pass']} quick on \${$oc['descr']} inet6 proto tcp from {$route['network']} to {$sa}/{$sn} flags any keep state(sloppy) label "pass traffic between statically routed subnets"
-pass {$log['pass']} quick on \${$oc['descr']} inet6 from {$route['network']} to {$sa}/{$sn} keep state(sloppy) label "pass traffic between statically routed subnets"
-
-EOD;
-                }
-            }
-        }
     }
 
     update_filter_reload_status(gettext("Creating IPsec rules..."));
@@ -3153,19 +2793,6 @@ function filter_setup_logging_interfaces(&$FilterIflist)
     return $rules;
 }
 
-function filter_process_carp_rules($log)
-{
-    global $config;
-
-    $lines = '';
-    /* return if there are no carp configured items */
-    if (!empty($config['hasync']) || !empty($config['virtualip']['vip'])) {
-        $lines .= "block in {$log['block']} quick proto carp from (self) to any \n";
-        $lines .= "pass {$log['pass']} quick proto carp \n";
-    }
-    return $lines;
-}
-
 /* Generate IPsec Filter Items */
 function filter_generate_ipsec_rules(&$FilterIflist, $log = array())
 {
@@ -3292,28 +2919,6 @@ EOD;
         }
     }
     return($ipfrules);
-}
-
-function filter_get_antilockout_ports($wantarray = false) {
-    global $config;
-
-    $lockoutports = array();
-    $guiport = ($config['system']['webgui']['protocol'] == "https") ? "443" : "80";
-    $guiport = empty($config['system']['webgui']['port']) ? $guiport : $config['system']['webgui']['port'];
-    $lockoutports[] = $guiport;
-
-    if (($config['system']['webgui']['protocol'] == "https") && !isset($config['system']['webgui']['disablehttpredirect']) && ($guiport != "80")) {
-        $lockoutports[] = "80";
-    }
-
-    if (isset($config['system']['ssh']['enabled'])) {
-        $lockoutports[] = empty($config['system']['ssh']['port']) ? "22" : $config['system']['ssh']['port'];
-    }
-    if ($wantarray) {
-        return $lockoutports;
-    } else {
-        return implode(" ", $lockoutports);
-    }
 }
 
 function default_state_size()
