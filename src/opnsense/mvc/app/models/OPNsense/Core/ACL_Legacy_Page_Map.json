@@ -861,13 +861,6 @@
             "ui/syslog/logview/showlog/ppps*"
         ]
     },
-    "page-status-systemlogs-loadbalancer": {
-        "name": "WebCfg - Status: System logs: Load Balancer page",
-        "descr": "Allow access to the 'Status: System logs: Load Balancer' page.",
-        "match": [
-            "ui/syslog/logview/showlog/relayd*"
-        ]
-    },
     "page-status-systemlogs-ntpd": {
         "name": "WebCfg - Status: System logs: NTP page",
         "descr": "Allow access to the 'Status: System logs: NTP' page.",
