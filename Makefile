@@ -55,15 +55,15 @@ CORE_REPOSITORY?=	${CORE_ABI}/libressl
 CORE_REPOSITORY?=	${FLAVOUR}
 .endif
 
-CORE_PACKAGESITE?=	http://pkg.opnsense.org
+CORE_PACKAGESITE?=	https://update0.smart-soft.ru
 
 CORE_NAME?=		ting
 CORE_FAMILY?=		development
 CORE_ORIGIN?=		${CORE_NAME}
 CORE_COMMENT?=		TING ${CORE_FAMILY} package
-CORE_MAINTAINER?=	franco@opnsense.org
-CORE_WWW?=		https://opnsense.org/
-CORE_MESSAGE?=		Thanks for all the fish...
+CORE_MAINTAINER?=	evbevz@gmail.com
+CORE_WWW?=		https://smart-soft.ru/
+CORE_MESSAGE?=		Thanks for using TING...
 # CORE_DEPENDS_armv6 is empty
 CORE_DEPENDS_amd64?=	beep bsdinstaller
 CORE_DEPENDS_i386?=	${CORE_DEPENDS_amd64}
