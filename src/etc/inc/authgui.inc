@@ -430,7 +430,7 @@ function display_login_form($Login_Error = '')
                 $loginautocomplete = isset($config['system']['webgui']['loginautocomplete']) ? '' : 'autocomplete="off"';
             ?>
 
-    <main class="login-modal-container">
+    <main class="login-modal-container" style="border: none; margin-top: 50px;">
       <div class="login-modal-content">
         <div><img src="/ui/themes/opnsense/build/images/ting_full.png" /></div>
 
