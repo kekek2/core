@@ -134,6 +134,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     if (count($input_errors) == 0) {
+	
+	$restart_syslog = $config['system']['hostname'] != $pconfig['hostname'] || $config['system']['timezone'] != $pconfig['timezone'];
+	
         $config['system']['hostname'] = $pconfig['hostname'];
         $config['system']['domain'] = $pconfig['domain'];
         $config['system']['timezone'] = $pconfig['timezone'];
@@ -239,6 +242,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         services_unbound_configure(false);
         services_dhcpd_configure();
         system_timezone_configure();
+
+        if($restart_syslog) {
+    	    system_syslogd_start();
+    	}
 
         if ($olddnsallowoverride != $config['system']['dnsallowoverride']) {
             configd_run("dns reload");
