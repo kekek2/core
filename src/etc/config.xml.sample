@@ -230,6 +230,11 @@
     <kill_states/>
     <backupcount>60</backupcount>
     <disablebeep>1</disablebeep>
+    <ssh>
+      <enabled>enabled</enabled>
+      <passwordauth>1</passwordauth>
+      <permitrootlogin>1</permitrootlogin>
+    </ssh>
   </system>
   <interfaces>
     <wan>
