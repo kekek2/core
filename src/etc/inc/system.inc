@@ -735,7 +735,7 @@ function system_routing_enable()
     ));
 }
 
-function system_syslogd_start()
+function system_syslogd_start($verbose = false)
 {
     global $config, $g;
 
