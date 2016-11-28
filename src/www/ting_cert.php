@@ -1,47 +1,132 @@
 <?php
 
+const MAC_INTERFACE = 'em1';
+
+const LICENSE_API_VER = 1;
+const LICENSE_API_URL = 'https://bar.smart-soft.ru/api/v' . LICENSE_API_VER;
+
 require_once("guiconfig.inc");
 
 include("head.inc");
 
-$installed_crt_path = '/usr/local/etc/ssl/ting-client.crt';
-$installed_key_path = '/usr/local/etc/ssl/ting-client.key';
-$temporary_crt_path = '/tmp/ting-client.crt';
-$temporary_key_path = '/tmp/ting-client.key';
+$openssl_config_path = '/usr/local/etc/ssl/opnsense.cnf';
+$openssl_config_args = [
+    'config' => $openssl_config_path,
+];
 
+$ting_crt_dir = '/usr/local/etc/ssl';
+
+$installed_key_path = "{$ting_crt_dir}/ting-client.key";
+$installed_crt_path = "{$ting_crt_dir}/ting-client.crt";
+$temporary_crt_path = '/tmp/ting-client.crt';
 $installed_crt_info = false;
 $temporary_crt_info = false;
 
-$upload_errors = [];
+$installed_crt_modules_path = "{$ting_crt_dir}/ting-client.module.*.crt";
+$installed_crt_modules_info = [];
+
+function getCurrentMacAddress($interface) {
+    $ifconfig = shell_exec("ifconfig {$interface}");
+    preg_match("/([0-9A-F]{2}[:-]){5}([0-9A-F]{2})/i", $ifconfig, $ifconfig);
+    if (isset($ifconfig[0])) {
+        return trim(strtoupper($ifconfig[0]));
+    }
+    return false;
+}
 
 if (file_exists($installed_crt_path) && file_exists($installed_key_path)) {
     $installed_crt_info = openssl_x509_parse(file_get_contents($installed_crt_path));
 }
 
-if (file_exists($temporary_crt_path) && file_exists($temporary_key_path)) {
-    $temporary_crt_info = openssl_x509_parse(file_get_contents($temporary_crt_path));
-}
+$form_errors = [];
+$form_fields = ['csr_license_key' => ''];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if ($_FILES['crtfile'] && $_FILES['keyfile']) {
-        $uploaded_crt = file_get_contents($_FILES['crtfile']['tmp_name']);
-        $uploaded_key = file_get_contents($_FILES['keyfile']['tmp_name']);
-        if (!openssl_x509_check_private_key($uploaded_crt, $uploaded_key)) {
-            $upload_errors[] = 'The uploaded key does not correspond to the uploaded certificate.';
-        }
-        if (!$upload_errors) {
-            move_uploaded_file($_FILES['crtfile']['tmp_name'], $temporary_crt_path);
-            move_uploaded_file($_FILES['keyfile']['tmp_name'], $temporary_key_path);
-            $temporary_crt_info = openssl_x509_parse(file_get_contents($temporary_crt_path));
+    if (!isset($_POST['csr_license_key'])) {
+        $form_errors['csr_license_key'] = 'License key is required.';
+
+    } else {
+        $form_fields['csr_license_key'] = $_POST['csr_license_key'];
+
+        $licenseKey = $_POST['csr_license_key'];
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, LICENSE_API_URL . "/{$licenseKey}");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+        $body = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($code == '200' && preg_match('/^\w{0,32}$/', $body)) {
+            $module = $body;
+
+            $pkey = openssl_get_privatekey("file://{$installed_key_path}");
+
+            $csrData = [
+                'tingAddress' => getCurrentMacAddress(MAC_INTERFACE),
+                'tingLicense' => $licenseKey,
+                'tingModule'  => $module,
+            ];
+
+              $csr_resource = openssl_csr_new($csrData, $pkey, $openssl_config_args);
+              openssl_csr_export($csr_resource, $csr);
+
+            if ($csr) {
+                $ch = curl_init(LICENSE_API_URL);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, ['csr' => $csr]);
+                $body = curl_exec($ch);
+                $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+
+                if ($code == '200') {
+
+                    $response = json_decode($body, true);
+
+                    if (isset($response['crt']) && isset($response['module'])) {
+                        $crt = base64_decode($response['crt']);
+
+                        // $crtData = openssl_x509_parse($crt, false);
+
+                        if (openssl_x509_parse($crt)) {
+                            if ($module) {
+                                $cert_path = $ting_crt_dir . '/ting-client.module.' . strtolower($module) . '.crt';
+                            } else {
+                                $cert_path = $installed_crt_path;
+                            }
+
+                            file_put_contents($cert_path, $crt);
+                            $installed_crt_info = openssl_x509_parse(file_get_contents($installed_crt_path));
+
+                        } else {
+                            $form_errors[] = 'Could not parse CRT.';
+                        }
+                    } else {
+                        $form_errors[] = 'Could not get license certificate.';
+                    }
+                } else {
+                    $json = json_decode($body, true);
+
+                    if (isset($json['message'])) {
+                        $form_errors[] = $json['message'];
+                    } else {
+                        $form_errors[] = 'Could not get license certificate.';
+                    }
+                }
+            } else {
+                $form_errors[] = 'Could not generate CSR.';
+            }
+        } else {
+          $form_errors[] = 'Could not get license certificate.';
         }
     }
-    if ($_POST['install'] == 1 && $temporary_crt_info) {
-        try {
-            rename($temporary_crt_path, $installed_crt_path);
-            rename($temporary_key_path, $installed_key_path);
-            $installed_crt_info = $temporary_crt_info;
-            $temporary_crt_info = [];
-        } catch(Exception $e) {}
+}
+
+if ($installed_crt_info) {
+    foreach (glob($installed_crt_modules_path) as $module_crt_path) {
+        $installed_crt_modules_info[] = openssl_x509_parse(file_get_contents($module_crt_path));
     }
 }
 
@@ -52,118 +137,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?php include("fbegin.inc"); ?>
 
 <section class="page-content-main">
-    <div class="container-fluid ">
-        <div class="row">
-            <section class="col-xs-12">
-                <div class="content-box tab-content">
-                    <table class="table opnsense_standard_table_form ">
-                        <thead>
-                            <tr style="background-color: rgb(251, 251, 251);">
-                                <td><strong>Installed certificate</strong></td>
-                                <td></td>
-                            </tr>
-                        </thead>
-                        <tbody>
-<?php if (!$installed_crt_info) { ?>
-                            <tr>
-                                <td width="22%"><p>No certificate installed.</p></td>
-                                <td></td>
-                            </tr>
-<?php } else { ?>
-                            <tr>
-                                <td width="22%">Name</td>
-                                <td><?php echo $installed_crt_info['subject']['CN']; ?></td>
-                            </tr>
-                            <tr>
-                                <td width="22%">Valid from</td>
-                                <td><?php echo strftime("%Y-%m-%d %H:%M:%S", $installed_crt_info['validFrom_time_t']); ?></td>
-                            </tr>
-                            <tr>
-                                <td width="22%">Valid to</td>
-                                <td><?php echo strftime("%Y-%m-%d %H:%M:%S", $installed_crt_info['validTo_time_t']); ?></td>
-                            </tr>
-<?php } ?>
-                        </tbody>
-                    </table>
+  <div class="container-fluid ">
+    <div class="row">
+      <section class="col-xs-12">
+        <div class="content-box tab-content">
 
-                    <br/>
+          <table class="table table-clean-form opnsense_standard_table_form ">
+            <thead>
+              <tr style="background-color: rgb(251, 251, 251);">
+                <td><strong>Installed certificates</strong></td>
+                <td colspan="2"></td>
+              </tr>
+            </thead>
+            <tbody>
+              <?php if (!$installed_crt_info) { ?>
+                <tr>
+                  <td width="22%"><p>No certificate installed.</p></td>
+                  <td colspan="2"></td>
+                </tr>
+              <?php } else { ?>
+                <tr>
+                  <td width="22%">Expires at</td>
+                  <td><?php echo strftime("%Y-%m-%d", $installed_crt_info['validTo_time_t']); ?></td>
+                  <td>CORE</td>
+                </tr>
+                <?php foreach ($installed_crt_modules_info as $module_info) { ?>
+                  <tr>
+                    <td></td>
+                    <td><?php echo strftime("%Y-%m-%d", $module_info['validTo_time_t']); ?></td>
+                    <td><?php echo isset($module_info['subject']['tingModule']) ? $module_info['subject']['tingModule'] : 'MODULE'; ?></td>
+                  </tr>
+                <?php } ?>
+              <?php } ?>
+            </tbody>
+          </table>
 
-<?php if ($temporary_crt_info && !$upload_errors) { ?>
-                    <table class="table opnsense_standard_table_form ">
-                        <thead>
-                            <tr style="background-color: rgb(251, 251, 251);">
-                                <td><strong>Uploaded certificate (not installed)</strong></td>
-                                <td></td>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td width="22%">Name</td>
-                                <td><?php echo $temporary_crt_info['subject']['CN']; ?></td>
-                            </tr>
-                            <tr>
-                                <td width="22%">Valid from</td>
-                                <td><?php echo strftime("%Y-%m-%d %H:%M:%S", $temporary_crt_info['validFrom_time_t']); ?></td>
-                            </tr>
-                            <tr>
-                                <td width="22%">Valid to</td>
-                                <td><?php echo strftime("%Y-%m-%d %H:%M:%S", $temporary_crt_info['validTo_time_t']); ?></td>
-                            </tr>
-                            <tr>
-                                <td width="22%"></td>
-                                <td>
-                                    <form action="/ting_cert.php" method="post">
-                                        <input type="hidden" name="install" value="1"/>
-                                        <input type="submit" value="Install" class="btn btn-primary"/>
-                                    </form>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+          <table class="table table-clean-form opnsense_standard_table_form ">
+            <thead>
+              <tr style="background-color: rgb(251, 251, 251);">
+                <td><strong>Get new certificate</strong></td>
+                <td></td>
+              </tr>
+            </thead>
+            <tbody>
+              <form action="/ting_cert.php" method="post">
+                <?php if ($form_errors) { ?>
+                  <tr>
+                    <td width="22%"></td>
+                    <td>
+                      <?php foreach ($form_errors as $error) { ?>
+                        <p style="color: red;"><?php echo $error; ?></p>
+                      <?php } ?>
+                    </td>
+                  </tr>
+                <?php } ?>
+                <tr>
+                  <td width="22%">License key</td>
+                  <td><input name="csr_license_key" type="text" required value="<?php echo $form_fields['csr_license_key']; ?>"/></td>
+                </tr>
+                <tr>
+                  <td width="22%"></td>
+                  <td><input type="submit" value="Get new certificate" class="btn btn-primary"/></td>
+                </tr>
+              </form>
+            </tbody>
+          </table>
 
-                    <br/>
-<?php } ?>
-
-                    <form action="/ting_cert.php" method="post" enctype="multipart/form-data">
-                        <table class="table opnsense_standard_table_form ">
-                            <thead>
-                            <tr style="background-color: rgb(251, 251, 251);">
-                                <td>
-                                    <strong>Upload new certificate and key files</strong>
-                                </td>
-                                <td></td>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <?php if ($upload_errors) { ?>
-                                <tr>
-                                    <td width="22%"></td>
-                                    <td>
-                                        <?php foreach ($upload_errors as $error) { ?>
-                                            <p style="color: red;"><?php echo $error; ?></p>
-                                        <?php } ?>
-                                    </td>
-                                </tr>
-                            <?php } ?>
-                            <tr>
-                                <td width="22%">Certificate file</td>
-                                <td><input name="crtfile" type="file" required/></td>
-                            </tr>
-                            <tr>
-                                <td width="22%">Private key file</td>
-                                <td><input name="keyfile" type="file" required/></td>
-                            </tr>
-                            <tr>
-                                <td width="22%"></td>
-                                <td><input type="submit" value="Upload" class="btn btn-primary"/></td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </form>
-                </div>
-            </section>
         </div>
+      </section>
     </div>
+  </div>
 </section>
 
 <?php include("foot.inc");
