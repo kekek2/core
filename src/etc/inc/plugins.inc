@@ -183,3 +183,24 @@ function plugins_configure($hook, $verbose = false)
         }
     }
 }
+
+function plugins_xmlrpc_sync()
+{
+    $sync_settings = array();
+    foreach (plugins_scan() as $name => $path) {
+        require_once $path;
+        $func = sprintf('%s_xmlrpc_sync', $name);
+        if (function_exists($func)) {
+            foreach ($func() as $helper) {
+                if (!empty($helper['id']) && !empty($helper['section'])) {
+                    $sync_settings[$helper['id']] = $helper;
+                    if (empty($helper['help'])) {
+                        $sync_settings[$helper['id']]['help'] = sprintf(gettext('Synchronize %s settings to backup'), $helper['description']);
+                    }
+                    unset($sync_settings[$helper['id']]['id']);
+                }
+            }
+        }
+    }
+    return $sync_settings;
+}
