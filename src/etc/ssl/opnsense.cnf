@@ -22,6 +22,10 @@ oid_section		= new_oids
 
 [ new_oids ]
 
+tingAddress = 1.33.7.1
+tingLicense = 1.33.7.2
+tingModule  = 1.33.7.3
+
 # We can add new OIDs in here for use by 'ca', 'req' and 'ts'.
 # Add a simple OID like this:
 # testoid1=1.2.3.4
