@@ -149,10 +149,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
       else
           $language_change = false;
 
-        if (!empty($pconfig['language']) && $pconfig['language'] != $config['system']['language']) {
-            $config['system']['language'] = $pconfig['language'];
-        }
-
         if (!empty($pconfig['prefer_ipv4'])) {
             $config['system']['prefer_ipv4'] = true;
         } elseif (isset($config['system']['prefer_ipv4'])) {
