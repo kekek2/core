@@ -29,8 +29,18 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
+/*
+ * Best case this shouldn't be here but DNS (and DHCP)
+ * are deeply tied into several internals in system.inc
+ * and services.inc.  services.inc itself has always
+ * been a workaround for holding multiple features away
+ * from system.inc, but its movable parts belong to
+ * system.inc, while all services belong to their own
+ * files.  Maybe eventually this will change...
+ */
 require_once('dyndns.class');
-require_once('unbound.inc');
+require_once('plugins.inc.d/dnsmasq.inc');
+require_once('plugins.inc.d/unbound.inc');
 
 function generate_ipv6_from_mac($mac)
 {
@@ -122,7 +132,7 @@ function services_radvd_configure($blacklist = array())
 
         $ifcfgsnv6 = get_interface_subnetv6($dhcpv6if);
         $subnetv6 = gen_subnetv6($ifcfgipv6, $ifcfgsnv6);
-        $radvdifs[$realif] = $realif;
+        $radvdifs[$realif] = 1;
 
         $radvdconf .= "# Generated for DHCPv6 Server $dhcpv6if\n";
         $radvdconf .= "interface {$realif} {\n";
@@ -229,14 +239,28 @@ function services_radvd_configure($blacklist = array())
         if (isset($radvdifs[$realif])) {
             continue;
         }
+        $radvdifs[$realif] = 1;
+
+        $dnslist = array();
 
         $ifcfgipv6 = get_interface_ipv6($if);
         if (!is_ipaddrv6($ifcfgipv6)) {
             $subnetv6 = "::";
             $ifcfgsnv6 = "64";
         } else {
+            if (isset($config['dnsmasq']['enable']) || isset($config['unbound']['enable'])) {
+                $dnslist[] = $ifcfgipv6;
+            }
             $ifcfgsnv6 = get_interface_subnetv6($if);
             $subnetv6 = gen_subnetv6($ifcfgipv6, $ifcfgsnv6);
+        }
+
+        if (!empty($config['system']['dnsserver'])) {
+            foreach($config['system']['dnsserver'] as $server) {
+                if (is_ipaddrv6($server)) {
+                    $dnslist[] = $server;
+                }
+            }
         }
 
         if (isset($config['interfaces'][$trackif]['ipaddrv6'])) {
@@ -257,17 +281,6 @@ function services_radvd_configure($blacklist = array())
         $radvdconf .= "\t\tAdvRouterAddr on;\n";
         $radvdconf .= "\t};\n";
 
-        /* add DNS servers */
-        $dnslist = array();
-        if (isset($config['dnsmasq']['enable']) || isset($config['unbound']['enable'])) {
-            $dnslist[] = $ifcfgipv6;
-        } elseif (!empty($config['system']['dnsserver'])) {
-            foreach($config['system']['dnsserver'] as $server) {
-                if (is_ipaddrv6($server)) {
-                    $dnslist[] = $server;
-                }
-            }
-        }
         if (count($dnslist) > 0) {
             $radvdconf .= "\tRDNSS ".implode(" ", $dnslist)." { };\n";
         }
@@ -277,13 +290,7 @@ function services_radvd_configure($blacklist = array())
         $radvdconf .= "};\n";
     }
 
-    /* write radvd.conf */
-    if (!@file_put_contents("/var/etc/radvd.conf", $radvdconf)) {
-        log_error("Error: cannot open radvd.conf in services_radvd_configure().\n");
-        if (file_exists("/var/run/booting")) {
-            printf("Error: cannot open radvd.conf in services_radvd_configure().\n");
-        }
-    }
+    file_put_contents('/var/etc/radvd.conf', $radvdconf);
 
     if (count($radvdifs) > 0) {
         if (isvalidpid('/var/run/radvd.pid')) {
@@ -292,14 +299,8 @@ function services_radvd_configure($blacklist = array())
             mwexec('/usr/local/sbin/radvd -p /var/run/radvd.pid -C /var/etc/radvd.conf -m syslog');
         }
     } else {
-        /* we need to shut down the radvd cleanly, it will send out the prefix
-         * information with a lifetime of 0 to notify clients of a (possible) new prefix */
-        if (isvalidpid('/var/run/radvd.pid')) {
-            log_error("Shutting down Router Advertisment daemon cleanly");
-            killbypid('/var/run/radvd.pid');
-        }
+        killbypid('/var/run/radvd.pid', 'TERM', true);
     }
-    return 0;
 }
 
 function services_dhcpd_leasesfile()
@@ -316,32 +317,7 @@ function services_dhcpdv6_leasesfile()
     return "{$g['dhcpd_chroot_path']}/var/db/dhcpd6.leases";
 }
 
-function services_dhcpleases_configure()
-{
-    global $config, $g;
-
-    killbypid('/var/run/dhcpleases.pid', 'TERM', true);
-
-    if (isset($config['dnsmasq']['enable']) && isset($config['dnsmasq']['regdhcp'])) {
-        mwexec("/bin/mkdir -p {$g['dhcpd_chroot_path']}/var/db");
-        touch("{$g['dhcpd_chroot_path']}/var/db/dhcpd.leases");
-        if (isvalidpid('/var/run/dhcpleases.pid')) {
-            killbypid('/var/run/dhcpleases.pid', 'HUP');
-        } else {
-            mwexecf(
-                '/usr/local/sbin/dhcpleases -l %s -d %s -p %s -h %s',
-                array(
-                    "{$g['dhcpd_chroot_path']}/var/db/dhcpd.leases",
-                    $config['system']['domain'],
-                    '/var/run/dnsmasq.pid',
-                    '/etc/hosts'
-                )
-            );
-        }
-    }
-}
-
-function services_dhcpd_configure($family = 'all', $blacklist = array())
+function services_dhcpd_configure($family = 'all', $blacklist = array(), $verbose = false)
 {
     global $g;
 
@@ -358,11 +334,11 @@ function services_dhcpd_configure($family = 'all', $blacklist = array())
     mwexecf('/usr/sbin/chown -R dhcpd:dhcpd %s', $g['dhcpd_chroot_path']);
 
     if ($family == 'all' || $family == 'inet') {
-        services_dhcpdv4_configure();
+        services_dhcpdv4_configure($verbose);
     }
 
     if ($family == 'all' || $family == 'inet6') {
-        services_dhcpdv6_configure($blacklist);
+        services_dhcpdv6_configure($blacklist, $verbose);
         services_radvd_configure($blacklist);
     }
 }
@@ -384,19 +360,17 @@ function is_dhcpv4_server_enabled()
     return false;
 }
 
-function services_dhcpdv4_configure()
+function services_dhcpdv4_configure($verbose = false)
 {
     global $config, $g;
 
     $need_ddns_updates = false;
     $ddns_zones = array();
 
-    /* kill any running dhcpd */
-    killbypid("{$g['dhcpd_chroot_path']}/var/run/dhcpd.pid");
+    killbypid("{$g['dhcpd_chroot_path']}/var/run/dhcpd.pid", 'TERM', true);
 
-    /* DHCP enabled on any interfaces? */
     if (!is_dhcpv4_server_enabled()) {
-        return 0;
+        return;
     }
 
     /* Only consider DNS servers with IPv4 addresses for the IPv4 DHCP server. */
@@ -409,8 +383,9 @@ function services_dhcpdv4_configure()
         }
     }
 
-    if (file_exists("/var/run/booting")) {
-        echo gettext("Starting DHCP service...");
+    if ($verbose) {
+        echo 'Starting DHCP service...';
+        flush();
     }
 
     $custoptions = "";
@@ -427,7 +402,6 @@ function services_dhcpdv4_configure()
         }
     }
     $dhcpdconf = <<<EOD
-
 option domain-name "{$config['system']['domain']}";
 option ldap-server code 95 = text;
 option domain-search-list code 119 = text;
@@ -609,7 +583,7 @@ EOPP;
             }
         }
 
-        $dhcpdconf .= "subnet {$subnet} netmask {$subnetmask} {\n";
+        $dhcpdconf .= "\nsubnet {$subnet} netmask {$subnetmask} {\n";
 
         // Setup pool options
         foreach($all_pools as $poolconf) {
@@ -780,8 +754,8 @@ EOD;
         }
 
         // Handle option, number rowhelper values
-        $dhcpdconf .= "\n";
         if (isset($dhcpifconf['numberoptions']['item'])) {
+            $dhcpdconf .= "\n";
             foreach($dhcpifconf['numberoptions']['item'] as $itemidx => $item) {
                 if (empty($item['type']) || $item['type'] == "text") {
                     $dhcpdconf .= "  option custom-{$dhcpif}-{$itemidx} \"{$item['value']}\";\n";
@@ -825,13 +799,13 @@ EOD;
         /* add static mappings */
         if (!empty($dhcpifconf['staticmap'])) {
             foreach ($dhcpifconf['staticmap'] as $i => $sm) {
-                $dhcpdconf .= "host s_{$dhcpif}_{$i} {\n";
+                $dhcpdconf .= "\nhost s_{$dhcpif}_{$i} {\n";
                 if (!empty($sm['mac'])) {
-                    $dhcpdconf .= "        hardware ethernet {$sm['mac']};\n";
+                    $dhcpdconf .= "  hardware ethernet {$sm['mac']};\n";
                 }
 
                 if (!empty($sm['cid'])) {
-                    $dhcpdconf .= "        option dhcp-client-identifier \"{$sm['cid']}\";\n";
+                    $dhcpdconf .= "  option dhcp-client-identifier \"{$sm['cid']}\";\n";
                 }
 
                 if (!empty($sm['ipaddr'])) {
@@ -923,19 +897,8 @@ EOD;
         $dhcpdconf .= services_dhcpd_zones($ddns_zones);
     }
 
-    /* write dhcpd.conf */
-    if (!@file_put_contents("{$g['dhcpd_chroot_path']}/etc/dhcpd.conf", $dhcpdconf)) {
-        printf(gettext("Error: cannot open dhcpd.conf in services_dhcpdv4_configure().%s"), "\n");
-        unset($dhcpdconf);
-        return 1;
-    }
-    unset($dhcpdconf);
-
-    /* create an empty leases database */
+    @file_put_contents("{$g['dhcpd_chroot_path']}/etc/dhcpd.conf", $dhcpdconf);
     @touch("{$g['dhcpd_chroot_path']}/var/db/dhcpd.leases");
-
-    /* make sure there isn't a stale dhcpd.pid file, which can make dhcpd fail to start.   */
-    /* if we get here, dhcpd has been killed and is not started yet                        */
     @unlink("{$g['dhcpd_chroot_path']}/var/run/dhcpd.pid");
 
     /* fire up dhcpd in a chroot */
@@ -943,11 +906,9 @@ EOD;
         mwexec("/usr/local/sbin/dhcpd -user dhcpd -group dhcpd -chroot {$g['dhcpd_chroot_path']} -cf /etc/dhcpd.conf -pf /var/run/dhcpd.pid " . join(" ", $dhcpdifs));
     }
 
-    if (file_exists("/var/run/booting")) {
+    if ($verbose) {
         print "done.\n";
     }
-
-    return 0;
 }
 
 function services_dhcpd_zones($ddns_zones)
@@ -1031,17 +992,15 @@ function is_dhcpv6_server_enabled()
     return false;
 }
 
-function services_dhcpdv6_configure($blacklist = array())
+function services_dhcpdv6_configure($blacklist = array(), $verbose = false)
 {
     global $config, $g;
 
-    /* kill any running dhcpd */
     killbypid("{$g['dhcpd_chroot_path']}/var/run/dhcpdv6.pid", 'TERM', true);
     killbypid('/var/run/dhcpleases6.pid', 'TERM', true);
 
-    /* DHCP enabled on any interfaces? */
     if (!is_dhcpv6_server_enabled()) {
-        return 0;
+        return;
     }
 
     $syscfg = $config['system'];
@@ -1051,10 +1010,9 @@ function services_dhcpdv6_configure($blacklist = array())
     $dhcpdv6cfg = $config['dhcpdv6'];
     $Iflist = get_configured_interface_list();
 
-    if (file_exists("/var/run/booting")) {
-        echo "Starting DHCPv6 service...";
-    } else {
-        sleep(1);
+    if ($verbose) {
+        echo 'Starting DHCPv6 service...';
+        flush();
     }
 
     /* we add a fake entry for interfaces that are set to track6 another WAN */
@@ -1124,7 +1082,6 @@ function services_dhcpdv6_configure($blacklist = array())
     }
 
     $dhcpdv6conf = <<<EOD
-
 option domain-name "{$syscfg['domain']}";
 option ldap-server code 95 = text;
 option domain-search-list code 119 = text;
@@ -1193,10 +1150,10 @@ EOD;
         }
 
         if (is_ipaddrv6($ifcfgipv6)) {
-            $dhcpdv6conf .= "subnet6 {$subnetv6}/{$ifcfgsnv6}";
+            $dhcpdv6conf .= "\nsubnet6 {$subnetv6}/{$ifcfgsnv6}";
         } else {
             $subnet6 = gen_subnetv6($dhcpv6ifconf['range']['from'], "64");
-            $dhcpdv6conf .= "subnet6 {$subnet6}/64";
+            $dhcpdv6conf .= "\nsubnet6 {$subnet6}/64";
         }
         $dhcpdv6conf .= " {\n";
 
@@ -1210,7 +1167,7 @@ EOD;
             $dhcpdv6conf .= "  prefix6 {$dhcpv6ifconf['prefixrange']['from']} {$dhcpv6ifconf['prefixrange']['to']}/{$dhcpv6ifconf['prefixrange']['prefixlength']};\n";
         }
         if (isset($dhcpv6ifconf['dns6ip']) && is_ipaddrv6($dhcpv6ifconf['dns6ip'])) {
-            $dhcpdv6conf .= "       option dhcp6.name-servers {$dhcpv6ifconf['dns6ip']};\n";
+            $dhcpdv6conf .= "  option dhcp6.name-servers {$dhcpv6ifconf['dns6ip']};\n";
         }
         // default-lease-time
         if (!empty($dhcpv6ifconf['defaultleasetime'])) {
@@ -1231,13 +1188,13 @@ EOD;
                 }
             }
             if (count($ntpservers) > 0 ) {
-                $dhcpdv6conf .= "       option dhcp6.sntp-servers " . join(",", $dhcpv6ifconf['ntpserver']) . ";\n";
+                $dhcpdv6conf .= "  option dhcp6.sntp-servers " . join(",", $dhcpv6ifconf['ntpserver']) . ";\n";
             }
         }
 
         // Handle option, number rowhelper values
-        $dhcpdv6conf .= "\n";
         if (isset($dhcpv6ifconf['numberoptions']['item'])) {
+            $dhcpdv6conf .= "\n";
             foreach($dhcpv6ifconf['numberoptions']['item'] as $itemv6idx => $itemv6) {
                 $dhcpdv6conf .= "  option custom-{$dhcpv6if}-{$itemv6idx} \"{$itemv6['value']}\";\n";
             }
@@ -1263,6 +1220,7 @@ EOD;
             $i = 0;
             foreach ($dhcpv6ifconf['staticmap'] as $sm) {
                 $dhcpdv6conf .= <<<EOD
+
 host s_{$dhcpv6if}_{$i} {
   host-identifier option dhcp6.client-id {$sm['duid']};
 
@@ -1321,30 +1279,14 @@ EOD;
     }
 
     if ($nsupdate) {
-        $dhcpdv6conf .= "ddns-update-style interim;\n";
+        $dhcpdv6conf .= "\nddns-update-style interim;\n";
         $dhcpdv6conf .= services_dhcpd_zones($ddns_zones);
     } else {
-        $dhcpdv6conf .= "ddns-update-style none;\n";
+        $dhcpdv6conf .= "\nddns-update-style none;\n";
     }
 
-    /* write dhcpdv6.conf */
-    if (!@file_put_contents("{$g['dhcpd_chroot_path']}/etc/dhcpdv6.conf", $dhcpdv6conf)) {
-        log_error("Error: cannot open {$g['dhcpd_chroot_path']}/etc/dhcpdv6.conf in services_dhcpdv6_configure().\n");
-        if (file_exists("/var/run/booting")) {
-            printf("Error: cannot open {$g['dhcpd_chroot_path']}/etc/dhcpdv6.conf in services_dhcpdv6_configure().\n");
-        }
-        unset($dhcpdv6conf);
-        return 1;
-    }
-    unset($dhcpdv6conf);
-
-    /* create an empty leases v6 database */
-    if (!file_exists("{$g['dhcpd_chroot_path']}/var/db/dhcpd6.leases")) {
-        @touch("{$g['dhcpd_chroot_path']}/var/db/dhcpd6.leases");
-    }
-
-    /* make sure there isn't a stale dhcpdv6.pid file, which may make dhcpdv6 fail to start.  */
-    /* if we get here, dhcpdv6 has been killed and is not started yet                         */
+    @file_put_contents("{$g['dhcpd_chroot_path']}/etc/dhcpdv6.conf", $dhcpdv6conf);
+    @touch("{$g['dhcpd_chroot_path']}/var/db/dhcpd6.leases");
     @unlink("{$g['dhcpd_chroot_path']}/var/run/dhcpdv6.pid");
 
     /* fire up dhcpd in a chroot */
@@ -1353,31 +1295,29 @@ EOD;
           join(" ", $dhcpdv6ifs));
         mwexec("/usr/local/sbin/dhcpleases6 -c \"/usr/local/bin/php -f /usr/local/sbin/prefixes.php|/bin/sh\" -l {$g['dhcpd_chroot_path']}/var/db/dhcpd6.leases");
     }
-    if (file_exists("/var/run/booting")) {
-        print gettext("done.") . "\n";
-    }
 
-    return 0;
+    if ($verbose) {
+        echo "done.\n";
+    }
 }
 
-function services_dhcrelay_configure()
+function services_dhcrelay_configure($verbose = false)
 {
     global $config;
+
     $dhcrelayifs = array();
 
-    /* kill any running dhcrelay */
-    killbypid('/var/run/dhcrelay.pid');
+    killbypid('/var/run/dhcrelay.pid', 'TERM', true);
 
-    $dhcrelaycfg =& $config['dhcrelay'];
+    $dhcrelaycfg = &$config['dhcrelay'];
 
-    /* DHCPRelay enabled on any interfaces? */
-    if (!isset($dhcrelaycfg['enable']))
-      return 0;
+    if (!isset($dhcrelaycfg['enable'])) {
+        return;
+    }
 
-    if (file_exists("/var/run/booting")) {
-        echo gettext("Starting DHCP relay service...");
-    } else {
-        sleep(1);
+    if ($verbose) {
+        echo 'Starting DHCP Relay...';
+        flush();
     }
 
     $iflist = get_configured_interface_list();
@@ -1463,44 +1403,39 @@ function services_dhcrelay_configure()
     }
     $dhcrelayifs = array_unique($dhcrelayifs);
 
-    /* fire up dhcrelay */
-    if (empty($dhcrelayifs)) {
-        log_error("No suitable interface found for running dhcrelay!");
-        return; /* XXX */
+    if (!empty($dhcrelayifs)) {
+        $cmd = "/usr/local/sbin/dhcrelay -i " .  implode(" -i ", $dhcrelayifs);
+
+        if (isset($dhcrelaycfg['agentoption'])) {
+            $cmd .=  " -a -m replace";
+        }
+
+        $cmd .= " " . implode(" ", $srvips);
+        mwexec($cmd);
     }
 
-    $cmd = "/usr/local/sbin/dhcrelay -i " .  implode(" -i ", $dhcrelayifs);
-
-    if (isset($dhcrelaycfg['agentoption'])) {
-        $cmd .=  " -a -m replace";
+    if ($verbose) {
+        echo "done\n";
     }
-
-    $cmd .= " " . implode(" ", $srvips);
-    mwexec($cmd);
-    unset($cmd);
-
-    return 0;
 }
 
-function services_dhcrelay6_configure()
+function services_dhcrelay6_configure($verbose = false)
 {
     global $config;
+
     $dhcrelayifs = array();
 
-    /* kill any running dhcrelay */
-    killbypid('/var/run/dhcrelay6.pid');
+    killbypid('/var/run/dhcrelay6.pid', 'TERM', true);
 
-    $dhcrelaycfg =& $config['dhcrelay6'];
+    $dhcrelaycfg = &$config['dhcrelay6'];
 
-    /* DHCPv6 Relay enabled on any interfaces? */
     if (!isset($dhcrelaycfg['enable'])) {
-        return 0;
+        return;
     }
 
-    if (file_exists("/var/run/booting")) {
-        echo gettext("Starting DHCPv6 relay service...");
-    } else {
-        sleep(1);
+    if ($verbose) {
+        echo 'Starting DHCPv6 Relay...';
+        flush();
     }
 
     $iflist = get_configured_interface_list();
@@ -1582,23 +1517,20 @@ function services_dhcrelay6_configure()
         }
     }
 
-    /* fire up dhcrelay */
-    if (empty($dhcrelayifs) || empty($srvifaces) ) {
-        log_error("No suitable interface found for running dhcrelay -6!");
-        return; /* XXX */
+    if (!empty($dhcrelayifs) && !empty($srvifaces)) {
+        $cmd = '/usr/local/sbin/dhcrelay -6 -pf /var/run/dhcrelay6.pid';
+        foreach ($dhcrelayifs as $dhcrelayif) {
+            $cmd .= " -l {$dhcrelayif}";
+        }
+        foreach ($srvifaces as $srviface) {
+            $cmd .= " -u \"{$srviface}\"";
+        }
+        mwexec($cmd);
     }
 
-    $cmd = '/usr/local/sbin/dhcrelay -6 -pf /var/run/dhcrelay6.pid';
-    foreach ($dhcrelayifs as $dhcrelayif) {
-        $cmd .= " -l {$dhcrelayif}";
+    if ($verbose) {
+        echo "done\n";
     }
-    foreach ($srvifaces as $srviface) {
-        $cmd .= " -u \"{$srviface}\"";
-    }
-    mwexec($cmd);
-    unset($cmd);
-
-    return 0;
 }
 
 function services_dyndns_list()
@@ -1724,156 +1656,6 @@ function dyndnsCheckIP($int)
         $ip_address = trim($matches[1]);
     }
     return $ip_address;
-}
-
-function services_dnsmasq_configure($verbose = false)
-{
-    global $config;
-
-    // hard coded args: will be removed to avoid duplication if specified in custom_options
-    $standard_args = array(
-        "dns-forward-max" => "--dns-forward-max=5000",
-        "cache-size" => "--cache-size=10000",
-        "local-ttl" => "--local-ttl=1"
-    );
-
-    killbypid('/var/run/dnsmasq.pid', 'TERM', true);
-
-    if (!isset($config['dnsmasq']['enable'])) {
-        return;
-    }
-
-    if ($verbose) {
-        echo 'Starting DNS forwarder...';
-        flush();
-    }
-
-    $args = "";
-
-    if (isset($config['dnsmasq']['regdhcp'])) {
-        $args .= " --dhcp-hostsfile=/etc/hosts ";
-    }
-
-    /* Setup listen port, if non-default */
-    if (isset($config['dnsmasq']['port']) && is_port($config['dnsmasq']['port'])) {
-        $args .= " --port={$config['dnsmasq']['port']} ";
-    }
-
-    if (isset($config['dnsmasq']['interface'])) {
-        $addresses = array();
-        foreach (explode(",", $config['dnsmasq']['interface']) as $interface) {
-            if (is_ipaddrv4($interface)) {
-                $addresses[] = $interface;
-            } elseif (is_ipaddrv6($interface)) {
-                 // Since dnsmasq does not support link-local address with scope specified. strip address.
-                 $addresses[] = explode("%", $interface)[0];
-            } else {
-                $intf_ipv4 = get_interface_ip($interface);
-                $intf_ipv6 = get_interface_ipv6($interface);
-                if (!empty($intf_ipv4)) {
-                    $addresses[] = $intf_ipv4;
-                }
-                if (!empty($intf_ipv6)) {
-                    $addresses[] = explode("%", $intf_ipv6)[0];
-                }
-            }
-        }
-        foreach ($addresses as $address) {
-            $args .= " --listen-address={$address} ";
-        }
-        if (!empty($addresses) && isset($config['dnsmasq']['strictbind'])) {
-            $args .= " --bind-interfaces ";
-        }
-    }
-
-    /* If selected, then first forward reverse lookups for private IPv4 addresses to nowhere. */
-    /* If any of these are duplicated by a user-specified domain override (e.g. 10.in-addr.arpa) then */
-    /* the user-specified entry made later on the command line below will be the one that is effective. */
-    if (isset($config['dnsmasq']['no_private_reverse'])) {
-        /* Note: Carrier Grade NAT (CGN) addresses 100.64.0.0/10 are intentionally not here. */
-        /* End-users should not be aware of CGN addresses, so reverse lookups for these should not happen. */
-        /* Just the OPNsense WAN might get a CGN address from an ISP. */
-        $args .= " --server=/10.in-addr.arpa/ ";
-        $args .= " --server=/168.192.in-addr.arpa/ ";
-        /* Unfortunately the 172.16.0.0/12 range does not map nicely to the in-addr.arpa scheme. */
-        for ($subnet_num = 16; $subnet_num < 32; $subnet_num++) {
-            $args .= " --server=/" . $subnet_num . ".172.in-addr.arpa/ ";
-        }
-    }
-
-    /* Setup forwarded domains */
-    if (isset($config['dnsmasq']['domainoverrides']) && is_array($config['dnsmasq']['domainoverrides'])) {
-      foreach($config['dnsmasq']['domainoverrides'] as $override) {
-        if ($override['ip'] == "!") {
-            $override['ip'] = "";
-        }
-        $args .= ' --server='. escapeshellarg('/' . $override['domain'] . '/' . $override['ip']);
-      }
-    }
-
-    /* Allow DNS Rebind for forwarded domains */
-    if (isset($config['dnsmasq']['domainoverrides']) && is_array($config['dnsmasq']['domainoverrides'])) {
-        if (!isset($config['system']['webgui']['nodnsrebindcheck'])) {
-            foreach($config['dnsmasq']['domainoverrides'] as $override) {
-                $args .= ' --rebind-domain-ok=' . escapeshellarg('/'.$override['domain'].'/') . ' ' ;
-            }
-        }
-    }
-
-    if (!isset($config['system']['webgui']['nodnsrebindcheck'])) {
-        $dns_rebind = "--rebind-localhost-ok --stop-dns-rebind";
-    }
-
-    if (isset($config['dnsmasq']['strict_order'])) {
-        $args .= " --strict-order ";
-    }
-
-    if (isset($config['dnsmasq']['domain_needed'])) {
-        $args .= " --domain-needed ";
-    }
-
-    if (isset($config['dnsmasq']['custom_options']) && !empty($config['dnsmasq']['custom_options'])) {
-        foreach (preg_split('/\s+/', $config['dnsmasq']['custom_options']) as $c) {
-            $args .= " " . escapeshellarg("--{$c}");
-            $p = explode('=', $c);
-            if (array_key_exists($p[0], $standard_args)) {
-                unset($standard_args[$p[0]]);
-            }
-        }
-    }
-    $args .= ' ' . implode(' ', array_values($standard_args));
-
-    /* run dnsmasq */
-    $cmd = "/usr/local/sbin/dnsmasq --all-servers {$dns_rebind} {$args}";
-    mwexec_bg($cmd);
-    services_dhcpleases_configure();
-    unset($args);
-
-    if ($verbose) {
-        echo "done.\n";
-    }
-}
-
-function services_unbound_configure($verbose = false)
-{
-    global $config;
-
-    killbypid('/var/run/unbound.pid', 'TERM', true);
-
-    if (!isset($config['unbound']['enable'])) {
-        return;
-    }
-
-    if ($verbose) {
-        echo "Starting DNS Resolver...";
-        flush();
-    }
-
-    unbound_sync_service();
-
-    if ($verbose) {
-        echo "done.\n";
-    }
 }
 
 function services_dnsupdate_process($int = '', $updatehost = '', $forced = false)
@@ -2051,36 +1833,6 @@ function services_get()
         $pconfig['php']['restart'] = array('services_radvd_configure');
         $pconfig['php']['start'] = array('services_radvd_configure');
         $pconfig['pidfile'] = '/var/run/radvd.pid';
-        $services[] = $pconfig;
-    }
-
-    if (isset($config['dnsmasq']['enable'])) {
-        $pconfig = array();
-        $pconfig['name'] = "dnsmasq";
-        $pconfig['description'] = gettext("DNS Forwarder");
-        $pconfig['php']['restart'] = array('services_dnsmasq_configure');
-        $pconfig['php']['start'] = array('services_dnsmasq_configure');
-        $pconfig['pidfile'] = '/var/run/dnsmasq.pid';
-        $services[] = $pconfig;
-    }
-
-    if (isset($config['unbound']['enable'])) {
-        $pconfig = array();
-        $pconfig['name'] = "unbound";
-        $pconfig['description'] = gettext("Unbound DNS Resolver");
-        $pconfig['php']['restart'] = array('services_unbound_configure');
-        $pconfig['php']['start'] = array('services_unbound_configure');
-        $pconfig['pidfile'] = '/var/run/unbound.pid';
-        $services[] = $pconfig;
-    }
-
-    if (isset($config['system']['timeservers'])) {
-        $pconfig = array();
-        $pconfig['name'] = "ntpd";
-        $pconfig['description'] = gettext("NTP clock sync");
-        $pconfig['php']['restart'] = array('system_ntp_configure');
-        $pconfig['php']['start'] = array('system_ntp_configure');
-        $pconfig['pidfile'] = '/var/run/ntpd.pid';
         $services[] = $pconfig;
     }
 
@@ -2300,8 +2052,8 @@ function get_service_control_links($service, $addname = false)
     return $output;
 }
 
-/* radvd enabled on any interfaces? */
-function is_radvd_enabled() {
+function is_radvd_enabled()
+{
     global $config;
 
     if (!isset($config['dhcpdv6']) || !is_array($config['dhcpdv6'])) {
@@ -2315,18 +2067,7 @@ function is_radvd_enabled() {
     foreach ($dhcpdv6cfg as $dhcpv6if => $dhcpv6ifconf) {
         if (!isset($config['interfaces'][$dhcpv6if]['enable'])) {
             continue;
-        }
-
-        if (!isset($dhcpv6ifconf['ramode'])) {
-            $dhcpv6ifconf['ramode'] = $dhcpv6ifconf['mode'];
-        }
-
-        if ($dhcpv6ifconf['ramode'] == "disabled") {
-            continue;
-        }
-
-        $ifcfgipv6 = get_interface_ipv6($dhcpv6if);
-        if (!is_ipaddrv6($ifcfgipv6)) {
+        } elseif ($dhcpv6ifconf['ramode'] == "disabled") {
             continue;
         }
 
@@ -2337,20 +2078,9 @@ function is_radvd_enabled() {
     foreach ($Iflist as $if => $ifdescr) {
         if (!isset($config['interfaces'][$if]['track6-interface'])) {
             continue;
-        }
-        if (!isset($config['interfaces'][$if]['enable'])) {
+        } elseif (empty($config['interfaces'][$config['interfaces'][$if]['track6-interface']])) {
             continue;
-        }
-
-        $ifcfgipv6 = get_interface_ipv6($if);
-        if (!is_ipaddrv6($ifcfgipv6)) {
-            continue;
-        }
-
-        $ifcfgsnv6 = get_interface_subnetv6($if);
-        $subnetv6 = gen_subnetv6($ifcfgipv6, $ifcfgsnv6);
-
-        if (!is_ipaddrv6($subnetv6)) {
+        } elseif (!isset($config['interfaces'][$if]['enable'])) {
             continue;
         }
 

@@ -37,6 +37,7 @@ import gzip
 import zipfile
 import syslog
 import shutil
+import urllib2
 from ConfigParser import ConfigParser
 import requests
 
@@ -49,32 +50,58 @@ class Downloader(object):
     """ Download helper
     """
 
-    def __init__(self, url,username, password, timeout):
+    def __init__(self, url,username, password, timeout, ssl_no_verify=False):
         """ init new
             :param url: source url
             :param timeout: timeout in seconds
         """
-        self._url = url
+        self._url = url.strip()
         self._timeout = timeout
         self._source_handle = None
         self._username = username
         self._password = password
+        self._ssl_no_verify = ssl_no_verify
 
     def fetch(self):
         """ fetch (raw) source data into tempfile using self._source_handle
         """
-        if self._username is not None:
-            req = requests.get(url=self._url, stream=True, timeout=self._timeout, auth=(self._username, self._password))
+        self._source_handle = None
+        if self._url.lower().startswith('http://') or self._url.lower().startswith('https://'):
+            # HTTP(S) download
+            req_opts = dict()
+            req_opts['url'] = self._url
+            req_opts['stream'] = True
+            req_opts['timeout'] = self._timeout
+            if self._ssl_no_verify:
+                req_opts['verify'] = False
+            if self._username is not None:
+                req_opts['auth'] = (self._username, self._password)
+
+            req = requests.get(**req_opts)
+            if req.status_code == 200:
+                self._source_handle = tempfile.NamedTemporaryFile()
+                shutil.copyfileobj(req.raw, self._source_handle)
+                self._source_handle.seek(0)
+            else:
+                syslog.syslog(syslog.LOG_ERR, 'proxy acl: error downloading %s (http code: %s)' % (self._url,
+                                                                                                   req.status_code))
+        elif self._url.lower().startswith('ftp://'):
+            # FTP download
+            try:
+                f = urllib2.urlopen(self._url, timeout=self._timeout)
+                self._source_handle = tempfile.NamedTemporaryFile()
+                while True:
+                    data = f.read(1024)
+                    if not data:
+                        break
+                    else:
+                         self._source_handle.write(data)
+                self._source_handle.seek(0)
+                f.close()
+            except (urllib2.URLError, urllib2.HTTPError, IOError) as e:
+                 syslog.syslog(syslog.LOG_ERR, 'proxy acl: error downloading %s' % self._url)
         else:
-            req = requests.get(url=self._url, stream=True, timeout=self._timeout)
-        if req.status_code == 200:
-            self._source_handle = tempfile.NamedTemporaryFile()
-            shutil.copyfileobj(req.raw, self._source_handle)
-            self._source_handle.seek(0)
-        else:
-            syslog.syslog(syslog.LOG_ERR, 'proxy acl: error downloading %s (http code: %s)' % (self._url,
-                                                                                               req.status_code))
-            self._source_handle = None
+            syslog.syslog(syslog.LOG_ERR, 'proxy acl: unsupported protocol for %s' % self._url)
 
     def get_files(self):
         """ process downloaded data, handle compression
@@ -116,11 +143,13 @@ class Downloader(object):
         """
         self.fetch()
         for filename, filehandle in self.get_files():
+            basefilename = os.path.basename(filename).lower()
+            file_ext = filename.split('.')[-1].lower()
             while True:
                 line = filehandle.readline()
                 if not line:
                     break
-                yield filename, line
+                yield filename, basefilename, file_ext, line
 
 
 class DomainSorter(object):
@@ -231,13 +260,14 @@ class DomainSorter(object):
                     prev_line = line
 
 
-def filename_in_ignorelist(filename):
+def filename_in_ignorelist(bfilename, filename_ext):
     """ ignore certain files from processing.
-        :param filename: filename to inspect
+        :param bfilename: basefilename to inspect
+        :param filename_ext: extention of the filename
     """
-    if filename.lower().split('.')[-1] in ['pdf', 'txt', 'doc']:
+    if filename_ext in ['pdf', 'txt', 'doc']:
         return True
-    elif filename.lower() in ('readme', 'license', 'usage', 'categories'):
+    elif bfilename in ('readme', 'license', 'usage', 'categories'):
         return True
     return False
 
@@ -277,10 +307,14 @@ def main():
                     else:
                         download_username = None
                         download_password = None
-                    acl = Downloader(download_url, download_username, download_password, acl_max_timeout)
+                    if cnf.has_option(section, 'sslNoVerify') and cnf.get(section, 'sslNoVerify') == '1':
+                        sslNoVerify = True
+                    else:
+                        sslNoVerify = False
+                    acl = Downloader(download_url, download_username, download_password, acl_max_timeout, sslNoVerify)
                     all_filenames = list()
-                    for filename, line in acl.download():
-                        if filename_in_ignorelist(os.path.basename(filename)):
+                    for filename, basefilename, file_ext, line in acl.download():
+                        if filename_in_ignorelist(basefilename, file_ext):
                             # ignore documents, licenses and readme's
                             continue
 
@@ -304,8 +338,7 @@ def main():
                                 continue
 
                         if filetype in targets and targets[filetype]['handle'] is None:
-                            targets[filetype]['handle'] = targets[filetype]['class'](targets[filetype]['filename'],
-                                                                                     'wb')
+                            targets[filetype]['handle'] = targets[filetype]['class'](targets[filetype]['filename'],'wb')
                         if filetype in targets:
                             targets[filetype]['handle'].write('%s\n' % line)
                     # save index to disc

@@ -1,8 +1,7 @@
-#!/usr/local/bin/php
 <?php
 
 /*
-    Copyright (C) 2004 Scott Ullrich
+    Copyright (C) 2016 Franco Fichtner <franco@opnsense.org>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -27,38 +26,30 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-require_once("config.inc");
-require_once("interfaces.inc");
-require_once("openvpn.inc");
-require_once("filter.inc");
-require_once('ipsec.inc');
-require_once("util.inc");
-require_once("system.inc");
-require_once("services.inc");
-require_once("interfaces.inc");
+function netflow_enabled()
+{
+    $mdl = new \OPNsense\Diagnostics\Netflow();
 
-global $config;
-
-$config = parse_config();
-
-log_error("rc.reload_all: Reloading all configuration settings.");
-
-system_firmware_configure();
-system_login_configure();
-system_timezone_configure();
-system_hostname_configure();
-system_hosts_generate();
-system_resolvconf_generate();
-system_routing_enable();
-interfaces_configure();
-services_dyndns_configure();
-system_cron_configure();
-mwexec_bg('/usr/local/etc/rc.sshd');
-mwexec_bg('/usr/local/etc/rc.restart_webgui');
-
-if (function_exists('plugins_configure')) {
-    plugins_configure('local');
+    return $mdl->collect->enable == '1';
 }
 
-log_error("rc.reload_all: Reloading filter configuration.");
-filter_configure_sync();
+function netflow_services()
+{
+    $services = array();
+
+    if (!netflow_enabled()) {
+        return $services;
+    }
+
+    $services[] = array(
+        'description' => gettext('NetFlow Capture'),
+        'configd' => array(
+            'restart' => array('netflow restart'),
+            'start' => array('netflow start'),
+            'stop' => array('netflow stop'),
+        ),
+        'name' => 'samplicate',
+    );
+
+    return $services;
+}

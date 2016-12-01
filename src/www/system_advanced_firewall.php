@@ -46,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['disablefilter'] = !empty($config['system']['disablefilter']);
     $pconfig['optimization'] = isset($config['system']['optimization']) ? $config['system']['optimization'] : "normal";
     $pconfig['maximumstates'] = isset($config['system']['maximumstates']) ? $config['system']['maximumstates'] : null;
+    $pconfig['maximumfrags'] = isset($config['system']['maximumfrags']) ? $config['system']['maximumfrags'] : null;
     $pconfig['adaptivestart'] = isset($config['system']['adaptivestart']) ? $config['system']['adaptivestart'] : null;
     $pconfig['adaptiveend'] = isset($config['system']['adaptiveend']) ? $config['system']['adaptiveend'] : null;
     $pconfig['aliasesresolveinterval'] = isset($config['system']['aliasesresolveinterval']) ? $config['system']['aliasesresolveinterval'] : null;
@@ -83,6 +84,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
     if (!empty($pconfig['maximumstates']) && !is_numericint($pconfig['maximumstates'])) {
         $input_errors[] = gettext("The Firewall Maximum States value must be an integer.");
+    }
+    if (!empty($pconfig['maximumfrags']) && !is_numericint($pconfig['maximumfrags'])) {
+        $input_errors[] = gettext("The Firewall Maximum Frags value must be an integer.");
     }
     if (!empty($pconfig['aliasesresolveinterval']) && !is_numericint($pconfig['aliasesresolveinterval'])) {
         $input_errors[] = gettext("The Aliases Hostname Resolve Interval value must be an integer.");
@@ -161,6 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         $config['system']['optimization'] = $pconfig['optimization'];
         $config['system']['maximumstates'] = $pconfig['maximumstates'];
+        $config['system']['maximumfrags'] = $pconfig['maximumfrags'];
         $config['system']['aliasesresolveinterval'] = $pconfig['aliasesresolveinterval'];
         $config['system']['maximumtableentries'] = $pconfig['maximumtableentries'];
 
@@ -482,6 +487,17 @@ include("head.inc");
                       <strong><?=gettext("Maximum number of connections to hold in the firewall state table.");?></strong>
                       <br />
                       <?=gettext("Note: Leave this blank for the default. On your system the default size is:");?> <?= default_state_size() ?>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td><a id="help_for_maximumfrags" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Firewall Maximum Fragments");?></td>
+                  <td>
+                    <input name="maximumfrags" type="text" id="maximumfrags" value="<?=$pconfig['maximumfrags'];?>" />
+                    <div class="hidden" for="help_for_maximumfrags">
+                      <strong><?=gettext("Sets the maximum number of entries in the memory pool used for fragment reassembly.");?></strong>
+                      <br />
+                      <?=gettext("Note: Leave this blank for the default.");?>
                     </div>
                   </td>
                 </tr>
