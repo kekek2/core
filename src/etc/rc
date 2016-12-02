@@ -96,6 +96,7 @@ mkdir -p /conf/sshd
 if [ ! -f /conf/config.xml ]; then
 	echo -n "Bootstrapping config.xml..."
 	cp /usr/local/etc/config.xml /conf/config.xml
+	cp /usr/local/etc/config.xml.sum /conf/config.xml.sum
 	echo "done."
 fi
 
@@ -269,6 +270,8 @@ echo "done."
 TING_CLIENT_KEY=/usr/local/etc/ssl/ting-client.key
 [ -d /usr/local/etc/ssl ] || mkdir -p /usr/local/etc/ssl
 [ -f ${TING_CLIENT_KEY} ] || openssl genrsa -out ${TING_CLIENT_KEY} 2048
+
+/usr/local/bin/php /usr/local/etc/checksum.php
 
 # Check pkg cache dir
 PKG_CACHEDIR=`/usr/sbin/pkg config PKG_CACHEDIR`
