@@ -837,7 +837,7 @@ fastcgi.server = ( ".php" =>
       "socket" => "{$fast_cgi_path}",
       "max-procs" => 2,
       "bin-environment" => (
-        "PHP_FCGI_CHILDREN" => "3",
+        "PHP_FCGI_CHILDREN" => "5",
         "PHP_FCGI_MAX_REQUESTS" => "100"
       ),
       "bin-path" => "/usr/local/bin/php-cgi"
