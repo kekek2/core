@@ -165,12 +165,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $scub_action = "Add Firewall/Settings/Normalization";
         }
         // write to config
-        if (write_config()) {
-            mark_subsystem_dirty('filter');
-            firewall_syslog($scub_action, $a_scrub, $scrubent);
-        }
+        write_config();
+        mark_subsystem_dirty('filter');
+        firewall_syslog($scub_action, $a_scrub, $scrubent);
 
-        header("Location: firewall_scrub.php");
+        header(url_safe('Location: /firewall_scrub.php'));
         exit;
     }
 }

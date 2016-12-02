@@ -187,13 +187,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             if ($ca) {
                 $args['extracerts'] = openssl_x509_read(base64_decode($ca['crt']));
             }
+            set_error_handler (
+                function () {
+                    return;
+                }
+            );
 
+            $exp_data = "";
             $res_crt = openssl_x509_read(base64_decode($a_cert[$id]['crt']));
             $res_key = openssl_pkey_get_private(array(0 => base64_decode($a_cert[$id]['prv']) , 1 => ""));
 
-            $exp_data = "";
             openssl_pkcs12_export($res_crt, $exp_data, $res_key, null, $args);
             $exp_size = strlen($exp_data);
+            restore_error_handler();
 
             header("Content-Type: application/octet-stream");
             header("Content-Disposition: attachment; filename={$exp_name}");
@@ -203,7 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     } elseif ($act == "csr") {
         if (!isset($id)) {
-            header("Location: system_certmanager.php");
+            header(url_safe('Location: /system_certmanager.php'));
             exit;
         }
         $pconfig['descr'] = $a_cert[$id]['descr'];
@@ -244,13 +250,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             unset($a_cert[$id]);
             write_config();
         }
-        header("Location: system_certmanager.php");
+        header(url_safe('Location: /system_certmanager.php'));
         exit;
     } elseif ($act == "csr") {
         $input_errors = array();
         $pconfig = $_POST;
         if (!isset($id)) {
-            header("Location: system_certmanager.php");
+            header(url_safe('Location: /system_certmanager.php'));
             exit;
         }
 
@@ -279,7 +285,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
             write_config();
 
-            header("Location: system_certmanager.php");
+            header(url_safe('Location: /system_certmanager.php'));
             exit;
         }
     } elseif (!empty($_POST['save'])) {
@@ -495,9 +501,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             if (count($input_errors) == 0) {
                 write_config();
                 if (isset($userid)) {
-                    header("Location: system_usermanager.php?act=edit&userid=".$userid);
+                    header(url_safe('Location: /system_usermanager.php?act=edit&userid=%s', array($userid)));
                 } else {
-                    header("Location: system_certmanager.php");
+                    header(url_safe('Location: /system_certmanager.php'));
                 }
                 exit;
             }

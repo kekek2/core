@@ -30,7 +30,9 @@
 require_once("guiconfig.inc");
 require_once("interfaces.inc");
 require_once("services.inc");
+require_once("filter.inc");
 require_once("system.inc");
+require_once("plugins.inc.d/miniupnpd.inc");
 
 function upnp_validate_ip($ip) {
     /* validate cidr */
@@ -59,7 +61,6 @@ function upnp_validate_port($port) {
     }
     return true;
 }
-
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = array();
@@ -149,8 +150,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $config['installedpackages']['miniupnpd']['config'] = $upnp;
 
         write_config('Modified Universal Plug and Play settings');
-        sync_package_miniupnpd();
-        header("Location: services_upnp.php");
+        miniupnpd_configure_do();
+        filter_configure();
+        header(url_safe('Location: /services_upnp.php'));
         exit;
     }
 }

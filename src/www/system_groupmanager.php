@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         unset($a_group[$id]);
         write_config();
         // reload page
-        header("Location: system_groupmanager.php");
+        header(url_safe('Location: /system_groupmanager.php'));
         exit;
     }  elseif (isset($pconfig['save'])) {
         $input_errors = array();
@@ -144,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 }
             }
             write_config();
-            header("Location: system_groupmanager.php");
+            header(url_safe('Location: /system_groupmanager.php'));
             exit;
         } else {
             // input errors, load page in edit mode
@@ -152,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
     } else {
         // POST without a valid action, redirect to overview
-        header("Location: system_groupmanager.php");
+        header(url_safe('Location: /system_groupmanager.php'));
         exit;
     }
 }
@@ -368,7 +368,7 @@ $( document ).ready(function() {
             <input type="hidden" id="act" name="act" value="" />
             <input type="hidden" id="groupid" name="groupid" value="<?=(isset($id) ? $id : "");?>" />
             <input type="hidden" id="groupname" name="groupname" value="" />
-            <table class="table table-clean-form table-sort">
+            <table class="table table-clean-form">
               <thead>
                 <tr>
                   <th><?=gettext("Group name");?></th>

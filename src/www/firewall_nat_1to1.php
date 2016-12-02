@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         write_config();
         mark_subsystem_dirty('natconf');
         firewall_syslog("Delete Firewall/NAT/One-to-One", $id);
-        header("Location: firewall_nat_1to1.php");
+        header(url_safe('Location: /firewall_nat_1to1.php'));
         exit;
     } elseif (isset($pconfig['action']) && $pconfig['action'] == 'del_x' && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
         // delete selected
@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach ($id_for_delete as $idk) {
             firewall_syslog("Delete Firewall/NAT/One-to-One", $idk);
         };
-        header("Location: firewall_nat_1to1.php");
+        header(url_safe('Location: /firewall_nat_1to1.php'));
         exit;
     } elseif (isset($pconfig['action']) && $pconfig['action'] == 'move') {
         // move selected
@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             write_config();
             mark_subsystem_dirty('natconf');
             firewall_syslog("Move Firewall/NAT/One-to-One", $id);
-            header("Location: firewall_nat_1to1.php");
+            header(url_safe('Location: /firewall_nat_1to1.php'));
             exit;
         }
     } elseif (isset($pconfig['action']) && $pconfig['action'] == 'toggle' && isset($id)) {
@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         write_config(gettext('Toggled NAT rule'));
         mark_subsystem_dirty('natconf');
         firewall_syslog($a_1to1_action, $id);
-        header("Location: firewall_nat_1to1.php");
+        header(url_safe('Location: /firewall_nat_1to1.php'));
         exit;
     }
 }

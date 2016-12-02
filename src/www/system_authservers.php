@@ -265,7 +265,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
           }
 
           write_config();
-          header("Location: system_authservers.php");
+          header(url_safe('Location: /system_authservers.php'));
+          exit;
       } else {
           $act = "edit";
       }
@@ -277,12 +278,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 unset($config['system']['authserver'][$k]);
             }
         }
-        $savemsg = gettext("Authentication Server")." {$serverdeleted} ".
-                    gettext("deleted")."<br />";
-        write_config($savemsg);
-        header("Location: system_authservers.php");
+        write_config(sprintf('Authentication server "%s" deleted.', $serverdeleted));
+        header(url_safe('Location: /system_authservers.php'));
+        exit;
     }
-
 }
 
 // list of all possible fields for auth item (used for form init)
@@ -334,7 +333,7 @@ $( document ).ready(function() {
               $("#ldap_attr_user").val('cn');
               break;
             case 'msad':
-              $("#ldap_attr_user").val('samAccountName');
+              $("#ldap_attr_user").val('sAMAccountName');
               break;
         }
     });
@@ -615,9 +614,12 @@ endif; ?>
 <?php
 endif; ?>
                 <tr class="auth_ldap auth_options hidden">
-                  <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("User naming attribute");?></td>
+                  <td><a id="help_for_ldap_attr_user" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("User naming attribute");?></td>
                   <td>
                     <input name="ldap_attr_user" type="text" id="ldap_attr_user" size="20" value="<?=$pconfig['ldap_attr_user'];?>"/>
+                    <div class="hidden" for="help_for_ldap_attr_user">
+                      <?= gettext('Typically "cn" (OpenLDAP, Novell eDirectory), "sAMAccountName" (Microsoft AD)') ?>
+                    </div>
                   </td>
                 </tr>
                 <!-- RADIUS -->
@@ -743,7 +745,7 @@ else :
           <form id="iform_overview" method="post">
             <input type="hidden" id="overview_id" name="id">
             <input type="hidden" id="overview_act" name="act">
-            <table class="table table-clean-form table-sort">
+            <table class="table table-clean-form">
               <thead>
                 <tr>
                   <th><?=gettext("Server Name");?></th>

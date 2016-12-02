@@ -119,20 +119,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $config['nat']['outbound']['mode'] = $pconfig['mode'];
 
-        if (write_config()) {
-            mark_subsystem_dirty('natconf');
-            firewall_syslog("Change mode Firwall/NAT/Outbound");
-        }
-        header("Location: firewall_nat_out.php");
+        write_config();
+        mark_subsystem_dirty('natconf');
+        firewall_syslog("Change mode Firwall/NAT/Outbound");
+        header(url_safe('Location: /firewall_nat_out.php'));
         exit;
     } elseif (isset($pconfig['act']) && $pconfig['act'] == 'del' && isset($id)) {
         // delete single record
         unset($a_out[$id]);
-        if (write_config()) {
-            mark_subsystem_dirty('natconf');
-            firewall_syslog("Delete Firwall/NAT/Outbound", $id);
-        }
-        header("Location: firewall_nat_out.php");
+        write_config();
+        mark_subsystem_dirty('natconf');
+        firewall_syslog("Delete Firwall/NAT/Outbound", $id);
+        header(url_safe('Location: /firewall_nat_out.php'));
         exit;
     } elseif (isset($pconfig['act']) && $pconfig['act'] == 'del_x' && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
         /* delete selected rules */
@@ -143,12 +141,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $id_for_delete[] = $rulei;
             }
         }
-        if (write_config()) {
-            mark_subsystem_dirty('natconf');
-            foreach ($id_for_delete as $idk)
-                firewall_syslog("Delete Firwall/NAT/Outbound", $idk);
-        }
-        header("Location: firewall_nat_out.php");
+        write_config();
+        mark_subsystem_dirty('natconf');
+        foreach ($id_for_delete as $idk)
+            firewall_syslog("Delete Firwall/NAT/Outbound", $idk);
+        header(url_safe('Location: /firewall_nat_out.php'));
         exit;
     } elseif ( isset($pconfig['act']) && $pconfig['act'] == 'move' && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
         // if rule not set/found, move to end
@@ -156,11 +153,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id = count($a_out);
         }
         $a_out = legacy_move_config_list_items($a_out, $id,  $pconfig['rule']);
-        if (write_config()) {
-            mark_subsystem_dirty('natconf');
-            firewall_syslog("Move Firwall/NAT/Outbound", $id);
-        }
-        header("Location: firewall_nat_out.php");
+        write_config();
+        mark_subsystem_dirty('natconf');
+        firewall_syslog("Move Firwall/NAT/Outbound", $id);
+        header(url_safe('Location: /firewall_nat_out.php'));
         exit;
     } elseif (isset($pconfig['act']) && $pconfig['act'] == 'toggle' && isset($id)) {
         // toggle item disabled / enabled
@@ -171,11 +167,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $a_out[$id]['disabled'] = true;
             $out_action = "Disable Firwall/NAT/Outbound";
         }
-        if (write_config("Firewall: NAT: Outbound, enable/disable NAT rule")) {
-            mark_subsystem_dirty('natconf');
-            firewall_syslog($out_action, $id);
-        }
-        header("Location: firewall_nat_out.php");
+        write_config("Firewall: NAT: Outbound, enable/disable NAT rule");
+        mark_subsystem_dirty('natconf');
+        firewall_syslog($out_action, $id);
+        header(url_safe('Location: /firewall_nat_out.php'));
         exit;
     }
 }
@@ -342,7 +337,7 @@ include("head.inc");
 <?php if ($mode == 'advanced' || $mode == 'hybrid'): ?>
         <section class="col-xs-12">
           <div class="table-responsive content-box ">
-            <table class="table table-striped table-sort">
+            <table class="table table-striped">
               <thead>
                 <tr><th colspan="12"><?=gettext("Manual rules:"); ?></th></tr>
                 <tr>
@@ -402,7 +397,23 @@ include("head.inc");
                     </td>
                     <td class="hidden-xs hidden-sm">
                       <?=!empty($natent['protocol']) ? $natent['protocol'] . '/' : "" ;?>
-                      <?=!empty($natent['sourceport']) ? $natent['sourceport'] : "*"; ?>
+<?php
+                      if (empty($natent['sourceport'])):?>
+                      *
+<?php
+                      elseif (isset($natent['sourceport']) && is_alias($natent['sourceport'])):?>
+                      <span title="<?=htmlspecialchars(get_alias_description($natent['sourceport']));?>" data-toggle="tooltip">
+                        <?=htmlspecialchars(pprint_port($natent['sourceport'])); ?>&nbsp;
+                      </span>
+                      <a href="/firewall_aliases_edit.php?name=<?=htmlspecialchars($natent['sourceport']);?>"
+                          title="<?=gettext("edit alias");?>" data-toggle="tooltip">
+                        <i class="fa fa-list"></i>
+                      </a>
+<?php
+                      else:?>
+                      <?=htmlspecialchars($natent['sourceport'])?>
+<?php
+                      endif;?>
                     </td>
                     <td class="hidden-xs hidden-sm">
                       <?=isset($natent['destination']['not']) ? "!&nbsp;" :"";?>
@@ -420,7 +431,23 @@ include("head.inc");
                     </td>
                     <td class="hidden-xs hidden-sm">
                       <?=!empty($natent['protocol']) ? $natent['protocol'] . '/' : "" ;?>
-                      <?=empty($natent['dstport']) ? "*" : $natent['dstport'] ;?>
+<?php
+                      if (empty($natent['dstport'])):?>
+                      *
+<?php
+                      elseif (isset($natent['dstport']) && is_alias($natent['dstport'])):?>
+                      <span title="<?=htmlspecialchars(get_alias_description($natent['dstport']));?>" data-toggle="tooltip">
+                        <?=htmlspecialchars(pprint_port($natent['dstport'])); ?>&nbsp;
+                      </span>
+                      <a href="/firewall_aliases_edit.php?name=<?=htmlspecialchars($natent['dstport']);?>"
+                          title="<?=gettext("edit alias");?>" data-toggle="tooltip">
+                        <i class="fa fa-list"></i>
+                      </a>
+<?php
+                      else:?>
+                      <?=htmlspecialchars($natent['dstport'])?>
+<?php
+                      endif;?>
                     </td>
                     <td class="hidden-xs hidden-sm">
 <?php
@@ -541,7 +568,7 @@ include("head.inc");
 ?>
         <section class="col-xs-12">
           <div class="table-responsive content-box ">
-            <table class="table table-striped table-sort">
+            <table class="table table-striped">
               <thead>
                   <tr>
                     <th colspan="11"><?=gettext("Automatic rules:"); ?></th>

@@ -30,47 +30,35 @@
 */
 
 /* looks weird, but means we started PHP successfully */
-echo " done.\n";
-
-echo "Initializing...";
-require_once("config.inc");
-echo ".";
-require_once("config.console.inc");
-echo ".";
-require_once("auth.inc");
-echo ".";
-require_once("util.inc");
-echo ".";
-require_once("interfaces.inc");
-echo ".";
-require_once("services.inc");
-echo ".";
-require_once("system.inc");
-echo ".";
-require_once("unbound.inc");
-echo ".";
-require_once("vslb.inc");
-echo ".";
-require_once("filter.inc");
-echo ".";
-require_once("ipsec.inc");
-echo ".";
-require_once("openvpn.inc");
-echo ".";
-require_once("rrd.inc");
-echo " done.\n";
-
-/* start devd (dhclient now uses it) */
-echo "Starting device manager (devd)...";
-mute_kernel_msgs();
-exec('/sbin/devd');
-sleep(1);
-set_device_perms();
-unmute_kernel_msgs();
 echo "done.\n";
 
-/* configure console menu */
-system_console_configure();
+echo "Initializing...";
+flush();
+
+$inc_files = array(
+    'config.inc',
+    'config.console.inc',
+    'auth.inc',
+    'util.inc',
+    'interfaces.inc',
+    'services.inc',
+    'system.inc',
+    'filter.inc',
+    'ipsec.inc',
+    'openvpn.inc',
+    'rrd.inc',
+);
+
+foreach ($inc_files as $inc_file) {
+    require_once $inc_file;
+    echo '.';
+    flush();
+}
+
+echo "done.\n";
+
+system_devd_configure(true);
+system_login_configure(true);
 
 $setup_installer = is_install_media();
 if ($setup_installer) {
@@ -93,11 +81,9 @@ if ($setup_installer) {
     OPNsense\Core\Config::getInstance()->forceReload();
 }
 
-echo "Loading configuration...";
 global $config;
-$config = parse_config();
+$config = parse_config(true);
 convert_config();
-echo "done.\n";
 
 /*
  *  Determine if we need to throw a interface exception
@@ -109,25 +95,11 @@ if (is_interface_mismatch()) {
     while (!set_networking_interfaces_ports(true));
 }
 
-/* enable optional crypto modules */
-load_crypto_module();
-
-/* enable optional thermal sensor modules */
-load_thermal_module();
-
-/* read in /etc/sysctl.conf and set values if needed */
-echo "Setting up extended sysctls...";
-system_setup_sysctl();
-echo "done.\n";
-
-/* set up our timezone */
-system_timezone_configure();
-
-/* set up firmware configuration */
-system_firmware_configure();
-
-/* set up our hostname */
-system_hostname_configure();
+system_kernel_configure(true);
+system_sysctl_configure(true);
+system_timezone_configure(true);
+system_firmware_configure(true);
+system_hostname_configure(true);
 
 /* make hosts file */
 system_hosts_generate();
@@ -136,16 +108,13 @@ system_hosts_generate();
 interfaces_loopback_configure();
 
 /* start syslogd */
-system_syslogd_start();
+system_syslogd_start(true);
 
 /* set up interfaces */
-mute_kernel_msgs();
+system_console_mute();
 openvpn_prepare_all();
 interfaces_configure();
-unmute_kernel_msgs();
-
-/* re-make hosts file after configuring interfaces */
-system_hosts_generate();
+system_console_unmute();
 
 /* start OpenVPN server & clients */
 echo "Syncing OpenVPN settings...";
@@ -156,7 +125,7 @@ echo "done.\n";
 system_resolvconf_generate();
 
 /* setup pf */
-filter_configure_sync();
+filter_configure_sync(true);
 
 /* start pflog */
 echo "Starting PFLOG...";
@@ -178,60 +147,32 @@ mwexec("/usr/local/etc/rc.sshd");
 /* start web server */
 echo 'Starting webConfigurator...'. (system_webgui_configure() ? "done.\n" : "failed.\n");
 
-/* configure cron service */
-echo "Configuring CRON...";
-configure_cron();
-echo "done.\n";
-
-/* set up static routes */
+system_cron_configure(true);
 system_routing_configure();
-
-/* enable routing */
 system_routing_enable();
-
-/* start dnsmasq service */
-services_dnsmasq_configure(false);
-
-/* start unbound service */
-services_unbound_configure(false);
-
-/* Do an initial time sync */
-echo "Starting NTP time client...";
-system_ntp_configure(false);
-echo "done.\n";
-
-/* start load balancer daemon */
-relayd_configure();
-
-/* start DHCP service */
-services_dhcpd_configure();
-
-/* start dhcpleases dhpcp hosts leases program */
-services_dhcpleases_configure();
-
-/* start DHCP relay */
-services_dhcrelay_configure();
-
-/* start DHCP6 relay */
-services_dhcrelay6_configure();
+dnsmasq_configure_do(true);
+unbound_configure_do(true);
+services_dhcpd_configure('all', array(), true);
+system_hosts_generate();
+services_dhcrelay_configure(true);
+services_dhcrelay6_configure(true);
 
 /* dyndns service updates */
 mwexec("/usr/local/etc/rc.dyndns.update");
 
 /* Run a filter configure now that most all services have started */
-filter_configure_sync();
+filter_configure_sync(true);
 
-/* Run all registered plugins */
-plugins_configure();
+/* start all registered plugins */
+if (function_exists('plugins_configure')) {
+    plugins_configure('bootup', true);
+}
 
 /* start IPsec tunnels */
 $ipsec_dynamic_hosts = ipsec_configure();
 
-/* start SNMP service */
-services_snmpd_configure();
-
 /* load graphing functions */
-enable_rrd_graphing();
+enable_rrd_graphing(true);
 
 /* if we are operating at 1000 then increase timeouts.
    this was never accounted for after moving to 1000 hz */
@@ -241,12 +182,6 @@ $kern_hz = substr($kern_hz, 0, strpos($kern_hz, ','));
 if ($kern_hz == '1000') {
     set_single_sysctl('net.inet.tcp.rexmit_min' , '30');
 }
-
-/* start the igmpproxy daemon */
-services_igmpproxy_configure();
-
-/* start the upnp daemon if it is enabled */
-upnp_configure();
 
 /* If powerd is enabled, lets launch it */
 activate_powerd();
@@ -259,7 +194,7 @@ prefer_ipv4_or_ipv6();
  * initialized, otherwise it can occasionally fail to
  * route syslog messages properly on both IPv4 and IPv6.
  */
-system_syslogd_start();
+system_syslogd_start(true);
 
 /* If there are ipsec dynamic hosts try again to reload the tunnels as rc.newipsecdns does */
 if ($ipsec_dynamic_hosts) {

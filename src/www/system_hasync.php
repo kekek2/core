@@ -42,6 +42,15 @@ $checkbox_names = array('pfsyncenabled', 'synchronizeusers', 'synchronizeauthser
                         'synchronizednsforwarder','synchronizednsresolver', 'synchronizeshaper', 'synchronizecaptiveportal'
 );
 
+$syncplugins = array();
+
+if (function_exists('plugins_xmlrpc_sync')) {
+    $syncplugins = plugins_xmlrpc_sync();
+}
+
+foreach (array_keys($syncplugins) as $key) {
+    $checkbox_names[] = 'synchronize'.$key;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = array();
@@ -76,8 +85,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $a_hasync['password']        = $pconfig['password'];
     write_config("Updated High Availability configuration");
     interfaces_carp_setup();
-    header("Location: system_hasync.php");
-    exit();
+    header(url_safe('Location: /system_hasync.php'));
+    exit;
 }
 
 legacy_html_escape_form_data($pconfig);
@@ -404,6 +413,20 @@ include("head.inc");
                     </div>
                   </td>
                 </tr>
+                <!-- Hook xmlrpc sync plugins -->
+<?php
+                foreach ($syncplugins as $syncid => $synccnf):?>
+                <tr>
+                  <td><a id="help_for_synchronize<?=$syncid?>" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=$synccnf['description'];?></td>
+                  <td>
+                    <input type="checkbox" name="synchronize<?=$syncid?>" value="on" <?=!empty($pconfig['synchronize'.$syncid]) ? "checked=\"checked\"" :"";?> />
+                    <div class="hidden" for="help_for_synchronize<?=$syncid?>">
+                      <?=$synccnf['help'];?>
+                    </div>
+                  </td>
+                </tr>
+<?php
+                endforeach;?>
                 <tr>
                   <td></td>
                   <td>

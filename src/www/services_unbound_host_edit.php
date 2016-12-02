@@ -33,7 +33,6 @@ require_once("guiconfig.inc");
 require_once("services.inc");
 require_once("interfaces.inc");
 
-
 function hostcmp($a, $b)
 {
     return strcasecmp($a['host'], $b['host']);
@@ -125,10 +124,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         usort($a_hosts, "hostcmp");
         mark_subsystem_dirty('unbound');
         write_config();
-        header("Location: services_unbound_overrides.php");
+        header(url_safe('Location: /services_unbound_overrides.php'));
         exit;
     }
-
 }
 
 $service_hook = 'unbound';

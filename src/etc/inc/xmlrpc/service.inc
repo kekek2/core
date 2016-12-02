@@ -30,9 +30,7 @@
 
 require_once("services.inc");
 require_once("system.inc");
-require_once("vslb.inc");
 require_once('util.inc');
-require_once("unbound.inc");
 require_once("openvpn.inc");
 require_once("filter.inc");
 require_once("ipsec.inc");
@@ -55,12 +53,11 @@ function xmlrpc_publishable_service()
 function list_services_xmlrpc()
 {
     $services = services_get();
-    if (count($services) > 0) {
-        uasort($services, "service_name_compare");
-    }
+
     foreach ($services as &$service) {
         $service['status'] = get_service_status($service);
     }
+
     return $services;
 }
 

@@ -168,10 +168,7 @@ function do_input_validation($postdata, $reqdfields, $reqdfieldsn, &$input_error
     }
 
     for ($i = 0; $i < count($reqdfields); $i++) {
-        // why.. do you want to do this? we send data to validate and then validate something else....
-        // can't now for sure if any page uses this wrong behaviour, but it should die eventually.
-        // TODO: kill
-        if (empty($_POST[$reqdfields[$i]]) && empty($_REQUEST[$reqdfields[$i]])) {
+        if (empty($postdata[$reqdfields[$i]])) {
             $input_errors[] = sprintf(gettext("The field %s is required."), $reqdfieldsn[$i]);
         }
     }
@@ -584,20 +581,9 @@ function get_menu_messages()
     global $config;
 
     $menu_messages = '';
+
     if (are_notices_pending()) {
         $notices = get_notices();
-        $requests = array();
-
-        ## Get Query Arguments from URL ###
-        foreach ($_REQUEST as $key => $value) {
-            if ($key != "PHPSESSID") {
-                $requests[] = $key.'='.$value;
-            }
-        }
-
-        if (is_array($requests)) {
-            $request_string = implode("&", $requests);
-        }
 
         if (is_array($notices)) {
             $notice_msgs = "<ul class=\"dropdown-menu\" role=\"menu\">";
@@ -630,5 +616,5 @@ function get_menu_messages()
         );
     }
 
-    return ($menu_messages);
+    return $menu_messages;
 }

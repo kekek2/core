@@ -31,7 +31,6 @@
 
 require_once("guiconfig.inc");
 require_once("filter.inc");
-require_once("services.inc");
 require_once("system.inc");
 require_once("logs.inc");
 
@@ -47,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['disablefilter'] = !empty($config['system']['disablefilter']);
     $pconfig['optimization'] = isset($config['system']['optimization']) ? $config['system']['optimization'] : "normal";
     $pconfig['maximumstates'] = isset($config['system']['maximumstates']) ? $config['system']['maximumstates'] : null;
+    $pconfig['maximumfrags'] = isset($config['system']['maximumfrags']) ? $config['system']['maximumfrags'] : null;
     $pconfig['adaptivestart'] = isset($config['system']['adaptivestart']) ? $config['system']['adaptivestart'] : null;
     $pconfig['adaptiveend'] = isset($config['system']['adaptiveend']) ? $config['system']['adaptiveend'] : null;
     $pconfig['aliasesresolveinterval'] = isset($config['system']['aliasesresolveinterval']) ? $config['system']['aliasesresolveinterval'] : null;
@@ -67,7 +67,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['enablebinatreflection'] = !empty($config['system']['enablebinatreflection']);
     $pconfig['enablenatreflectionhelper'] = isset($config['system']['enablenatreflectionhelper']) ? $config['system']['enablenatreflectionhelper'] : null;
     $pconfig['bypassstaticroutes'] = isset($config['filter']['bypassstaticroutes']);
-    $pconfig['disablevpnrules'] = isset($config['system']['disablevpnrules']);
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pconfig = $_POST;
     $old_aliasesresolveinterval = $config['system']['aliasesresolveinterval'];
@@ -85,6 +84,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
     if (!empty($pconfig['maximumstates']) && !is_numericint($pconfig['maximumstates'])) {
         $input_errors[] = gettext("The Firewall Maximum States value must be an integer.");
+    }
+    if (!empty($pconfig['maximumfrags']) && !is_numericint($pconfig['maximumfrags'])) {
+        $input_errors[] = gettext("The Firewall Maximum Frags value must be an integer.");
     }
     if (!empty($pconfig['aliasesresolveinterval']) && !is_numericint($pconfig['aliasesresolveinterval'])) {
         $input_errors[] = gettext("The Aliases Hostname Resolve Interval value must be an integer.");
@@ -116,12 +118,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $config['system']['disablefilter'] = "enabled";
         } elseif (isset($config['system']['disablefilter'])) {
             unset($config['system']['disablefilter']);
-        }
-
-        if (!empty($pconfig['disablevpnrules'])) {
-            $config['system']['disablevpnrules'] = true;
-        }  elseif (isset($config['system']['disablevpnrules'])) {
-            unset($config['system']['disablevpnrules']);
         }
 
         if (!empty($pconfig['adaptiveend'])) {
@@ -169,6 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         $config['system']['optimization'] = $pconfig['optimization'];
         $config['system']['maximumstates'] = $pconfig['maximumstates'];
+        $config['system']['maximumfrags'] = $pconfig['maximumfrags'];
         $config['system']['aliasesresolveinterval'] = $pconfig['aliasesresolveinterval'];
         $config['system']['maximumtableentries'] = $pconfig['maximumtableentries'];
 
@@ -210,7 +207,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         $savemsg = get_std_save_message();
 
-        configure_cron();
+        system_cron_configure();
         filter_configure();
     }
 }
@@ -521,6 +518,17 @@ include("head.inc");
                   </td>
                 </tr>
                 <tr>
+                  <td><a id="help_for_maximumfrags" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Firewall Maximum Fragments");?></td>
+                  <td>
+                    <input name="maximumfrags" type="text" id="maximumfrags" value="<?=$pconfig['maximumfrags'];?>" />
+                    <div class="hidden" for="help_for_maximumfrags">
+                      <strong><?=gettext("Sets the maximum number of entries in the memory pool used for fragment reassembly.");?></strong>
+                      <br />
+                      <?=gettext("Note: Leave this blank for the default.");?>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
                   <td><a id="help_for_maximumtableentries" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Firewall Maximum Table Entries");?></td>
                   <td>
                     <input name="maximumtableentries" type="text" id="maximumtableentries" value="<?= html_safe($pconfig['maximumtableentries']) ?>"/>
@@ -548,18 +556,6 @@ include("head.inc");
                       <?=gettext("This option only applies if you have defined one or more static routes. If it is enabled, traffic that enters and " .
                                           "leaves through the same interface will not be checked by the firewall. This may be desirable in some situations where " .
                                           "multiple subnets are connected to the same interface.");?>
-                      </small>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td><a id="help_for_disablevpnrules" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Disable Auto-added VPN rules') ?></td>
-                  <td>
-                    <input name="disablevpnrules" type="checkbox" value="yes" <?=!empty($pconfig['disablevpnrules']) ? "checked=\"checked\"" :"";?> />
-                    <?=gettext("Disable all auto-added VPN rules.");?>
-                    <div class="hidden" for="help_for_disablevpnrules">
-                      <small class="formhelp">
-                      <?=gettext("Note: This disables automatically added rules for IPsec, PPTP.");?>
                       </small>
                     </div>
                   </td>

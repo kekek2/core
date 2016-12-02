@@ -32,7 +32,7 @@
 openlog('opnsense', LOG_ODELAY, LOG_USER);
 register_shutdown_function('closelog');
 
-global $g;	/* XXX make this a getter function for traceability */
+global $g; /* XXX make this a getter function for traceability */
 
 $g = array(
 	"factory_shipped_username" => "root",
@@ -77,7 +77,7 @@ function alias_make_table($config)
             }
         }
     }
-  }
+}
 
 /**
  * parse config into array and return
@@ -93,8 +93,13 @@ function load_config_from_file($filename)
  * RESULT
  *   $config      - array containing all configuration variables
  ******/
-function parse_config()
+function parse_config($verbose = false)
 {
+    if ($verbose) {
+        echo 'Loading configuration...';
+        flush();
+    }
+
     $cnf = OPNsense\Core\Config::getInstance();
 
     // return config data as array, use old "listags" construction to mark certain elements as array (even if they're not recurring)
@@ -102,6 +107,10 @@ function parse_config()
 
     /* make alias table (for faster lookups) */
     alias_make_table($config);
+
+    if ($verbose) {
+        echo "done.\n";
+    }
 
     return $config;
 }
@@ -118,38 +127,44 @@ function parse_config()
  *   null
  ******/
 /* convert configuration, if necessary */
-function convert_config()
+function convert_config($verbose = false)
 {
-    global $config, $g;
+    global $config;
+
+    /* hardcode this, legacy migration path is now disabled */
+    $latest_config = '11.2';
 
     if (!isset($config['revision'])) {
         /* force a revision tag for proper handling in config history */
         write_config('Factory configuration', false);
     }
 
-    if ($config['version'] == $g['latest_config']) {
-        /* already at latest version */
-        return;
-    }
-
-    // Save off config version
-    $prev_version = $config['version'];
-    /* Loop and run upgrade_VER_to_VER() until we're at current version */
-    while ($config['version'] < $g['latest_config']) {
-        $cur = $config['version'] * 10;
-        $next = $cur + 1;
-        $migration_function = sprintf('upgrade_%03d_to_%03d', $cur, $next);
-        if (function_exists($migration_function)) {
-            $migration_function();
+    if ($config['version'] !== $latest_config) {
+        $prev_version = $config['version'];
+        /* Loop and run upgrade_VER_to_VER() until we're at current version */
+        while ($config['version'] < $latest_config) {
+            $cur = $config['version'] * 10;
+            $next = $cur + 1;
+            $migration_function = sprintf('upgrade_%03d_to_%03d', $cur, $next);
+            if (function_exists($migration_function)) {
+                $migration_function();
+            }
+            $config['version'] = sprintf('%.1f', $next / 10);
         }
-        $config['version'] = sprintf('%.1f', $next / 10);
+
+        if ($prev_version != $config['version']) {
+            write_config(sprintf('Upgraded config version level from %s to %s', $prev_version, $config['version']));
+        }
     }
 
-    if ($prev_version != $config['version']) {
-        write_config(sprintf('Upgraded config version level from %s to %s', $prev_version, $config['version']));
+    /* chain the new migration into this function call */
+    $mvc_migration = '/usr/local/opnsense/mvc/script/run_migrations.php';
+    if ($verbose) {
+        passthru($mvc_migration);
+    } else {
+        mwexecf($mvc_migraton);
     }
 }
-
 
 /****f* config/write_config
  * NAME
@@ -284,25 +299,6 @@ function cleanup_backups()
         ++$cnt ;
     }
 }
-
-
-function set_device_perms() {
-    $devices = array(
-      'pf'  => array(  'user'  => 'root',
-            'group'  => 'proxy',
-            'mode'  => 0660),
-      );
-
-    foreach ($devices as $name => $attr) {
-        $path = "/dev/$name";
-        if (file_exists($path)) {
-            chown($path, $attr['user']);
-            chgrp($path, $attr['group']);
-            chmod($path, $attr['mode']);
-        }
-    }
-}
-
 
 function make_config_revision_entry($desc = '')
 {

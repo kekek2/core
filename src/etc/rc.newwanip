@@ -38,7 +38,6 @@ require_once("util.inc");
 require_once("system.inc");
 require_once("interfaces.inc");
 require_once("services.inc");
-require_once("unbound.inc");
 
 // Do not process while booting
 if (file_exists('/var/run/booting')) {
@@ -140,7 +139,6 @@ if (!empty($bridgetmp)) {
 
 /* make new hosts file */
 system_hosts_generate();
-services_dhcpleases_configure();
 
 /* check tunneled IPv6 interface tracking */
 if (isset($config['interfaces'][$interface]['ipaddrv6'])) {
@@ -200,7 +198,9 @@ if (!is_ipaddr($oldip) || $curwanip != $oldip || !is_ipaddrv4($config['interface
     services_dyndns_configure($interface);
 
     /* reconfigure IPsec tunnels */
-    ipsec_force_reload($interface);
+    if (ipsec_configured_on_interface($interface)) {
+        ipsec_configure();
+    }
 
     /* start OpenVPN server & clients */
     if (substr($interface_real, 0, 4) != "ovpn") {
@@ -210,14 +210,10 @@ if (!is_ipaddr($oldip) || $curwanip != $oldip || !is_ipaddrv4($config['interface
     /* reload graphing functions */
     enable_rrd_graphing();
 
-    /* reload igmpproxy */
-    services_igmpproxy_configure();
-
-    /* restart snmp */
-    services_snmpd_configure();
-
-    /* reconfigure ntpd */
-    system_ntp_configure(false);
+    /* reload plugins */
+    if (function_exists('plugins_configure')) {
+        plugins_configure('interface');
+    }
 }
 
 /* reload filter, don't try to sync to carp slave */

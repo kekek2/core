@@ -48,7 +48,19 @@
     </div><!-- /modal -->
 <?php
     endif; ?>
-
+    <!-- dialog "wait for (service) action" -->
+    <div class="modal fade" id="OPNsenseStdWaitDialog" tabindex="-1" data-backdrop="static" data-keyboard="false">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-body">
+            <p><strong><?=gettext("Please wait...");?></strong></p>
+            <div class="progress">
+               <div class="progress-bar progress-bar-info progress-bar-striped active" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width:100%"></div>
+             </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <!-- bootstrap script -->
     <script type="text/javascript" src="/ui/js/bootstrap.min.js"></script>
     <!-- Fancy select with search options -->
@@ -64,6 +76,7 @@
           params['action'] = $(this).data('service_action');
           params['service'] = $(this).data('service');
           params['id'] = $(this).data('service_id');
+          $("#OPNsenseStdWaitDialog").modal('show');
           $.post('/status_services.php',params, function(data) {
             // refresh page after service action via server
             location.reload(true);

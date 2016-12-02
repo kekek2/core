@@ -75,18 +75,6 @@ class ACL
     }
 
     /**
-     * merge legacy acl's from json file into $this->ACLtags
-     */
-    private function mergeLegacyACL()
-    {
-        // load legacy acl from json file
-        $this->ACLtags = array_merge_recursive(
-            $this->ACLtags,
-            json_decode(file_get_contents(__DIR__."/ACL_Legacy_Page_Map.json"), true)
-        );
-    }
-
-    /**
      * merge pluggable ACL xml's into $this->ACLtags
      * @throws \Exception
      */
@@ -112,10 +100,6 @@ class ACL
                         if (isset($ACLnode->name)) {
                             $aclPayload = array();
                             $aclPayload['name'] = (string)$ACLnode->name;
-                            if (isset($ACLnode->description)) {
-                                // rename internal tag for backward compat.
-                                $aclPayload['descr'] = (string)$ACLnode->description;
-                            }
                             if (isset($ACLnode->patterns->pattern)) {
                                 // rename pattern to match for internal usage, old code did use match and
                                 // to avoid duplicate conversion let's do this only on input.
@@ -139,7 +123,6 @@ class ACL
     private function init()
     {
         // add acl payload
-        $this->mergeLegacyACL();
         $this->mergePluggableACLs();
 
         $pageMap = $this->loadPageMap();
@@ -267,8 +250,8 @@ class ACL
         foreach ($this->ACLtags as $aclKey => $aclItem) {
             $priv_list[$aclKey] = array();
             foreach ($aclItem as $propName => $propValue) {
-                if ($propName == 'name' || $propName == 'descr') {
-                    // translate name and description tags
+                if ($propName == 'name') {
+                    // translate name tag
                     $priv_list[$aclKey][$propName] = gettext($propValue);
                 } else {
                     $priv_list[$aclKey][$propName] = $propValue;

@@ -172,7 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (count($input_errors) == 0) {
             write_config();
             firewall_syslog("Delete Firewall/Virtual IPs", $id);
-            header("Location: firewall_virtual_ip.php");
+            header(url_safe('Location: /firewall_virtual_ip.php'));
             exit;
         }
     }  elseif (isset($pconfig['act']) && $pconfig['act'] == 'del_x' && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
@@ -187,7 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         write_config();
         foreach ($id_for_delete as $idk)
             firewall_syslog("Delete Firewall/Virtual IPs", $idk);
-        header("Location: firewall_virtual_ip.php");
+        header(url_safe('Location: /firewall_virtual_ip.php'));
         exit;
     }  elseif (isset($pconfig['act']) && $pconfig['act'] == 'move' && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
         // move selected rules
@@ -198,7 +198,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $a_vip = legacy_move_config_list_items($a_vip, $id,  $pconfig['rule']);
         write_config();
         firewall_syslog("Move Firewall/Virtual IPs", $id);
-        header("Location: firewall_virtual_ip.php");
+        header(url_safe('Location: /firewall_virtual_ip.php'));
         exit;
     }
 }

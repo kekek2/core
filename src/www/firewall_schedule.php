@@ -64,9 +64,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $savemsg = sprintf(gettext("Cannot delete Schedule. Currently in use by %s"),$referenced_by);
         } else {
             unset($a_schedules[$id]);
-            if (write_config())
-                firewall_syslog("Delete Firewall/Settings/Shedule", $id);
-            header("Location: firewall_schedule.php");
+            write_config();
+            firewall_syslog("Delete Firewall/Settings/Shedule", $id);
+            header(url_safe('Location: /firewall_schedule.php'));
             exit;
         }
     }

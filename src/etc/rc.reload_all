@@ -35,7 +35,6 @@ require_once('ipsec.inc');
 require_once("util.inc");
 require_once("system.inc");
 require_once("services.inc");
-require_once("unbound.inc");
 require_once("interfaces.inc");
 
 global $config;
@@ -44,19 +43,22 @@ $config = parse_config();
 
 log_error("rc.reload_all: Reloading all configuration settings.");
 
-system_timezone_configure();
 system_firmware_configure();
+system_login_configure();
+system_timezone_configure();
 system_hostname_configure();
 system_hosts_generate();
-services_dhcpleases_configure();
 system_resolvconf_generate();
 system_routing_enable();
 interfaces_configure();
 services_dyndns_configure();
-configure_cron();
-system_ntp_configure();
+system_cron_configure();
 mwexec_bg('/usr/local/etc/rc.sshd');
 mwexec_bg('/usr/local/etc/rc.restart_webgui');
+
+if (function_exists('plugins_configure')) {
+    plugins_configure('local');
+}
 
 log_error("rc.reload_all: Reloading filter configuration.");
 filter_configure_sync();

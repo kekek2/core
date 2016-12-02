@@ -85,9 +85,6 @@ fi
 # regenerate groups and users for base
 /usr/local/etc/rc.recover base > /dev/null
 
-# rewrite message of the day
-/etc/rc.d/motd onestart
-
 # set keyboard map if needed
 /etc/rc.d/syscons onestart
 
@@ -162,10 +159,9 @@ remove_mfs_link()
 	fi
 }
 
-# USE_MFS_TMP also catches and overrides USE_MFS_VAR (pre-16.7 compat)
-# At some point we want to flip use_mfs_tmpvar to use_mfs_var instead.
-USE_MFS_VAR=`/usr/bin/grep -c use_mfs_tmpvar /conf/config.xml`
-USE_MFS_TMP=`/usr/bin/grep -c use_mfs_tmp /conf/config.xml`
+# pre-17.1 compat: use_mfs_tmpvar matches both patterns
+USE_MFS_VAR=`/usr/bin/grep -c 'use_mfs_.*var' /conf/config.xml`
+USE_MFS_TMP=`/usr/bin/grep -c 'use_mfs_tmp' /conf/config.xml`
 
 if [ ${USE_MFS_TMP} -ne 0 ]; then
 	mount -t tmpfs -o mode=01777 tmpfs /tmp
@@ -229,10 +225,13 @@ fi
 echo "done."
 
 # Regenerate groups and users for packages
-/usr/local/etc/rc.recover pkg > /dev/null
+/usr/local/etc/rc.recover pkg > /dev/null 2> /dev/null
 
 # Recreate capabilities DB
 /usr/bin/cap_mkdb /etc/login.conf
+
+# Set up the correct php.ini content
+/usr/local/etc/rc.php_ini_setup
 
 # Perform major updates
 for STAGE in B P; do
@@ -241,9 +240,6 @@ for STAGE in B P; do
 		reboot
 	fi
 done
-
-# Set up the correct php.ini content
-/usr/local/etc/rc.php_ini_setup
 
 # Startup configd
 /usr/local/etc/rc.d/configd start

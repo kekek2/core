@@ -28,8 +28,15 @@
 
 function legacy_interface_listget($flag = '')
 {
+    $cmd_wlan = 'sysctl -n net.wlan.devices';
     $cmd = '/sbin/ifconfig -l';
+    $ifs_wlan = null;
     $ifs = null;
+
+    exec($cmd_wlan . ' 2>&1', $out_wlan, $ret_wlan);
+    if (!$ret_wlan && isset($out_wlan[0])) {
+        $ifs_wlan = explode(' ', $out_wlan[0]);
+    }
 
     if ($flag === 'up') {
         $cmd .= 'u';
@@ -45,6 +52,10 @@ function legacy_interface_listget($flag = '')
 
     if (isset($out[0])) {
         $ifs = explode(' ', $out[0]);
+    }
+
+    if ($ifs_wlan != null) {
+        $ifs = array_merge($ifs, $ifs_wlan);
     }
 
     return ($ifs);
@@ -245,6 +256,7 @@ function configure_interface_hardware($ifs)
     if (!stristr($ifs, "_vlan") && is_array($intf_details)) {
         // get current settings
         $csum_set = in_array('rxcsum', $intf_details['options']) || in_array('txcsum', $intf_details['options']);
+        $csumv6_set = in_array('rxcsum6', $intf_details['options']) || in_array('txcsum6', $intf_details['options']);
         $tso_set = in_array('tso4', $intf_details['options']) || in_array('tso6', $intf_details['options']);
         $lro_set = in_array('lro', $intf_details['options']);
 
@@ -254,6 +266,12 @@ function configure_interface_hardware($ifs)
         } elseif (!isset($config['system']['disablechecksumoffloading']) && !$csum_set) {
             legacy_interface_flags($ifs, 'txcsum rxcsum', false);
         }
+        if (isset($config['system']['disablechecksumoffloading']) && $csumv6_set) {
+            legacy_interface_flags($ifs, '-txcsum6 -rxcsum6', false);
+        } elseif (!isset($config['system']['disablechecksumoffloading']) && !$csumv6_set) {
+            legacy_interface_flags($ifs, 'txcsum6 rxcsum6', false);
+        }
+
         // TCP segmentation offloading
         if (isset($config['system']['disablesegmentationoffloading']) && $tso_set) {
             legacy_interface_flags($ifs, '-tso', false);

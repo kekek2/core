@@ -29,11 +29,24 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-$ipsec_loglevels = array("dmn" => "Daemon", "mgr" => "SA Manager", "ike" => "IKE SA", "chd" => "IKE Child SA",
-    "job" => "Job Processing", "cfg" => "Configuration backend", "knl" => "Kernel Interface",
-    "net" => "Networking", "asn" => "ASN encoding", "enc" => "Message encoding",
-    "imc" => "Integrity checker", "imv" => "Integrity Verifier", "pts" => "Platform Trust Service",
-    "tls" => "TLS handler", "esp" => "IPsec traffic", "lib" => "StrongSWAN Lib"
+$ipsec_loglevels = array(
+    "asn" => "Low-level encoding/decoding (ASN.1, X.509 etc.)",
+    "cfg" => "Configuration management and plugins",
+    "chd" => "CHILD_SA/IPsec SA",
+    "dmn" => "Main daemon setup/cleanup/signal handling",
+    "enc" => "Packet encoding/decoding encryption/decryption operations",
+    "esp" => "libipsec library messages",
+    "ike" => "IKE_SA/ISAKMP SA",
+    "imc" => "Integrity Measurement Collector",
+    "imv" => "Integrity Measurement Verifier",
+    "job" => "Jobs queuing/processing and thread pool management",
+    "knl" => "IPsec/Networking kernel interface",
+    "lib" => "libstrongwan library messages",
+    "mgr" => "IKE_SA manager, handling synchronization for IKE_SA access",
+    "net" => "IKE network communication",
+    "pts" => "Platform Trust Service",
+    "tls" => "libtls library messages",
+    "tnc" => "Trusted Network Connect"
 );
 
 $p1_ealgos = array(
@@ -605,20 +618,7 @@ charon {
     ikesa_table_segments = 4
     init_limit_half_open = 1000;
 {$cnf_add_to_charon_section}
-    # And two loggers using syslog. The subsections define the facility to log
-    # to, currently one of: daemon, auth.
-    syslog {
-      identifier = charon
-      # default level to the LOG_DAEMON facility
-      daemon {
-      }
-      # very minimalistic IKE auditing logs to LOG_AUTHPRIV
-      auth {
-        default = -1
-        ike = 1
-        ike_name = yes
-      }
-    }
+
 EOD;
 
         $strongswan .= "\tplugins {\n";
@@ -690,7 +690,7 @@ EOD;
             }
 
             if (isset($a_client['save_passwd'])) {
-                $strongswan .= "\t\t28673 = yes\n";
+                $strongswan .= "\t\t28673 = 1\n";
             }
 
             if (!empty($a_client['pfs_group'])) {
@@ -807,7 +807,8 @@ EOD;
                 } else {
                     $ident = $key['ident'];
                 }
-                $pskconf .= "{$ident} : PSK 0s".base64_encode($key['pre-shared-key'])."\n";
+                $identType = !empty($key['type']) ? $key['type'] : "PSK";
+                $pskconf .= "{$ident} : {$identType} 0s".base64_encode($key['pre-shared-key'])."\n";
             }
             unset($key);
         }
@@ -827,8 +828,8 @@ EOD;
             if (isset($ipsec_loglevels)) {
                 foreach ($ipsec_loglevels as $lkey => $ldescr) {
                     if (isset($config['ipsec']["ipsec_{$lkey}"]) && is_numeric($config['ipsec']["ipsec_{$lkey}"]) &&
-                      intval($config['ipsec']["ipsec_{$lkey}"]) >= 1 && intval($config['ipsec']["ipsec_{$lkey}"]) <= 5) {
-                          $cfg_loglevels[] = "${lkey} " . (intval($config['ipsec']["ipsec_{$lkey}"]) - 1);
+                      intval($config['ipsec']["ipsec_{$lkey}"]) >= -1 && intval($config['ipsec']["ipsec_{$lkey}"]) <= 4) {
+                          $cfg_loglevels[] = "${lkey} " . $config['ipsec']["ipsec_{$lkey}"];
                     }
                 }
             }
@@ -1287,35 +1288,15 @@ EOD;
     return count($filterdns_list);
 }
 
-/*
- * Forcefully restart IPsec
- * This is required for when dynamic interfaces reload
- * For all other occasions the normal ipsec_configure()
- * will gracefully reload the settings without restarting
- */
-function ipsec_force_reload($interface = '')
+function ipsec_configured_on_interface($interface)
 {
     global $config;
-
-    $ipseccfg = $config['ipsec'];
-
-    if (!empty($interface) && isset($ipseccfg['phase1']) && is_array($ipseccfg['phase1'])) {
-        $found = false;
-        foreach ($ipseccfg['phase1'] as $ipsec) {
-            if (!isset($ipsec['disabled']) && ($ipsec['interface'] == $interface)) {
-                $found = true;
-                break;
+    if (isset($config['ipsec']['phase1'])) {
+        foreach ($config['ipsec']['phase1'] as $phase1) {
+            if (!isset($phase1['disabled']) && $phase1['interface'] == $interface) {
+                return true;
             }
         }
-        if (!$found) {
-            log_error(sprintf('Ignoring IPsec reload since there are no tunnels on interface %s', $interface));
-            return;
-        }
     }
-
-    /* if ipsec is enabled, start up again */
-    if (isset($ipseccfg['enable'])) {
-        log_error('Forcefully reloading IPsec');
-        ipsec_configure();
-    }
+    return false;
 }

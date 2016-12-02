@@ -1141,9 +1141,9 @@ function interfaces_configure()
         /* reload IPsec tunnels */
         ipsec_configure();
 
-        /* restart dns servers (defering dhcp restart) */
-        services_dnsmasq_configure(false);
-        services_unbound_configure(false);
+        /* restart dns servers */
+        dnsmasq_configure_do();
+        unbound_configure_do();
 
         /* reload dhcpd (interface enabled/disabled status may have changed) */
         services_dhcpd_configure();
@@ -1770,7 +1770,6 @@ function interfaces_carp_setup()
 
     if (file_exists("/var/run/booting")) {
         echo gettext("Configuring CARP settings...");
-        mute_kernel_msgs();
     }
     set_single_sysctl("net.inet.carp.preempt", "1");
 
@@ -1792,7 +1791,6 @@ function interfaces_carp_setup()
     }
 
     if (file_exists("/var/run/booting")) {
-        unmute_kernel_msgs();
         echo gettext("done.") . "\n";
     }
 }
@@ -2885,7 +2883,6 @@ function interface_configure($interface = 'wan', $reloadall = false, $linkupeven
         if ($interface == 'lan') {
             /* make new hosts file */
             system_hosts_generate();
-            services_dhcpleases_configure();
         }
 
         if ($reloadall == true) {
@@ -2895,9 +2892,9 @@ function interface_configure($interface = 'wan', $reloadall = false, $linkupeven
             /* reload ipsec tunnels */
             ipsec_configure();
 
-            /* restart dns servers (defering dhcp restart) */
-            services_dnsmasq_configure(false);
-            services_unbound_configure(false);
+            /* restart dns servers */
+            dnsmasq_configure_do();
+            unbound_configure_do();
 
             /* reload dhcpd (interface enabled/disabled status may have changed) */
             services_dhcpd_configure();
@@ -4386,6 +4383,17 @@ function find_interface_subnet($interface)
     return null;
 }
 
+function find_interface_subnet6($interface)
+{
+    $interface = trim($interface);
+    if (does_interface_exist($interface)) {
+        $ifinfo = legacy_get_interface_addresses($interface);
+        if (isset($ifinfo['subnetbits6'])) {
+            return $ifinfo['subnetbits6'];
+        }
+    }
+    return null;
+}
 
 function ip_in_interface_alias_subnet($interface, $ipalias)
 {

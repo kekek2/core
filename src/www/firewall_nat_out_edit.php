@@ -165,8 +165,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if(!empty($pconfig['dstport']) && !is_portoralias($pconfig['dstport']))
             $input_errors[] = gettext("You must supply either a valid port or port alias for the destination port entry.");
 
-        if(!empty($pconfig['natport']) && !is_port($pconfig['natport']) && empty($pconfig['nonat']))
+        if (!empty($pconfig['natport']) && !is_port($pconfig['natport']) && empty($pconfig['nonat'])) {
             $input_errors[] = gettext("You must supply a valid port for the NAT port entry.");
+        }
     }
 
     if (!(in_array($pconfig['source'], array("any","(self)")) || is_ipaddroralias($pconfig['source']))) {
@@ -233,7 +234,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $natent['target'] = $pconfig['targetip'];
         }
 
-        // handle fields containing portnumbers
+        // handle fields containing port numbers
         if (in_array($pconfig['protocol'], explode(" ", "any tcp udp tcp/udp"))) {
             if (isset($pconfig['staticnatport']) && empty($pconfig['nonat'])) {
                 $natent['staticnatport'] = true;
@@ -312,11 +313,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
             $out_action = "Add Firwall/NAT/Outbound";
         }
-        if (write_config()) {
-            mark_subsystem_dirty('natconf');
-            firewall_syslog($out_action, $a_out, $natent);
-        }
-        header("Location: firewall_nat_out.php");
+        write_config();
+        mark_subsystem_dirty('natconf');
+        firewall_syslog($out_action, $a_out, $natent);
+        header(url_safe('Location: /firewall_nat_out.php'));
         exit;
     }
 }
@@ -512,7 +512,34 @@ include("head.inc");
                 <tr>
                   <td><a id="help_for_src_port" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Source port:");?></td>
                   <td>
-                    <input name="sourceport" type="text" value="<?=$pconfig['sourceport'];?>" />
+                    <table class="table table-condensed">
+                      <tbody>
+                        <tr>
+                          <td>
+                            <select id="sourceport" name="sourceport" class="selectpicker" data-live-search="true" data-size="5" data-width="auto">
+                              <option data-other=true value="<?=$pconfig['sourceport'];?>">(<?=gettext("other"); ?>)</option>
+                              <optgroup label="<?=gettext("Aliases");?>">
+<?php                        foreach (legacy_list_aliases("port") as $alias):
+?>
+                                <option value="<?=$alias['name'];?>" <?= $pconfig['sourceport'] == $alias['name'] ? "selected=\"selected\"" : ""; ?>  ><?=htmlspecialchars($alias['name']);?> </option>
+<?php                          endforeach; ?>
+                              </optgroup>
+                              <optgroup label="<?=gettext("Well-known ports");?>">
+                                <option value="" <?= $pconfig['sourceport'] == "" ? "selected=\"selected\"" : ""; ?>><?=gettext("any"); ?></option>
+<?php                            foreach ($wkports as $wkport => $wkportdesc): ?>
+                                <option value="<?=$wkport;?>" <?= $wkport == $pconfig['sourceport'] ?  "selected=\"selected\"" : "" ;?>><?=htmlspecialchars($wkportdesc);?></option>
+<?php                            endforeach; ?>
+                              </optgroup>
+                            </select>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <input type="text" value="<?=$pconfig['sourceport'];?>" for="sourceport"> <!-- updates to "other" option in  localbeginport -->
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                     <div class="hidden" for="help_for_src_port">
                       <?=gettext("(leave blank for any)");?>
                     </div>
@@ -567,7 +594,34 @@ include("head.inc");
                 <tr>
                   <td><a id="help_for_dstport" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Destination port:");?></td>
                   <td>
-                    <input name="dstport" type="text" value="<?=$pconfig['dstport'];?>" />
+                    <table class="table table-condensed">
+                      <tbody>
+                        <tr>
+                          <td>
+                            <select id="dstport" name="dstport" class="selectpicker" data-live-search="true" data-size="5" data-width="auto">
+                              <option data-other=true value="<?=$pconfig['dstport'];?>">(<?=gettext("other"); ?>)</option>
+                              <optgroup label="<?=gettext("Aliases");?>">
+<?php                        foreach (legacy_list_aliases("port") as $alias):
+?>
+                                <option value="<?=$alias['name'];?>" <?= $pconfig['dstport'] == $alias['name'] ? "selected=\"selected\"" : ""; ?>  ><?=htmlspecialchars($alias['name']);?> </option>
+<?php                          endforeach; ?>
+                              </optgroup>
+                              <optgroup label="<?=gettext("Well-known ports");?>">
+                                <option value="" <?= $pconfig['dstport'] == "" ? "selected=\"selected\"" : ""; ?>><?=gettext("any"); ?></option>
+<?php                            foreach ($wkports as $wkport => $wkportdesc): ?>
+                                <option value="<?=$wkport;?>" <?= $wkport == $pconfig['dstport'] ?  "selected=\"selected\"" : "" ;?>><?=htmlspecialchars($wkportdesc);?></option>
+<?php                            endforeach; ?>
+                              </optgroup>
+                            </select>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <input type="text" value="<?=$pconfig['dstport'];?>" for="dstport"> <!-- updates to "other" option in  localbeginport -->
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                     <div class="hidden" for="help_for_dstport">
                       <?=gettext("(leave blank for any)");?>
                     </div>

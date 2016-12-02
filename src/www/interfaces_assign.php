@@ -36,7 +36,6 @@ require_once("interfaces.inc");
 require_once("ipsec.inc");
 require_once("openvpn.inc");
 require_once("services.inc");
-require_once("unbound.inc");
 
 function list_interfaces() {
     global $config;
@@ -113,16 +112,6 @@ function list_interfaces() {
         }
     }
 
-    /* add tun0 interface (required for sixxs-aiccu) */
-    //   This is a temporary solution to allow using sixxs-aiccu without manual code change
-    //   until the aiccu service is correctly included in the web interface.
-    //   (to avoid additional temporary code in the interface_assign_description function).
-    $tunfound = "";
-    exec("/sbin/ifconfig | /usr/bin/grep -c '^tun0'", $tunfound);
-    if (intval($tunfound[0]) > 0) {
-        $interfaces['tun0'] = array('descr' => 'sixxs-aiccu');
-    }
-
     return $interfaces;
 }
 
@@ -134,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // if interface is already used, redirect.
         foreach (legacy_config_get_interfaces() as $ifname => $ifdata) {
             if ($ifdata['if'] == $_POST['if_add']) {
-                header("Location: interfaces_assign.php");
+                header(url_safe('Location: /interfaces_assign.php'));
                 exit;
             }
         }
@@ -166,7 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         write_config();
-        header("Location: interfaces_assign.php");
+        header(url_safe('Location: /interfaces_assign.php'));
         exit;
     } elseif (!empty($_POST['id']) && !empty($_POST['action']) && $_POST['action'] == 'del' & !empty($config['interfaces'][$_POST['id']]) ) {
         // ** Delete interface **
@@ -216,8 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 unset($config['dhcpd']['wan']);
             }
             link_interface_to_vlans($realid, "update");
-            // redirect
-            header("Location: interfaces_assign.php");
+            header(url_safe('Location: /interfaces_assign.php'));
             exit;
         }
     } elseif (isset($_POST['Submit'])) {
@@ -326,8 +314,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               filter_configure();
               enable_rrd_graphing();
           }
-          // redirect
-          header("Location: interfaces_assign.php");
+          header(url_safe('Location: /interfaces_assign.php'));
           exit;
         }
     }

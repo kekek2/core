@@ -29,9 +29,12 @@
             <Backups url="/diag_backup.php"/>
         </Configuration>
         <Firmware order="5" cssClass="fa fa-building-o fa-fw">
-            <Updates order="10" url="/ui/core/firmware/"/>
-            <Reporter order="20" url="/crash_reporter.php"/>
-            <Defaults order="50" url="/diag_defaults.php"/>
+            <Updates order="10" url="/ui/core/firmware/#updates"/>
+            <Packages order="20" url="/ui/core/firmware/#packages"/>
+            <Plugins order="30" url="/ui/core/firmware/#plugins"/>
+            <Settings order="40" url="/ui/core/firmware/#settings"/>
+            <Reporter order="50" url="/crash_reporter.php"/>
+            <Defaults order="60" url="/diag_defaults.php"/>
         </Firmware>
         <HighAvailability order="50" VisibleName="High Availability" cssClass="fa fa-refresh fa-fw">
             <Settings order="100" url="/system_hasync.php"/>
@@ -251,42 +254,6 @@
             <Lookup order="40" url="/diag_dns.php"/>
             <LogFile order="100" VisibleName="Log File" url="/diag_logs_resolver.php"/>
         </DNSTools>
-        <IGMPProxy VisibleName="IGMP Proxy" url="/services_igmpproxy.php" cssClass="fa fa-map-signs fa-fw">
-            <Edit url="/services_igmpproxy_edit.php" visibility="hidden"/>
-        </IGMPProxy>
-        <LoadBalancer VisibleName="Load Balancer" cssClass="fa fa-truck fa-fw">
-            <Monitors order="10" url="/load_balancer_monitor.php">
-                <Edit url="/load_balancer_monitor_edit.php*" visibility="hidden"/>
-            </Monitors>
-            <PoolSetup order="20" VisibleName="Pool Setup" url="/load_balancer_pool.php">
-                <Edit url="/load_balancer_pool_edit.php*" visibility="hidden"/>
-            </PoolSetup>
-            <VirtualServer order="30" VisibleName="Virtual Server Setup" url="/load_balancer_virtual_server.php">
-                <Edit url="/load_balancer_virtual_server_edit.php*" visibility="hidden"/>
-            </VirtualServer>
-            <Settings order="40" url="/load_balancer_setting.php"/>
-            <PoolStatus order="50" VisibleName="Pool Status" url="/status_lb_pool.php"/>
-            <VirtualServerStatus order="60" VisibleName="Virtual Server Status" url="/status_lb_vs.php"/>
-            <Log VisibleName="Log File" order="100" url="/ui/syslog/logview/showlog/relayd"/>
-        </LoadBalancer>
-        <NTP VisibleName="Network Time" cssClass="fa fa-clock-o fa-fw">
-            <General order="10" url="/services_ntpd.php"/>
-            <GPS order="20" url="/services_ntpd_gps.php"/>
-            <PPS order="30" url="/services_ntpd_pps.php"/>
-            <Status order="40" url="/status_ntpd.php"/>
-            <Log order="50" VisibleName="Log File" url="/diag_logs_ntpd.php"/>
-        </NTP>
-        <SNMP url="/services_snmp.php" cssClass="fa fa-database fa-fw"/>
-        <UPnP VisibleName="Universal Plug and Play" cssClass="fa fa-plug fa-fw">
-            <Settings url="/services_upnp.php">
-                <Edit url="/services_upnp.php?*" visibility="hidden"/>
-            </Settings>
-            <Status url="/status_upnp.php"/>
-        </UPnP>
-        <WoL VisibleName="Wake on LAN" url="/services_wol.php" cssClass="fa fa-power-off fa-fw">
-            <WoLEdit url="/services_wol_edit.php*" visibility="hidden"/>
-            <Wol url="/services_wol.php*" visibility="hidden"/>
-        </WoL>
         <Diagnostics order="900" cssClass="fa fa-medkit fa-fw" url="/status_services.php">
           <All url="/status_services.php?*" visibility="hidden"/>
         </Diagnostics>

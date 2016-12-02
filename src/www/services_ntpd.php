@@ -33,6 +33,7 @@ require_once("rrd.inc");
 require_once("services.inc");
 require_once("system.inc");
 require_once("interfaces.inc");
+require_once("plugins.inc.d/ntpd.inc");
 
 if (!isset($config['ntpd']) || !is_array($config['ntpd'])) {
     $config['ntpd'] = array();
@@ -113,8 +114,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $a_ntpd['leapsec'] = base64_encode(file_get_contents($_FILES['leapfile']['tmp_name']));
         }
         write_config("Updated NTP Server Settings");
-        system_ntp_configure();
-        header("Location: services_ntpd.php");
+        ntpd_configure_start();
+        header(url_safe('Location: /services_ntpd.php'));
         exit;
     }
 }

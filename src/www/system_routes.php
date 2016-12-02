@@ -120,18 +120,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         write_config();
         mark_subsystem_dirty('staticroutes');
-      } elseif ( $act == 'move' && isset($pconfig['route']) && count($pconfig['route']) > 0) {
-          // move selected rules
-          if (!isset($id)) {
-              // if rule not set/found, move to end
-              $id = count($a_routes);
-          }
-          $a_routes = legacy_move_config_list_items($a_routes, $id,  $pconfig['route']);
-          if (write_config()) {
-              mark_subsystem_dirty('staticroutes');
-          }
-      }
-    header("Location: system_routes.php");
+    } elseif ( $act == 'move' && isset($pconfig['route']) && count($pconfig['route']) > 0) {
+        // move selected rules
+        if (!isset($id)) {
+            // if rule not set/found, move to end
+            $id = count($a_routes);
+        }
+        $a_routes = legacy_move_config_list_items($a_routes, $id,  $pconfig['route']);
+        write_config();
+        mark_subsystem_dirty('staticroutes');
+    }
+    header(url_safe('Location: /system_routes.php'));
     exit;
 }
 
@@ -233,7 +232,7 @@ endif; ?>
               <input type="hidden" id="act" name="act" value="" />
               <input type="hidden" id="id" name="id" value="" />
               <div class="table-responsive">
-                <table class="table table-striped table-sort">
+                <table class="table table-striped">
                   <tr>
                     <td></td>
                     <td></td>

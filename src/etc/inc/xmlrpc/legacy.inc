@@ -1,4 +1,5 @@
 <?php
+
 /*
     Copyright (C) 2015-2016 Deciso B.V.
     Copyright (C) 2004-2010 Scott Ullrich
@@ -126,7 +127,6 @@ function filter_configure_xmlrpc()
     require_once("system.inc");
     require_once("util.inc");
     require_once("interfaces.inc");
-    require_once("vslb.inc");
     require_once("openvpn.inc");
     require_once("services.inc");
     require_once("rrd.inc");
@@ -135,13 +135,15 @@ function filter_configure_xmlrpc()
     system_routing_configure();
     setup_gateways_monitor();
     system_hosts_generate();
-    services_dhcpleases_configure();
     local_sync_accounts();
-    services_dnsmasq_configure(false);
-    services_unbound_configure(false);
+    dnsmasq_configure_do();
+    unbound_configure_do();
     services_dhcpd_configure();
-    relayd_configure();
     openvpn_resync_all();
+
+    if (function_exists('plugins_configure')) {
+        plugins_configure('remote');
+    }
 
     return true;
 }

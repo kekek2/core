@@ -95,11 +95,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             mark_subsystem_dirty('filter');
         }
         unset($a_nat[$id]);
-        if (write_config()) {
-            mark_subsystem_dirty('natconf');
-            firewall_syslog("Delete Firewall/NAT/Port Forward", $id);
-        }
-        header("Location: firewall_nat.php");
+        write_config();
+        mark_subsystem_dirty('natconf');
+        firewall_syslog("Delete Firewall/NAT/Port Forward", $id);
+        header(url_safe('Location: /firewall_nat.php'));
         exit;
     } elseif (isset($pconfig['act']) && $pconfig['act'] == 'del_x' && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
         /* delete selected rules */
@@ -116,12 +115,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $id_for_delete[] = $rulei;
             }
         }
-        if (write_config()) {
-            mark_subsystem_dirty('natconf');
-            foreach ($id_for_delete as $idk)
-                firewall_syslog("Delete Firewall/NAT/Port Forward", $idk);
-        }
-        header("Location: firewall_nat.php");
+        write_config();
+        mark_subsystem_dirty('natconf');
+        foreach ($id_for_delete as $idk)
+            firewall_syslog("Delete Firewall/NAT/Port Forward", $idk);
+        header(url_safe('Location: /firewall_nat.php'));
         exit;
     } elseif ( isset($pconfig['act']) && $pconfig['act'] == 'move') {
         // move records
@@ -132,11 +130,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $a_nat = legacy_move_config_list_items($a_nat, $id,  $pconfig['rule']);
         }
-        if (write_config()) {
-            mark_subsystem_dirty('natconf');
-            firewall_syslog("Move Firewall/NAT/Port Forward", $id);
-        }
-        header("Location: firewall_nat.php");
+        write_config();
+        mark_subsystem_dirty('natconf');
+        firewall_syslog("Move Firewall/NAT/Port Forward", $id);
+        header(url_safe('Location: /firewall_nat.php'));
         exit;
     } elseif (isset($pconfig['act']) && $pconfig['act'] == 'toggle' && isset($id)) {
         // toggle item
@@ -147,11 +144,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $a_nat[$id]['disabled'] = true;
             $nat_action = "Disable Firewall/NAT/Port Forward";
         }
-        if (write_config("Firewall: NAT: Outbound, enable/disable NAT rule")) {
-            mark_subsystem_dirty('natconf');
-            firewall_syslog($nat_action, $id);
-        }
-        header("Location: firewall_nat.php");
+        write_config('Firewall: NAT: Outbound, toggle NAT rule');
+        mark_subsystem_dirty('natconf');
+        firewall_syslog($nat_action, $id);
+        header(url_safe('Location: /firewall_nat.php'));
         exit;
     }
 }
@@ -296,7 +292,7 @@ $( document ).ready(function() {
                       <td class="hidden-xs hidden-sm">*</td>
                       <td class="hidden-xs hidden-sm">*</td>
                       <td class="hidden-xs hidden-sm"><?=$lockout_intf_name?> <?=gettext("address");?></td>
-                      <td class="hidden-xs hidden-sm"><?=implode('<br />', filter_get_antilockout_ports(true));?></td>
+                      <td class="hidden-xs hidden-sm"><?=implode('<br />', filter_core_antilockout_ports());?></td>
                       <td>*</td>
                       <td>*</td>
                       <td><?=gettext("Anti-Lockout Rule");?></td>
@@ -409,7 +405,7 @@ $( document ).ready(function() {
                             $localport   .= '-' . $localendport;
                         }
 ?>
-<?php                   if (isset($natent['destination']['port']) && is_alias($natent['destination']['port'])): ?>
+<?php                   if (isset($natent['local-port']) && is_alias($natent['local-port'])): ?>
                           <span title="<?=htmlspecialchars(get_alias_description($localport));?>" data-toggle="tooltip">
                             <?=htmlspecialchars(pprint_port($localport));?>&nbsp;
                           </span>

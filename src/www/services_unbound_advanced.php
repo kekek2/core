@@ -28,7 +28,6 @@
 */
 
 require_once("guiconfig.inc");
-require_once("unbound.inc");
 require_once("system.inc");
 require_once("services.inc");
 
@@ -69,9 +68,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($_POST['apply'])) {
-        services_unbound_configure();
+        unbound_configure_do();
+        services_dhcpd_configure();
         clear_subsystem_dirty('unbound');
-        header("Location: services_unbound_advanced.php");
+        header(url_safe('Location: /services_unbound_advanced.php'));
         exit;
     } else {
         $pconfig = $_POST;
@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         write_config("DNS Resolver configured.");
         mark_subsystem_dirty('unbound');
-        header("Location: services_unbound_advanced.php");
+        header(url_safe('Location: /services_unbound_advanced.php'));
         exit;
     }
 }

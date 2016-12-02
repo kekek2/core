@@ -93,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $input_errors[] = gettext("A valid IP address must be specified, or # for an exclusion or ! to not forward at all.");
     }
     if (!empty($pconfig['port']) && !is_port($pconfig['port'])) {
-        $input_errors[] = gettext("A valid portnumber must be specified.");
+        $input_errors[] = gettext("A valid port number must be specified.");
     }
     if (!empty($pconfig['dnssrcip']) && !in_array($pconfig['dnssrcip'], get_configured_ip_addresses())) {
         $input_errors[] = gettext("An interface IP address must be specified for the DNS query source.");
@@ -115,9 +115,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         } else {
             $a_domainOverrides[] = $doment;
         }
-        services_dnsmasq_configure();
+        dnsmasq_configure_do();
+        services_dhcpd_configure();
         write_config();
-        header("Location: services_dnsmasq.php");
+        header(url_safe('Location: /services_dnsmasq.php'));
         exit;
     }
 }

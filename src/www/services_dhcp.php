@@ -31,7 +31,6 @@ require_once("guiconfig.inc");
 require_once("filter.inc");
 require_once("services.inc");
 require_once("system.inc");
-require_once("unbound.inc");
 require_once("interfaces.inc");
 
 /*
@@ -110,20 +109,10 @@ function reconfigure_dhcpd()
     killbyname("dhcpd");
     dhcp_clean_leases();
     system_hosts_generate();
-    services_dhcpleases_configure();
-    if (isset($config['dnsmasq']['enable']) && isset($config['dnsmasq']['regdhcpstatic']))  {
-        services_dnsmasq_configure(false);
-        clear_subsystem_dirty('hosts');
-    }
-    if (isset($config['unbound']['enable']) && isset($config['unbound']['regdhcpstatic'])) {
-        services_unbound_configure(false);
-        clear_subsystem_dirty('unbound');
-    }
+    clear_subsystem_dirty('hosts');
     services_dhcpd_configure();
-
     clear_subsystem_dirty('staticmaps');
 }
-
 
 $config_copy_fieldsnames = array('enable', 'staticarp', 'failover_peerip', 'dhcpleaseinlocaltime','descr',
   'defaultleasetime', 'maxleasetime', 'gateway', 'domain', 'domainsearchlist', 'denyunknown', 'ddnsdomain',
@@ -507,35 +496,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 filter_configure();
             }
             reconfigure_dhcpd();
-            header("Location: services_dhcp.php?if={$if}");
+            header(url_safe('Location: /services_dhcp.php?if=%s', array($if)));
             exit;
         }
     } elseif (isset($_POST['apply'])) {
         // apply changes
         reconfigure_dhcpd();
-        header("Location: services_dhcp.php?if={$if}");
+        header(url_safe('Location: /services_dhcp.php?if=%s', array($if)));
         exit;
     } elseif ($act ==  "del") {
         if (!empty($config['dhcpd'][$if]['staticmap'][$_POST['id']])) {
             unset($config['dhcpd'][$if]['staticmap'][$_POST['id']]);
             write_config();
-            if(isset($config['dhcpd'][$if]['enable'])) {
+            if (isset($config['dhcpd'][$if]['enable'])) {
               mark_subsystem_dirty('staticmaps');
-              if (isset($config['dnsmasq']['enable']) && isset($config['dnsmasq']['regdhcpstatic'])) {
-                  mark_subsystem_dirty('hosts');
-              } elseif (isset($config['unbound']['enable']) && isset($config['unbound']['regdhcpstatic'])) {
-                  mark_subsystem_dirty('unbound');
-              }
+              mark_subsystem_dirty('hosts');
             }
         }
-        header("Location: services_dhcp.php?if={$if}");
+        header(url_safe('Location: /services_dhcp.php?if=%s', array($if)));
         exit;
     } elseif ($act ==  "delpool") {
         if (!empty($a_pools[$_POST['id']])) {
             unset($a_pools[$_POST['id']]);
             write_config();
         }
-        header("Location: services_dhcp.php?if={$if}");
+        header(url_safe('Location: /services_dhcp.php?if=%s', array($if)));
         exit;
     }
 }
@@ -1145,7 +1130,7 @@ include("head.inc");
           <section class="col-xs-12">
             <div class="tab-content content-box col-xs-12">
               <div class="table-responsive">
-                <table class="table table-striped table-sort">
+                <table class="table table-striped">
                   <tr>
                     <td colspan="5" valign="top"><?=gettext("DHCP Static Mappings for this interface.");?></td>
                     <td>&nbsp;</td>

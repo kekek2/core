@@ -1,12 +1,7 @@
-#!/usr/local/bin/php
 <?php
 
 /*
-    Copyright (C) 2004-2006 Scott Ullrich
-    Copyright (C) 2005 Bill Marquette
-    Copyright (C) 2006 Peter Allgeyer
-    Copyright (C) 2008 Ermal Luci
-    Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
+    Copyright (C) 2016 Franco Fichtner <franco@opnsense.org>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -29,22 +24,32 @@
     CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
-
 */
 
-require_once("config.inc");
-require_once("filter.inc");
-require_once("util.inc");
-require_once("xmlrpc.inc");
-require_once("interfaces.inc");
-require_once("openvpn.inc");
-require_once("vslb.inc");
-require_once("system.inc");
-require_once("services.inc");
-require_once("rrd.inc");
+function netflow_enabled()
+{
+    $mdl = new \OPNsense\Diagnostics\Netflow();
 
-system_routing_configure();
-setup_gateways_monitor();
-relayd_configure();
-openvpn_resync_all();
-services_dhcpd_configure();
+    return $mdl->collect->enable == '1';
+}
+
+function netflow_services()
+{
+    $services = array();
+
+    if (!netflow_enabled()) {
+        return $services;
+    }
+
+    $services[] = array(
+        'description' => gettext('NetFlow Capture'),
+        'configd' => array(
+            'restart' => array('netflow restart'),
+            'start' => array('netflow start'),
+            'stop' => array('netflow stop'),
+        ),
+        'name' => 'samplicate',
+    );
+
+    return $services;
+}

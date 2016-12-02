@@ -42,6 +42,16 @@ CORE_HASH=	${CORE_COMMIT:C/^.*-//1}
 .endif
 
 CORE_ABI?=	16.7
+CORE_ARCH?=	${ARCH}
+CORE_PY?=	27
+
+.if ${CORE_ABI} == 16.7
+CORE_PHP_SUHOSIN=php-suhosin
+CORE_PHP?=	56
+.else
+CORE_PHP?=	70
+.endif
+
 
 _FLAVOUR!=	if [ -f ${OPENSSL} ]; then ${OPENSSL} version; fi
 FLAVOUR?=	${_FLAVOUR:[1]}
@@ -63,10 +73,11 @@ CORE_COMMENT?=		TING ${CORE_FAMILY} package
 CORE_MAINTAINER?=	evbevz@gmail.com
 CORE_WWW?=		https://smart-soft.ru/
 CORE_MESSAGE?=		Thanks for using TING...
+# CORE_DEPENDS_armv6 is empty
+CORE_DEPENDS_amd64?=	beep bsdinstaller
+CORE_DEPENDS_i386?=	${CORE_DEPENDS_amd64}
 CORE_DEPENDS?=		apinger \
-			beep \
 			bind910 \
-			bsdinstaller \
 			bsnmp-regex \
 			bsnmp-ucd \
 			ca_root_nss \
@@ -95,31 +106,29 @@ CORE_DEPENDS?=		apinger \
 			pecl-radius \
 			pftop \
 			phalcon \
-			php-suhosin \
-			php56 \
-			php56-ctype \
-			php56-curl \
-			php56-dom \
-			php56-filter \
-			php56-gettext \
-			php56-hash \
-			php56-json \
-			php56-ldap \
-			php56-mcrypt \
-			php56-openssl \
-			php56-pdo \
-			php56-session \
-			php56-simplexml \
-			php56-sockets \
-			php56-sqlite3 \
-			php56-xml \
-			php56-zlib \
-			py27-Jinja2 \
-			py27-netaddr \
-			py27-requests \
-			py27-sqlite3 \
-			py27-ujson \
-			python27 \
+			${CORE_PHP_SUHOSIN} \
+			php${CORE_PHP}-ctype \
+			php${CORE_PHP}-curl \
+			php${CORE_PHP}-dom \
+			php${CORE_PHP}-filter \
+			php${CORE_PHP}-gettext \
+			php${CORE_PHP}-hash \
+			php${CORE_PHP}-json \
+			php${CORE_PHP}-ldap \
+			php${CORE_PHP}-mcrypt \
+			php${CORE_PHP}-openssl \
+			php${CORE_PHP}-pdo \
+			php${CORE_PHP}-session \
+			php${CORE_PHP}-simplexml \
+			php${CORE_PHP}-sockets \
+			php${CORE_PHP}-sqlite3 \
+			php${CORE_PHP}-xml \
+			php${CORE_PHP}-zlib \
+			py${CORE_PY}-Jinja2 \
+			py${CORE_PY}-netaddr \
+			py${CORE_PY}-requests \
+			py${CORE_PY}-sqlite3 \
+			py${CORE_PY}-ujson \
 			radvd \
 			rate \
 			relayd \
@@ -179,7 +188,7 @@ manifest: want-git
 	@echo "prefix: ${LOCALBASE}"
 	@echo "vital: true"
 	@echo "deps: {"
-	@for CORE_DEPEND in ${CORE_DEPENDS}; do \
+	@for CORE_DEPEND in ${CORE_DEPENDS_${CORE_ARCH}} ${CORE_DEPENDS}; do \
 		if ! ${PKG} query '  %n: { version: "%v", origin: "%o" }' \
 		    $${CORE_DEPEND}; then \
 			echo ">>> Missing dependency: $${CORE_DEPEND}" >&2; \
@@ -192,7 +201,7 @@ name: force
 	@echo ${CORE_NAME}
 
 depends: force
-	@echo ${CORE_DEPENDS}
+	@echo ${CORE_DEPENDS_${CORE_ARCH}} ${CORE_DEPENDS}
 
 PKG_SCRIPTS=	+PRE_INSTALL +POST_INSTALL \
 		+PRE_UPGRADE +POST_UPGRADE \
@@ -233,8 +242,9 @@ plist-check: force
 	@${MAKE} DESTDIR=${DESTDIR} plist > ${WRKDIR}/plist.new
 	@cat ${.CURDIR}/plist > ${WRKDIR}/plist.old
 	@if ! diff -uq ${WRKDIR}/plist.old ${WRKDIR}/plist.new > /dev/null ; then \
+		diff -u ${WRKDIR}/plist.old ${WRKDIR}/plist.new || true; \
 		echo ">>> Package file lists do not match.  Please run 'make plist-fix'." >&2; \
-		diff -u ${WRKDIR}/plist.old ${WRKDIR}/plist.new; \
+		exit 1; \
 	fi
 
 metadata: force

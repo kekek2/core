@@ -29,7 +29,6 @@
 */
 
 require_once("guiconfig.inc");
-require_once("unbound.inc");
 require_once("services.inc");
 require_once("system.inc");
 require_once("interfaces.inc");
@@ -56,11 +55,12 @@ if (empty($config['unbound']['domainoverrides']) || !is_array($config['unbound']
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pconfig = $_POST;
     if (!empty($pconfig['apply'])) {
-        services_unbound_configure();
+        unbound_configure_do();
+        services_dhcpd_configure();
         clear_subsystem_dirty('unbound');
         /* Update resolv.conf in case the interface bindings exclude localhost. */
         system_resolvconf_generate();
-        header("Location: services_unbound_overrides.php");
+        header(url_safe('Location: /services_unbound_overrides.php'));
         exit;
     } elseif (!empty($pconfig['act']) && $pconfig['act'] == 'del') {
         if (isset($pconfig['id']) && !empty($a_hosts[$pconfig['id']])) {

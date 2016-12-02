@@ -1,6 +1,7 @@
 <?php
 
 /*
+    Copyright (C) 2015-2016 Franco Fichtner <franco@opnsense.org>
     Copyright (C) 2015 Manuel Faux <mfaux@conf.at>
     Copyright (C) 2014 Warren Baker <warren@decoy.co.za>
     Copyright (C) 2004-2007 Scott Ullrich <sullrich@gmail.com>
@@ -28,28 +29,40 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-/****f* legacy/get_dns_servers
- * NAME
- *   get_dns_servers - get system dns servers
- * INPUTS
- *   $dns_servers - an array of the dns servers
- * RESULT
- *   null
- ******/
-function get_dns_servers() {
-    $dns_servers = array();
-    $dns_s = file("/etc/resolv.conf", FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach($dns_s as $dns) {
-        $matches = "";
-        if (preg_match("/nameserver (.*)/", $dns, $matches)) {
-            $dns_servers[] = $matches[1];
-        }
-    }
-    return array_unique($dns_servers);
+function unbound_enabled()
+{
+    global $config;
+
+    return isset($config['unbound']['enable']);
 }
 
-/* Optimize Unbound for environment */
-function unbound_optimization() {
+function unbound_services()
+{
+    $services = array();
+
+    if (!unbound_enabled()) {
+        return $services;
+    }
+
+    $pconfig = array();
+    $pconfig['name'] = 'unbound';
+    $pconfig['description'] = gettext('DNS Resolver');
+    $pconfig['php']['restart'] = array('unbound_configure_do');
+    $pconfig['php']['start'] = array('unbound_configure_do');
+    $pconfig['pidfile'] = '/var/run/unbound.pid';
+    $services[] = $pconfig;
+
+    return $services;
+}
+
+function unbound_configure()
+{
+    /* XXX stub that prevents unbound from starting again on bootup */
+    return array();
+}
+
+function unbound_optimization()
+{
     global $config;
 
     $optimization_settings = array();
@@ -112,7 +125,7 @@ function unbound_optimization() {
     return $optimization;
 }
 
-function bootstrap_unbound_root()
+function unbound_bootstrap_root()
 {
     global $g;
 
@@ -128,7 +141,7 @@ function unbound_generate_config()
     global $config, $g;
 
     // Bootstrap needed for /var MFS
-    bootstrap_unbound_root();
+    unbound_bootstrap_root();
 
     // Setup optimization
     $optimization = unbound_optimization();
@@ -155,11 +168,11 @@ private-address: 0.0.0.0/8       # Broadcast address
 private-address: 10.0.0.0/8
 private-address: 100.64.0.0/10
 private-address: 127.0.0.0/8     # Loopback Localhost
+private-address: 169.254.0.0/16
 private-address: 172.16.0.0/12
 private-address: 192.0.0.0/24    # IANA IPv4 special purpose net
 private-address: 192.0.2.0/24    # Documentation network TEST-NET
 private-address: 192.168.0.0/16
-private-address: 192.254.0.0/16
 private-address: 198.18.0.0/15   # Used for testing inter-network communications
 private-address: 198.51.100.0/24 # Documentation network TEST-NET-2
 private-address: 203.0.113.0/24  # Documentation network TEST-NET-3
@@ -192,6 +205,7 @@ EOF;
     } else {
         $bindints .= "interface: 0.0.0.0\n";
         $bindints .= "interface: ::0\n";
+        $bindints .= "interface-automatic: yes\n";
     }
 
     // Determine interfaces to run on
@@ -402,79 +416,70 @@ EOF;
 
         file_put_contents("{$g['unbound_chroot_path']}/remotecontrol.conf", $remotcfg);
 
-        // Generate our keys
-        unbound_execute("unbound-control-setup");
-
+        unbound_execute('unbound-control-setup');
     }
 }
 
-
-// Read /etc/hosts
-function read_hosts() {
-
-    /* Open /etc/hosts and extract the only dhcpleases info
-     * XXX - to convert to an unbound C library which reads /etc/hosts automatically
-     */
-    $etc_hosts = array();
-    foreach (file('/etc/hosts') as $line) {
-        $d = preg_split('/\s/', $line, -1, PREG_SPLIT_NO_EMPTY);
-        if (empty($d) || substr(reset($d), 0, 1) == "#") {
-            continue;
-        }
-        if ($d[3] == "#") {
-            $ip = array_shift($d);
-            $fqdn = array_shift($d);
-            $name = array_shift($d);
-            if ($fqdn != "empty") {
-                if ($name != "empty") {
-                    array_push($etc_hosts, array(ipaddr => "$ip", fqdn => "$fqdn", name => "$name"));
-                } else {
-                    array_push($etc_hosts, array(ipaddr => "$ip", fqdn => "$fqdn"));
-                }
-            }
-        }
-    }
-    return $etc_hosts;
-}
-
-function sync_unbound_service()
+function unbound_configure_do($verbose = false)
 {
-    // Configure chroot
-    bootstrap_unbound_root();
+    global $config;
 
-    // Configure our Unbound service
-    unbound_execute("unbound-anchor");
+    unbound_execute('stop');
+
+    if (!isset($config['unbound']['enable'])) {
+        return;
+    }
+
+    if ($verbose) {
+        echo 'Starting DNS Resolver...';
+        flush();
+    }
+
+    unbound_bootstrap_root();
+    unbound_execute('unbound-anchor');
     unbound_remote_control_setup();
     unbound_generate_config();
-    unbound_execute("start");
-    if (is_process_running('unbound')) {
-        unbound_execute("restore_cache");
+    unbound_execute('start');
+
+    if ($verbose) {
+        echo "done.\n";
     }
 }
 
-// Execute commands as the user unbound
 function unbound_execute($cmd)
 {
     global $g, $config;
 
     switch ($cmd) {
         case 'start':
-            $local_domain = !empty($config['system']['domain']) ? $config['system']['domain'] : "local";
-            killbypid('/var/run/unbound_dhcpd.pid');
-            if (isset($config['unbound']['regdhcp'])) {
-                mwexec('/usr/local/opnsense/scripts/dns/unbound_dhcpd.py /domain "'.$local_domain.'"');
+            $domain = $config['system']['domain'];
+            if (isset($config['unbound']['regdhcpdomain'])) {
+                $domain = $config['unbound']['regdhcpdomain'];
             }
-            mwexec("/usr/local/sbin/unbound -c {$g['unbound_chroot_path']}/unbound.conf");
+            killbypid('/var/run/unbound_dhcpd.pid', 'TERM', true);
+            if (isset($config['unbound']['regdhcp'])) {
+                mwexecf('/usr/local/opnsense/scripts/dns/unbound_dhcpd.py /domain %s', $domain);
+            }
+            mwexecf('/usr/local/sbin/unbound -c %s', "{$g['unbound_chroot_path']}/unbound.conf");
             break;
         case 'stop':
-            killbypid('/var/run/unbound_dhcpd.pid');
-            mwexec("chroot -u unbound -g unbound / /usr/local/sbin/unbound-control stop", true);
+            killbypid('/var/run/unbound_dhcpd.pid', 'TERM', true);
+            killbypid('/var/run/unbound.pid', 'TERM', true);
+            break;
+        case 'reload':
+            killbypid('/var/run/unbound.pid', 'HUP');
             break;
         case 'unbound-anchor':
-            mwexec("chroot -u unbound -g unbound / /usr/local/sbin/unbound-anchor -a {$g['unbound_chroot_path']}/root.key", true);
+            mwexecf(
+                'chroot -u unbound -g unbound / %s -a %s',
+                array('/usr/local/sbin/unbound-anchor', "{$g['unbound_chroot_path']}/root.key")
+            );
             break;
         case 'unbound-control-setup':
-            mwexec("chroot -u unbound -g unbound / /usr/local/sbin/unbound-control-setup -d {$g['unbound_chroot_path']}", true);
+            mwexecf(
+                'chroot -u unbound -g unbound / %s -d %s',
+                array('/usr/local/sbin/unbound-control-setup', $g['unbound_chroot_path'])
+            );
             break;
         default:
             break;
@@ -564,14 +569,16 @@ function unbound_add_host_entries()
         }
     }
 
-    // Static Host entries
+    /* Static Host entries */
+
     if (isset($config['unbound']['hosts'])) {
-        $host_entries = "";
         $added_item = array();
+
         foreach($config['unbound']['hosts'] as $host) {
             if ($host['host'] != "") {
                 $host['host'] = $host['host'].".";
             }
+
             /* Backwards compatibility for records created before introducing RR types. */
             if (!isset($host['rr'])) {
                 $host['rr'] = (is_ipaddrv6($host['ip'])) ? 'AAAA' : 'A';
@@ -580,87 +587,79 @@ function unbound_add_host_entries()
             switch ($host['rr']) {
                 case 'A':
                 case 'AAAA':
-                    $host_entries .= "local-data-ptr: \"{$host['ip']} {$host['host']}{$host['domain']}\"\n";
-                    $host_entries .= "local-data: \"{$host['host']}{$host['domain']} IN {$host['rr']} {$host['ip']}\"\n";
+                    $unbound_entries .= "local-data-ptr: \"{$host['ip']} {$host['host']}{$host['domain']}\"\n";
+                    $unbound_entries .= "local-data: \"{$host['host']}{$host['domain']} IN {$host['rr']} {$host['ip']}\"\n";
                     break;
                 case 'MX':
-                    $host_entries .= "local-data: \"{$host['host']}{$host['domain']} IN MX {$host['mxprio']} {$host['mx']}\"\n";
+                    $unbound_entries .= "local-data: \"{$host['host']}{$host['domain']} IN MX {$host['mxprio']} {$host['mx']}\"\n";
                     break;
             }
 
             if (!empty($host['descr']) && isset($config['unbound']['txtsupport'])) {
-                $host_entries .= "local-data: '{$host['host']}{$host['domain']} TXT \"".addslashes($host['descr'])."\"'\n";
+                $unbound_entries .= "local-data: '{$host['host']}{$host['domain']} TXT \"".addslashes($host['descr'])."\"'\n";
             }
         }
-        $unbound_entries .= $host_entries;
     }
 
-    // Static DHCP entries
-    $host_entries = "";
+    /* Static DHCP entries */
+
     if (isset($config['unbound']['regdhcpstatic']) && is_array($config['dhcpd'])) {
-        foreach ($config['dhcpd'] as $dhcpif => $dhcpifconf)
-            if (is_array($dhcpifconf['staticmap']) && isset($dhcpifconf['enable']))
-                foreach ($dhcpifconf['staticmap'] as $host)
-                    if ($host['ipaddr'] && $host['hostname']) {
-                        $host_entries .= "local-data-ptr: \"{$host['ipaddr']} {$host['hostname']}.{$config['system']['domain']}\"\n";
-                        $host_entries .= "local-data: \"{$host['hostname']}.{$config['system']['domain']} IN A {$host['ipaddr']}\"\n";
-                        if (!empty($host['descr']) && $unboundcfg['txtsupport'] == 'on') {
-                            $host_entries .= "local-data: '{$host['hostname']}.{$config['system']['domain']} TXT \"".addslashes($host['descr'])."\"'\n";
-                        }
+        foreach ($config['dhcpd'] as $dhcpif => $dhcpifconf) {
+            if (isset($dhcpifconf['staticmap']) && isset($dhcpifconf['enable'])) {
+                foreach ($dhcpifconf['staticmap'] as $host) {
+                    if (!$host['ipaddr'] || !$host['hostname']) {
+                        continue;
                     }
-        $unbound_entries .= $host_entries;
+
+                    $domain = $config['system']['domain'];
+                    if ($host['domain']) {
+                        $domain = $host['domain'];
+                    } elseif ($dhcpifconf['domain']) {
+                        $domain = $dhcpifconf['domain'];
+                    }
+
+                    $unbound_entries .= "local-data-ptr: \"{$host['ipaddr']} {$host['hostname']}.{$domain}\"\n";
+                    $unbound_entries .= "local-data: \"{$host['hostname']}.{$domain} IN A {$host['ipaddr']}\"\n";
+                    if (!empty($host['descr']) && $unboundcfg['txtsupport'] == 'on') {
+                        $unbound_entries .= "local-data: '{$host['hostname']}.{$domain} TXT \"".addslashes($host['descr'])."\"'\n";
+                    }
+                }
+            }
+        }
     }
 
-    // Write out entries
-    bootstrap_unbound_root();
+    if (isset($config['unbound']['regdhcpstatic']) && is_array($config['dhcpdv6'])) {
+        foreach ($config['dhcpdv6'] as $dhcpif => $dhcpifconf) {
+            if (isset($dhcpifconf['staticmap']) && isset($dhcpifconf['enable'])) {
+                foreach ($dhcpifconf['staticmap'] as $host) {
+                    if (!$host['ipaddrv6'] || !$host['hostname']) {
+                        continue;
+                    }
+
+                    $domain = $config['system']['domain'];
+                    if ($host['domain']) {
+                        $domain = $host['domain'];
+                    } elseif ($dhcpifconf['domain']) {
+                        $domain = $dhcpifconf['domain'];
+                    }
+
+                    $unbound_entries .= "local-data-ptr: \"{$host['ipaddrv6']} {$host['hostname']}.{$domain}\"\n";
+                    $unbound_entries .= "local-data: \"{$host['hostname']}.{$domain} IN AAAA {$host['ipaddrv6']}\"\n";
+                    if (!empty($host['descr']) && $unboundcfg['txtsupport'] == 'on') {
+                        $unbound_entries .= "local-data: '{$host['hostname']}.{$domain} TXT \"".addslashes($host['descr'])."\"'\n";
+                    }
+                }
+            }
+        }
+    }
+
+    unbound_bootstrap_root();
     file_put_contents("{$g['unbound_chroot_path']}/host_entries.conf", $unbound_entries);
 }
 
-function unbound_control($action) {
-    global $config, $g;
-
-    $cache_dumpfile = "/tmp/unbound_cache";
-
-    switch ($action) {
-        case "start":
-            // Start Unbound
-            if ($config['unbound']['enable'] == "on") {
-                if (!is_process_running("unbound")) {
-                    unbound_execute("start");
-                }
-            }
-            break;
-        case "stop":
-            if ($config['unbound']['enable'] == "on") {
-                unbound_execute("stop");
-            }
-            break;
-        case "reload":
-            if ($config['unbound']['enable'] == "on") {
-                unbound_execute("reload");
-            }
-            break;
-        case "dump_cache":
-            // Dump Unbound's Cache
-            if ($config['unbound']['dumpcache'] == "on") {
-                unbound_execute("dump_cache");
-            }
-            break;
-        case "restore_cache":
-            // Restore Unbound's Cache
-            if ((is_process_running("unbound")) && ($config['unbound']['dumpcache'] == "on")) {
-                if (file_exists($cache_dumpfile) && filesize($cache_dumpfile) > 0) {
-                    unbound_execute("load_cache < /tmp/unbound_cache");
-                }
-            }
-            break;
-        default:
-            break;
-    }
-}
-
 // Generation of Unbound statistics
-function unbound_statistics() {
+function unbound_statistics()
+{
     global $config;
 
     if ($config['stats'] == "on") {
@@ -735,15 +734,18 @@ function unbound_acls_config() {
     }
 
     // Write out Access list
-    bootstrap_unbound_root();
+    unbound_bootstrap_root();
     file_put_contents("{$g['unbound_chroot_path']}/access_lists.conf", $aclcfg);
 }
 
-// Generate hosts and reload services
-function unbound_hosts_generate() {
-    // Generate our hosts file
-    unbound_add_host_entries();
+function unbound_hosts_generate()
+{
+    global $config;
 
-    // Reload our service to read the updates
-    unbound_control("reload");
+    if (!isset($config['unbound']['enable'])) {
+        return;
+    }
+
+    unbound_add_host_entries();
+    unbound_execute('reload');
 }

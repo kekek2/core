@@ -30,10 +30,10 @@
 require_once("guiconfig.inc");
 require_once("filter.inc");
 require_once("services.inc");
-require_once("vslb.inc");
+require_once("plugins.inc.d/relayd.inc");
 require_once("interfaces.inc");
 
-if (!is_array($config['load_balancer']['lbpool'])) {
+if (empty($config['load_balancer']['lbpool']) || !is_array($config['load_balancer']['lbpool'])) {
     $config['load_balancer']['lbpool'] = array();
 }
 $a_pool = &$config['load_balancer']['lbpool'];
@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     } elseif (!empty($_POST['apply'])) {
-        relayd_configure();
+        relayd_configure_do();
         filter_configure();
         clear_subsystem_dirty('loadbalancer');
         header(url_safe('Location: /load_balancer_monitor.php'));
@@ -156,7 +156,7 @@ $main_buttons = array(
                     <tr>
                       <td><?=$pool['name'];?></td>
                       <td><?=$pool['mode'];?></td>
-                      <td><?=implode('<br/>', $pool['servers']);?></td>
+                      <td><?= !empty($pool['servers']) ? implode('<br/>', $pool['servers']) : '' ?></td>
                       <td><?=$pool['port'];?></td>
                       <td>
                           <a href="load_balancer_monitor_edit.php?id=<?=$mondex[$pool['monitor']];?>"><?=$pool['monitor'];?></a>

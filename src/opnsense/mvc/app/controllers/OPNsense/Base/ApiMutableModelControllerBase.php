@@ -111,11 +111,12 @@ abstract class ApiMutableModelControllerBase extends ApiControllerBase
      * Use the reference node and tag to rename validation output for a specific node to a new offset, which makes
      * it easier to reference specific uuids without having to use them in the frontend descriptions.
      * @param $node reference node, to use as relative offset
+     * @param $prefix prefix to use when $node is provided (defaults to static::$internalModelName)
      * @return array result / validation output
      */
-    protected function validateAndSave($node = null)
+    protected function validateAndSave($node = null, $prefix = null)
     {
-        $result = $this->validate();
+        $result = $this->validate($node, $prefix);
         if (empty($result['result'])) {
             return $this->save();
         }
@@ -125,11 +126,13 @@ abstract class ApiMutableModelControllerBase extends ApiControllerBase
     /**
      * validate this model
      * @param $node reference node, to use as relative offset
+     * @param $prefix prefix to use when $node is provided (defaults to static::$internalModelName)
      * @return array result / validation output
      */
-    protected function validate($node = null)
+    protected function validate($node = null, $prefix = null)
     {
         $result = array("result"=>"");
+        $resultPrefix = empty($prefix) ? static::$internalModelName : $prefix;
         // perform validation
         $valMsgs = $this->getModel()->performValidation();
         foreach ($valMsgs as $field => $msg) {
@@ -139,10 +142,10 @@ abstract class ApiMutableModelControllerBase extends ApiControllerBase
             }
             // replace absolute path to attribute for relative one at uuid.
             if ($node != null) {
-                $fieldnm = str_replace($node->__reference, static::$internalModelName, $msg->getField());
+                $fieldnm = str_replace($node->__reference, $resultPrefix, $msg->getField());
                 $result["validations"][$fieldnm] = $msg->getMessage();
             } else {
-                $result["validations"][static::$internalModelName.".".$msg->getField()] = $msg->getMessage();
+                $result["validations"][$resultPrefix.".".$msg->getField()] = $msg->getMessage();
             }
         }
         return $result;
@@ -164,7 +167,6 @@ abstract class ApiMutableModelControllerBase extends ApiControllerBase
      * setAction is called. This hook is called after a model has been
      * constructed and validated but before it serialized to the configuration
      * and written to disk
-     * @param $mdl The validated model containing the new state of the model
      * @return Error message on error, or null/void on success
      */
     protected function setActionHook()
@@ -184,9 +186,9 @@ abstract class ApiMutableModelControllerBase extends ApiControllerBase
             $mdl->setNodes($this->request->getPost(static::$internalModelName));
             $result = $this->validate();
             if (empty($result['result'])) {
-                $errorMessage = $this->setActionHook();
-                if (!empty($errorMessage)) {
-                    $result['error'] = $errorMessage;
+                $hookErrorMessage = $this->setActionHook();
+                if (!empty($hookErrorMessage)) {
+                    $result['error'] = $hookErrorMessage;
                 } else {
                     return $this->save();
                 }

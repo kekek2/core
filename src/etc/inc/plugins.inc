@@ -162,16 +162,45 @@ function plugins_firewall($fw)
     return $fw;
 }
 
-function plugins_configure()
+function plugins_configure($hook, $verbose = false)
 {
     foreach (plugins_scan() as $name => $path) {
         require_once $path;
         $func = sprintf('%s_configure', $name);
         if (function_exists($func)) {
             $workers = $func();
-            foreach ($workers as $worker) {
-                $worker();
+            foreach ($workers as $when => $worker) {
+                if ($hook == $when && is_array($worker)) {
+                    foreach ($worker as $task) {
+                        $task($verbose);
+                    }
+                }
+                /* XXX compat glue from when configure wasn't indexed (remove in 17.1) */
+                if ($hook == 'bootup' && !is_array($worker)) {
+                    $worker($verbose);
+                }
             }
         }
     }
+}
+
+function plugins_xmlrpc_sync()
+{
+    $sync_settings = array();
+    foreach (plugins_scan() as $name => $path) {
+        require_once $path;
+        $func = sprintf('%s_xmlrpc_sync', $name);
+        if (function_exists($func)) {
+            foreach ($func() as $helper) {
+                if (!empty($helper['id']) && !empty($helper['section'])) {
+                    $sync_settings[$helper['id']] = $helper;
+                    if (empty($helper['help'])) {
+                        $sync_settings[$helper['id']]['help'] = sprintf(gettext('Synchronize %s settings to backup'), $helper['description']);
+                    }
+                    unset($sync_settings[$helper['id']]['id']);
+                }
+            }
+        }
+    }
+    return $sync_settings;
 }

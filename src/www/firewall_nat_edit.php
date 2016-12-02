@@ -362,12 +362,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $nat_action = "Add Firewall/NAT/Port Forward";
         }
 
-        if (write_config()) {
-            mark_subsystem_dirty('natconf');
-            firewall_syslog($nat_action, $a_nat, $natent);
-        }
+        write_config();
+        mark_subsystem_dirty('natconf');
+        firewall_syslog($nat_action, $a_nat, $natent);
 
-        header("Location: firewall_nat.php");
+        header(url_safe('Location: /firewall_nat.php'));
         exit;
     }
 }

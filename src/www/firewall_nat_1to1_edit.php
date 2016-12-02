@@ -150,11 +150,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $a_1to1_action = "Add Firewall/NAT/One-to-One";
         }
 
-        if (write_config()) {
-            mark_subsystem_dirty('natconf');
-            firewall_syslog($a_1to1_action, $a_1to1, $natent);
-        }
-        header("Location: firewall_nat_1to1.php");
+        write_config();
+        mark_subsystem_dirty('natconf');
+        firewall_syslog($a_1to1_action, $a_1to1, $natent);
+        header(url_safe('Location: /firewall_nat_1to1.php'));
         exit;
     }
 }

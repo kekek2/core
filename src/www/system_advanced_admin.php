@@ -32,7 +32,6 @@
 require_once("guiconfig.inc");
 require_once("filter.inc");
 require_once("system.inc");
-require_once("unbound.inc");
 require_once("services.inc");
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -42,13 +41,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['ssl-certref'] = $config['system']['webgui']['ssl-certref'];
     $pconfig['disablehttpredirect'] = isset($config['system']['webgui']['disablehttpredirect']);
     $pconfig['disableconsolemenu'] = isset($config['system']['disableconsolemenu']);
+    $pconfig['disableintegratedauth'] = !empty($config['system']['disableintegratedauth']);
     $pconfig['sudo_allow_wheel'] = isset($config['system']['sudo_allow_wheel']);
     $pconfig['noantilockout'] = isset($config['system']['webgui']['noantilockout']);
     $pconfig['nodnsrebindcheck'] = isset($config['system']['webgui']['nodnsrebindcheck']);
     $pconfig['nohttpreferercheck'] = isset($config['system']['webgui']['nohttpreferercheck']);
     $pconfig['loginautocomplete'] = isset($config['system']['webgui']['loginautocomplete']);
     $pconfig['althostnames'] = $config['system']['webgui']['althostnames'];
-    $pconfig['enableserial'] = isset($config['system']['enableserial']);
     $pconfig['serialspeed'] = $config['system']['serialspeed'];
     $pconfig['primaryconsole'] = $config['system']['primaryconsole'];
     $pconfig['secondaryconsole'] = $config['system']['secondaryconsole'];
@@ -116,6 +115,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             unset($config['system']['disableconsolemenu']);
         }
 
+        if (!empty($pconfig['disableintegratedauth'])) {
+            $config['system']['disableintegratedauth'] = true;
+        } elseif (isset($config['system']['disableintegratedauth'])) {
+            unset($config['system']['disableintegratedauth']);
+        }
+
         if ($pconfig['sudo_allow_wheel'] == "yes") {
             $config['system']['sudo_allow_wheel'] = true;
         } elseif (isset($config['system']['sudo_allow_wheel'])) {
@@ -126,12 +131,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $config['system']['webgui']['noantilockout'] = true;
         } elseif (isset($config['system']['webgui']['noantilockout'])) {
             unset($config['system']['webgui']['noantilockout']);
-        }
-
-        if ($pconfig['enableserial'] == "yes") {
-            $config['system']['enableserial'] = true;
-        } elseif (isset($config['system']['enableserial'])) {
-            unset($config['system']['enableserial']);
         }
 
         if (is_numeric($pconfig['serialspeed'])) {
@@ -243,11 +242,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $savemsg .= sprintf("<br />" . gettext("One moment...redirecting to %s in 20 seconds."), $url);
         }
 
-        system_console_configure();
+        system_login_configure();
         system_hosts_generate();
-        services_dhcpleases_configure();
-        services_dnsmasq_configure(false);
-        services_unbound_configure(false);
+        dnsmasq_configure_do();
+        unbound_configure_do();
         services_dhcpd_configure();
 
         if ($restart_sshd) {
@@ -529,19 +527,7 @@ include("head.inc");
                   </td>
                 </tr>
                 <tr>
-                  <th colspan="2"><?=gettext("Serial Communications"); ?></th>
-                </tr>
-                <tr>
-                  <td><a id="help_for_enableserial" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Serial Terminal"); ?></td>
-                  <td width="78%">
-                    <input name="enableserial" type="checkbox" id="enableserial" value="yes" <?=!empty($pconfig['enableserial']) ? "checked=\"checked\"" : "";?> />
-                    <?=gettext("Enable serial ports with 115200/8/N/1 by default, or another speed selectable below."); ?>
-                    <div class="hidden" for="help_for_enableserial">
-                      <small class="formhelp">
-                      <?=gettext("Note: This will redirect the console output and messages to the serial port. You can still access the console menu from the internal video card/keyboard. A null modem serial cable or adapter is required to use the serial console."); ?>
-                      </small>
-                    </div>
-                  </td>
+                  <th colspan="2"><?=gettext("Console Options"); ?></th>
                 </tr>
                 <tr>
                   <td><a id="help_for_serialspeed" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Serial Speed")?></td>
@@ -553,7 +539,7 @@ include("head.inc");
                       <option value="19200" <?=$pconfig['serialspeed'] == "19200" ? 'selected="selected"' : '' ?>>19200</option>
                       <option value="14400" <?=$pconfig['serialspeed'] == "14400" ? 'selected="selected"' : '' ?>>14400</option>
                       <option value="9600" <?=$pconfig['serialspeed'] == "9600" ? 'selected="selected"' : '' ?>>9600</option>
-                    </select> <?=gettext("bps");?>
+                    </select>
                     <div class="hidden" for="help_for_serialspeed">
                       <small class="formhelp">
                       <?=gettext("Allows selection of different speeds for the serial console port."); ?>
@@ -595,9 +581,6 @@ include("head.inc");
                   </td>
                 </tr>
                 <tr>
-                  <th colspan="2"><?=gettext("Console Options"); ?></th>
-                </tr>
-                <tr>
                   <td><i class="fa fa-info-circle text-muted"></i></a> <?= gettext("Console menu") ?></td>
                   <td width="78%">
                     <input name="disableconsolemenu" type="checkbox" value="yes" <?= empty($pconfig['disableconsolemenu']) ? '' : 'checked="checked"' ?>  />
@@ -609,6 +592,16 @@ include("head.inc");
                   <td width="78%">
                     <input name="sudo_allow_wheel" type="checkbox" value="yes" <?= empty($pconfig['sudo_allow_wheel']) ? '' : 'checked="checked"' ?>  />
                     <?= gettext('Allow administrators to use the Sudo utility') ?>
+                  </td>
+                </tr>
+                <tr>
+                  <td><a id="help_for_disableintegratedauth" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Integrated authentication") ?></td>
+                  <td width="78%">
+                    <input name="disableintegratedauth" type="checkbox" value="yes" <?= empty($pconfig['disableintegratedauth']) ? '' : 'checked="checked"' ?>  />
+                    <strong><?=gettext("Disable integrated authentication"); ?></strong>
+                    <div class="hidden" for="help_for_disableintegratedauth">
+                        <?=gettext("Disable OPNsense integrated authentication module for console access, falling back to normal unix authentication.");?>
+                    </div>
                   </td>
                 </tr>
                 <tr>

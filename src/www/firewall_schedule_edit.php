@@ -206,13 +206,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $a_schedules[] = $schedule;
             $shedule_action = "Add Firewall/Settings/Shedule";
         }
-        schedule_sort();
-        if (write_config()) {
-            filter_configure();
-            firewall_syslog($shedule_action, $a_schedules, $schedule);
-        }
 
-        header("Location: firewall_schedule.php");
+        schedule_sort();
+        write_config();
+        filter_configure();
+        firewall_syslog($shedule_action, $a_schedules, $schedule);
+
+        header(url_safe('Location: /firewall_schedule.php'));
         exit;
     }
 }

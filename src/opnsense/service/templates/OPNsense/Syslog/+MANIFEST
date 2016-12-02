@@ -1,8 +1,0 @@
-name: syslog-ng
-version: 0.1
-origin: sysutils/syslog-ng
-comment: syslog-ng configuration
-desc: configuration templates for syslog-ng and newsyslog
-maintainer: evbevz@gmail.com
-www: http://smart-soft.ru
-prefix: /

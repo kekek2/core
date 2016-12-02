@@ -44,6 +44,7 @@ function stdBootgridUI(obj, sourceUrl, options) {
         formatters: {
             "commands": function (column, row) {
                 return "<button type=\"button\" class=\"btn btn-xs btn-default command-edit\" data-row-id=\"" + row.uuid + "\"><span class=\"fa fa-pencil\"></span></button> " +
+                    "<button type=\"button\" class=\"btn btn-xs btn-default command-copy\" data-row-id=\"" + row.uuid + "\"><span class=\"fa fa-clone\"></span></button>" +
                     "<button type=\"button\" class=\"btn btn-xs btn-default command-delete\" data-row-id=\"" + row.uuid + "\"><span class=\"fa fa-trash-o\"></span></button>";
             },
             "rowtoggle": function (column, row) {
@@ -145,6 +146,41 @@ $.fn.UIBootgrid = function (params) {
                         }
                     }).end();
 
+                    // copy item, save as new
+                    grid.find(".command-copy").on("click", function(e)
+                    {
+                        if (editDlg != undefined && gridParams['get'] != undefined) {
+                            var uuid = $(this).data("row-id");
+                            var urlMap = {};
+                            urlMap['frm_' + editDlg] = gridParams['get'] + uuid;
+                            mapDataToFormUI(urlMap).done(function () {
+                                // update selectors
+                                formatTokenizersUI();
+                                $('.selectpicker').selectpicker('refresh');
+                                // clear validation errors (if any)
+                                clearFormValidation('frm_' + editDlg);
+                            });
+
+                            // show dialog for pipe edit
+                            $('#'+editDlg).modal({backdrop: 'static', keyboard: false});
+                            // define save action
+                            $("#btn_"+editDlg+"_save").unbind('click').click(function(){
+                                if (gridParams['add'] != undefined) {
+                                    saveFormToEndpoint(url=gridParams['add'],
+                                        formid='frm_' + editDlg, callback_ok=function(){
+                                            $("#"+editDlg).modal('hide');
+                                            $("#"+gridId).bootgrid("reload");
+                                        }, true);
+                                } else {
+                                    console.log("[grid] action add missing")
+                                }
+                            });
+                        } else {
+                            console.log("[grid] action get or data-editDialog missing")
+                        }
+                    }).end();
+
+
                     // delete item
                     grid.find(".command-delete").on("click", function(e)
                     {
@@ -167,6 +203,7 @@ $.fn.UIBootgrid = function (params) {
                     {
                         if (gridParams['toggle'] != undefined) {
                             var uuid=$(this).data("row-id");
+                            $(this).addClass("fa-spinner fa-pulse");
                             ajaxCall(url=gridParams['toggle'] + uuid,
                                 sendData={},callback=function(data,status){
                                     // reload grid after delete

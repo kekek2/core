@@ -30,7 +30,6 @@
 require_once("guiconfig.inc");
 require_once("filter.inc");
 require_once("system.inc");
-require_once("unbound.inc");
 require_once("interfaces.inc");
 require_once("services.inc");
 
@@ -236,10 +235,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         prefer_ipv4_or_ipv6();
         system_hostname_configure();
         system_hosts_generate();
-        services_dhcpleases_configure();
         system_resolvconf_generate();
-        services_dnsmasq_configure(false);
-        services_unbound_configure(false);
+        dnsmasq_configure_do();
+        unbound_configure_do();
         services_dhcpd_configure();
         system_timezone_configure();
 
@@ -430,7 +428,9 @@ include("head.inc");
                 </div>
                 <br/>
                 <input name="dnslocalhost" type="checkbox" value="yes" <?=$pconfig['dnslocalhost'] ? "checked=\"checked\"" : ""; ?> />
-                  <?=gettext("Do not use the DNS Forwarder as a DNS server for the firewall"); ?>
+                <strong>
+                  <?=gettext("Do not use the DNS Forwarder/Resolver as a DNS server for the firewall"); ?>
+                </strong>
                 <div class="hidden" for="help_for_dnsservers_opt">
                   <small class="formhelp">
                   <?=gettext("By default localhost (127.0.0.1) will be used as the first DNS server where the DNS Forwarder or DNS Resolver is enabled and set to listen on Localhost, so system can use the local DNS service to perform lookups. ".

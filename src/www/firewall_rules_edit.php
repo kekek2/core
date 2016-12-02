@@ -30,7 +30,7 @@
 
 require_once("guiconfig.inc");
 require_once("interfaces.inc");
-require_once("services.inc");
+require_once("system.inc");
 require_once("filter.inc");
 require_once("logs.inc");
 
@@ -454,18 +454,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         // sort filter items per interface, not really necessary but leaves a bit nicer sorted config.xml behind.
         filter_rules_sort();
-        configure_cron();
+        system_cron_configure();
         // write to config
-        if (write_config()) {
-            mark_subsystem_dirty('filter');
-            firewall_syslog($alias_action, $a_filter, $filterent);
-        }
+        write_config();
+        mark_subsystem_dirty('filter');
+        firewall_syslog($alias_action, $a_filter, $filterent);
 
-        if (!empty($pconfig['floating'])) {
-            header("Location: firewall_rules.php?if=FloatingRules");
-        } else {
-            header("Location: firewall_rules.php?if=" . htmlspecialchars($pconfig['interface']));
-        }
+        header(url_safe('Location: /firewall_rules.php?if=%s', array(
+            !empty($pconfig['floating']) ? 'FloatingRules' : $pconfig['interface']
+	)));
         exit;
     }
 }

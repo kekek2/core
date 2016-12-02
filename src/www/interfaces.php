@@ -39,7 +39,6 @@ require_once("interfaces.inc");
 require_once("ipsec.inc");
 require_once("openvpn.inc");
 require_once("services.inc");
-require_once("unbound.inc");
 
 /***************************************************************************************************************
  * imported from xmlparse_attr.inc
@@ -336,7 +335,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $if = $_GET['if'];
     } else {
         // no interface provided, redirect to interface assignments
-        header("Location: interfaces_assign.php");
+        header(url_safe('Location: /interfaces_assign.php'));
         exit;
     }
 
@@ -525,8 +524,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     }
                 }
             }
-            /* restart snmp so that it binds to correct address */
-            services_snmpd_configure();
+            /* restart plugins */
+            if (function_exists('plugins_configure')) {
+                plugins_configure('interface');
+            }
             /* sync filter configuration */
             setup_gateways_monitor();
             filter_configure();
@@ -536,7 +537,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
         }
         @unlink('/tmp/.interfaces.apply');
-        header("Location: interfaces.php?if={$if}");
+        header(url_safe('Location: /interfaces.php?if=%s', array($if)));
         exit;
     } elseif (empty($pconfig['enable'])) {
         if (isset($a_interfaces[$if]['enable'])) {
@@ -557,7 +558,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $toapplylist[$if]['ppps'] = $a_ppps;
         /* we need to be able remove IP aliases for IPv6 */
         file_put_contents('/tmp/.interfaces.apply', serialize($toapplylist));
-        header("Location: interfaces.php?if={$if}");
+        header(url_safe('Location: /interfaces.php?if=%s', array($if)));
         exit;
     } else {
         // locate sequence in ppp list
@@ -1281,7 +1282,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
             mark_subsystem_dirty('interfaces');
 
-            header("Location: interfaces.php?if={$if}");
+            header(url_safe('Location: /interfaces.php?if=%s', array($if)));
             exit;
         }
     }

@@ -182,15 +182,7 @@ function system_resolvconf_generate($dynupdate = false)
 
     $dnslock = lock('resolvconf', LOCK_EX);
 
-    $fd = fopen('/etc/resolv.conf', 'w');
-    if (!$fd) {
-        printf("Error: cannot open resolv.conf in system_resolvconf_generate().\n");
-        unlock($dnslock);
-        return 1;
-    }
-
-    fwrite($fd, $resolvconf);
-    fclose($fd);
+    file_put_contents('/etc/resolv.conf', $resolvconf);
     chmod('/etc/resolv.conf', 0644);
 
     if (!file_exists("/var/run/booting")) {
@@ -234,6 +226,7 @@ function get_locale_list()
 
     /* first one is the default */
     $locales['en_US'] = gettext('English');
+    $locales['cs_CZ'] = gettext('Czech');
     $locales['zh_CN'] = gettext('Chinese (Simplified)');
     $locales['nl_NL'] = gettext('Dutch');
     $locales['fr_FR'] = gettext('French');
@@ -305,6 +298,22 @@ function get_searchdomains()
     return $master_list;
 }
 
+function get_dns_servers()
+{
+    $dns_servers = array();
+
+    $dns_s = file("/etc/resolv.conf", FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+    foreach($dns_s as $dns) {
+        $matches = "";
+        if (preg_match("/nameserver (.*)/", $dns, $matches)) {
+            $dns_servers[] = $matches[1];
+        }
+    }
+
+    return array_unique($dns_servers);
+}
+
 function get_nameservers()
 {
     global $config;
@@ -346,16 +355,13 @@ function system_hosts_generate()
     global $config;
 
     $syscfg = $config['system'];
-    $dnsmasqcfg = $config['dnsmasq'];
 
-    $hosts = "127.0.0.1  localhost localhost.{$syscfg['domain']}\n";
-    $lhosts = "";
-    $dhosts = "";
+    $hosts = "127.0.0.1\tlocalhost localhost.{$syscfg['domain']}\n";
 
     if (isset($config['interfaces']['lan'])) {
         $cfgip = get_interface_ip("lan");
         if (is_ipaddr($cfgip)) {
-            $hosts .= "{$cfgip}  {$syscfg['hostname']}.{$syscfg['domain']} {$syscfg['hostname']}\n";
+            $hosts .= "{$cfgip}\t{$syscfg['hostname']}.{$syscfg['domain']} {$syscfg['hostname']}\n";
         }
     } else {
         $sysiflist = get_configured_interface_list();
@@ -363,108 +369,41 @@ function system_hosts_generate()
             if (!interface_has_gateway($sysif)) {
                 $cfgip = get_interface_ip($sysif);
                 if (is_ipaddr($cfgip)) {
-                    $hosts .= "{$cfgip}  {$syscfg['hostname']}.{$syscfg['domain']} {$syscfg['hostname']}\n";
+                    $hosts .= "{$cfgip}\t{$syscfg['hostname']}.{$syscfg['domain']} {$syscfg['hostname']}\n";
                     break;
                 }
             }
         }
     }
 
-    if (isset($dnsmasqcfg['enable'])) {
-        if (!isset($dnsmasqcfg['hosts']) || !is_array($dnsmasqcfg['hosts'])) {
-            $dnsmasqcfg['hosts'] = array();
-        }
+    file_put_contents('/etc/hosts', $hosts);
 
-        foreach ($dnsmasqcfg['hosts'] as $host) {
-            if ($host['host']) {
-                $lhosts .= "{$host['ip']}  {$host['host']}.{$host['domain']} {$host['host']}\n";
-            } else {
-                $lhosts .= "{$host['ip']}  {$host['domain']}\n";
-            }
-            if (!isset($host['aliases']) || !is_array($host['aliases']) || !is_array($host['aliases']['item'])) {
-                continue;
-            }
-            foreach ($host['aliases']['item'] as $alias) {
-                if ($alias['host']) {
-                    $lhosts .= "{$host['ip']}  {$alias['host']}.{$alias['domain']} {$alias['host']}\n";
-                } else {
-                    $lhosts .= "{$host['ip']}  {$alias['domain']}\n";
-                }
-            }
-        }
-        if (isset($dnsmasqcfg['regdhcpstatic']) && is_array($config['dhcpd'])) {
-            foreach ($config['dhcpd'] as $dhcpif => $dhcpifconf) {
-                if (isset($dhcpifconf['staticmap']) && isset($dhcpifconf['enable'])) {
-                    foreach ($dhcpifconf['staticmap'] as $host) {
-                        if ($host['ipaddr'] && $host['hostname'] && $host['domain']) {
-                            $dhosts .= "{$host['ipaddr']}  {$host['hostname']}.{$host['domain']} {$host['hostname']}\n";
-                        } elseif ($host['ipaddr'] && $host['hostname'] && $dhcpifconf['domain']) {
-                            $dhosts .= "{$host['ipaddr']}  {$host['hostname']}.{$dhcpifconf['domain']} {$host['hostname']}\n";
-                        } elseif ($host['ipaddr'] && $host['hostname']) {
-                            $dhosts .= "{$host['ipaddr']}  {$host['hostname']}.{$syscfg['domain']} {$host['hostname']}\n";
-                        }
-                    }
-                }
-            }
-        }
-        if (isset($dnsmasqcfg['regdhcpstatic']) && is_array($config['dhcpdv6'])) {
-            foreach ($config['dhcpdv6'] as $dhcpif => $dhcpifconf) {
-                if (isset($dhcpifconf['staticmap']) && isset($dhcpifconf['enable'])) {
-                    foreach ($dhcpifconf['staticmap'] as $host) {
-                        if ($host['ipaddrv6'] && $host['hostname'] && $host['domain']) {
-                            $dhosts .= "{$host['ipaddrv6']}  {$host['hostname']}.{$host['domain']} {$host['hostname']}\n";
-                        } elseif ($host['ipaddrv6'] && $host['hostname'] && $dhcpifconf['domain']) {
-                            $dhosts .= "{$host['ipaddrv6']}  {$host['hostname']}.{$dhcpifconf['domain']} {$host['hostname']}\n";
-                        } elseif ($host['ipaddrv6'] && $host['hostname']) {
-                            $dhosts .= "{$host['ipaddrv6']}  {$host['hostname']}.{$syscfg['domain']} {$host['hostname']}\n";
-                        }
-                    }
-                }
-            }
-        }
-
-        if (isset($dnsmasqcfg['dhcpfirst'])) {
-            $hosts .= $dhosts . $lhosts;
-        } else {
-            $hosts .= $lhosts . $dhosts;
-        }
-    }
-
-    /*
-     * Do not remove this because dhcpleases monitors with kqueue
-     * it needs to be * killed before writing to hosts files.
-     */
-    killbypid('/var/run/dhcpleases.pid', 'TERM', true);
-
-    $fd = fopen('/etc/hosts', 'w');
-    if (!$fd) {
-        log_error("Error: cannot open hosts file in system_hosts_generate().\n");
-        return 1;
-    }
-    fwrite($fd, $hosts);
-    fclose($fd);
-
-    if (isset($config['unbound']['enable'])) {
-        unbound_hosts_generate();
-    }
-
-    return 0;
+    dnsmasq_hosts_generate();
+    unbound_hosts_generate();
 }
 
-function system_hostname_configure()
+function system_hostname_configure($verbose = false)
 {
     global $config;
 
+    if ($verbose) {
+        echo 'Setting hostname: ';
+        flush();
+    }
+
     $syscfg = $config['system'];
 
-    /* set hostname */
-    $status = mwexec("/bin/hostname " .
-      escapeshellarg("{$syscfg['hostname']}.{$syscfg['domain']}"));
+    $hostname = "{$syscfg['hostname']}.{$syscfg['domain']}";
 
-      /* Setup host GUID ID.  This is used by ZFS. */
+    /* set hostname */
+    mwexecf('/bin/hostname %s', $hostname);
+
+    /* Setup host GUID ID.  This is used by ZFS. */
     mwexec("/etc/rc.d/hostid start");
 
-    return $status;
+    if ($verbose) {
+        echo "{$hostname}\n";
+    }
 }
 
 function system_routing_configure($interface = '')
@@ -479,10 +418,14 @@ function system_routing_configure($interface = '')
     $foundgwv6 = false;
     $fargw = false;
 
+    /* XXX eventually this file-based workaround must be removed */
+    foreach (glob('/tmp/*_defaultgw{,v6}', GLOB_BRACE) as $to_delete) {
+        @unlink($to_delete);
+    }
+
     /* tack on all the hard defined gateways as well */
     if (isset($config['gateways']['gateway_item'])) {
-        array_map('unlink', glob('/tmp/*_defaultgw{,v6}', GLOB_BRACE));
-        foreach  ($config['gateways']['gateway_item'] as $gateway) {
+        foreach ($config['gateways']['gateway_item'] as $gateway) {
             if (isset($gateway['defaultgw'])) {
                 if ($gateway['ipprotocol'] != "inet6" && (is_ipaddrv4($gateway['gateway']) || $gateway['gateway'] == "dynamic")) {
                     if(strstr($gateway['gateway'], ":")) {
@@ -720,16 +663,16 @@ function system_routing_enable()
     ));
 }
 
-function system_syslogd_start()
+function system_syslogd_start($verbose = false)
 {
     global $config, $g;
 
-    mwexec('/etc/rc.d/hostid start');
-
-    $syslogcfg = $config['syslog'];
-    if (file_exists('/var/run/booting')) {
-        echo gettext('Starting syslog...');
+    if ($verbose) {
+        echo 'Starting syslog...';
+        flush();
     }
+
+    mwexec('/etc/rc.d/hostid start');
 
     try{
         // to ensure that Syslog model is initialized and configured
@@ -741,8 +684,8 @@ function system_syslogd_start()
     configd_run('template reload OPNsense.Syslog');
     configd_run("syslog start");
 
-    if (file_exists("/var/run/booting")) {
-        echo gettext("done.") . "\n";
+    if ($verbose) {
+        echo "done.\n";
     }
 }
 
@@ -792,7 +735,7 @@ function system_webgui_configure()
             log_error("Creating SSL Certificate for this host");
             $cert = array();
             $cert['refid'] = uniqid();
-            $cert['descr'] = gettext("webConfigurator default");
+            $cert['descr'] = 'webConfigurator default';
             mwexec(
                 /* XXX ought to be replaced by PHP calls */
                 '/usr/local/bin/openssl req -new ' .
@@ -1107,7 +1050,7 @@ EOD;
             fclose($fd);
         }
         $lighty_config .= "\n";
-        $lighty_config .= "## " . gettext("ssl configuration") . "\n";
+        $lighty_config .= "## ssl configuration\n";
         $lighty_config .= "ssl.engine = \"enable\"\n";
         $lighty_config .= "ssl.pemfile = \"/var/etc/{$cert_location}\"\n\n";
 
@@ -1153,9 +1096,14 @@ EOD;
     return 0;
 }
 
-function system_firmware_configure()
+function system_firmware_configure($verbose = false)
 {
     global $config;
+
+    if ($verbose) {
+        echo 'Writing firmware setting...';
+        flush();
+    }
 
     /* rewrite the config via the defaults */
     $origin_conf = '/usr/local/etc/pkg/repos/origin.conf';
@@ -1186,378 +1134,39 @@ function system_firmware_configure()
             array('-sn', str_replace('/', '\/', $osabi . $config['system']['firmware']['flavour']))
         );
     }
+
+    if ($verbose) {
+        echo "done.\n";
+    }
 }
 
-function system_timezone_configure()
+function system_timezone_configure($verbose = false)
 {
     global $config;
 
     $syscfg = $config['system'];
 
-    if (file_exists("/var/run/booting")) {
-        echo gettext("Setting timezone...");
+    if ($verbose) {
+        echo 'Setting timezone...';
+        flush();
     }
 
     /* extract appropriate timezone file */
     $timezone = $syscfg['timezone'];
     $timezones = get_zoneinfo();
 
-    // Reset to default if empty or not existend
-    if (empty($timezone) || !in_array($timezone, $timezones)) {
+    /* reset to default if empty or nonexistent */
+    if (empty($timezone) || !in_array($timezone, $timezones) ||
+        !file_exists(sprintf('/usr/share/zoneinfo/%s', $timezone))) {
         $timezone = 'Etc/UTC';
     }
 
-    // Apply timezone
+    /* apply timezone */
     copy(sprintf('/usr/share/zoneinfo/%s', $timezone), '/etc/localtime');
 
-    mwexec("sync");
-
-    if (file_exists("/var/run/booting")) {
-        echo gettext("done.") . "\n";
+    if ($verbose) {
+        echo "done.\n";
     }
-}
-
-function system_ntp_setup_gps($serialport)
-{
-    global $config;
-    $gps_device = '/dev/gps0';
-    $serialport = '/dev/'.$serialport;
-
-    if (!file_exists($serialport)) {
-        return false;
-    }
-
-    // Create symlink that ntpd requires
-    @unlink($gps_device);
-    symlink($serialport, $gps_device);
-
-    /* Send the following to the GPS port to initialize the GPS */
-    if (isset($config['ntpd']['gps'])) {
-        $gps_init = base64_decode($config['ntpd']['gps']['initcmd']);
-    } else {
-        $gps_init = base64_decode('JFBVQlgsNDAsR1NWLDAsMCwwLDAqNTkNCiRQVUJYLDQwLEdMTCwwLDAsMCwwKjVDDQokUFVCWCw0MCxaREEsMCwwLDAsMCo0NA0KJFBVQlgsNDAsVlRHLDAsMCwwLDAqNUUNCiRQVUJYLDQwLEdTViwwLDAsMCwwKjU5DQokUFVCWCw0MCxHU0EsMCwwLDAsMCo0RQ0KJFBVQlgsNDAsR0dBLDAsMCwwLDANCiRQVUJYLDQwLFRYVCwwLDAsMCwwDQokUFVCWCw0MCxSTUMsMCwwLDAsMCo0Ng0KJFBVQlgsNDEsMSwwMDA3LDAwMDMsNDgwMCwwDQokUFVCWCw0MCxaREEsMSwxLDEsMQ==');
-    }
-
-    /* XXX: Why not file_put_contents to the device */
-    @file_put_contents('/tmp/gps.init', $gps_init);
-    `cat /tmp/gps.init > $serialport`;
-
-    /* Add /etc/remote entry in case we need to read from the GPS with tip */
-    if (intval(`grep -c '^gps0' /etc/remote`) == 0) {
-        $gpsbaud = '4800';
-        if (is_array($config['ntpd']) && is_array($config['ntpd']['gps']) && !empty($config['ntpd']['gps']['speed'])) {
-            switch($config['ntpd']['gps']['speed']) {
-                case '16':
-                    $gpsbaud = '9600';
-                    break;
-                case '32':
-                    $gpsbaud = '19200';
-                    break;
-                case '48':
-                    $gpsbaud = '38400';
-                    break;
-                case '64':
-                    $gpsbaud = '57600';
-                    break;
-                case '80':
-                    $gpsbaud = '115200';
-                    break;
-            }
-        }
-        @file_put_contents("/etc/remote", "gps0:dv={$serialport}:br#{$gpsbaud}:pa=none:", FILE_APPEND);
-    }
-
-    return true;
-}
-
-function system_ntp_setup_pps($serialport)
-{
-    $pps_device = '/dev/pps0';
-    $serialport = "/dev/{$serialport}";
-
-    if (!file_exists($serialport)) {
-        return false;
-    }
-
-    // Create symlink that ntpd requires
-    @unlink($pps_device);
-    @symlink($serialport, $pps_device);
-
-    return true;
-}
-
-function system_ntp_configure($start_ntpd = true)
-{
-    global $config;
-
-    if ($start_ntpd) {
-        killbypid('/var/run/ntpd.pid', 'TERM', true);
-    }
-
-    if (!isset($config['system']['timeservers'])) {
-        /* use this field for on/off toggle */
-        return;
-    }
-
-    $driftfile = '/var/db/ntpd.drift';
-    $statsdir = '/var/log/ntp';
-    $gps_device = '/dev/gps0';
-
-    @mkdir($statsdir, 0755);
-
-    if (!isset($config['ntpd']) || !is_array($config['ntpd'])) {
-        $config['ntpd'] = array();
-    }
-
-    $ntpcfg = "# \n";
-    $ntpcfg .= "# OPNsense ntp configuration file \n";
-    $ntpcfg .= "# \n\n";
-    $ntpcfg .= "tinker panic 0 \n";
-
-    /* Add Orphan mode */
-    $ntpcfg .= "# Orphan mode stratum\n";
-    $ntpcfg .= 'tos orphan ';
-    if (!empty($config['ntpd']['orphan'])) {
-        $ntpcfg .= $config['ntpd']['orphan'];
-    }else{
-        $ntpcfg .= '12';
-    }
-    $ntpcfg .= "\n";
-
-    /* Add PPS configuration */
-    if (!empty($config['ntpd']['pps'])
-      && file_exists('/dev/'.$config['ntpd']['pps']['port'])
-      && system_ntp_setup_pps($config['ntpd']['pps']['port'])) {
-        $ntpcfg .= "\n";
-        $ntpcfg .= "# PPS Setup\n";
-        $ntpcfg .= 'server 127.127.22.0';
-        $ntpcfg .= ' minpoll 4 maxpoll 4';
-        if (empty($config['ntpd']['pps']['prefer'])) { /*note: this one works backwards */
-            $ntpcfg .= ' prefer';
-        }
-        if (!empty($config['ntpd']['pps']['noselect'])) {
-            $ntpcfg .= ' noselect ';
-        }
-        $ntpcfg .= "\n";
-        $ntpcfg .= 'fudge 127.127.22.0';
-        if (!empty($config['ntpd']['pps']['fudge1'])) {
-            $ntpcfg .= ' time1 ';
-            $ntpcfg .= $config['ntpd']['pps']['fudge1'];
-        }
-        if (!empty($config['ntpd']['pps']['flag2'])) {
-            $ntpcfg .= ' flag2 1';
-        }
-        if (!empty($config['ntpd']['pps']['flag3'])) {
-            $ntpcfg .= ' flag3 1';
-        } else{
-            $ntpcfg .= ' flag3 0';
-        }
-        if (!empty($config['ntpd']['pps']['flag4'])) {
-            $ntpcfg .= ' flag4 1';
-        }
-        if (!empty($config['ntpd']['pps']['refid'])) {
-            $ntpcfg .= ' refid ';
-            $ntpcfg .= $config['ntpd']['pps']['refid'];
-        }
-        $ntpcfg .= "\n";
-    }
-    /* End PPS configuration */
-
-    /* Add GPS configuration */
-    if (isset($config['ntpd']['gps']['port'])
-      && file_exists('/dev/'.$config['ntpd']['gps']['port'])
-      && system_ntp_setup_gps($config['ntpd']['gps']['port'])) {
-        $ntpcfg .= "\n";
-        $ntpcfg .= "# GPS Setup\n";
-        $ntpcfg .= 'server 127.127.20.0 mode ';
-        if (!empty($config['ntpd']['gps']['nmea']) || !empty($config['ntpd']['gps']['speed']) || !empty($config['ntpd']['gps']['subsec'])) {
-            if (!empty($config['ntpd']['gps']['nmea'])) {
-                $ntpmode = (int) $config['ntpd']['gps']['nmea'];
-            }
-            if (!empty($config['ntpd']['gps']['speed'])) {
-                $ntpmode += (int) $config['ntpd']['gps']['speed'];
-            }
-            if (!empty($config['ntpd']['gps']['subsec'])) {
-                $ntpmode += 128;
-            }
-            $ntpcfg .= (string) $ntpmode;
-        } else{
-            $ntpcfg .= '0';
-        }
-        $ntpcfg .= ' minpoll 4 maxpoll 4';
-        if (empty($config['ntpd']['gps']['prefer'])) { /*note: this one works backwards */
-            $ntpcfg .= ' prefer';
-        }
-        if (!empty($config['ntpd']['gps']['noselect'])) {
-            $ntpcfg .= ' noselect ';
-        }
-        $ntpcfg .= "\n";
-        $ntpcfg .= 'fudge 127.127.20.0';
-        if (!empty($config['ntpd']['gps']['fudge1'])) {
-            $ntpcfg .= ' time1 ';
-            $ntpcfg .= $config['ntpd']['gps']['fudge1'];
-        }
-        if (!empty($config['ntpd']['gps']['fudge2'])) {
-            $ntpcfg .= ' time2 ';
-            $ntpcfg .= $config['ntpd']['gps']['fudge2'];
-        }
-        if (!empty($config['ntpd']['gps']['flag1'])) {
-            $ntpcfg .= ' flag1 1';
-        } else{
-            $ntpcfg .= ' flag1 0';
-        }
-        if (!empty($config['ntpd']['gps']['flag2'])) {
-            $ntpcfg .= ' flag2 1';
-        }
-        if (!empty($config['ntpd']['gps']['flag3'])) {
-            $ntpcfg .= ' flag3 1';
-        } else{
-            $ntpcfg .= ' flag3 0';
-        }
-        if (!empty($config['ntpd']['gps']['flag4'])) {
-            $ntpcfg .= ' flag4 1';
-        }
-        if (!empty($config['ntpd']['gps']['refid'])) {
-            $ntpcfg .= ' refid ';
-            $ntpcfg .= $config['ntpd']['gps']['refid'];
-        }
-        $ntpcfg .= "\n";
-    }
-    /* End GPS configuration */
-
-    $noselect = isset($config['ntpd']['noselect']) ? explode(' ', $config['ntpd']['noselect']) : array();
-    $prefer = isset($config['ntpd']['prefer']) ? explode(' ', $config['ntpd']['prefer']) : array();
-
-    $ntpcfg .= "\n\n# Upstream Servers\n";
-    /* foreach through ntp servers and write out to ntpd.conf */
-    foreach (explode(' ', $config['system']['timeservers']) as $ts) {
-        $ntpcfg .= "server {$ts} iburst maxpoll 9";
-        if (in_array($ts, $prefer)) {
-            $ntpcfg .= ' prefer';
-        }
-        if (in_array($ts, $noselect)) {
-            $ntpcfg .= ' noselect';
-        }
-        $ntpcfg .= "\n";
-    }
-    unset($ts);
-
-    $ntpcfg .= "\n\n";
-    $ntpcfg .= "disable monitor\n"; //prevent NTP reflection attack, see https://ics-cert.us-cert.gov/advisories/ICSA-14-051-04
-    if (!empty($config['ntpd']['clockstats']) || !empty($config['ntpd']['loopstats']) || !empty($config['ntpd']['peerstats'])) {
-        $ntpcfg .= "enable stats\n";
-        $ntpcfg .= 'statistics';
-        if (!empty($config['ntpd']['clockstats'])) {
-            $ntpcfg .= ' clockstats';
-        }
-        if (!empty($config['ntpd']['loopstats'])) {
-            $ntpcfg .= ' loopstats';
-        }
-        if (!empty($config['ntpd']['peerstats'])) {
-            $ntpcfg .= ' peerstats';
-        }
-        $ntpcfg .= "\n";
-    }
-    $ntpcfg .= "statsdir {$statsdir}\n";
-    $ntpcfg .= 'logconfig =syncall +clockall';
-    if (!empty($config['ntpd']['logpeer'])) {
-        $ntpcfg .= ' +peerall';
-    }
-    if (!empty($config['ntpd']['logsys'])) {
-        $ntpcfg .= ' +sysall';
-    }
-    $ntpcfg .= "\n";
-    $ntpcfg .= "driftfile {$driftfile}\n";
-    /* Access restrictions */
-    $ntpcfg .= 'restrict default';
-    if (empty($config['ntpd']['kod'])) { /*note: this one works backwards */
-        $ntpcfg .= ' kod limited';
-    }
-    if (empty($config['ntpd']['nomodify'])) { /*note: this one works backwards */
-        $ntpcfg .= ' nomodify';
-    }
-    if (!empty($config['ntpd']['noquery'])) {
-        $ntpcfg .= ' noquery';
-    }
-    if (empty($config['ntpd']['nopeer'])) { /*note: this one works backwards */
-        $ntpcfg .= ' nopeer';
-    }
-    if (empty($config['ntpd']['notrap'])) { /*note: this one works backwards */
-        $ntpcfg .= ' notrap';
-    }
-    if (!empty($config['ntpd']['noserve'])) {
-        $ntpcfg .= ' noserve';
-    }
-    $ntpcfg .= "\nrestrict -6 default";
-    if (empty($config['ntpd']['kod'])) { /*note: this one works backwards */
-        $ntpcfg .= ' kod limited';
-    }
-    if (empty($config['ntpd']['nomodify'])) { /*note: this one works backwards */
-        $ntpcfg .= ' nomodify';
-    }
-    if (!empty($config['ntpd']['noquery'])) {
-        $ntpcfg .= ' noquery';
-    }
-    if (empty($config['ntpd']['nopeer'])) { /*note: this one works backwards */
-        $ntpcfg .= ' nopeer';
-    }
-    if (!empty($config['ntpd']['noserve'])) {
-        $ntpcfg .= ' noserve';
-    }
-    if (empty($config['ntpd']['notrap'])) { /*note: this one works backwards */
-        $ntpcfg .= ' notrap';
-    }
-    $ntpcfg .= "\n";
-
-    /* A leapseconds file is really only useful if this clock is stratum 1 */
-    $ntpcfg .= "\n";
-    if (!empty($config['ntpd']['leapsec'])) {
-        $leapsec .= base64_decode($config['ntpd']['leapsec']);
-        file_put_contents('/var/db/leap-seconds', $leapsec);
-        $ntpcfg .= "leapfile /var/db/leap-seconds\n";
-    }
-
-
-    $interfaces = array();
-    if (isset($config['ntpd']['interface'])) {
-        $interfaces = explode(',', $config['ntpd']['interface']);
-    }
-
-    if (is_array($interfaces) && count($interfaces)) {
-        $ntpcfg .= "interface ignore all\n";
-        foreach ($interfaces as $interface) {
-            if (!is_ipaddr($interface)) {
-                $interface = get_real_interface($interface);
-            }
-            if (!empty($interface)) {
-                $ntpcfg .= "interface listen {$interface}\n";
-            }
-        }
-    }
-
-    /* open configuration for wrting or bail */
-    if (!@file_put_contents('/var/etc/ntpd.conf', $ntpcfg)) {
-        log_error("Could not open /var/etc/ntpd.conf for writing");
-        return;
-    }
-
-    if (!$start_ntpd) {
-        /* write out the config and delay startup */
-        mwexec_bg('/usr/local/sbin/ntpdate_sync_once.sh');
-        return;
-    }
-
-    /* if /var/empty does not exist, create it */
-    @mkdir('/var/empty', 0775, true);
-
-    /* start opentpd, set time now and use new config */
-    mwexecf(
-      '/usr/local/sbin/ntpd -g -c %s -p %s',
-      array('/var/etc/ntpd.conf', '/var/run/ntpd.pid')
-    );
-
-    // Note that we are starting up
-    log_error("NTPD is starting up.");
 }
 
 function system_halt($sync = false)
@@ -1582,10 +1191,19 @@ function system_reboot($sync = false)
     }
 }
 
-function system_setup_sysctl()
+function system_sysctl_configure($verbose = false)
 {
+    if ($verbose) {
+        echo 'Setting up extended sysctls...';
+        flush();
+    }
+
     activate_sysctls();
     system_arp_wrong_if();
+
+    if ($verbose) {
+        echo "done.\n";
+    }
 }
 
 function system_arp_wrong_if()
@@ -1599,6 +1217,7 @@ function system_arp_wrong_if()
 }
 
 function get_possible_listen_ips($include_ipv6_link_local = false, $include_loopback = true) {
+    global $config;
     $interfaces = get_configured_interface_with_descr();
     $carplist = get_configured_carp_interface_list();
     $listenips = array();
@@ -1627,84 +1246,244 @@ function get_possible_listen_ips($include_ipv6_link_local = false, $include_loop
         $tmp["value"] = "lo0";
         $listenips[] = $tmp;
     }
-    return $listenips;
-}
-
-function get_possible_traffic_source_addresses($include_ipv6_link_local=false) {
-    global $config;
-    $sourceips = get_possible_listen_ips($include_ipv6_link_local);
     foreach (array('server', 'client') as $mode) {
         if (isset($config['openvpn']["openvpn-{$mode}"]) && is_array($config['openvpn']["openvpn-{$mode}"])) {
             foreach ($config['openvpn']["openvpn-{$mode}"] as $id => $setting) {
                 if (!isset($setting['disable'])) {
                     $vpn = array();
                     $vpn['value'] = 'ovpn' . substr($mode, 0, 1) . $setting['vpnid'];
-                    $vpn['name'] = gettext("OpenVPN") . " ".$mode.": ".htmlspecialchars($setting['description']);
-                    $sourceips[] = $vpn;
+                    $vpn['name'] = "OpenVPN {$mode}: " . htmlspecialchars($setting['description']);
+                    $listenips[] = $vpn;
                 }
             }
         }
     }
-    return $sourceips;
+    return $listenips;
 }
 
-function load_crypto_module()
+function system_kernel_configure($verbose = false)
 {
-    global $config;
+    if ($verbose) {
+        echo 'Configuring kernel modules...';
+        flush();
+    }
+
+    /*
+     * Vital kernel modules can go missing on reboot due to
+     * /boot/loader.conf not materialising.  This is still
+     * an UFS problem, despite claims otherwise.  In any case,
+     * load all the modules again to make sure.
+     *
+     * Keep in sync with /usr/local/etc/erc.loader.d/20-modules
+     */
+    $mods = array(
+        'carp',
+        'if_bridge',
+        'if_enc',
+        'if_gif',
+        'if_gre',
+        'if_lagg',
+        'if_tap',
+        'if_tun',
+        'if_vlan',
+        'pf',
+        'pflog',
+        'pfsync',
+    );
+
+    /* we now have /dev/pf, time to fix permissions for proxies */
+    chgrp('/dev/pf', 'proxy');
+    chmod('/dev/pf', 0660);
 
     if (!empty($config['system']['crypto_hardware'])) {
         log_error(sprintf('Loading %s cryptographic accelerator module.', $config['system']['crypto_hardware']));
-        mwexecf('/sbin/kldload %s', $config['system']['crypto_hardware'], true);
+        $mods[] = $config['system']['crypto_hardware'];
     }
-
     if (isset($config['system']['cryptodev_enable'])) {
         log_error('Loading cryptodev kernel module.');
-        mwexecf('/sbin/kldload %s', 'cryptodev', true);
+        $mods[] = 'cryptodev';
     }
-}
-
-function load_thermal_module()
-{
-    global $config;
 
     if (!empty($config['system']['thermal_hardware'])) {
         log_error(sprintf('Loading %s thermal monitor module.', $config['system']['thermal_hardware']));
-        mwexecf('/sbin/kldload %s', $config['system']['thermal_hardware'], true);
+        $mods[] = $config['system']['thermal_hardware'];
+    }
+
+    foreach ($mods as $mod) {
+        mwexecf('/sbin/kldload %s', $mod, true);
+    }
+
+    if ($verbose) {
+        echo "done.\n";
+    }
+}
+
+function system_devd_configure($verbose = false)
+{
+    if ($verbose) {
+        echo 'Starting device manager...';
+        flush();
+    }
+
+    exec('/sbin/devd');
+    /* historic sleep */
+    sleep(1);
+
+    if ($verbose) {
+        echo "done.\n";
+    }
+}
+
+function system_cron_configure($verbose = false)
+{
+    global $config;
+
+    function generate_cron_job($command, $minute = '0', $hour = '*', $monthday = '*', $month = '*', $weekday = '*')
+    {
+        $cron_item = array();
+
+        $cron_item['minute'] = $minute;
+        $cron_item['hour'] = $hour;
+        $cron_item['mday'] = $monthday;
+        $cron_item['month'] = $month;
+        $cron_item['wday'] = $weekday;
+        $cron_item['command'] = $command;
+
+        return $cron_item;
+    }
+
+    $autocron = array();
+
+    if ($verbose) {
+        echo 'Configuring CRON...';
+        flush();
+    }
+
+    /* hourly */
+    $autocron[] = generate_cron_job('/usr/local/sbin/expiretable -v -t 3600 webConfiguratorlockout', '1');
+    $autocron[] = generate_cron_job('/usr/local/sbin/expiretable -v -t 3600 sshlockout', '2');
+    $autocron[] = generate_cron_job('/usr/local/sbin/expiretable -v -t 3600 virusprot', '3');
+    $autocron[] = generate_cron_job('/usr/local/etc/rc.expireaccounts', '5');
+
+    /* daily */
+    $autocron[] = generate_cron_job('/usr/local/etc/rc.update_alias_url_data', '1', '1');
+    $autocron[] = generate_cron_job('/usr/local/etc/rc.update_urltables', '5', '1');
+    $autocron[] = generate_cron_job('/usr/local/etc/rc.dyndns.update', '11', '1');
+
+    /* every now and then */
+    $autocron[] = generate_cron_job('/usr/local/sbin/ping_hosts.sh', '*/4');
+
+    if (!empty($config['system']['rrdbackup'])) {
+       $autocron[] = generate_cron_job('/usr/local/etc/rc.backup_rrd', '0', '*/' . $config['system']['rrdbackup']);
+    }
+
+    if (!empty($config['system']['dhcpbackup'])) {
+        $autocron[] = generate_cron_job('/usr/local/etc/rc.backup_dhcpleases', '0', '*/' . $config['system']['dhcpbackup']);
+    }
+
+    if (!empty($config['system']['netflowbackup'])) {
+        $autocron[] = generate_cron_job('/usr/local/etc/rc.backup_netflow', '0', '*/' . $config['system']['netflowbackup']);
+    }
+
+    if (!empty($config['system']['remotebackup']['GDriveEnabled'])) {
+        $autocron[] = generate_cron_job('/usr/local/opnsense/scripts/remote_backup.php', 0, 1);
+    }
+
+    if (isset($config['filter']['rule'])) {
+        foreach ($config['filter']['rule'] as $rule) {
+            if (!empty($rule['sched'])) {
+                $autocron[] = generate_cron_job('/usr/local/etc/rc.filter_configure_sync', '0,15,30,45');
+                break;
+            }
+        }
+    }
+
+    /* bogons fetch always set in default config.xml */
+    switch ($config['system']['bogons']['interval']) {
+        case 'daily':
+            $autocron[] = generate_cron_job('/usr/local/etc/rc.update_bogons cron', '1', '3', '*', '*', '*');
+            break;
+        case 'weekly':
+            $autocron[] = generate_cron_job('/usr/local/etc/rc.update_bogons cron', '1', '3', '*', '*', '0');
+            break;
+        case 'monthly':
+        default:
+            $autocron[] = generate_cron_job('/usr/local/etc/rc.update_bogons cron', '1', '3', '1', '*', '*');
+            break;
+    }
+
+    $crontab_contents = "# DO NOT EDIT THIS FILE -- OPNsense auto-generated file\n";
+    $crontab_contents .= "# Please use /etc/crontab for your overrides instead.\n";
+    $crontab_contents .= "SHELL=/bin/sh\n";
+    $crontab_contents .= "PATH=/etc:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin\n";
+    $crontab_contents .= "#minute\thour\tmday\tmonth\twday\tcommand\n";
+
+    foreach ($autocron as $item) {
+        $crontab_contents .= "{$item['minute']}\t";
+        $crontab_contents .= "{$item['hour']}\t";
+        $crontab_contents .= "{$item['mday']}\t";
+        $crontab_contents .= "{$item['month']}\t";
+        $crontab_contents .= "{$item['wday']}\t";
+        $crontab_contents .= "{$item['command']}\n";
+    }
+
+    file_put_contents('/var/cron/tabs/root', $crontab_contents);
+    killbypid('/var/run/cron.pid', 'HUP');
+
+    if ($verbose) {
+        echo "done.\n";
+    }
+}
+
+function system_console_mutable()
+{
+    /* this function name is a pun :) */
+
+    global $config;
+
+    return isset($config['system']['primaryconsole']) &&
+        ($config['system']['primaryconsole'] == 'serial' ||
+        $config['system']['primaryconsole'] == 'null');
+}
+
+function system_console_mute()
+{
+    if (system_console_mutable()) {
+        exec('/sbin/conscontrol mute on');
+    }
+}
+
+function system_console_unmute()
+{
+    if (system_console_mutable()) {
+        exec('/sbin/conscontrol mute off');
     }
 }
 
 function system_console_types()
 {
     return array(
-        'serial' => array('value' => 'comconsole', 'name' => gettext('Serial Console')),
+        /* sorted by usage */
         'video' => array('value' => 'vidconsole', 'name' => gettext('VGA Console')),
+        'serial' => array('value' => 'comconsole', 'name' => gettext('Serial Console')),
         'efi' => array('value' => 'efi', 'name' => gettext('EFI Console')),
+        'null' => array('value' => 'nullconsole', 'name' => gettext('Mute Console')),
     );
 }
 
-function system_console_configure()
+function system_login_configure($verbose = false)
 {
     global $config;
 
-    $sudo_conf = '/usr/local/etc/sudoers.d/opnsense';
-
-    if (!empty($config['system']['sudo_allow_wheel'])) {
-        file_put_contents($sudo_conf, "%wheel ALL=(ALL) ALL\n");
-    } else {
-        @unlink($sudo_conf);
+    if ($verbose) {
+        echo 'Configuring login behaviour...';
+        flush();
     }
+
+    configd_run('template reload OPNsense/Auth');
 
     $serialspeed = (!empty($config['system']['serialspeed']) && is_numeric($config['system']['serialspeed'])) ? $config['system']['serialspeed'] : '115200';
-    $serial_enabled = isset($config['system']['enableserial']);
 
-    // ** serial console - write out /boot.config
-    if ($serial_enabled) {
-        @file_put_contents('/boot.config', "-S{$serialspeed} -D\n");
-    } else {
-        @unlink('/boot.config');
-    }
-
-    // ** console settings in /boot/loader.conf
     $new_boot_config = array();
     $new_boot_config['comconsole_speed'] = null;
     $new_boot_config['boot_multicons'] = null;
@@ -1722,41 +1501,52 @@ function system_console_configure()
 
     $console_selection = array_unique($console_selection);
 
-    if ($serial_enabled) {
+    $output_enabled = count($console_selection) != 1 || !in_array('nullconsole', $console_selection);
+    $virtual_enabled = !count($console_selection) || in_array('vidconsole', $console_selection) ||
+        in_array('efi', $console_selection);
+    $serial_enabled = in_array('comconsole', $console_selection);
+
+    if (count($console_selection)) {
         $new_boot_config['console'] = '"' . implode(',', $console_selection) . '"';
-        $new_boot_config['comconsole_speed'] = '"'.$serialspeed.'"';
-        $new_boot_config['boot_serial'] = '"YES"';
         if (count($console_selection) >= 2) {
             $new_boot_config['boot_multicons'] = '"YES"';
         }
     }
 
-    $new_loader_conf = '';
+    if ($serial_enabled) {
+        @file_put_contents('/boot.config', "-S{$serialspeed} -D\n");
+        $new_boot_config['comconsole_speed'] = '"'.$serialspeed.'"';
+        $new_boot_config['boot_serial'] = '"YES"';
+    } elseif (!$output_enabled) {
+        @file_put_contents('/boot.config', "-q -m\n");
+    } else {
+        @unlink('/boot.config');
+    }
 
     /* reload static values from rc.loader.d */
     mwexecf('/usr/local/etc/rc.loader');
 
-    /* copy non-matched settings already there */
-    foreach (explode("\n", @file_get_contents('/boot/loader.conf')) as $line) {
-        if (!empty($line) && !array_key_exists(trim(explode('=', $line)[0]), $new_boot_config)) {
-            $new_loader_conf .= $line . "\n";
-        }
-    }
+    /* copy settings already there */
+    $new_loader_conf = @file_get_contents('/boot/loader.conf');
 
-    /* add our console options on top now */
+    /* append our console options */
+    $new_loader_conf .= "# dynamically generated settings follow\n";
     foreach ($new_boot_config as $param => $value) {
         if (!empty($value)) {
             $new_loader_conf .= "{$param}={$value}\n";
+        } else {
+            $new_loader_conf .= "#${param}\n";
         }
     }
 
     /* write merged file back to target location */
     @file_put_contents('/boot/loader.conf', $new_loader_conf);
 
-    // ** setup /etc/ttys
+    /* setup /etc/ttys */
     $etc_ttys_lines = explode("\n", file_get_contents('/etc/ttys'));
     $fd = fopen('/etc/ttys', 'w');
-    $on_off_secure = $serial_enabled ? 'onifconsole secure' : 'off secure';
+    $on_off_secure_u = $serial_enabled ? 'onifconsole secure' : 'off secure';
+    $on_off_secure_v = $virtual_enabled ? 'on  secure' : 'off secure';
     $terminal_type = 'cons25'; /* XXX standard is 'xterm' for virtual, 'vt100' for serial */
     if (isset($config['system']['disableconsolemenu'])) {
         $console_type = 'Pc';
@@ -1766,15 +1556,22 @@ function system_console_configure()
         $serial_type = 'al.' . $serialspeed;
     }
     foreach ($etc_ttys_lines as $tty) {
+        /* first virtual terminal */
         if (strpos($tty, 'ttyv0') === 0) {
-            /* first virtual terminal */
-            fwrite($fd, "ttyv0\t\"/usr/libexec/getty {$console_type}\"\t\t{$terminal_type}\ton  secure\n");
+            fwrite($fd, "ttyv0\t\"/usr/libexec/getty {$console_type}\"\t\t{$terminal_type}\t${on_off_secure_v}\n");
             continue;
         }
+        /* all other virtual terminals */
+        foreach (array('ttyv1', 'ttyv2', 'ttyv3', 'ttyv4', 'ttyv5', 'ttyv6', 'ttyv7') as $virtualport) {
+            if (strpos($tty, $virtualport) === 0) {
+                fwrite($fd, "${virtualport}\t\"/usr/libexec/getty {$console_type}\"\t\txterm\t${on_off_secure_v}\n");
+                continue 2;
+            }
+        }
+        /* each serial terminal */
         foreach (array('ttyu0', 'ttyu1', 'ttyu2', 'ttyu3') as $serialport) {
             if (strpos($tty, $serialport) === 0) {
-                /* each serial terminal */
-                fwrite($fd, "{$serialport}\t\"/usr/libexec/getty {$serial_type}\"\t{$terminal_type}\t{$on_off_secure}\n");
+                fwrite($fd, "{$serialport}\t\"/usr/libexec/getty {$serial_type}\"\t{$terminal_type}\t{$on_off_secure_u}\n");
                 /* skip to next line in outer loop */
                 continue 2;
             }
@@ -1786,6 +1583,11 @@ function system_console_configure()
         }
     }
     fclose($fd);
+
+    if ($verbose) {
+        echo "done\n";
+        flush();
+    }
 
     /* force init(8) to reload /etc/ttys */
     exec('/bin/kill -HUP 1');

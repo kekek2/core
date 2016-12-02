@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (!empty($_GET['if']) && !empty($config['interfaces'][$_GET['if']])) {
         $if = $_GET['if'];
     } else {
-        header("Location: services_dhcp.php");
+        header(url_safe('Location: /services_dhcp.php'));
         exit;
     }
     if (isset($if) && isset($_GET['id']) && !empty($config['dhcpd'][$if]['staticmap'][$_GET['id']])) {
@@ -287,23 +287,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         write_config();
 
         if (isset($config['dhcpd'][$if]['enable'])) {
-          mark_subsystem_dirty('staticmaps');
-          if (isset($config['dnsmasq']['enable']) && isset($config['dnsmasq']['regdhcpstatic']))
+            mark_subsystem_dirty('staticmaps');
             mark_subsystem_dirty('hosts');
-          if (isset($config['unbound']['enable']) && isset($config['unbound']['regdhcpstatic']))
-            mark_subsystem_dirty('unbound');
         }
 
-        header("Location: services_dhcp.php?if={$if}");
+        header(url_safe('Location: /services_dhcp.php?if=%s', array($if)));
         exit;
     }
 }
 
-
-
 $service_hook = 'dhcpd';
 legacy_html_escape_form_data($pconfig);
+
 include("head.inc");
+
 ?>
 <body>
 <script type="text/javascript">

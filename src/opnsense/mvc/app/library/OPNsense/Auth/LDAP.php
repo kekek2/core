@@ -81,6 +81,17 @@ class LDAP implements IAuthConnector
     private $ldapExtendedQuery = null;
 
     /**
+     * @var auth containers
+     */
+    private $ldapAuthcontainers = null;
+
+    /**
+     * @var ldap scope
+     */
+    private $ldapScope = 'subtree';
+
+
+    /**
      * @var array list of already known usernames vs distinguished names
      */
     private $userDNmap = array();
@@ -109,19 +120,21 @@ class LDAP implements IAuthConnector
     /**
      * search ldap tree
      * @param string $filter ldap filter string to use
-     * @param string $ldap_scope scope either one or tree
      * @return array|bool result list or false on errors
      */
-    private function search($filter, $ldap_scope = "tree")
+    private function search($filter)
     {
         $result = false;
         if ($this->ldapHandle != null) {
-            // if we're looking at multple dn's, split and combine output
-            foreach (explode(";", $this->baseSearchDN) as $baseDN) {
-                if ($ldap_scope == "one") {
-                    $sr=@ldap_list($this->ldapHandle, $baseDN, $filter, $this->ldapSearchAttr);
+            $searchpaths = array($this->baseSearchDN);
+            if (!empty($this->ldapAuthcontainers)) {
+                $searchpaths = explode(';', $this->ldapAuthcontainers);
+            }
+            foreach ($searchpaths as $baseDN) {
+                if ($this->ldapScope == 'one') {
+                    $sr = @ldap_list($this->ldapHandle, $baseDN, $filter, $this->ldapSearchAttr);
                 } else {
-                    $sr=@ldap_search($this->ldapHandle, $baseDN, $filter, $this->ldapSearchAttr);
+                    $sr = @ldap_search($this->ldapHandle, $baseDN, $filter, $this->ldapSearchAttr);
                 }
                 if ($sr !== false) {
                     $info = @ldap_get_entries($this->ldapHandle, $sr);
@@ -185,6 +198,8 @@ class LDAP implements IAuthConnector
             "ldap_bindpw" => "ldapBindPassword",
             "ldap_attr_user" => "ldapAttributeUser",
             "ldap_extended_query" => "ldapExtendedQuery",
+            "ldap_authcn" => "ldapAuthcontainers",
+            "ldap_scope" => "ldapScope",
             "local_users" => "userDNmap"
         );
 
@@ -225,6 +240,13 @@ class LDAP implements IAuthConnector
      */
     public function connect($bind_url, $userdn = null, $password = null, $timeout = 30)
     {
+        $retval = false;
+        set_error_handler(
+            function () {
+                null;
+            }
+        );
+
         $this->closeLDAPHandle();
         $this->ldapHandle = @ldap_connect($bind_url);
 
@@ -235,14 +257,17 @@ class LDAP implements IAuthConnector
             ldap_set_option($this->ldapHandle, LDAP_OPT_PROTOCOL_VERSION, (int)$this->ldapVersion);
             $bindResult = @ldap_bind($this->ldapHandle, $userdn, $password);
             if ($bindResult) {
-                return true;
+                $retval = true;
             } else {
                 syslog(LOG_ERR, 'LDAP bind error (' .  ldap_error($this->ldapHandle).')');
             }
         }
 
-        $this->ldapHandle = null;
-        return false;
+        restore_error_handler();
+        if (!$retval) {
+            $this->ldapHandle = null;
+        }
+        return $retval;
     }
 
     /**
@@ -271,9 +296,12 @@ class LDAP implements IAuthConnector
                     // fetch distinguished name and most likely username (try the search field first)
                     foreach (array($userNameAttribute, "name") as $ldapAttr) {
                         if (isset($searchResults[$i][$ldapAttr]) && $searchResults[$i][$ldapAttr]['count'] > 0) {
-                            $result[] = array("name" => $searchResults[$i][$ldapAttr][0]
-                                        , "fullname" => $searchResults[$i]['name'][0]
-                                        , "dn" => $searchResults[$i]['dn']);
+                            $result[] = array(
+                                'name' => $searchResults[$i][$ldapAttr][0],
+                                'fullname' => !empty($searchResults[$i]['name'][0]) ?
+                                    $searchResults[$i]['name'][0] : "",
+                                'dn' => $searchResults[$i]['dn']
+                            );
                             break;
                         }
                     }

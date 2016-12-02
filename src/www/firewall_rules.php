@@ -74,11 +74,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         unset($a_filter[$id]);
-        if (write_config()) {
-            mark_subsystem_dirty('filter');
-            firewall_syslog("Delete Firewall/Rule", $id);
-        }
-        header("Location: firewall_rules.php?if=" . htmlspecialchars($current_if));
+        write_config();
+        mark_subsystem_dirty('filter');
+        firewall_syslog("Delete Firewall/Rule", $id);
+        header(url_safe('Location: /firewall_rules.php?if=%s', array($current_if)));
         exit;
     } elseif (isset($pconfig['act']) && $pconfig['act'] == 'del_x' && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
         // delete selected rules
@@ -96,12 +95,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $deleted_rules[] = $rulei["id"];
             unset($a_filter[$rulei]);
         }
-        if (write_config()) {
-            mark_subsystem_dirty('filter');
-            foreach ($deleted_rules as $rule_id)
-                firewall_syslog("Delete Firewall/Rule", $rule_id);
-        }
-        header("Location: firewall_rules.php?if=" . htmlspecialchars($current_if));
+        write_config();
+        mark_subsystem_dirty('filter');
+        foreach ($deleted_rules as $rule_id)
+            firewall_syslog("Delete Firewall/Rule", $rule_id);
+        header(url_safe('Location: /firewall_rules.php?if=%s', array($current_if)));
         exit;
     } elseif ( isset($pconfig['act']) && $pconfig['act'] == 'move' && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
         // move selected rules
@@ -110,13 +108,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id = count($a_filter);
         }
         $a_filter = legacy_move_config_list_items($a_filter, $id,  $pconfig['rule']);
-        if (write_config()) {
-            mark_subsystem_dirty('filter');
-            firewall_syslog("Move Firewall/Rule", $id);
-        }
-        header("Location: firewall_rules.php?if=" . htmlspecialchars($current_if));
+        write_config();
+        mark_subsystem_dirty('filter');
+        firewall_syslog("Move Firewall/Rule", $id);
+        header(url_safe('Location: /firewall_rules.php?if=%s', array($current_if)));
         exit;
-
     } elseif (isset($pconfig['act']) && $pconfig['act'] == 'toggle' && isset($id)) {
         // toggle item
         if(isset($a_filter[$id]['disabled'])) {
@@ -126,11 +122,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $a_filter[$id]['disabled'] = true;
             $alias_action = "Disable";
         }
-        if (write_config()) {
-            mark_subsystem_dirty('filter');
-            firewall_syslog($alias_action . " Firewall/Rule", $id);
-        }
-        header("Location: firewall_rules.php?if=" . htmlspecialchars($current_if));
+        write_config();
+        mark_subsystem_dirty('filter');
+        firewall_syslog($alias_action . " Firewall/Rule", $id);
+        header(url_safe('Location: /firewall_rules.php?if=%s', array($current_if)));
         exit;
     }
 }
@@ -335,7 +330,7 @@ $( document ).ready(function() {
                 if (!isset($config['system']['webgui']['noantilockout']) &&
                         (((count($config['interfaces']) > 1) && ($selected_if == 'lan'))
                         || ((count($config['interfaces']) == 1) && ($selected_if == 'wan')))):
-                        $alports = implode('<br />', filter_get_antilockout_ports(true));
+                        $alports = implode('<br />', filter_core_antilockout_ports());
 ?>
                   <tr valign="top">
                     <td>&nbsp;</td>

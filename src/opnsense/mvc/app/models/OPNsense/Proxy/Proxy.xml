@@ -310,7 +310,7 @@
                     <blacklists>
                         <blacklist type="ArrayField">
                             <enabled type="BooleanField">
-                                <default>0</default>
+                                <default>1</default>
                                 <Required>Y</Required>
                             </enabled>
                             <filename type="TextField">
@@ -328,6 +328,14 @@
                                 <Required>Y</Required>
                                 <ValidationMessage>This does not look like a valid url.</ValidationMessage>
                             </url>
+                            <username type="TextField">
+                              <Required>N</Required>
+                              <mask>/^([\t\n\v\f\r 0-9a-zA-Z.,_\x{00A0}-\x{FFFF}]){1,255}$/u</mask>
+                            </username>
+                            <password type="TextField">
+                              <Required>N</Required>
+                              <mask>/^([\t\n\v\f\r 0-9a-zA-Z.,_\x{00A0}-\x{FFFF}]){1,255}$/u</mask>
+                            </password>
                             <filter type="JsonKeyValueStoreField">
                                 <Required>N</Required>
                                 <SourceField>filename</SourceField>
@@ -335,6 +343,10 @@
                                 <SelectAll>Y</SelectAll>
                                 <Multiple>Y</Multiple>
                             </filter>
+                            <sslNoVerify type="BooleanField">
+                                <default>0</default>
+                                <Required>Y</Required>
+                            </sslNoVerify>
                             <description type="TextField">
                                 <Required>Y</Required>
                                 <mask>/^([\t\n\v\f\r 0-9a-zA-Z.,_\x{00A0}-\x{FFFF}]){1,255}$/u</mask>

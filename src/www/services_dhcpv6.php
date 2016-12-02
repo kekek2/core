@@ -31,26 +31,16 @@
 require_once("guiconfig.inc");
 require_once("filter.inc");
 require_once("system.inc");
-require_once("unbound.inc");
 require_once("interfaces.inc");
 require_once("services.inc");
-
 
 /**
  * restart dhcp service
  */
 function reconfigure_dhcpd()
 {
-    if (isset($config['dnsmasq']['enable']) && isset($config['dnsmasq']['regdhcpstatic']))  {
-        services_dnsmasq_configure(false);
-        clear_subsystem_dirty('hosts');
-    }
-
-    if (isset($config['unbound']['enable']) && isset($config['unbound']['regdhcpstatic'])) {
-        services_unbound_configure(false);
-        clear_subsystem_dirty('unbound');
-    }
-
+    system_hosts_generate();
+    clear_subsystem_dirty('hosts');
     services_dhcpd_configure();
     clear_subsystem_dirty('staticmaps');
 }
@@ -317,12 +307,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 filter_configure();
             }
 
-            header("Location: services_dhcpv6.php?if={$if}");
+            header(url_safe('Location: /services_dhcpv6.php?if=%s', array($if)));
             exit;
         }
     } elseif (isset($pconfig['apply'])) {
         reconfigure_dhcpd();
-        header("Location: services_dhcpv6.php?if={$if}");
+        header(url_safe('Location: /services_dhcpv6.php?if=%s', array($if)));
         exit;
     } elseif ($act == "del") {
         if (!empty($config['dhcpdv6'][$if]['staticmap'][$_POST['id']])) {
@@ -330,9 +320,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             write_config();
             if (isset($config['dhcpdv6'][$if]['enable'])) {
                 mark_subsystem_dirty('staticmapsv6');
-                if (isset($config['dnsmasq']['enable']) && isset($config['dnsmasq']['regdhcpstatic'])) {
-                    mark_subsystem_dirty('hosts');
-                }
+                mark_subsystem_dirty('hosts');
             }
         }
         exit;

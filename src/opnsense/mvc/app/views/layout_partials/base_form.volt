@@ -85,6 +85,8 @@ data_title      :   data-title to set on form
                 {% if help|default(false) %}<small>{{ lang._('full help') }} </small><a href="#"><i class="fa fa-toggle-off text-danger" id="show_all_help_{{id}}" type="button"></i></a>{% endif %}
             </td>
         </tr>
+        {% set advanced=false %}
+        {% set help=false %}
         {% for field in fields|default({})%}
             {% if field['type'] == 'header' %}
               {# close table and start new one with header #}
@@ -95,7 +97,7 @@ data_title      :   data-title to set on form
         {% endfor %}
         {% if apply_btn_id|default('') != '' %}
         <tr>
-            <td colspan="3"><button class="btn btn-primary" id="{{apply_btn_id}}" type="button"><b>Apply </b><i id="{{id}}_progress" class=""></i></button></td>
+            <td colspan="3"><button class="btn btn-primary" id="{{apply_btn_id}}" type="button"><b>{{ lang._('Apply') }} </b><i id="{{id}}_progress" class=""></i></button></td>
         </tr>
         {% endif %}
         </tbody>

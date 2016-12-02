@@ -32,6 +32,7 @@ require_once("guiconfig.inc");
 require_once("services.inc");
 require_once("system.inc");
 require_once("interfaces.inc");
+require_once("plugins.inc.d/ntpd.inc");
 
 if (!isset($config['ntpd']['gps'])) {
     $config['ntpd']['gps'] = array();
@@ -67,8 +68,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $gps['initcmd']= base64_encode($gps['initcmd']);
         $config['ntpd']['gps'] = $gps;
         write_config("Updated NTP GPS Settings");
-        system_ntp_configure();
-        header("Location: services_ntpd_gps.php");
+        ntpd_configure_start();
+        header(url_safe('Location: /services_ntpd_gps.php'));
         exit;
     }
 }
@@ -437,7 +438,7 @@ SureGPS =    #Sure Electronics SKG16B
                               <input name="noselect" type="checkbox" id="gpsselect" <?=!empty($pconfig['noselect']) ? " checked=\"checked\"" : ""; ?> />
                             </td>
                             <td>
-                              <?=gettext("NTP should not use this clock, it will be displayed for reference only(default: disabled)."); ?>
+                              <?=gettext("NTP should not use this clock, it will be displayed for reference only (default: disabled)."); ?>
                             </td>
                           </tr>
                           <tr>
@@ -488,7 +489,7 @@ SureGPS =    #Sure Electronics SKG16B
                       <td>
                         <input name="refid" type="text" id="gpsrefid" value="<?=$pconfig['refid'];?>" />
                         <div class="hidden" for="help_for_refid">
-                          <?=gettext("(1 to 4 charactors)");?><br />
+                          <?=gettext("(1 to 4 characters)");?><br />
                           <?=gettext("This may be used to change the GPS Clock ID");?> (<?=gettext("default");?>: GPS).
                         </div>
                       </td>

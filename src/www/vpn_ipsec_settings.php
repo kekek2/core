@@ -41,6 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // fetch form data
     $pconfig  = array();
     $pconfig['noinstalllanspd'] = isset($config['system']['noinstalllanspd']);
+    $pconfig['disablevpnrules'] = isset($config['system']['disablevpnrules']);
     $pconfig['preferoldsa_enable'] = isset($config['ipsec']['preferoldsa']);
     foreach ($ipsec_loglevels as $lkey => $ldescr) {
         if (!empty($config['ipsec']["ipsec_{$lkey}"])) {
@@ -49,7 +50,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $pconfig["ipsec_{$lkey}"] = null;
         }
     }
-    $pconfig['failoverforcereload'] = isset($config['ipsec']['failoverforcereload']);
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // save form data
     $pconfig = $_POST;
@@ -57,6 +57,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $config['system']['noinstalllanspd'] = true;
     } elseif (isset($config['system']['noinstalllanspd'])) {
         unset($config['system']['noinstalllanspd']);
+    }
+    if (!empty($pconfig['disablevpnrules'])) {
+        $config['system']['disablevpnrules'] = true;
+    }  elseif (isset($config['system']['disablevpnrules'])) {
+        unset($config['system']['disablevpnrules']);
     }
     if (isset($pconfig['preferoldsa_enable']) && $pconfig['preferoldsa_enable'] == "yes") {
         $config['ipsec']['preferoldsa'] = true;
@@ -73,12 +78,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $config['ipsec']["ipsec_{$lkey}"] = $_POST["ipsec_{$lkey}"];
             }
         }
-    }
-
-    if (isset($pconfig['failoverforcereload']) && $pconfig['failoverforcereload'] == "yes") {
-        $config['ipsec']['failoverforcereload'] = true;
-    } elseif (isset($config['ipsec']['failoverforcereload'])) {
-        unset($config['ipsec']['failoverforcereload']);
     }
 
     write_config();
@@ -131,6 +130,13 @@ if (isset($input_errors) && count($input_errors) > 0) {
                       </td>
                     </tr>
                     <tr>
+                      <td><i class="fa fa-info-circle text-muted"></i> <?=gettext('Disable Auto-added VPN rules') ?></td>
+                      <td>
+                        <input name="disablevpnrules" type="checkbox" value="yes" <?=!empty($pconfig['disablevpnrules']) ? "checked=\"checked\"" :"";?> />
+                        <strong><?=gettext("Disable all auto-added VPN rules.");?></strong>
+                      </td>
+                    </tr>
+                    <tr>
                       <td><a id="help_for_preferoldsa_enable" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Security Associations"); ?></td>
                       <td width="78%" class="vtable">
                         <input name="preferoldsa_enable" type="checkbox" id="preferoldsa_enable" value="yes" <?= !empty($pconfig['preferoldsa_enable']) ? "checked=\"checked\"" : "";?> />
@@ -152,9 +158,10 @@ if (isset($input_errors) && count($input_errors) > 0) {
 ?>
                         <?=$ldescr?>
                         <select name="ipsec_<?=$lkey?>" id="ipsec_<?=$lkey?>">
-<?php                   foreach (array("Silent", "Audit", "Control", "Diag", "Raw", "Highest") as $lidx => $lvalue) :
+<?php                   foreach (array("Silent", "Basic", "Audit", "Control", "Raw", "Highest") as $lidx => $lvalue) :
+                          $lidx -= 1;
 ?>
-                          <option value="<?=$lidx?>" <?= isset($pconfig["ipsec_{$lkey}"]) && $pconfig["ipsec_{$lkey}"] == $lidx ? "selected=\"selected\"" : "";?> ?>
+                          <option value="<?=$lidx?>" <?= (isset($pconfig["ipsec_{$lkey}"]) && $pconfig["ipsec_{$lkey}"] == $lidx) || (!isset($pconfig["ipsec_{$lkey}"]) && $lidx == "0")  ? "selected=\"selected\"" : "";?> ?>
                                 <?=$lvalue?>
                           </option>
 <?php
@@ -164,19 +171,6 @@ endforeach; ?>
 endforeach; ?>
                         <div class="hidden" for="help_for_ipsec_debug">
                         <?=gettext("Launch IPsec in debug mode so that more verbose logs will be generated to aid in troubleshooting."); ?>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td><a id="help_for_failoverforcereloadg" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPsec Reload on Failover"); ?></td>
-                      <td>
-                        <input name="failoverforcereload" type="checkbox" id="failoverforcereload" value="yes" <?= !empty($pconfig['failoverforcereload']) ? "checked=\"checked\"" : "";?> />
-                        <strong><?=gettext("Force IPsec Reload on Failover"); ?></strong>
-                        <div class="hidden" for="help_for_failoverforcereloadg">
-                            <?=gettext("In some circumstances using a gateway group as the interface for " .
-                                                  "an IPsec tunnel does not function properly, and IPsec must be forcefully reloaded " .
-                                                  "when a failover occurs. Because this will disrupt all IPsec tunnels, this behavior" .
-                                                  " is disabled by default. Check this box to force IPsec to fully reload on failover."); ?>
                         </div>
                       </td>
                     </tr>

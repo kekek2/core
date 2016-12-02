@@ -174,11 +174,20 @@ POSSIBILITY OF SUCH DAMAGE.
          * link actual voucher generation in dialog
          */
         $("#generateVoucherBtn").click(function(){
+            $('#generatevouchererror').html('');
+            $('#generatevouchererror').hide();
             var voucher_provider = $('#voucher-providers').find("option:selected").val();
             var voucher_validity = $("#voucher-validity").val();
             var voucher_quantity = $("#voucher-quantity").val();
             var voucher_groupname = $("#voucher-groupname").val();
-
+            if (!$.isNumeric(voucher_validity) || !$.isNumeric(voucher_quantity)) {
+                // don't try to generate vouchers then validity or quantity are invalid
+                var error = $('<p />');
+                error.text("{{ lang._('The validity and the quantity of vouchers must be integers.') }}");
+                $('#generatevouchererror').append(error);
+                $('#generatevouchererror').show();
+                return;
+            }
             ajaxCall(url="/api/captiveportal/voucher/generateVouchers/" + voucher_provider + "/",
                     sendData={
                         'count':voucher_quantity,
@@ -249,6 +258,64 @@ POSSIBILITY OF SUCH DAMAGE.
             }
         });
 
+        /**
+         * Expire selected vouchers
+         */
+        $("#expireVouchers").click(function(){
+            var voucher_provider = $('#voucher-providers').find("option:selected").val();
+            BootstrapDialog.show({
+                type:BootstrapDialog.TYPE_DANGER,
+                title: voucher_provider,
+                message: '{{ lang._('Expire all selected vouchers?') }}',
+                buttons: [{
+                    icon: 'fa fa-trash-o',
+                    label: '{{ lang._('Yes') }}',
+                    cssClass: 'btn-primary',
+                    action: function(dlg){
+                        var rows =$("#grid-vouchers").bootgrid('getSelectedRows');
+                        if (rows != undefined) {
+                            var deferreds = [];
+                            $.each(rows, function (key, username) {
+                                deferreds.push(ajaxCall(url="/api/captiveportal/voucher/expireVoucher/" + voucher_provider + "/",
+                                        sendData={username:username}, null));
+                            });
+                            $.when.apply(null, deferreds).done(function(){
+                                updateVoucherGroupList();
+                            });
+                        }
+                        dlg.close();
+                    }
+                }, {
+                    label: 'Close',
+                    action: function(dlg){
+                        dlg.close();
+                    }
+                }]
+            });
+        });
+
+        $("#voucher-validity").change(function(){
+            if ($(this).children(":selected").attr("id") == 'voucher-validity-custom') {
+                $("#voucher-validity-custom-data").show();
+            } else {
+                $("#voucher-validity-custom-data").hide();
+            }
+        });
+        $("#voucher-validity-custom-data").keyup(function(){
+            $("#voucher-validity-custom").val($(this).val()*60);
+        });
+
+        $("#voucher-quantity").change(function(){
+            if ($(this).children(":selected").attr("id") == 'voucher-quantity-custom') {
+                $("#voucher-quantity-custom-data").show();
+            } else {
+                $("#voucher-quantity-custom-data").hide();
+            }
+        });
+        $("#voucher-quantity-custom-data").keyup(function(){
+            $("#voucher-quantity-custom").val($(this).val());
+        });
+
         updateVoucherProviders();
         $('.selectpicker').selectpicker('refresh');
     });
@@ -289,6 +356,11 @@ POSSIBILITY OF SUCH DAMAGE.
                 <div class="row">
                     <div class="col-sm-12">
                         <div class="pull-right">
+
+                            <button id="expireVouchers" type="button" class="btn btn-default">
+                                <span>{{ lang._('Expire selected vouchers') }}</span>
+                                <span class="fa fa-trash"></span>
+                            </button>
                             <button id="dropExpired" type="button" class="btn btn-default">
                                 <span>{{ lang._('Drop expired vouchers') }}</span>
                                 <span class="fa fa-trash"></span>
@@ -318,6 +390,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 <h4 class="modal-title">{{ lang._('Generate vouchers') }}</h4>
             </div>
             <div class="modal-body">
+            <div id="generatevouchererror" class="alert alert-danger" role="alert" style="display: none"></div>
                 <table class="table table-striped table-condensed table-responsive">
                     <thead>
                         <tr>
@@ -340,7 +413,9 @@ POSSIBILITY OF SUCH DAMAGE.
                                     <option value="518400">{{ lang._('6 days') }}</option>
                                     <option value="604800">{{ lang._('1 week') }}</option>
                                     <option value="1209600">{{ lang._('2 weeks') }}</option>
+                                    <option id="voucher-validity-custom" value="">{{ lang._('Custom (minutes)') }}</option>
                                 </select>
+                                <input type="text" id="voucher-validity-custom-data" style="display:none;">
                             </td>
                             <td>
                                 <select id="voucher-quantity" class="selectpicker" data-width="200px">
@@ -351,7 +426,9 @@ POSSIBILITY OF SUCH DAMAGE.
                                     <option value="50">50</option>
                                     <option value="100">100</option>
                                     <option value="250">250</option>
+                                    <option id="voucher-quantity-custom" value="">{{ lang._('Custom') }}</option>
                                 </select>
+                                <input type="text" id="voucher-quantity-custom-data" style="display:none;">
                             </td>
                             <td>
                                 <input id="voucher-groupname" type="text">

@@ -146,11 +146,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // Sort list
         $config['aliases']['alias'] = msort($config['aliases']['alias'], "name");
 
-        if (write_config()) {
-            mark_subsystem_dirty('aliases');
-            firewall_syslog("Import Firewall/Alias", $config['aliases']['alias'], $alias);
-        }
-        header("Location: firewall_aliases.php");
+        write_config();
+        mark_subsystem_dirty('aliases');
+        firewall_syslog("Import Firewall/Alias", $config['aliases']['alias'], $alias);
+        header(url_safe('Location: /firewall_aliases.php'));
         exit;
     }
 }

@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         write_config();
         mark_subsystem_dirty('natconf');
         firewall_syslog("Delete Firewall/NAT/NPT (IPv6)", $id);
-        header("Location: firewall_nat_npt.php");
+        header(url_safe('Location: /firewall_nat_npt.php'));
         exit;
       } elseif (isset($pconfig['act']) && $pconfig['act'] == 'del_x' && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
           /* delete selected rules */
@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           mark_subsystem_dirty('natconf');
           foreach ($id_for_delete as $idk)
               firewall_syslog("Delete Firewall/NAT/NPT (IPv6)", $idk);
-          header("Location: firewall_nat_npt.php");
+          header(url_safe('Location: /firewall_nat_npt.php'));
           exit;
         } elseif ( isset($pconfig['act']) && $pconfig['act'] == 'move') {
             // move records
@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         write_config();
         mark_subsystem_dirty('natconf');
         firewall_syslog("Move Firewall/NAT/NPT (IPv6)", $id);
-        header("Location: firewall_nat_npt.php");
+        header(url_safe('Location: /firewall_nat_npt.php'));
         exit;
     } elseif (isset($pconfig['act']) && $pconfig['act'] == 'toggle' && isset($id)) {
         // toggle item
@@ -97,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         write_config('Toggled NAT NPT rule');
         mark_subsystem_dirty('natconf');
         firewall_syslog($npt_action, $id);
-        header("Location: firewall_nat_npt.php");
+        header(url_safe('Location: /firewall_nat_npt.php'));
         exit;
     }
 }
@@ -197,7 +197,7 @@ $main_buttons = array(
               <input type="hidden" id="id" name="id" value="" />
               <input type="hidden" id="action" name="act" value="" />
               <div class="table-responsive">
-                <table class="table table-striped table-sort">
+                <table class="table table-striped">
                   <thead>
                     <tr>
                       <th width="2%">&nbsp;</th>

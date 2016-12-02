@@ -157,17 +157,28 @@ function gen_subnet_max($ipaddr, $bits) {
 /* Generate end number for a given ipv6 subnet mask */
 function gen_subnetv6_max($ipaddr, $bits)
 {
+    $result = false;
     if (!is_ipaddrv6($ipaddr)) {
         return false;
     }
 
+    set_error_handler (
+        function () {
+            return;
+        }
+    );
     $mask = Net_IPv6::getNetmask('FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF',$bits);
     $inet_ip = (binary)inet_pton($ipaddr);
-    $inet_mask = (binary)inet_pton($mask);
+    if ($inet_ip) {
+        $inet_mask = (binary)inet_pton($mask);
+        if ($inet_mask) {
+            $inet_end = $inet_ip | ~$inet_mask;
+            $result = inet_ntop($inet_end);
+        }
+    }
+    restore_error_handler();
 
-    $inet_end = $inet_ip | ~$inet_mask;
-
-    return (inet_ntop($inet_end));
+    return $result;
 }
 
 /* Returns the calculated bit length of the prefix delegation from the WAN interface */
@@ -1350,22 +1361,6 @@ function set_single_sysctl($name, $value)
         return false;
     }
     return true;
-}
-
-function mute_kernel_msgs()
-{
-    global $config;
-
-    if (isset($config['system']['enableserial'])) {
-        return;
-    }
-
-    exec('/sbin/conscontrol mute on');
-}
-
-function unmute_kernel_msgs()
-{
-    exec('/sbin/conscontrol mute off');
 }
 
 /****f* util/msort

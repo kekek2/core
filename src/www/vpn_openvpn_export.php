@@ -370,7 +370,7 @@ function openvpn_client_export_config($srvid, $usrid, $crtid, $useaddr, $verifys
                 }
             }
             $command = "cd " . escapeshellarg("{$tempdir}/..")
-                . " && /usr/local/bin/7z -tzip -y a "
+                . " && /usr/local/bin/zip -r "
                 . escapeshellarg("/tmp/{$prefix}-config.zip")
                 . " " . escapeshellarg($prefix);
             exec($command);
@@ -563,7 +563,7 @@ EOF;
         exec("cd {$tempdir}/.. && /usr/bin/tar cfz {$outputfile} Viscosity.visc");
     } else {
         $outputfile = "/tmp/{$uniq}-Viscosity.visc.zip";
-        exec("cd {$tempdir}/.. && /usr/local/bin/7z -tzip -y a {$outputfile} Viscosity.visc");
+        exec("cd {$tempdir}/.. && /usr/local/bin/zip -r {$outputfile} Viscosity.visc");
     }
 
     // Remove temporary directory
@@ -621,7 +621,7 @@ function openvpn_client_export_sharedkey_config($srvid, $useaddr, $proxy, $zipco
 
     // add basic settings
     $conf  = "dev tun\n";
-    if (! empty($settings['tunnel_networkv6'])) {
+    if (!empty($settings['tunnel_networkv6'])) {
         $conf .= "tun-ipv6\n";
     }
     $conf .= "persist-tun\n";
@@ -632,10 +632,11 @@ function openvpn_client_export_sharedkey_config($srvid, $useaddr, $proxy, $zipco
     $conf .= "pull\n";
     $conf .= "resolv-retry infinite\n";
     $conf .= "remote {$server_host} {$server_port}\n";
-    if ($settings['local_network']) {
-        list($ip, $mask) = explode('/', $settings['local_network']);
-        $mask = gen_subnet_mask($mask);
-        $conf .= "route $ip $mask\n";
+    if (!empty($settings['local_network'])) {
+        $conf .= openvpn_gen_routes($settings['local_network'], 'ipv4');
+    }
+    if (!empty($settings['local_networkv6'])) {
+        $conf .= openvpn_gen_routes($settings['local_networkv6'], 'ipv6');
     }
     if (!empty($settings['tunnel_network'])) {
         list($ip, $mask) = explode('/', $settings['tunnel_network']);
@@ -688,7 +689,7 @@ function openvpn_client_export_sharedkey_config($srvid, $useaddr, $proxy, $zipco
         file_put_contents("{$tempdir}/{$prefix}.ovpn", $conf);
         $shkeyfile = "{$tempdir}/{$shkeyfile}";
         file_put_contents("{$shkeyfile}", base64_decode($settings['shared_key']));
-        exec("cd {$tempdir}/.. && /usr/local/bin/7z -tzip -y a /tmp/{$prefix}-config.zip {$prefix}");
+        exec("cd {$tempdir}/.. && /usr/local/bin/zip -r /tmp/{$prefix}-config.zip {$prefix}");
         // Remove temporary directory
         exec("rm -rf {$tempdir}");
         return "/tmp/{$prefix}-config.zip";

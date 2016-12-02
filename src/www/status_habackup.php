@@ -97,6 +97,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 xmlrpc_exec('opnsense.configd_reload_all_templates');
                 echo json_encode(array("status" => "done"));
                 break;
+            case 'exec_sync':
+                configd_run('filter sync load');
+                echo json_encode(array("status" => "done"));
+                break;
         }
     }
     exit;
@@ -155,10 +159,12 @@ include("head.inc");
             }
             // reload all templates first
             $("#action_templates").show();
-            $.post(window.location, {action: 'reload_templates'}, function(data) {
-                $("#action_templates").hide();
-                $("#action_templates_done").show();
-                perform_actions_reload(todo);
+            $.post(window.location, {action: 'exec_sync'}, function(data) {
+                $.post(window.location, {action: 'reload_templates'}, function(data) {
+                    $("#action_templates").hide();
+                    $("#action_templates_done").show();
+                    perform_actions_reload(todo);
+                });
             });
         });
     });
@@ -240,6 +246,8 @@ include("head.inc");
                                             title="<?=sprintf(gettext('Restart %sService'), $service['name']);?>"
                                             class="btn btn-xs btn-default xmlrpc_srv_status_act glyphicon glyphicon-refresh">
                                         </span>
+<?php
+                                          if (empty($service['nocheck'])):?>
                                         <span
                                             data-service_action="stop"
                                             data-service_id="<?=!empty($service['id']) ? $service['id'] : "";?>"
@@ -249,6 +257,7 @@ include("head.inc");
                                             class="btn btn-xs btn-default xmlrpc_srv_status_act glyphicon glyphicon-stop">
                                         </span>
 <?php
+                                          endif;
                                         else:?>
                                         <span
                                             data-service_action="start"

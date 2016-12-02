@@ -127,11 +127,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
           $npt_action = "Add Firewall/NAT/NPT (IPv6)";
       }
 
-      if (write_config()) {
-          mark_subsystem_dirty('natconf');
-          firewall_syslog($npt_action, $a_npt, $natent);
-      }
-      header("Location: firewall_nat_npt.php");
+      write_config();
+      mark_subsystem_dirty('natconf');
+      firewall_syslog($npt_action, $a_npt, $natent);
+      header(url_safe('Location: /firewall_nat_npt.php'));
       exit;
     }
 }
