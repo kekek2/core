@@ -1,2 +1,2 @@
-#motd:/etc/motd
+motd:/etc/motd
 sudoers:/usr/local/etc/sudoers.d/opnsense
