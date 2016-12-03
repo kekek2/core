@@ -298,9 +298,7 @@ class Config extends Singleton
                     $this->restoreBackup('/usr/local/etc/config.xml');
                 } catch (\Exception $e) {
                     $logger->error(gettext('Checksum for /usr/local/etc/config.xml missing. Anyware using this file'));
-                    $fp = fopen($this->config_file . ".sum", "w");
-                    fwrite($fp, sha1(file_get_contents($this->config_file)));
-                    fclose($fp);
+                    file_put_contents($this->config_file . ".sum", sha1(file_get_contents($this->config_file)));
                     $this->load();
                 }
             }
@@ -332,7 +330,7 @@ class Config extends Singleton
             throw new ConfigException('empty file');
         }
 
-        if (!$this->check_sha1($this->config_file, $xml))
+        if (!$this->check_sha1($filename, $xml))
             throw new ConfigException('checksum not match');
         
         set_error_handler(
@@ -602,12 +600,6 @@ class Config extends Singleton
     
     public function check_sha1($file_name, $xml)
     {
-        $fp = fopen($file_name . ".sum", "r");
-        if ($fp === FALSE)
-            return false;
-
-        $res = str_replace(array("\r", "\n"), '', fgets($fp)) == sha1($xml);
-        fclose($fp);
-        return $res;
+        return str_replace(array("\r", "\n"), '', file_get_contents($file_name . ".sum")) == sha1($xml);
     }
 }
