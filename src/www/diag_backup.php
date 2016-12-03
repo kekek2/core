@@ -48,8 +48,10 @@ function restore_config_section($section_name, $new_contents)
     $tmpxml = '/tmp/tmpxml';
 
     file_put_contents($tmpxml, $new_contents);
+    file_put_contents($tmpxml . ".sum", sha1($new_contents));
     $xml = load_config_from_file($tmpxml);
-    @unlink($tmpxml);
+    //@unlink($tmpxml);
+    //@unlink($tmpxml . ".sum");
 
     if (!is_array($xml) || !isset($xml[$section_name])) {
         return false;
@@ -300,6 +302,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 /* restore the entire configuration */
                 $filename = $_FILES['conffile']['tmp_name'];
                 file_put_contents($filename, $data);
+                file_put_contents($filename . ".sum", sha1($data));
+
                 $cnf = OPNsense\Core\Config::getInstance();
                 if ($cnf->restoreBackup($filename)) {
                     if (!empty($pconfig['rebootafterrestore'])) {
