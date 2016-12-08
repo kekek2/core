@@ -187,7 +187,7 @@
   </sysctl>
   <system>
     <optimization>normal</optimization>
-    <hostname>TING</hostname>
+    <hostname>ting</hostname>
     <domain>localdomain</domain>
     <dnsallowoverride/>
     <group>
