@@ -88,34 +88,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
     	    header(url_safe('Location: /firewall_nat_npt.php'));
             exit;
-        } elseif (isset($pconfig['act']) && $pconfig['act'] == 'toggle' && isset($id)) {
-            // toggle item
-            if(isset($a_npt[$id]['disabled'])) {
-                $npt_action = "Enable Firewall/NAT/NPT (IPv6)";
-                unset($a_npt[$id]['disabled']);
-            } else {
-                $a_npt[$id]['disabled'] = true;
-                $npt_action = "Disable Firewall/NAT/NPT (IPv6)";
-            }
-            if (write_config(gettext("Firewall: NAT: NPT, enable/disable NAT rule"))) {
-                mark_subsystem_dirty('natconf');
-                firewall_syslog($npt_action, $id);
-            }
-            $a_npt = legacy_move_config_list_items($a_npt, $id,  $pconfig['rule']);
-        }
-        write_config();
-        mark_subsystem_dirty('natconf');
-        header(url_safe('Location: /firewall_nat_npt.php'));
-        exit;
     } elseif (isset($pconfig['act']) && $pconfig['act'] == 'toggle' && isset($id)) {
         // toggle item
         if(isset($a_npt[$id]['disabled'])) {
+            $npt_action = "Enable Firewall/NAT/NPT (IPv6)";
             unset($a_npt[$id]['disabled']);
         } else {
+            $npt_action = "Disable Firewall/NAT/NPT (IPv6)";
             $a_npt[$id]['disabled'] = true;
         }
         write_config('Toggled NAT NPT rule');
         mark_subsystem_dirty('natconf');
+        firewall_syslog($npt_action, $id);
         header(url_safe('Location: /firewall_nat_npt.php'));
         exit;
     }
