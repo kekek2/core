@@ -10,8 +10,8 @@ $ovpn_ca_certfile = '/usr/local/etc/ssl/TING-ovpn-default-CA.crt';
 $ovpn_srv_keyfile  = '/usr/local/etc/ssl/TING-ovpn-default-srv.key';
 $ovpn_srv_certfile = '/usr/local/etc/ssl/TING-ovpn-default-srv.crt';
 
-$ca_name = "TING default VPN CA";
-$srv_name = "TING default VPN server certificate";
+$ca_name = "TING CA";
+$srv_name = "TING VPN";
 
 
 $ca_found = false;
