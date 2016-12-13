@@ -1,7 +1,5 @@
 <?php
 
-const MAC_INTERFACE = 'em1';
-
 const LICENSE_API_VER = 1;
 const LICENSE_API_URL = 'https://bar.smart-soft.ru/api/v' . LICENSE_API_VER;
 
@@ -25,8 +23,8 @@ $temporary_crt_info = false;
 $installed_crt_modules_path = "{$ting_crt_dir}/ting-client.module.*.crt";
 $installed_crt_modules_info = [];
 
-function getCurrentMacAddress($interface) {
-    $ifconfig = shell_exec("ifconfig {$interface}");
+function getCurrentMacAddress() {
+    $ifconfig = shell_exec("dmesg | grep Ethernet | head -n 1 | awk '{print $4}'");
     preg_match("/([0-9A-F]{2}[:-]){5}([0-9A-F]{2})/i", $ifconfig, $ifconfig);
     if (isset($ifconfig[0])) {
         return trim(strtoupper($ifconfig[0]));
@@ -65,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pkey = openssl_get_privatekey("file://{$installed_key_path}");
 
             $csrData = [
-                'tingAddress' => getCurrentMacAddress(MAC_INTERFACE),
+                'tingAddress' => getCurrentMacAddress(),
                 'tingLicense' => $licenseKey,
                 'tingModule'  => $module,
             ];
