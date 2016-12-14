@@ -347,6 +347,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
             local_user_set($userent);
             local_user_set_groups($userent, $pconfig['groups']);
+            local_user_set($userent); // apply inherited user privileges to set user shell (if needed)
             write_config();
 
             if (!empty($pconfig['chkNewCert'])) {
