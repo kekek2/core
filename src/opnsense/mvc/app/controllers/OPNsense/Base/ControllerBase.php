@@ -56,6 +56,7 @@ class ControllerBase extends ControllerRoot
         }
 
         $lang_encoding = $lang . '.UTF-8';
+        $textdomain = 'OPNsense';
 
         $ret = new ViewTranslator(array(
             'directory' => '/usr/local/share/locale',
@@ -65,6 +66,10 @@ class ControllerBase extends ControllerRoot
 
         /* this isn't being done by Phalcon */
         putenv('LANG=' . $lang_encoding);
+        setlocale(LC_ALL, $lang_encoding);
+        textdomain($textdomain);
+        bindtextdomain($textdomain, '/usr/local/share/locale');
+        bind_textdomain_codeset($textdomain, $lang_encoding);
 
         return $ret;
     }
