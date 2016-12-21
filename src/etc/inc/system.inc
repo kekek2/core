@@ -1285,7 +1285,7 @@ function system_cron_configure($verbose = false)
     $autocron[] = generate_cron_job('/usr/local/sbin/expiretable -v -t 3600 sshlockout', '2');
     $autocron[] = generate_cron_job('/usr/local/sbin/expiretable -v -t 3600 virusprot', '3');
     $autocron[] = generate_cron_job('/usr/local/etc/rc.expireaccounts', '5');
-    $autocron[] = generate_cron_job('/usr/local/bin/php /usr/local/etc/checksum.php', '6');
+    $autocron[] = generate_cron_job('/usr/local/bin/php /usr/local/etc/checksum.php > /dev/null', '6');
 
     /* daily */
     $autocron[] = generate_cron_job('/usr/local/etc/rc.update_alias_url_data', '1', '1');

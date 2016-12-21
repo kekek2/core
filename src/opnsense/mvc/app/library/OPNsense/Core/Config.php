@@ -287,17 +287,17 @@ class Config extends Singleton
             $logger = new Syslog("config", array('option' => LOG_PID, 'facility' => LOG_LOCAL4));
             if (count($backups) > 0) {
                 // load last backup
-                $logger->error(gettext('No valid config.xml found, attempting last known config restore.'));
+                $logger->error('No valid config.xml found, attempting last known config restore.');
                 mark_subsystem_dirty("restore_backup");
                 $this->restoreBackup($backups[0]);
             } else {
                 // in case there are no backups, restore defaults.
-                $logger->error(gettext('No valid config.xml found, attempting to restore factory config.'));
+                $logger->error('No valid config.xml found, attempting to restore factory config.');
                 try {
                     mark_subsystem_dirty("restore_factory");
                     $this->restoreBackup('/usr/local/etc/config.xml');
                 } catch (\Exception $e) {
-                    $logger->error(gettext('Checksum for /usr/local/etc/config.xml missing. Anyware using this file'));
+                    $logger->error('Checksum for /usr/local/etc/config.xml missing. Anyware using this file');
                     file_put_contents($this->config_file . ".sum", sha1(file_get_contents($this->config_file)));
                     $this->load();
                 }
