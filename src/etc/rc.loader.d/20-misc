@@ -1,2 +1,3 @@
 autoboot_delay="2"
 hw.usb.no_pf="1"
+hw.mfi.mrsas_enable="1"
