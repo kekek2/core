@@ -271,7 +271,9 @@ TING_CLIENT_KEY=/usr/local/etc/ssl/ting-client.key
 [ -d /usr/local/etc/ssl ] || mkdir -p /usr/local/etc/ssl
 [ -f ${TING_CLIENT_KEY} ] || openssl genrsa -out ${TING_CLIENT_KEY} 2048
 
+echo "Checking control sums..."
 /usr/local/bin/php /usr/local/etc/checksum.php
+echo "Done"
 
 # Check pkg cache dir
 PKG_CACHEDIR=`/usr/sbin/pkg config PKG_CACHEDIR`
