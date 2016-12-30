@@ -89,10 +89,13 @@ if ($setup_installer) {
     OPNsense\Core\Config::getInstance()->forceReload();
 }
 
-echo "Loading configuration...";
+echo "Loading configuration...\n";
 global $config;
 $config = parse_config();
-convert_config();
+convert_config(true);
+// convert_config can change config by migrations
+OPNsense\Core\Config::getInstance()->forceReload();
+$config = parse_config();
 echo "done.\n";
 
 /*
