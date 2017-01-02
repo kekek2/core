@@ -9,7 +9,6 @@ use Phalcon\Session\Adapter\Files as SessionAdapter;
 use OPNsense\Core\Config;
 
 require_once("util.inc");
-require_once("dirtys_messages.inc");
 
 /**
  * The FactoryDefault Dependency Injector automatically register the right services providing a full stack framework
@@ -50,13 +49,6 @@ $di->set('view', function () use ($config) {
                 $js_tag = "'<script type=\"text/javascript\" src=\"'.$local_url.'\"></script>'";
                 return "file_exists(".$chk_path.") ? ".$js_tag." :''";
             });
-	    $volt->getCompiler()->addFunction('checkRestoreConfig', function ($resolvedArgs, $exprArgs) {
-		global $dirtys_messages;
-		$dirty = substr($resolvedArgs, 1, -1);
-		$message = $dirtys_messages[$dirty];
-		return " is_subsystem_dirty('$dirty') ? clear_subsystem_dirty('$dirty') . '$message' : ''";
-	    });
-
             return $volt;
         },
         '.phtml' => 'Phalcon\Mvc\View\Engine\Php'

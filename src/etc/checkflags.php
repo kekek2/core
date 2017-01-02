@@ -1,15 +1,18 @@
 #!/usr/local/bin/php
 <?php
-require_once("dirtys_messages.inc");
-require_once("util.inc");
+require_once("config.inc");
+require_once("notices.inc");
 
-foreach ($dirtys_messages as $dirty => $message)
-{
-  if (is_subsystem_dirty($dirty))
-  {
-      echo "\n", $message;
-      clear_subsystem_dirty($dirty);
-  }
-}
+if (!are_notices_pending())
+    return;
+
+$notices = get_notices();
+if (!is_array($notices))
+    return;
+
+foreach ($notices as $key => $value)
+    echo preg_replace("/(\"|\'|\n|<.?\w+>)/i", "", ($value['notice'] != "" ? $value['notice'] : $value['id'])) . "\n";
+
+
 ?>
 

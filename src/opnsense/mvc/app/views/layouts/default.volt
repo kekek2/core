@@ -161,7 +161,56 @@
                 });
                 // enable bootstrap tooltips
                 $('[data-toggle="tooltip"]').tooltip();
+
+                get_notices();
             });
+
+            function escapeHtml(text) {
+                var map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+
+                return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+            }
+
+            function notice(msgid) {
+                ajaxCall(url = "/api/core/notice/close", sendData = {closenotice: msgid}, callback = function () {
+                    get_notices();
+                });
+            };
+
+            function get_notices() {
+                ajaxCall(url = "/api/core/notice/list", sendData = {}, callback = function (notices) {
+                    var count = notices.length;
+                    if (count > 0) {
+                        var notice_msgs = "<ul class=\"dropdown-menu\" role=\"menu\">";
+
+                        notice_msgs += "<li><a href=\"#\" onclick=\"notice('all');\" >" + "{{ lang._('Acknowledge All Notices') }}" + "</a></li><li class=\"divider\"></li>";
+                        for (var i = 0; i < count; i++)
+                        {
+                            var key = notices[i].key;
+                            var today = new Date(parseInt(key) * 1000);
+                            var alert_action ="onclick=\"notice('" + key + "'); jQuery(this).parent().parent().remove();\"";
+                            notice_msgs += "<li><a href=\"#\"  " + alert_action + ">" + today.toLocaleString() + " [ " + escapeHtml(notices[i].txt) + "]</a></li>";
+                        }
+                        notice_msgs += "</ul>";
+
+                        if (count == 1) {
+                            msg= count.toFixed(0) + " " + "{{ lang._('unread notice') }}";
+                        } else {
+                            msg= count.toFixed(0) + " " +  "{{ lang._('unread notices') }}";
+                        }
+                        var menu_messages = "<a href=\"/\" class=\"dropdown-toggle \" data-toggle=\"dropdown\" role=\"button\" aria-expanded=\"false\"><span class=\"text-primary\">" + msg + "&nbsp;</span><span class=\"caret text-primary\"></span></a>" + notice_msgs + "\n";
+                        $("#menu_messages").html(menu_messages);
+                    }
+                    else
+                      $("#menu_messages").html('<a href="#">{{session_username}}@{{system_hostname}}.{{system_domain}}</a>');
+                });
+            }
         </script>
 
 
@@ -200,7 +249,7 @@
         </div>
         <div class="collapse navbar-collapse">
           <ul class="nav navbar-nav navbar-right">
-            <li id="menu_messages"><a href="#">{{session_username}}@{{system_hostname}}.{{system_domain}}</a></li>
+            <li id="menu_messages"></li>
             <li><a href="/index.php?logout"><span class="fa fa-sign-out fa-fw"></span>Logout</a></li>
           </ul>
         </div>
@@ -232,11 +281,6 @@
           <div class="row">
               <section class="col-xs-12">
                   <div id="messageregion"></div>
-                      {{ checkRestoreConfig('restore_backup') }}
-                      {{ checkRestoreConfig('restore_factory') }}
-                      {{ checkRestoreConfig('kernel') }}
-                      {{ checkRestoreConfig('base') }}
-                      {{ checkRestoreConfig('packages') }}
                       {{ content() }}
               </section>
           </div>
