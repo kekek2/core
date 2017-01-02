@@ -49,6 +49,10 @@
             });
         });
 
+        $("#downloadLogFileAction").click(function(){
+            window.location = "/api/syslog/service/download?logname={{logname}}";
+        });
+
         /*************************************************************************************************************
          * link grid actions
          *************************************************************************************************************/
@@ -60,6 +64,7 @@
             <div class="input-group">
                 <div class="input-group-addon"><i class="fa fa-search"></i></div>
                 <input type="text" class="form-control" id="filtertext" name="filtertext" placeholder="{{lang._('Search for a specific message...')}}" value="{{filtertext}}"/>
+                <input type="submit" id="downloadLogFileAction" class="btn btn-primary pull-right" value="{{lang._('Download log file')}}" />
             </div>
     </p>
     <div class="content-box">

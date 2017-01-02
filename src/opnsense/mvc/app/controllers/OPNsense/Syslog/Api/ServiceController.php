@@ -198,4 +198,30 @@ class ServiceController extends ApiControllerBase
             return array("status" => "failed", "message" => gettext("Wrong request"));
         }
     }
+
+    /**
+     * download log-file
+     * @return file content
+     */
+    public function downloadAction()
+    {
+        $filter = new Filter();
+        $filter->add('logfilename', function($value){ return preg_replace("/[^0-9,a-z,A-Z,_]/", "", $value);});
+
+        $name = $this->request->get('logname');
+        $name = $filter->sanitize($name, 'logfilename');
+
+        $mdl = new Syslog();
+        $fullname = $mdl->getLogFileName($name);
+
+        $config = Config::getInstance()->object();
+
+        $tmp = tempnam(sys_get_temp_dir(), '_log_');
+        $backend = new Backend();
+        $backend->configdRun("syslog dumplogtofile {$fullname} {$tmp}");
+
+        $this->view->disable();
+        $this->response->setFileToSend($tmp, "{$config->system->hostname}-{$name}.log")->send();
+        unlink($tmp);
+    }
 }
