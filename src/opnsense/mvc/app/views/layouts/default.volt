@@ -195,7 +195,7 @@
                             var key = notices[i].key;
                             var today = new Date(parseInt(key) * 1000);
                             var alert_action ="onclick=\"notice('" + key + "'); jQuery(this).parent().parent().remove();\"";
-                            notice_msgs += "<li><a href=\"#\"  " + alert_action + ">" + today.toLocaleString() + " [ " + escapeHtml(notices[i].txt) + "]</a></li>";
+                            notice_msgs += "<li><a href=\"#\"  " + alert_action + ">" + today.toLocaleString() + " [ " + escapeHtml(notices[i].txt) + " ]</a></li>";
                         }
                         notice_msgs += "</ul>";
 

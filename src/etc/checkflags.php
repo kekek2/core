@@ -11,7 +11,7 @@ if (!is_array($notices))
     return;
 
 foreach ($notices as $key => $value)
-    echo preg_replace("/(\"|\'|\n|<.?\w+>)/i", "", ($value['notice'] != "" ? $value['notice'] : $value['id'])) . "\n";
+    echo date("m-d-y H:i:s", $key) . " [ " . preg_replace("/(\"|\'|\n|<.?\w+>)/i", "", ($value['notice'] != "" ? $value['notice'] : $value['id'])) . " ]\n";
 
 
 ?>

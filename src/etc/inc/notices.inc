@@ -49,7 +49,7 @@ function file_notice($id, $notice, $category = "General", $url = "", $priority =
 	 *	       0 = informational, 1 = warning, 2 = error, etc. This may also be arbitrary,
 	 */
 	if(!$queue = get_notices()) $queue = array();
-	$queuekey = time();
+	$queuekey = sprintf("%.4f", microtime(true));
 	$toqueue = array(
 				'id'		=> $id,
 				'notice'	=> $notice,
