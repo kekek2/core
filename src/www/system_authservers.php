@@ -426,7 +426,7 @@ $( document ).ready(function() {
             <?php if ($act == "new" || $act == "edit") :
 ?>
             <form id="iform" name="iform" method="post">
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <tr>
                   <td width="22%"></td>
                   <td  width="78%" align="right">
@@ -477,7 +477,9 @@ endif; ?>
                   <td>
                     <input name="ldap_host" type="text" id="ldap_host" size="20" value="<?=$pconfig['ldap_host'];?>"/>
                     <div class="hidden" for="help_for_ldap_host">
+                      <small class="formhelp">
                       <?= gettext("NOTE: When using SSL, this hostname MUST match the Common Name (CN) of the LDAP server's SSL Certificate."); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -514,8 +516,10 @@ endif; ?>
                     endforeach; ?>
                     </select>
                     <div class="hidden" for="help_for_ldap_caref">
+                      <small class="formhelp">
                       <span><?=gettext("This option is used if 'SSL Encrypted' option is choosen.");?> <br />
                       <?=gettext("It must match with the CA in the AD otherwise problems will arise.");?></span>
+                      </small>
                     </div>
 <?php
                     else :?>
@@ -541,7 +545,9 @@ endif; ?>
                     <?=gettext("Password:");?><br/>
                     <input name="ldap_bindpw" type="password" class="formfld pwd" id="ldap_bindpw" size="20" value="<?=$pconfig['ldap_bindpw'];?>"/><br />
                     <div class="hidden" for="help_for_ldap_binddn">
+                      <small class="formhelp">
                       <?=gettext("Leave empty to use anonymous binds to resolve distinguished names");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -574,9 +580,11 @@ endif; ?>
                     </ul>
                     <br/>
                     <div class="hidden" for="help_for_ldapauthcontainers">
-                        <br/><?=gettext("Semicolon separated. This will be prepended to the search base DN above or you can specify full container path containing a DC= component.");?>
-                        <br /><?=gettext("Example:");?> CN=Users;DC=example,DC=com
-                        <br /><?=gettext("Example:");?> OU=Staff;OU=Freelancers
+                      <small class="formhelp">
+                        <?=gettext("Semicolon separated. This will be prepended to the search base DN above or you can specify full container path containing a DC= component.");?><br />
+                        <?=gettext("Example:");?> CN=Users;DC=example,DC=com<br />
+                        <?=gettext("Example:");?> OU=Staff;OU=Freelancers
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -585,7 +593,9 @@ endif; ?>
                   <td>
                     <input name="ldap_extended_query" type="text" id="ldap_extended_query" size="40" value="<?=$pconfig['ldap_extended_query'];?>"/>
                     <div class="hidden" for="help_for_ldap_extended_query">
+                      <small class="formhelp">
                       <?=gettext("Example:");?> &amp;(objectClass=inetOrgPerson)(mail=*@example.com)
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -652,9 +662,12 @@ endif; ?>
                   <td>
                     <input name="radius_timeout" type="text" id="radius_timeout" size="20" value="<?=$pconfig['radius_timeout'];?>"/>
                     <div class="hidden" for="help_for_radius_timeout">
-                      <br /><?= gettext("This value controls how long, in seconds, that the RADIUS server may take to respond to an authentication request.") ?>
-                      <br /><?= gettext("If left blank, the default value is 5 seconds.") ?>
-                      <br /><br /><?= gettext("NOTE: If you are using an interactive two-factor authentication system, increase this timeout to account for how long it will take the user to receive and enter a token.") ?>
+                      <small class="formhelp">
+                      <?= gettext("This value controls how long, in seconds, that the RADIUS server may take to respond to an authentication request.") ?><br />
+                      <?= gettext("If left blank, the default value is 5 seconds.") ?><br />
+                      <br />
+                      <?= gettext("NOTE: If you are using an interactive two-factor authentication system, increase this timeout to account for how long it will take the user to receive and enter a token.") ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -697,7 +710,9 @@ endif; ?>
 <?php
                         endif;?>
                         <div class="hidden" for="help_for_field_<?=$typename;?>_<?=$fieldname;?>">
+                          <small class="formhelp">
                           <?=$field['help'];?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -727,7 +742,7 @@ else :
           <form id="iform_overview" method="post">
             <input type="hidden" id="overview_id" name="id">
             <input type="hidden" id="overview_act" name="act">
-            <table class="table table-striped">
+            <table class="table table-clean-form table-sort">
               <thead>
                 <tr>
                   <th><?=gettext("Server Name");?></th>
