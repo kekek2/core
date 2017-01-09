@@ -158,7 +158,7 @@ $( document ).ready(function() {
         <div class="table-responsive content-box tab-content" style="overflow: auto;">
 <?php
         if ($act != "edit") :?>
-          <table class="table table-striped">
+          <table class="table table-clean-form table-striped">
             <thead>
               <tr>
                 <th><?=gettext("Tunable Name"); ?></th>
@@ -194,7 +194,7 @@ $( document ).ready(function() {
 <?php
             else : ?>
             <form method="post">
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <thead>
                   <tr>
                     <th colspan="2" valign="top" class="listtopic"><?=gettext("Edit system tunable"); ?></th>
@@ -202,8 +202,8 @@ $( document ).ready(function() {
                 </thead>
                 <tbody>
                   <tr>
-                    <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Tunable"); ?></td>
-                    <td>
+                    <td width="22%"><i class="fa fa-info-circle text-muted"></i> <?=gettext("Tunable"); ?></td>
+                    <td width="78%">
                       <input type="text" name="tunable" value="<?=$pconfig['tunable']; ?>" />
                     </td>
                   </tr>
