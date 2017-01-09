@@ -153,10 +153,10 @@ include("head.inc");
         <section class="col-xs-12">
           <div class="content-box tab-content table-responsive">
             <form method="post" name="iform">
-            <table class="table table-striped opnsense_standard_table_form">
+            <table class="table table-clean-form opnsense_standard_table_form">
               <tr>
                 <td width="22%"><strong><?=gettext("Growl");?></strong></td>
-                <td  width="78%" align="right">
+                <td width="78%" align="right">
                   <small><?=gettext("full help"); ?> </small>
                   <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
                 </td>
@@ -166,7 +166,9 @@ include("head.inc");
                 <td>
                   <input type='checkbox' name='disable_growl' value="yes" <?=!empty($pconfig['disable_growl']) ? "checked=\"checked\"" : "";?>/>
                   <div class="hidden" for="help_for_disable_growl">
+                    <small class="formhelp">
                     <?=gettext("Check this option to disable growl notifications but preserve the settings below."); ?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -184,7 +186,9 @@ include("head.inc");
                 <td>
                   <input name='notification_name' type='text' value='<?=$pconfig['notification_name']; ?>' /><br />
                   <div class="hidden" for="help_for_notification_name">
+                    <small class="formhelp">
                     <?=sprintf(gettext("Enter a name for the Growl notifications (default: %s growl alert)."), $g['product_name']); ?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -193,7 +197,9 @@ include("head.inc");
                 <td>
                   <input name="ipaddress" type="text" value="<?=$pconfig['ipaddress']; ?>" /><br />
                   <div class="hidden" for="help_for_ipaddress">
+                    <small class="formhelp">
                     <?=gettext("This is the IP address that you would like to send growl notifications to."); ?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -202,7 +208,9 @@ include("head.inc");
                 <td>
                   <input name="password" type="password" value="<?=$pconfig['password']; ?>"/><br />
                   <div class="hidden" for="help_for_password">
+                    <small class="formhelp">
                     <?=gettext("Enter the password of the remote growl notification device."); ?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -214,7 +222,9 @@ include("head.inc");
                 <td>
                   <input type="checkbox" name="disable_smtp" value="yes" <?=!empty($pconfig['disable_smtp']) ? "checked=\"checked\"" : "";?>/>
                   <div class="hidden" for="help_for_disable_smtp">
+                    <small class="formhelp">
                     <?=gettext("Check this option to disable SMTP notifications but preserve the settings below. Some other mechanisms, such as packages, may need these settings in place to function."); ?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -223,7 +233,9 @@ include("head.inc");
                 <td>
                   <input name="smtpipaddress" type="text" value="<?=$pconfig['smtpipaddress']; ?>" />
                   <div class="hidden" for="help_for_smtpipaddress">
+                    <small class="formhelp">
                     <?=gettext("This is the FQDN or IP address of the SMTP Email server to which notifications will be sent."); ?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -232,7 +244,9 @@ include("head.inc");
                 <td>
                   <input name="smtpport" type="text" value="<?=$pconfig['smtpport']; ?>" />
                   <div class="hidden" for="help_for_smtpport">
+                    <small class="formhelp">
                     <?=gettext("This is the port of the SMTP Email server, typically 25, 587 (submission) or 465 (smtps)"); ?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -240,9 +254,9 @@ include("head.inc");
                 <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Secure SMTP Connection"); ?></td>
                 <td>
                   <input type="checkbox" id="smtpssl" name="smtpssl" <?=!empty($pconfig['smtpssl']) ? "checked=\"checked\"" : "";?> />
-                  <strong><?=gettext('Enable SMTP over SSL/TLS');?></strong><br />
+                  <?=gettext('Enable SMTP over SSL/TLS');?><br />
                   <input type="checkbox" id="smtptls" name="smtptls" <?=!empty($pconfig['smtptls']) ? "checked=\"checked\"" : "";?> />
-                  <strong><?=gettext('Enable STARTTLS');?></strong><br />
+                  <?=gettext('Enable STARTTLS');?><br />
                 </td>
               </tr>
               <tr>
@@ -250,7 +264,9 @@ include("head.inc");
                 <td>
                   <input name="smtpfromaddress" type="text" value="<?=$pconfig['smtpfromaddress']; ?>" />
                   <div class="hidden" for="help_for_smtpfromaddress">
+                    <small class="formhelp">
                     <?=gettext("This is the email address that will appear as the email notification sender."); ?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -259,7 +275,9 @@ include("head.inc");
                 <td>
                   <input name="smtpnotifyemailaddress" type="text" value="<?=$pconfig['smtpnotifyemailaddress'];?>" />
                   <div class="hidden" for="help_for_smtpnotifyemailaddress">
+                    <small class="formhelp">
                     <?=gettext("Enter the email address that you would like email notifications sent to."); ?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -268,8 +286,10 @@ include("head.inc");
                 <td>
                   <input name="smtpusername" type="text" value="<?=$pconfig['smtpusername']; ?>" />
                   <div class="hidden" for="help_for_smtpusername">
-                    <small><?=gettext("(optional)");?></small><br/>
+                    <small class="formhelp">
+                    <?=gettext("(optional)");?><br/>
                     <?=gettext("Enter the email address username for SMTP authentication."); ?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -278,13 +298,12 @@ include("head.inc");
                 <td>
                   <input name='smtppassword' type='password' value='<?=$pconfig['smtppassword']; ?>' /><br />
                   <div class="hidden" for="help_for_smtppassword">
-                    <small><?=gettext("(optional)");?></small><br/>
+                    <small class="formhelp">
+                    <?=gettext("(optional)");?><br/>
                     <?=gettext("Enter the email address password for SMTP authentication."); ?>
+                    </small>
                   </div>
                 </td>
-              </tr>
-              <tr>
-                <td colspan="2">&nbsp;</td>
               </tr>
               <!-- System Sounds -->
               <tr>
@@ -294,15 +313,14 @@ include("head.inc");
                 <td><a id="help_for_disablebeep" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Startup/Shutdown Sound"); ?></td>
                 <td>
                   <input name="disablebeep" type="checkbox" id="disablebeep" value="yes" <?=!empty($pconfig['disablebeep']) ? "checked=\"checked\"" : "";?>/>
-                  <strong><?=gettext("Disable the startup/shutdown beep"); ?></strong>
+                  <?=gettext("Disable the startup/shutdown beep"); ?>
                   <br />
                   <div class="hidden" for="help_for_disablebeep">
+                    <small class="formhelp">
                     <span class="vexpl"><?=gettext("When this is checked, startup and shutdown sounds will no longer play."); ?></span>
+                    </small>
                   </div>
                 </td>
-              </tr>
-              <tr>
-                <td colspan="2">&nbsp;</td>
               </tr>
               <tr>
                 <td></td>

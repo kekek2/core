@@ -531,7 +531,7 @@ $( document ).ready(function() {
                 <input type="hidden" id="priv_delete" name="priv_delete" value="" /> <!-- delete priv action -->
                 <input type="hidden" id="api_delete" name="api_delete" value="" /> <!-- delete api ke action -->
                 <input type="hidden" id="certid" name="certid" value="" /> <!-- remove cert association action -->
-                <table class="table table-striped opnsense_standard_table_form">
+                <table class="table table-clean-form opnsense_standard_table_form">
                   <tr>
                     <td width="22%"></td>
                     <td width="78%" align="right">
@@ -584,7 +584,9 @@ $( document ).ready(function() {
                     <td>
                       <input name="descr" type="text" value="<?=$pconfig['descr'];?>" <?= $pconfig['scope'] == "system" || !empty($pconfig['user_dn']) ? "readonly=\"readonly\"" : "";?> />
                       <div class="hidden" for="help_for_fullname">
+                        <small class="formhelp">
                         <?=gettext("User's full name, for your own information only");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -593,14 +595,16 @@ $( document ).ready(function() {
                     <td>
                       <input name="expires" type="text" id="expires" class="datepicker" data-date-format="mm/dd/yyyy" value="<?=$pconfig['expires'];?>" />
                       <div class="hidden" for="help_for_expires">
+                        <small class="formhelp">
                           <?=gettext("Leave blank if the account shouldn't expire, otherwise enter the expiration date in the following format: mm/dd/yyyy"); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
                   <tr>
                     <td><a id="help_for_groups" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Group Memberships");?></td>
                     <td>
-                      <table class="table" width="100%" border="0" cellpadding="0" cellspacing="0">
+                      <table class="table table-borderless" width="100%" border="0" cellpadding="0" cellspacing="0">
                         <thead>
                           <tr>
                             <th><?=gettext("Not Member Of"); ?></th>
@@ -656,7 +660,9 @@ $( document ).ready(function() {
                         </tr>
                       </table>
                       <div class="hidden" for="help_for_groups">
+                        <small class="formhelp">
                           <?=gettext("Hold down CTRL (pc)/COMMAND (mac) key to select multiple items");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -665,7 +671,7 @@ $( document ).ready(function() {
                   <tr>
                     <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Effective Privileges");?></td>
                     <td>
-                      <table class="table table-hover table-condensed">
+                      <table class="table table-borderless table-hover table-condensed">
                         <tr>
                           <td><b><?=gettext("Inherited From");?></b></td>
                           <td><b><?=gettext("Name");?></b></td>
@@ -694,7 +700,7 @@ $( document ).ready(function() {
                   <tr>
                     <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("User Certificates");?></td>
                     <td>
-                      <table class="table table-condensed">
+                      <table class="table table-borderless table-condensed">
                         <tr>
                           <td><?=gettext("Name");?></td>
                           <td><?=gettext("CA");?></td>
@@ -748,7 +754,7 @@ $( document ).ready(function() {
                       <td><a id="help_for_apikeys" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("API keys");?> </td>
                       <td>
                           <!-- -->
-                          <table class="table table-condensed">
+                          <table class="table table-borderless table-condensed">
                               <thead>
                                   <tr>
                                     <th>
@@ -793,8 +799,10 @@ $( document ).ready(function() {
                               </tfoot>
                           </table>
                           <div class="hidden" for="help_for_apikeys">
+                            <small class="formhelp">
                               <hr/>
                               <?=gettext('Manage API keys here for machine to machine interaction using this user\'s credentials.');?>
+                            </small>
                           </div>
                       </td>
                   </tr>
@@ -814,6 +822,7 @@ $( document ).ready(function() {
                       <input name="otp_seed" type="text" value="<?=$pconfig['otp_seed'];?>"/>
                       <input type="checkbox" name="gen_otp_seed"/>&nbsp;<small><?=gettext("generate new (160bit) secret");?></small>
                       <div class="hidden" for="help_for_otp_seed">
+                        <small class="formhelp">
                         <?=gettext("OTP (base32) seed to use when a one time password authenticator is used");?><br/>
 <?php
                         if (!empty($pconfig['otp_seed'])):
@@ -830,6 +839,7 @@ $( document ).ready(function() {
                             </script>
 <?php
                         endif;?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -866,7 +876,7 @@ $( document ).ready(function() {
                 <input type="hidden" id="act2" name="act" value="" />
                 <input type="hidden" id="userid" name="userid" value="<?=(isset($id) ? $id : '');?>" />
                 <input type="hidden" id="username" name="username" value="" />
-                <table class="table table-striped">
+                <table class="table table-clean-form">
                   <thead>
                     <tr>
                       <th><?=gettext("Username"); ?></th>
