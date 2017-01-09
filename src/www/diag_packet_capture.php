@@ -296,7 +296,7 @@ include("fbegin.inc");
           <?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
           <div class="table-responsive">
             <form method="post" name="iform" id="iform">
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <thead>
                   <tr>
                     <td width="22%"><strong><?=gettext("Packet capture");?></strong></td>
@@ -321,7 +321,9 @@ include("fbegin.inc");
                       endforeach; ?>
                       </select>
                       <div class="hidden" for="help_for_if">
+                        <small class="formhelp">
                         <?=gettext("Select the interface on which to capture traffic.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -330,8 +332,10 @@ include("fbegin.inc");
                     <td>
                       <input name="promiscuous" type="checkbox" <?= !empty($pconfig['promiscuous']) ? " checked=\"checked\"" : ""; ?> />
                       <div class="hidden" for="help_for_promiscuous">
+                        <small class="formhelp">
                         <?=gettext("If checked, the");?> <a target="_blank" href="http://www.freebsd.org/cgi/man.cgi?query=tcpdump&amp;apropos=0&amp;sektion=0&amp;manpath=FreeBSD+8.3-stable&amp;arch=default&amp;format=html"><?= gettext("packet capture")?></a> <?= gettext("will be performed using promiscuous mode.");?>
                         <br /><b><?=gettext("Note");?>: </b><?=gettext("Some network adapters do not support or work well in promiscuous mode.");?>
+                        </small>
                       </div>
                   </td>
                   </tr>
@@ -348,7 +352,9 @@ include("fbegin.inc");
                         </option>
                       </select>
                       <div class="hidden" for="help_for_fam">
+                        <small class="formhelp">
                         <?=gettext("Select the type of traffic to be captured, either Any, IPv4 only or IPv6 only.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -372,7 +378,9 @@ include("fbegin.inc");
                         <option value="esp" <?=$pconfig['proto'] == "esp" ? "selected=\"selected\"" : ""; ?>><?= gettext('ESP') ?></option>
                       </select>
                       <div class="hidden" for="help_for_proto">
+                        <small class="formhelp">
                           <?=gettext("Select the protocol to capture, or Any.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -381,10 +389,12 @@ include("fbegin.inc");
                     <td>
                       <input type="text"  name="host" value="<?=$pconfig['host'];?>" />
                       <div class="hidden" for="help_for_host">
+                        <small class="formhelp">
                         <?=gettext("This value is either the Source or Destination IP address or subnet in CIDR notation. The packet capture will look for this address in either field.");?>
                         <?=gettext("Matching can be negated by preceding the value with \"not\". Multiple IP addresses or CIDR subnets may be specified as boolean expresion.");?>
                         <?=gettext("If you leave this field blank, all packets on the specified interface will be captured.");?>
                         <br/><br/><?=gettext("Example:");?> not 10.0.0.0/24 not and not 11.0.0.1
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -393,7 +403,9 @@ include("fbegin.inc");
                     <td>
                       <input type="text" name="port" value="<?=$pconfig['port'];?>" />
                       <div class="hidden" for="help_for_port">
+                        <small class="formhelp">
                         <?=gettext("The port can be either the source or destination port. The packet capture will look for this port in either field.");?> <?=gettext("Leave blank if you do not want to filter by port.");?>
+                        </small>
                       </div>
                   </td>
                   </tr>
@@ -402,7 +414,9 @@ include("fbegin.inc");
                     <td>
                       <input type="text" name="snaplen" value="<?=$pconfig['snaplen'];?>" />
                       <div class="hidden" for="help_for_snaplen">
+                        <small class="formhelp">
                         <?=gettext("The Packet length is the number of bytes of each packet that will be captured. Default value is 0, which will capture the entire frame regardless of its size.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -411,7 +425,9 @@ include("fbegin.inc");
                     <td>
                       <input type="text" name="count" class="formfld unknown" id="count" size="5" value="<?=$pconfig['count'];?>" />
                       <div class="hidden" for="help_for_count">
+                        <small class="formhelp">
                         <?=gettext("This is the number of packets the packet capture will grab. Default value is 100.") . "<br />" . gettext("Enter 0 (zero) for no count limit.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -428,9 +444,11 @@ include("fbegin.inc");
                         <option value="full"><?=gettext("Full");?></option>
                       </select>
                       <div class="hidden" for="help_for_detail">
+                        <small class="formhelp">
                         <?=gettext("This is the level of detail that will be displayed after hitting 'Stop' when the packets have been captured.") .  "<br /><b>" .
                            gettext("Note:") . "</b> " .
                            gettext("This option does not affect the level of detail when downloading the packet capture.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -440,8 +458,10 @@ include("fbegin.inc");
                     <td>
                       <input name="dnsquery" id="dnsquery" type="checkbox"/>
                       <div class="hidden" for="help_for_dnsquery">
+                        <small class="formhelp">
                        <?=gettext("This check box will cause the packet capture to perform a reverse DNS lookup associated with all IP addresses.");?>
                        <br /><b><?=gettext("Note");?>: </b><?=gettext("This option can cause delays for large packet captures.");?>
+                        </small>
                      </div>
                     </td>
                   </tr>
