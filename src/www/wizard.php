@@ -171,8 +171,8 @@ if ($_POST && !$input_errors) {
 	}
 }
 
-$description = $pkg['step'][$stepid]['description'];
-$title = $pkg['step'][$stepid]['title'];
+$description = gettext($pkg['step'][$stepid]['description']);
+$title = gettext($pkg['step'][$stepid]['title']);
 
 function update_config_field($field, $updatetext, $unset, $arraynum, $field_type) {
 	global $config;
@@ -433,11 +433,11 @@ function showchange() {
 			case "input":
 				if ($field['displayname']) {
 					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
-					echo $field['displayname'];
+					echo gettext($field['displayname']);
 					echo ":</td>\n";
 				} else if(!$field['dontdisplayname']) {
 					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
-					echo fixup_string($field['name']);
+					echo fixup_string(gettext($field['name']));
 					echo ":</td>\n";
 				}
 				if(!$field['dontcombinecells'])
@@ -463,11 +463,11 @@ function showchange() {
 			case "inputalias":
 				if ($field['displayname']) {
 					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
-					echo $field['displayname'];
+					echo gettext($field['displayname']);
 					echo ":</td>\n";
 				} else if(!$field['dontdisplayname']) {
 					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
-					echo fixup_string($field['name']);
+					echo fixup_string(gettext($field['name']));
 					echo ":</td>\n";
 				}
 				if(!$field['dontcombinecells'])
@@ -491,7 +491,7 @@ function showchange() {
 				$multiple = "";
 				$name = strtolower($name);
 				echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
-				echo fixup_string($field['displayname'] ? $field['displayname'] : $field['name']) . ":\n";
+				echo fixup_string($field['displayname'] ? gettext($field['displayname']) : gettext($field['name'])) . ":\n";
 				echo "</td>";
 				echo "<td class=\"vtable\">\n";
 				if($field['size'] <> "") $size = "size=\"{$field['size']}\"";
@@ -538,11 +538,11 @@ function showchange() {
 			case "password":
 				if ($field['displayname']) {
 					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
-					echo $field['displayname'];
+					echo gettext($field['displayname']);
 					echo ":</td>\n";
 				} else if(!$field['dontdisplayname']) {
 					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
-					echo fixup_string($field['name']);
+					echo fixup_string(gettext($field['name']));
 					echo ":</td>\n";
 				}
 				if(!$field['dontcombinecells'])
@@ -562,7 +562,7 @@ function showchange() {
 				$multiple = "";
 				$name = strtolower($name);
 				echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
-				echo fixup_string($field['displayname'] ? $field['displayname'] : $field['name']) . ":\n";
+				echo fixup_string($field['displayname'] ? gettext($field['displayname']) : gettext($field['name'])) . ":\n";
 				echo "</td>";
 				echo "<td class=\"vtable\">\n";
 				if($field['size'] <> "") $size = "size=\"{$field['size']}\"";
@@ -600,7 +600,7 @@ function showchange() {
 				$multiple = "";
 				$name = strtolower($name);
 				echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
-				echo fixup_string($field['displayname'] ? $field['displayname'] : $field['name']) . ":\n";
+				echo fixup_string($field['displayname'] ? gettext($field['displayname']) : gettext($field['name'])) . ":\n";
 				echo "</td>";
 				echo "<td class=\"vtable\">\n";
 				if($field['size'] <> "") $size = "size=\"{$field['size']}\"";
@@ -638,11 +638,11 @@ function showchange() {
 			case "select":
 				if ($field['displayname']) {
 					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
-					echo $field['displayname'];
+					echo gettext($field['displayname']);
 					echo ":</td>\n";
 				} else if(!$field['dontdisplayname']) {
 					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
-					echo fixup_string($field['name']);
+					echo fixup_string(gettext($field['name']));
 					echo ":</td>\n";
 				}
 				if($field['size']) $size = " size='" . $field['size'] . "' ";
@@ -678,11 +678,11 @@ function showchange() {
 			case "textarea":
 				if ($field['displayname']) {
 					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
-					echo $field['displayname'];
+					echo gettext($field['displayname']);
 					echo ":</td>\n";
 				} else if(!$field['dontdisplayname']) {
 					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
-					echo fixup_string($field['name']);
+					echo fixup_string(gettext($field['name']));
 					echo ":</td>";
 				}
 				if(!$field['dontcombinecells'])
@@ -703,7 +703,7 @@ function showchange() {
 			case "submit":
 				echo "<td colspan=\"2\">&nbsp;</td></tr>";
 				echo "<tr><td colspan=\"2\" align=\"center\">";
-				echo "<input type='submit' class=\"btn btn-primary\" name='" . $name . "' value=\"" . htmlspecialchars($field['name']) . "\" />\n";
+				echo "<input type='submit' class=\"btn btn-primary\" name='" . $name . "' value=\"" . htmlspecialchars(gettext($field['name'])) . "\" />\n";
 
 				if($field['description'] <> "") {
 					echo "<br /> " . $field['description'];
@@ -712,17 +712,17 @@ function showchange() {
 				break;
 			case "listtopic":
 				echo "<td colspan=\"2\">&nbsp;</td></tr>";
-				echo "<tr><td colspan=\"2\" class=\"listtopic\">" . $field['name'] . "<br />\n";
+				echo "<tr><td colspan=\"2\" class=\"listtopic\">" . gettext($field['name']) . "<br />\n";
 
 				break;
 			case "subnet_select":
 				if ($field['displayname']) {
 					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
-					echo $field['displayname'];
+					echo gettext($field['displayname']);
 					echo ":</td>\n";
 				} else if(!$field['dontdisplayname']) {
 					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
-					echo fixup_string($field['name']);
+					echo fixup_string(gettext($field['name']));
 					echo ":</td>";
 				}
 				if(!$field['dontcombinecells'])
@@ -754,11 +754,11 @@ function showchange() {
 
 				if ($field['displayname']) {
 					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
-					echo $field['displayname'];
+					echo gettext($field['displayname']);
 					echo ":</td>\n";
 				} else if(!$field['dontdisplayname']) {
 					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
-					echo fixup_string($field['name']);
+					echo fixup_string(gettext($field['name']));
 					echo ":</td>";
 				}
 				if(!$field['dontcombinecells'])
@@ -783,11 +783,11 @@ function showchange() {
 
 				if ($field['displayname']) {
 					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
-					echo $field['displayname'];
+					echo gettext($field['displayname']);
 					echo ":</td>\n";
 				} else if(!$field['dontdisplayname']) {
 					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
-					echo fixup_string($field['name']);
+					echo fixup_string(gettext($field['name']));
 					echo ":</td>";
 				}
 				if(!$field['dontcombinecells'])
@@ -812,11 +812,11 @@ function showchange() {
 			case "checkbox":
 				if ($field['displayname']) {
 					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
-					echo $field['displayname'];
+					echo gettext($field['displayname']);
 					echo ":</td>\n";
 				} else if(!$field['dontdisplayname']) {
 					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
-					echo $field['name'];
+					echo gettext($field['name']);
 					echo ":</td>";
 				}
 				$checked = "";
