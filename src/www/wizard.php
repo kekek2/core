@@ -451,13 +451,13 @@ function showchange() {
 				echo " />\n";
 
 				if($field['description'] <> "") {
-					echo "<br /> " . $field['description'];
+					echo "<br /> " . gettext($field['description']);
 				}
 				break;
 			case "text":
 				echo "<td colspan=\"2\" align=\"center\" class=\"vncell\">\n";
 				if($field['description'] <> "") {
-					echo "<center><br /> " . $field['description'] . "</center>";
+					echo "<center><br /> " . gettext($field['description']) . "</center>";
 				}
 				break;
 			case "inputalias":
@@ -482,7 +482,7 @@ function showchange() {
 				echo " />\n";
 
 				if($field['description'] <> "") {
-					echo "<br /> " . $field['description'];
+					echo "<br /> " . gettext($field['description']);
 				}
 				break;
 			case "interfaces_selection":
@@ -531,7 +531,7 @@ function showchange() {
 				echo "</select>\n";
 
 				if($field['description'] <> "") {
-					echo "<br /> " . $field['description'];
+					echo "<br /> " . gettext($field['description']);
 				}
 
 				break;
@@ -553,7 +553,7 @@ function showchange() {
 				echo " />\n";
 
 				if($field['description'] <> "") {
-					echo "<br /> " . $field['description'];
+					echo "<br /> " . gettext($field['description']);
 				}
 
 				break;
@@ -591,7 +591,7 @@ function showchange() {
 				echo "</select>\n";
 
 				if($field['description'] <> "") {
-					echo "<br /> " . $field['description'];
+					echo "<br /> " . gettext($field['description']);
 				}
 
 				break;
@@ -631,7 +631,7 @@ function showchange() {
 				echo "</select>\n";
 
 				if($field['description'] <> "") {
-					echo "<br /> " . $field['description'];
+					echo "<br /> " . gettext($field['description']);
 				}
 
 				break;
@@ -671,7 +671,7 @@ function showchange() {
 				echo "<!-- {$value} -->\n";
 
 				if($field['description'] <> "") {
-					echo $field['description'];
+					echo gettext($field['description']);
 				}
 
 				break;
@@ -696,7 +696,7 @@ function showchange() {
 
 
 				if($field['description'] <> "") {
-					echo "<br /> " . $field['description'];
+					echo "<br /> " . gettext($field['description']);
 				}
 
 				break;
@@ -706,7 +706,7 @@ function showchange() {
 				echo "<input type='submit' class=\"btn btn-primary\" name='" . $name . "' value=\"" . htmlspecialchars(gettext($field['name'])) . "\" />\n";
 
 				if($field['description'] <> "") {
-					echo "<br /> " . $field['description'];
+					echo "<br /> " . gettext($field['description']);
 				}
 
 				break;
@@ -745,7 +745,7 @@ function showchange() {
 				echo "</select>\n";
 
 				if($field['description'] <> "") {
-					echo "<br /> " . $field['description'];
+					echo "<br /> " . gettext($field['description']);
 				}
 
 				break;
@@ -774,7 +774,7 @@ function showchange() {
 				echo "</select>\n";
 
 				if($field['description'] <> "") {
-					echo "<br /> " . $field['description'];
+					echo "<br /> " . gettext($field['description']);
 				}
 
 				break;
@@ -805,7 +805,7 @@ function showchange() {
 				echo "</select>\n";
 
 				if($field['description'] <> "") {
-					echo "<br /> " . $field['description'];
+					echo "<br /> " . gettext($field['description']);
 				}
 
 				break;
@@ -830,7 +830,7 @@ function showchange() {
 				echo " />\n";
 
 				if($field['description'] <> "") {
-					echo $field['description'];
+					echo gettext($field['description']);
 				}
 
 				break;
