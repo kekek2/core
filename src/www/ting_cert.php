@@ -99,10 +99,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $installed_crt_info = openssl_x509_parse(file_get_contents($installed_crt_path));
 
                         } else {
-                            $form_errors[] = 'Could not parse CRT.';
+                            $form_errors[] = gettext('Could not parse CRT.');
                         }
                     } else {
-                        $form_errors[] = 'Could not get license certificate.';
+                        $form_errors[] = gettext('Could not get license certificate.');
                     }
                 } else {
                     $json = json_decode($body, true);
@@ -110,14 +110,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (isset($json['message'])) {
                         $form_errors[] = $json['message'];
                     } else {
-                        $form_errors[] = 'Could not get license certificate.';
+                        $form_errors[] = gettext('Could not get license certificate.');
                     }
                 }
             } else {
-                $form_errors[] = 'Could not generate CSR.';
+                $form_errors[] = gettext('Could not generate CSR.');
             }
         } else {
-          $form_errors[] = 'Could not get license certificate.';
+          $form_errors[] = gettext('Could not get license certificate.');
         }
     }
 }
@@ -143,19 +143,19 @@ if ($installed_crt_info) {
           <table class="table table-clean-form opnsense_standard_table_form ">
             <thead>
               <tr style="background-color: rgb(251, 251, 251);">
-                <td><strong>Installed certificates</strong></td>
+                <td><strong><?=gettext('Installed certificates')?></strong></td>
                 <td colspan="2"></td>
               </tr>
             </thead>
             <tbody>
               <?php if (!$installed_crt_info) { ?>
                 <tr>
-                  <td width="22%"><p>No certificate installed.</p></td>
+                  <td width="22%"><p><?=gettext('No certificate installed.')?></p></td>
                   <td colspan="2"></td>
                 </tr>
               <?php } else { ?>
                 <tr>
-                  <td width="22%">Expires at</td>
+                  <td width="22%"><?=gettext('Expires at')?></td>
                   <td><?php echo strftime("%Y-%m-%d", $installed_crt_info['validTo_time_t']); ?></td>
                   <td>CORE</td>
                 </tr>
@@ -173,7 +173,7 @@ if ($installed_crt_info) {
           <table class="table table-clean-form opnsense_standard_table_form ">
             <thead>
               <tr style="background-color: rgb(251, 251, 251);">
-                <td><strong>Get new certificate</strong></td>
+                <td><strong><?=gettext('Get new certificate')?></strong></td>
                 <td></td>
               </tr>
             </thead>
@@ -190,12 +190,12 @@ if ($installed_crt_info) {
                   </tr>
                 <?php } ?>
                 <tr>
-                  <td width="22%">License key</td>
+                  <td width="22%"><?=gettext('License key')?></td>
                   <td><input name="csr_license_key" type="text" required value="<?php echo $form_fields['csr_license_key']; ?>"/></td>
                 </tr>
                 <tr>
                   <td width="22%"></td>
-                  <td><input type="submit" value="Get new certificate" class="btn btn-primary"/></td>
+                  <td><input type="submit" value="<?=gettext('Get new certificate')?>" class="btn btn-primary"/></td>
                 </tr>
               </form>
             </tbody>
