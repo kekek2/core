@@ -235,6 +235,7 @@
       <passwordauth>1</passwordauth>
       <permitrootlogin>1</permitrootlogin>
     </ssh>
+    <language>ru_RU</language>
   </system>
   <interfaces>
     <wan>
