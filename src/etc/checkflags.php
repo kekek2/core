@@ -4,7 +4,10 @@ require_once("config.inc");
 require_once("notices.inc");
 
 if (!are_notices_pending())
+{
+    echo "Configuration and executable are authentic\n";
     return;
+}
 
 $notices = get_notices();
 if (!is_array($notices))

@@ -207,8 +207,9 @@
                         var menu_messages = "<a href=\"/\" class=\"dropdown-toggle \" data-toggle=\"dropdown\" role=\"button\" aria-expanded=\"false\"><span class=\"text-primary\">" + msg + "&nbsp;</span><span class=\"caret text-primary\"></span></a>" + notice_msgs + "\n";
                         $("#menu_messages").html(menu_messages);
                     }
-                    else
-                      $("#menu_messages").html('<a href="#">{{session_username}}@{{system_hostname}}.{{system_domain}}</a>');
+                    else {
+                        $("#menu_messages").html("<a>{{ lang._('Configuration and executable are authentic') }}</a>");
+                    }
                 });
             }
         </script>

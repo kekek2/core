@@ -608,12 +608,7 @@ function get_menu_messages()
             $menu_messages.="<a href=\"/\" class=\"dropdown-toggle \" data-toggle=\"dropdown\" role=\"button\" aria-expanded=\"false\"><span class=\"text-primary\">{$msg}&nbsp;</span><span class=\"caret text-primary\"></span></a>{$notice_msgs}\n";
         }
     } else {
-        $menu_messages .= sprintf(
-          '<a href="#">%s@%s.%s</a>',
-          $_SESSION['Username'],
-          $config['system']['hostname'],
-          $config['system']['domain']
-        );
+        $menu_messages .= '<a>' . gettext('Configuration and executable are authentic') . '</a>';
     }
 
     return $menu_messages;
