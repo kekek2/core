@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $uploaded_crt = file_get_contents($_FILES['crtfile']['tmp_name']);
         $uploaded_key = file_get_contents($_FILES['keyfile']['tmp_name']);
         if (!openssl_x509_check_private_key($uploaded_crt, $uploaded_key)) {
-            $upload_errors[] = 'The uploaded key does not correspond to the uploaded certificate.';
+            $upload_errors[] = gettext('The uploaded key does not correspond to the uploaded certificate.');
         }
         if (!$upload_errors) {
             move_uploaded_file($_FILES['crtfile']['tmp_name'], $temporary_crt_path);
@@ -59,27 +59,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <table class="table opnsense_standard_table_form ">
                         <thead>
                             <tr style="background-color: rgb(251, 251, 251);">
-                                <td><strong>Installed certificate</strong></td>
+                                <td><strong><?=gettext('Installed certificate')?></strong></td>
                                 <td></td>
                             </tr>
                         </thead>
                         <tbody>
 <?php if (!$installed_crt_info) { ?>
                             <tr>
-                                <td width="22%"><p>No certificate installed.</p></td>
+                                <td width="22%"><p><?=gettext('No certificate installed.')?></p></td>
                                 <td></td>
                             </tr>
 <?php } else { ?>
                             <tr>
-                                <td width="22%">Name</td>
+                                <td width="22%"><?=gettext('Name')?></td>
                                 <td><?php echo $installed_crt_info['subject']['CN']; ?></td>
                             </tr>
                             <tr>
-                                <td width="22%">Valid from</td>
+                                <td width="22%"><?=gettext('Valid from')?></td>
                                 <td><?php echo strftime("%Y-%m-%d %H:%M:%S", $installed_crt_info['validFrom_time_t']); ?></td>
                             </tr>
                             <tr>
-                                <td width="22%">Valid to</td>
+                                <td width="22%"><?=gettext('Valid to')?></td>
                                 <td><?php echo strftime("%Y-%m-%d %H:%M:%S", $installed_crt_info['validTo_time_t']); ?></td>
                             </tr>
 <?php } ?>
@@ -92,21 +92,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <table class="table opnsense_standard_table_form ">
                         <thead>
                             <tr style="background-color: rgb(251, 251, 251);">
-                                <td><strong>Uploaded certificate (not installed)</strong></td>
+                                <td><strong><?=gettext('Uploaded certificate (not installed)')?></strong></td>
                                 <td></td>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td width="22%">Name</td>
+                                <td width="22%"><?=gettext('Name')?></td>
                                 <td><?php echo $temporary_crt_info['subject']['CN']; ?></td>
                             </tr>
                             <tr>
-                                <td width="22%">Valid from</td>
+                                <td width="22%"><?=gettext('Valid from')?></td>
                                 <td><?php echo strftime("%Y-%m-%d %H:%M:%S", $temporary_crt_info['validFrom_time_t']); ?></td>
                             </tr>
                             <tr>
-                                <td width="22%">Valid to</td>
+                                <td width="22%"><?=gettext('Valid to')?></td>
                                 <td><?php echo strftime("%Y-%m-%d %H:%M:%S", $temporary_crt_info['validTo_time_t']); ?></td>
                             </tr>
                             <tr>
@@ -114,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <td>
                                     <form action="/ting_cert_manual.php" method="post">
                                         <input type="hidden" name="install" value="1"/>
-                                        <input type="submit" value="Install" class="btn btn-primary"/>
+                                        <input type="submit" value="<?=gettext('Install')?>" class="btn btn-primary"/>
                                     </form>
                                 </td>
                             </tr>
@@ -129,7 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <thead>
                             <tr style="background-color: rgb(251, 251, 251);">
                                 <td>
-                                    <strong>Upload new certificate and key files</strong>
+                                    <strong><?=gettext('Upload new certificate and key files')?></strong>
                                 </td>
                                 <td></td>
                             </tr>
@@ -146,16 +146,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </tr>
                             <?php } ?>
                             <tr>
-                                <td width="22%">Certificate file</td>
+                                <td width="22%"><?=gettext('Certificate file')?></td>
                                 <td><input name="crtfile" type="file" required/></td>
                             </tr>
                             <tr>
-                                <td width="22%">Private key file</td>
+                                <td width="22%"><?=gettext('Private key file')?></td>
                                 <td><input name="keyfile" type="file" required/></td>
                             </tr>
                             <tr>
                                 <td width="22%"></td>
-                                <td><input type="submit" value="Upload" class="btn btn-primary"/></td>
+                                <td><input type="submit" value="<?=gettext('Upload')?>" class="btn btn-primary"/></td>
                             </tr>
                             </tbody>
                         </table>
