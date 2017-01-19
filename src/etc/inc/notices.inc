@@ -32,6 +32,8 @@ require_once("notices.growl.class");
 require_once("notices.sasl.inc");
 require_once("notices.smtp.inc");
 
+$notices_file = '/var/tmp/notices';
+
 /****f* notices/file_notice
  * NAME
  *   file_notice
@@ -48,6 +50,8 @@ function file_notice($id, $notice, $category = "General", $url = "", $priority =
 	 * $priority - A notice's priority. Higher numbers indicate greater severity.
 	 *	       0 = informational, 1 = warning, 2 = error, etc. This may also be arbitrary,
 	 */
+
+	global $notices_file;
 	if(!$queue = get_notices()) $queue = array();
 	$queuekey = time();
 	$toqueue = array(
@@ -58,9 +62,9 @@ function file_notice($id, $notice, $category = "General", $url = "", $priority =
 				'priority'	=> $priority,
 			);
 	$queue[$queuekey] = $toqueue;
-	$queueout = fopen('/tmp/notices', 'w');
+    $queueout = fopen($notices_file, 'w');
 	if(!$queueout) {
-		log_error(sprintf('Could not open %s for writing', '/tmp/notices'));
+		log_error(sprintf('Could not open %s for writing', $notices_file));
 		return;
 	}
 	fwrite($queueout, serialize($queue));
@@ -81,8 +85,10 @@ function file_notice($id, $notice, $category = "General", $url = "", $priority =
  ******/
 function get_notices($category = 'all')
 {
-	if (file_exists('/tmp/notices')) {
-		$queue = unserialize(file_get_contents('/tmp/notices'));
+    global $notices_file;
+
+	if (file_exists($notices_file)) {
+		$queue = unserialize(file_get_contents($notices_file));
 		if (!$queue) {
 			return false;
 		}
@@ -111,11 +117,11 @@ function get_notices($category = 'all')
  ******/
 function close_notice($id)
 {
-
+    global $notices_file;
 	$ids = array();
 	if(!$notices = get_notices()) return;
 	if($id == "all") {
-		@unlink('/tmp/notices');
+		@unlink($notices_file);
 		return;
 	}
 	foreach(array_keys($notices) as $time) {
@@ -134,11 +140,11 @@ function close_notice($id)
 		}
 	}
 	if(count($notices) != 0) {
-		$queueout = fopen('/tmp/notices', 'w');
+		$queueout = fopen($notices_file, 'w');
 		fwrite($queueout, serialize($notices));
 		fclose($queueout);
 	} else {
-		@unlink('/tmp/notices');
+		@unlink($notices_file);
 	}
 }
 
@@ -166,6 +172,7 @@ function print_notices($notices, $category = "all")
 	}
 	$categories = array_unique($categories);
 	sort($categories);
+    $toreturn = "";
 	foreach($categories as $category) {
 		$toreturn .= "<ul><li>{$category}<ul>";
 		foreach($notices as $notice) {
@@ -196,7 +203,9 @@ function print_notices($notices, $category = "all")
  ******/
 function are_notices_pending($category = 'all')
 {
-	if (file_exists('/tmp/notices')) {
+    global $notices_file;
+
+	if (file_exists($notices_file)) {
 		return true;
 	}
 
