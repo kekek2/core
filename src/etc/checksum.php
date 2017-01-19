@@ -45,7 +45,10 @@ foreach ($commands as $what => $command)
             {
                 $str = fgets($pipe, 1024);
                 if ($str !== false)
+                {
                     file_notice($what, $str, $priority = 1);
+                    usleep(2000);
+                }
             }
         }
     }
