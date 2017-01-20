@@ -503,7 +503,7 @@ $( document ).ready(function() {
         <section class="col-xs-12">
          <div class="tab-content content-box col-xs-12">
           <div class="table-responsive">
-          <table class="table table-striped opnsense_standard_table_form">
+          <table class="table table-clean-form opnsense_standard_table_form">
             <tr>
               <td width="22%"><strong><?=gettext("General information"); ?></strong></td>
               <td width="78%" align="right">
@@ -512,11 +512,13 @@ $( document ).ready(function() {
               </td>
             </tr>
             <tr>
-              <td><a id="help_for_disable" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a><?=gettext("Disabled"); ?></td>
+              <td><a id="help_for_disable" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Disabled"); ?></td>
               <td>
                 <input name="disable" type="checkbox" value="yes" <?= !empty($pconfig['disable']) ? "checked=\"checked\"" : "";?> />
                 <div class="hidden" for="help_for_disable">
-                  <small><?=gettext("Set this option to disable this client without removing it from the list"); ?>.</small>
+                  <small class="helpform">
+                    <?=gettext("Set this option to disable this client without removing it from the list"); ?>.
+                  </small>
                 </div>
               </td>
             </tr>
@@ -615,7 +617,9 @@ $( document ).ready(function() {
             <td>
               <input name="local_port" type="text" class="form-control unknown" size="5" value="<?=$pconfig['local_port'];?>" />
               <div class="hidden" for="help_for_local_port">
-                <em><small><?=gettext("Set this option if you would like to bind to a specific port. Leave this blank or enter 0 for a random dynamic port."); ?></small></em>
+                <small class="helpform">
+                  <?=gettext("Set this option if you would like to bind to a specific port. Leave this blank or enter 0 for a random dynamic port."); ?>
+                </small>
               </div>
             </td>
           </tr>
@@ -665,8 +669,10 @@ $( document ).ready(function() {
             <td>
               <input name="resolve_retry" type="checkbox" value="yes" <?= !empty($pconfig['resolve_retry']) ? "checked=\"checked\"" : "";?>  />
               <div class="hidden" for="help_for_resolve_retry">
+                <small class="helpform">
                 <div><?=gettext("Infinitely resolve server"); ?></div>
                 <div><small><?=gettext("Continuously attempt to resolve the server host name. Useful when communicating with a server that is not permanently connected to the Internet"); ?></small></div>
+                </small>
               </div>
             </td>
           </tr>
@@ -675,7 +681,7 @@ $( document ).ready(function() {
             <td>
               <input name="description" type="text" class="form-control unknown" size="30" value="<?=$pconfig['description'];?>" />
               <div class="hidden" for="help_for_description">
-                <small><?=gettext("You may enter a description here for your reference (not parsed)"); ?>.</small>
+                <small class="helpform"><?=gettext("You may enter a description here for your reference (not parsed)"); ?>.</small>
               </div>
             </td>
           </tr>
@@ -686,7 +692,7 @@ $( document ).ready(function() {
       <section class="col-xs-12">
        <div class="tab-content content-box col-xs-12">
         <div class="table-responsive">
-         <table class="table table-striped opnsense_standard_table_form">
+         <table class="table table-clean-form opnsense_standard_table_form">
           <tr>
             <td colspan="2"><strong><?=gettext("User Authentication Settings"); ?></strong></td>
           </tr>
@@ -698,7 +704,9 @@ $( document ).ready(function() {
               <div><?=gettext("Password"); ?></div>
               <div><input name="auth_pass" id="auth_pass" type="password" class="form-control pwd" size="20" value="<?=htmlspecialchars($pconfig['auth_pass']);?>" /></div>
               <div class="hidden" for="help_for_auth_user_pass">
+                <small class="helpform">
                 <?=gettext("Leave empty when no user name and password are needed."); ?>
+                </small>
               </div>
               <br/>
             </td>
@@ -710,7 +718,7 @@ $( document ).ready(function() {
        <section class="col-xs-12">
         <div class="tab-content content-box col-xs-12">
          <div class="table-responsive">
-          <table class="table table-striped opnsense_standard_table_form">
+          <table class="table table-clean-form opnsense_standard_table_form">
           <tr>
             <td width="22%"><strong><?=gettext("Cryptographic Settings"); ?></strong></td>
             <td width="78%"></td>
@@ -846,7 +854,9 @@ $( document ).ready(function() {
               endforeach; ?>
               </select>
               <div class="hidden" for="help_for_digest">
+                <small class="helpform">
                 <?=gettext("NOTE: Leave this set to SHA1 unless the server is set to match. SHA1 is the default for OpenVPN."); ?>
+                </small>
               </div>
             </td>
           </tr>
@@ -874,7 +884,7 @@ $( document ).ready(function() {
       <section class="col-xs-12">
        <div class="tab-content content-box col-xs-12">
         <div class="table-responsive">
-        <table class="table table-striped opnsense_standard_table_form">
+        <table class="table table-clean-form opnsense_standard_table_form">
           <tr>
             <td colspan="2"><strong><?=gettext("Tunnel Settings"); ?></strong></td>
           </tr>
@@ -883,6 +893,7 @@ $( document ).ready(function() {
             <td width="78%">
               <input name="tunnel_network" type="text" class="form-control unknown" size="20" value="<?=$pconfig['tunnel_network'];?>" />
               <div class="hidden" for="help_for_tunnel_network">
+                <small class="helpform">
                 <?=gettext("This is the IPv4 virtual network used for private " .
                                 "communications between this client and the " .
                                 "server expressed using CIDR (eg. 10.0.8.0/24). " .
@@ -890,6 +901,7 @@ $( document ).ready(function() {
                                 "server address and the second network address " .
                                 "will be assigned to the client virtual " .
                                 "interface"); ?>.
+                </small>
               </div>
             </td>
           </tr>
@@ -898,6 +910,7 @@ $( document ).ready(function() {
             <td>
               <input name="tunnel_networkv6" type="text" class="form-control unknown" size="20" value="<?=$pconfig['tunnel_networkv6'];?>" />
               <div class="hidden" for="help_for_tunnel_networkv6">
+                <small class="helpform">
                 <?=gettext("This is the IPv6 virtual network used for private " .
                                 "communications between this client and the " .
                                 "server expressed using CIDR (eg. fe80::/64). " .
@@ -905,6 +918,7 @@ $( document ).ready(function() {
                                 "server address and the second network address " .
                                 "will be assigned to the client virtual " .
                                 "interface"); ?>.
+                </small>
               </div>
             </td>
           </tr>
@@ -913,6 +927,7 @@ $( document ).ready(function() {
             <td>
               <input name="remote_network" type="text" class="form-control unknown" size="40" value="<?=$pconfig['remote_network'];?>" />
               <div class="hidden" for="help_for_remote_network">
+                <small class="helpform">
                 <?=gettext("These are the IPv4 networks that will be routed through " .
                                 "the tunnel, so that a site-to-site VPN can be " .
                                 "established without manually changing the routing tables. " .
@@ -920,6 +935,7 @@ $( document ).ready(function() {
                                 "If this is a site-to-site VPN, enter the " .
                                 "remote LAN/s here. You may leave this blank to " .
                                 "only communicate with other clients"); ?>.
+                </small>
               </div>
             </td>
           </tr>
@@ -928,6 +944,7 @@ $( document ).ready(function() {
             <td>
               <input name="remote_networkv6" type="text" class="form-control unknown" size="40" value="<?=$pconfig['remote_networkv6'];?>" />
               <div class="hidden" for="help_for_remote_networkv6">
+                <small class="helpform">
                 <?=gettext("These are the IPv6 networks that will be routed through " .
                                 "the tunnel, so that a site-to-site VPN can be " .
                                 "established without manually changing the routing tables. " .
@@ -935,6 +952,7 @@ $( document ).ready(function() {
                                 "If this is a site-to-site VPN, enter the " .
                                 "remote LAN/s here. You may leave this blank to " .
                                 "only communicate with other clients"); ?>.
+                </small>
               </div>
             </td>
           </tr>
@@ -943,10 +961,12 @@ $( document ).ready(function() {
             <td>
               <input name="use_shaper" type="text" class="form-control unknown" size="5" value="<?=$pconfig['use_shaper'];?>" />
               <div class="hidden" for="help_for_use_shaper">
+                <small class="helpform">
                 <?=gettext("Maximum outgoing bandwidth for this tunnel. " .
                                 "Leave empty for no limit. The input value has " .
                                 "to be something between 100 bytes/sec and 100 " .
                                 "Mbytes/sec (entered as bytes per second)"); ?>.
+                </small>
               </div>
             </td>
           </tr>
@@ -966,7 +986,9 @@ $( document ).ready(function() {
                                 endforeach; ?>
               </select>
               <div class="hidden" for="help_for_compression">
+                <small class="helpform">
                 <?=gettext("Compress tunnel packets using the LZO algorithm. Adaptive compression will dynamically disable compression for a period of time if OpenVPN detects that the data in the packets is not being compressed efficiently."); ?>
+                </small>
               </div>
             </td>
           </tr>
@@ -975,7 +997,9 @@ $( document ).ready(function() {
             <td>
               <input name="passtos" type="checkbox" value="yes" <?=!empty($pconfig['passtos']) ? "checked=\"checked\"" : "" ;?>  />
               <div class="hidden" for="help_for_passtos">
+                <small class="helpform">
                 <?=gettext("Set the TOS IP header value of tunnel packets to match the encapsulated packet value"); ?>.
+                </small>
               </div>
             </td>
           </tr>
@@ -984,7 +1008,9 @@ $( document ).ready(function() {
             <td>
               <input name="no_tun_ipv6" type="checkbox" value="yes" <?=!empty($pconfig['no_tun_ipv6']) ? "checked=\"checked\"" : "" ;?> />
               <div class="hidden" for="help_for_no_tun_ipv6">
+                <small class="helpform">
                 <?=gettext("Don't forward IPv6 traffic"); ?>.
+                </small>
               </div>
             </td>
           </tr>
@@ -993,7 +1019,9 @@ $( document ).ready(function() {
             <td>
               <input name="route_no_pull" type="checkbox" value="yes" <?=!empty($pconfig['route_no_pull']) ? "checked=\"checked\"" : "" ;?> />
               <div class="hidden" for="help_for_route_no_pull">
+                <small class="helpform">
                 <?=sprintf(gettext("Don't add or remove routes automatically. Instead pass routes to %s--route-up%s script using environmental variables"),'<strong>','</strong>') ?>.
+                </small>
               </div>
             </td>
           </tr>
@@ -1002,7 +1030,9 @@ $( document ).ready(function() {
             <td>
               <input name="route_no_exec" type="checkbox" value="yes" <?=!empty($pconfig['route_no_exec']) ? "checked=\"checked\"" : "" ;?> />
               <div class="hidden" for="help_for_route_no_exec">
+                <small class="helpform">
                 <?=gettext("This option effectively bars the server from adding routes to the client's routing table, however note that this option still allows the server to set the TCP/IP properties of the client's TUN/TAP interface"); ?>.
+                </small>
               </div>
             </td>
           </tr>
@@ -1013,7 +1043,7 @@ $( document ).ready(function() {
       <section class="col-xs-12">
        <div class="tab-content content-box col-xs-12">
         <div class="table-responsive">
-         <table class="table table-striped opnsense_standard_table_form">
+         <table class="table table-clean-form opnsense_standard_table_form">
           <tr>
             <td colspan="2"><strong><?=gettext("Advanced configuration"); ?></strong></td>
           </tr>
@@ -1022,8 +1052,10 @@ $( document ).ready(function() {
             <td width="78%">
               <textarea rows="6" cols="78" name="custom_options" id="custom_options"><?=$pconfig['custom_options'];?></textarea><br />
               <div class="hidden" for="help_for_custom_options">
+                <small class="helpform">
                 <?=gettext("Enter any additional options you would like to add to the OpenVPN client configuration here, separated by a semicolon"); ?><br />
                 <?=gettext("EXAMPLE:"); ?> <strong>remote server.mysite.com 1194;</strong> or <strong>remote 1.2.3.4 1194;</strong>
+                </small>
               </div>
             </td>
           </tr>
@@ -1042,11 +1074,13 @@ $( document ).ready(function() {
               <?php endforeach; ?>
               </select>
               <div class="hidden" for="help_for_verbosity_level">
+                <small class="helpform">
                 <?=gettext("Each level shows all info from the previous levels. Level 3 is recommended if you want a good summary of what's happening without being swamped by output.") ?> <br /> <br />
                 <?=sprintf(gettext("%snone%s -- No output except fatal errors."),'<strong>','</strong>') ?> <br />
                 <?=sprintf(gettext("%sdefault%s-%s4%s -- Normal usage range."),'<strong>','</strong>','<strong>','</strong>'); ?> <br />
                 <?=sprintf(gettext("%s5%s -- Output R and W characters to the console for each packet read and write, uppercase is used for TCP/UDP packets and lowercase is used for TUN/TAP packets."),'<strong>','</strong>') ?> <br />
                 <?=sprintf(gettext("%s6%s-%s11%s -- Debug info range."),'<strong>','</strong>','<strong>','</strong>') ?>
+                </small>
               </div>
               </td>
           </tr>
@@ -1057,7 +1091,7 @@ $( document ).ready(function() {
      <section class="col-xs-12">
       <div class="tab-content content-box col-xs-12">
        <div class="table-responsive">
-        <table class="table table-striped opnsense_standard_table_form">
+        <table class="table table-clean-form opnsense_standard_table_form">
           <tr>
             <td>&nbsp;</td>
             <td width="78%">
@@ -1083,7 +1117,7 @@ $( document ).ready(function() {
          <div class="tab-content content-box col-xs-12">
           <input type="hidden" id="id" name="id" value="" />
           <input type="hidden" id="action" name="act" value="" />
-          <table class="table table-striped">
+          <table class="table table-clean-form">
             <thead>
               <tr>
                 <td></td>

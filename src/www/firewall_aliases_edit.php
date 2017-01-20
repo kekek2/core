@@ -447,7 +447,7 @@ endforeach;
         <section class="col-xs-12">
           <div class="content-box tab-content">
             <form method="post" name="iform" id="iform">
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <tr>
                   <td width="22%"><strong><?=gettext("Alias Edit");?></strong></td>
                   <td width="78%" align="right">
@@ -531,7 +531,7 @@ endforeach;
                 <tr>
                   <td><div id="addressnetworkport"><a id="help_for_hosts" href="#" class="showhelp"><i class="fa fa-info-circle text-muted"></i></a> <?=gettext("Host(s)"); ?></div></td>
                   <td>
-                    <table class="table table-striped table-condensed" id="detailTable">
+                    <table class="table table-borderless table-condensed" id="detailTable">
                       <thead>
                         <tr>
                           <th></th>

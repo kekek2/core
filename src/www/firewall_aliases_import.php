@@ -169,7 +169,7 @@ include("head.inc");
         <section class="col-xs-12">
           <div class="content-box tab-content">
             <form method="post" name="iform">
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <tr>
                   <td width="22%"><strong><?=gettext("Alias Import");?></strong></td>
                   <td width="78%" align="right">

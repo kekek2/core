@@ -517,7 +517,7 @@ $( document ).ready(function() {
       <form method="post" enctype="multipart/form-data">
         <section class="col-xs-12">
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-striped ">
+            <table class="table table-clean-form ">
               <tbody>
                 <tr>
                   <th colspan="2" valign="top" class="listtopic">
@@ -558,7 +558,7 @@ $( document ).ready(function() {
             </table>
           </div>
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-striped ">
+            <table class="table table-clean-form ">
               <tbody>
                 <tr>
                   <th colspan="2" valign="top" class="listtopic">
@@ -609,7 +609,7 @@ $( document ).ready(function() {
             </table>
           </div>
           <div class="content-box tab-content table-responsive">
-            <table class="table table-striped opnsense_standard_table_form">
+            <table class="table table-clean-form opnsense_standard_table_form">
               <thead style="display: none;">
                 <tr>
                   <th class="col-sm-1"></th>
