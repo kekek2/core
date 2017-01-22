@@ -788,7 +788,7 @@ function removeRow(el) {
             <div class="content-box tab-content">
               <form method="post" name="iform" id="iform">
                 <input type="hidden" name="schedlabel" value="<?=$pconfig['schedlabel'];?>"/>
-                  <table class="table table-striped opnsense_standard_table_form">
+                  <table class="table table-clean-form opnsense_standard_table_form">
                     <tbody>
                       <tr>
                         <td width="15%"><strong><?=gettext("Schedule information");?></strong></td>
