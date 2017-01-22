@@ -282,7 +282,7 @@ include("head.inc");
     <section class="col-xs-12">
       <div class="content-box tab-content">
         <form method="post">
-          <table class="table table-striped opnsense_standard_table_form">
+          <table class="table table-clean-form opnsense_standard_table_form">
             <tr>
               <td width="22%"><strong><?=gettext("System");?></strong></td>
               <td  width="78%" align="right">
@@ -295,9 +295,11 @@ include("head.inc");
               <td>
                 <input name="hostname" type="text" size="40" value="<?=$pconfig['hostname'];?>" />
                 <div class="hidden" for="help_for_hostname">
+                  <small class="formhelp">
                   <?=gettext("Name of the firewall host, without domain part"); ?>
                   <br />
                   <?=gettext("e.g."); ?> <em><?=gettext("firewall");?></em>
+                  </small>
                 </div>
               </td>
             </tr>
@@ -306,9 +308,11 @@ include("head.inc");
               <td>
                 <input name="domain" type="text" value="<?=$pconfig['domain'];?>" />
                 <div class="hidden" for="help_for_domain">
+                  <small class="formhelp">
                   <?=gettext("Do not use 'local' as a domain name. It will cause local hosts running mDNS (avahi, bonjour, etc.) to be unable to resolve local hosts not running mDNS."); ?>
                   <br />
                   <?=sprintf(gettext("e.g. %smycorp.com, home, office, private, etc.%s"),'<em>','</em>') ?>
+                  </small>
                 </div>
               </td>
             </tr>
@@ -325,7 +329,9 @@ include("head.inc");
                   endforeach; ?>
                 </select>
                 <div class="hidden" for="help_for_timezone">
+                  <small class="formhelp">
                   <?=gettext("Select the location closest to you"); ?>
+                  </small>
                 </div>
               </td>
             </tr>
@@ -342,9 +348,9 @@ include("head.inc");
                   endforeach;?>
                 </select>
                 <div class="hidden" for="help_for_language">
-                  <strong>
+                  <small class="formhelp">
                     <?=gettext("Choose a language for the webConfigurator"); ?>
-                  </strong>
+                  </small>
                 </div>
               </td>
             </tr>
@@ -393,12 +399,14 @@ include("head.inc");
                   </tbody>
                 </table>
                 <div class="hidden" for="help_for_dnsservers">
+                  <small class="formhelp">
                   <?=gettext("Enter IP addresses to be used by the system for DNS resolution. " .
                   "These are also used for the DHCP service, DNS forwarder and for PPTP VPN clients."); ?>
                   <br />
                   <br />
                   <?=gettext("In addition, optionally select the gateway for each DNS server. " .
                   "When using multiple WAN connections there should be at least one unique DNS server per gateway."); ?>
+                  </small>
                 </div>
               </td>
             </tr>
@@ -406,24 +414,24 @@ include("head.inc");
               <td><a id="help_for_dnsservers_opt" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("DNS server options"); ?></td>
               <td>
                 <input name="dnsallowoverride" type="checkbox" value="yes" <?=$pconfig['dnsallowoverride'] ? "checked=\"checked\"" : ""; ;?> />
-                <strong>
                   <?=gettext("Allow DNS server list to be overridden by DHCP/PPP on WAN"); ?>
-                </strong>
                 <div class="hidden" for="help_for_dnsservers_opt">
+                  <small class="formhelp">
                   <?= gettext("If this option is set, DNS servers " .
                   "assigned by a DHCP/PPP server on WAN will be used " .
                   "for its own purposes (including the DNS forwarder). " .
                   "However, they will not be assigned to DHCP and PPTP " .
                   "VPN clients.") ?>
+                  </small>
                 </div>
                 <br/>
                 <input name="dnslocalhost" type="checkbox" value="yes" <?=$pconfig['dnslocalhost'] ? "checked=\"checked\"" : ""; ?> />
-                <strong>
                   <?=gettext("Do not use the DNS Forwarder/Resolver as a DNS server for the firewall"); ?>
-                </strong>
                 <div class="hidden" for="help_for_dnsservers_opt">
+                  <small class="formhelp">
                   <?=gettext("By default localhost (127.0.0.1) will be used as the first DNS server where the DNS Forwarder or DNS Resolver is enabled and set to listen on Localhost, so system can use the local DNS service to perform lookups. ".
                   "Checking this box omits localhost from the list of DNS servers."); ?>
+                  </small>
                 </div>
               </td>
             </tr>
@@ -434,11 +442,13 @@ include("head.inc");
               <td><a id="help_for_prefer_ipv4" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Prefer IPv4 over IPv6"); ?></td>
               <td>
                 <input name="prefer_ipv4" type="checkbox" id="prefer_ipv4" value="yes" <?= !empty($pconfig['prefer_ipv4']) ? "checked=\"checked\"" : "";?> />
-                <strong><?=gettext("Prefer to use IPv4 even if IPv6 is available"); ?></strong>
+                <?=gettext("Prefer to use IPv4 even if IPv6 is available"); ?>
                 <div class="hidden" for="help_for_prefer_ipv4">
+                  <small class="formhelp">
                   <?=gettext("By default, if a hostname resolves IPv6 and IPv4 addresses ".
                                       "IPv6 will be used, if you check this option, IPv4 will be " .
                                       "used instead of IPv6."); ?>
+                  </small>
                 </div>
               </td>
             </tr>
@@ -446,10 +456,12 @@ include("head.inc");
               <td><a id="help_for_gw_switch_default" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Gateway switching");?> </td>
               <td>
                 <input name="gw_switch_default" type="checkbox" id="gw_switch_default" value="yes" <?= !empty($pconfig['gw_switch_default']) ? "checked=\"checked\"" : "";?> />
-                <strong><?=gettext("Allow default gateway switching"); ?></strong><br />
+                <?=gettext("Allow default gateway switching"); ?>
                 <div class="hidden" for="help_for_gw_switch_default">
+                  <small class="formhelp">
                   <?=gettext("If the link where the default gateway resides fails " .
                                       "switch the default gateway to another available one."); ?>
+                  </small>
                 </div>
               </td>
             </tr>
