@@ -202,7 +202,7 @@ $( document ).ready(function() {
             <input type="hidden" id="time" name="time" value="" />
             <input type="hidden" id="action" name="act" value="" />
             <div class="content-box tab-content table-responsive __mb">
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <tr>
                   <th colspan="2" valign="top" class="listtopic"><?=gettext("Backup Count"); ?></th>
                 </tr>
@@ -226,7 +226,7 @@ $( document ).ready(function() {
           </form>
           <?php if ($diff): ?>
           <div class="content-box tab-content table-responsive __mb" style="overflow: scroll;">
-            <table class="table table-striped">
+            <table class="table table-clean-form">
               <tr>
                 <th colspan="2" valign="top" class="listtopic">
                   <?= sprintf(
@@ -279,7 +279,7 @@ $( document ).ready(function() {
                   </td>
                 </tr>
               </table>
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <thead>
                   <tr>
                     <th colspan="2"><?=gettext("Diff");?></th>
