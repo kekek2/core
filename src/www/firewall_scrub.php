@@ -243,7 +243,7 @@ $( document ).ready(function() {
           <section class="col-xs-12">
             <div class="content-box">
               <div class="table-responsive" >
-                <table class="table table-striped table-hover opnsense_standard_table_form">
+                <table class="table table-clean-form table-hover opnsense_standard_table_form">
                   <thead>
                     <tr>
                       <td width="22%"><strong><?=gettext("General settings");?></strong></td>
@@ -303,7 +303,7 @@ $( document ).ready(function() {
           <section class="col-xs-12">
             <div class="content-box">
               <div class="table-responsive" >
-                <table class="table table-striped table-hover" id="rules">
+                <table class="table table-clean-form table-hover" id="rules">
                   <thead>
                      <tr>
                          <th colspan="2"><?=gettext("Detailed settings");?></th>

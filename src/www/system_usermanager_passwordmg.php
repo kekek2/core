@@ -87,10 +87,10 @@ include("head.inc");
           <div class="content-box">
             <form method="post" name="iform" id="iform">
               <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-clean-form">
                   <tr>
-                    <td><?=gettext("Old password"); ?></td>
-                    <td>
+                    <td width="22%"><?=gettext("Old password"); ?></td>
+                    <td width="78%">
                       <input name="passwordfld0" type="password" id="passwordfld0" size="20" />
                     </td>
                   </tr>

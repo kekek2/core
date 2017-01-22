@@ -1202,7 +1202,7 @@ if (isset($savemsg)) {
       <section class="col-xs-12">
         <div class="tab-content content-box col-xs-12">
           <div class="table-responsive">
-            <table class="table table-striped opnsense_standard_table_form" >
+            <table class="table table-clean-form opnsense_standard_table_form" >
               <tr>
                 <td width="22%"></td>
                 <td width="78%" align="right">
@@ -1268,9 +1268,11 @@ if (isset($savemsg)) {
                         <option value="none"><?=gettext("Do not verify the server CN");?></option>
                       </select>
                       <div class="hidden" for="help_for_verify_server_cn">
+                        <small class="helpform">
                         <?=gettext("Optionally verify the server certificate Common Name (CN) when the client connects. Current clients, including the most recent versions of Windows, Viscosity, Tunnelblick, OpenVPN on iOS and Android and so on should all work at the default automatic setting.");?><br/><br/>
                         <?=gettext("Only use tls-remote if you must use an older client that you cannot control. The option has been deprecated by OpenVPN and will be removed in the next major version.");?><br/><br/>
                         <?=gettext("With tls-remote the server CN may optionally be enclosed in quotes. This can help if the server CN contains spaces and certain clients cannot parse the server CN. Some clients have problems parsing the CN with quotes. Use only as needed.");?>
+                        </small>
                       </div>
                 </td>
               </tr>
@@ -1279,9 +1281,11 @@ if (isset($savemsg)) {
                 <td >
                       <input name="randomlocalport" id="randomlocalport" type="checkbox" value="yes" checked="CHECKED" />
                       <div class="hidden" for="help_for_random_local_port">
+                        <small class="helpform">
                         <?=gettext("Use a random local source port (lport) for traffic from the client. Without this set, two clients may not run concurrently.");?>
                         <br/>
                         <?=gettext("NOTE: Not supported on older clients. Automatically disabled for Yealink and Snom configurations."); ?>
+                        </small>
                       </div>
               </tr>
               <tr class="mode_server">
@@ -1308,7 +1312,9 @@ if (isset($savemsg)) {
                 <td >
                       <input name="useproxy" id="useproxy" type="checkbox" value="yes" />
                       <div class="hidden" for="help_for_http_proxy">
+                        <small class="helpform">
                         <?=gettext("Use a proxy to communicate with the server.");?>
+                        </small>
                       </div>
                       <div id="useproxy_opts" style="display:none" >
                         <label for="useproxytype"><?=gettext("Type");?></label>
@@ -1344,9 +1350,11 @@ if (isset($savemsg)) {
                 <td >
                       <input name="openvpnmanager" id="openvpnmanager" type="checkbox" value="yes" />
                       <div class="hidden" for="help_for_openvpnmanager">
+                        <small class="helpform">
                         <?=gettext('This will change the generated .ovpn configuration to allow for usage of the management interface. '.
                         'With this OpenVPN can be used also by non-administrator users. '.
                         'This is also useful for Windows systems where elevated permissions are needed to add routes to the system.');?>
+                        </small>
                       </div>
                 </td>
               </tr>
@@ -1355,15 +1363,17 @@ if (isset($savemsg)) {
                 <td >
                       <textarea rows="6" cols="68" name="advancedoptions" id="advancedoptions"></textarea><br/>
                       <div class="hidden" for="help_for_advancedoptions">
+                        <small class="helpform">
                         <?=gettext("Enter any additional options you would like to add to the OpenVPN client export configuration here, separated by a line break or semicolon"); ?><br/>
                         <?=gettext("EXAMPLE: remote-random"); ?>;
+                        </small>
                       </div>
                 </td>
               </tr>
               <tr>
                 <td><a id="help_for_clientpkg" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Client Install Packages");?></td>
                 <td>
-                  <table id="export_users" class="table table-striped table-condensed">
+                  <table id="export_users" class="table table-borderless table-condensed">
                     <thead>
                       <tr>
                         <td width="25%" ><b><?=gettext("User");?></b></td>
@@ -1488,8 +1498,9 @@ if (isset($savemsg)) {
                       </tbody>
                     </table>
                     <div class="hidden" for="help_for_clientpkg">
-                      <br/><br/>
+                      <small class="helpform">
                       <?= gettext("If you expect to see a certain client in the list but it is not there, it is usually due to a CA mismatch between the OpenVPN server instance and the client certificates found in the User Manager.") ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
