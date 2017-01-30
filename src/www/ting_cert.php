@@ -163,7 +163,7 @@ if ($installed_crt_info) {
                   <tr>
                     <td></td>
                     <td><?php echo strftime("%Y-%m-%d", $module_info['validTo_time_t']); ?></td>
-                    <td><?php echo isset($module_info['subject']['tingModule']) ? $module_info['subject']['tingModule'] : 'MODULE'; ?></td>
+                    <td><?php echo isset($module_info['subject']['UNDEF'][2]) ? $module_info['subject']['UNDEF'][2] : 'MODULE'; ?></td>
                   </tr>
                 <?php } ?>
               <?php } ?>
