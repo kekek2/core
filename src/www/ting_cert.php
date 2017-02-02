@@ -24,7 +24,7 @@ $installed_crt_modules_path = "{$ting_crt_dir}/ting-client.module.*.crt";
 $installed_crt_modules_info = [];
 
 function getCurrentMacAddress() {
-    $ifconfig = shell_exec("dmesg | grep Ethernet | head -n 1 | awk '{print $4}'");
+    $ifconfig = shell_exec("dmesg | grep 'Ethernet address:' | head -n 1 | awk '{print $4}'");
     preg_match("/([0-9A-F]{2}[:-]){5}([0-9A-F]{2})/i", $ifconfig, $ifconfig);
     if (isset($ifconfig[0])) {
         return trim(strtoupper($ifconfig[0]));
