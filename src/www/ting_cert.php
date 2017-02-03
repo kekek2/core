@@ -24,7 +24,7 @@ $installed_crt_modules_path = "{$ting_crt_dir}/ting-client.module.*.crt";
 $installed_crt_modules_info = [];
 
 function getCurrentMacAddress() {
-    $ifconfig = shell_exec("dmesg | grep 'Ethernet address:' | head -n 1 | awk '{print $4}'");
+    $ifconfig = shell_exec("cat /var/run/dmesg.boot | grep 'Ethernet address:' | head -n 1 | awk '{print $4}'");
     preg_match("/([0-9A-F]{2}[:-]){5}([0-9A-F]{2})/i", $ifconfig, $ifconfig);
     if (isset($ifconfig[0])) {
         return trim(strtoupper($ifconfig[0]));
@@ -163,7 +163,19 @@ if ($installed_crt_info) {
                   <tr>
                     <td></td>
                     <td><?php echo strftime("%Y-%m-%d", $module_info['validTo_time_t']); ?></td>
-                    <td><?php echo isset($module_info['subject']['UNDEF'][2]) ? $module_info['subject']['UNDEF'][2] : 'MODULE'; ?></td>
+                    <td>
+                        <?php
+                        if (isset($module_info['subject']['UNDEF'][2]))
+                            echo $module_info['subject']['UNDEF'][2];
+                        else
+                            echo "MODULE";
+                        if (!isset($module_info['subject']['UNDEF'][0]))
+                            echo " - " . gettext("Missing MAC-address");
+                        else
+                            if ($module_info['subject']['UNDEF'][0] != getCurrentMacAddress())
+                                echo " - " . gettext("Not matching MAC-address");
+
+                        ?></td>
                   </tr>
                 <?php } ?>
               <?php } ?>
