@@ -170,10 +170,10 @@ if ($installed_crt_info) {
                         else
                             echo "MODULE";
                         if (!isset($module_info['subject']['UNDEF'][0]))
-                            echo " - " . gettext("Missing MAC-address");
+                            echo " - " . gettext("Can not validate certificate");
                         else
                             if ($module_info['subject']['UNDEF'][0] != getCurrentMacAddress())
-                                echo " - " . gettext("Not matching MAC-address");
+                                echo " - " . gettext("License is not valid for this device");
 
                         ?></td>
                   </tr>
