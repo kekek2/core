@@ -17,6 +17,8 @@ $commands = [
 
 chdir("/");
 
+$error = false;
+
 foreach ($commands as $what => $command)
 {
     echo "Checking " . $what;
@@ -47,6 +49,8 @@ foreach ($commands as $what => $command)
                 if ($str !== false)
                 {
                     file_notice($what, $str, $priority = 1);
+                    echo "\n" . $str;
+                    $error = true;
                     usleep(2000);
                 }
             }
@@ -54,5 +58,7 @@ foreach ($commands as $what => $command)
     }
     proc_close($process);
     echo "done\n";
+    if (!$error)
+        echo "Configuration and executable are authentic\n";
 }
 
