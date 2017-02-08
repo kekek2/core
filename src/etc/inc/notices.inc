@@ -51,12 +51,23 @@ function file_notice($id, $notice, $category = "General", $url = "", $priority =
 	 *	       0 = informational, 1 = warning, 2 = error, etc. This may also be arbitrary,
 	 */
 
+	if (is_array($notice))
+    {
+        $notice_l = $notice[0];
+        $notice_q = isset($notice[1]) ? $notice[1] : $notice[0];
+    }
+    else
+    {
+        $notice_l = $notice;
+        $notice_q = $notice;
+    }
+
 	global $notices_file;
 	if(!$queue = get_notices()) $queue = array();
 	$queuekey = sprintf("%.4f", microtime(true));
 	$toqueue = array(
 				'id'		=> $id,
-				'notice'	=> $notice,
+				'notice'	=> $notice_q,
 				'url'		=> $url,
 				'category'	=> $category,
 				'priority'	=> $priority,
@@ -69,9 +80,9 @@ function file_notice($id, $notice, $category = "General", $url = "", $priority =
 	}
 	fwrite($queueout, serialize($queue));
 	fclose($queueout);
-	log_error("New alert found: $notice");
-	notify_via_growl($notice);
-	notify_via_smtp($notice);
+	log_error("New alert found: $notice_l");
+	notify_via_growl($notice_l);
+	notify_via_smtp($notice_l);
 	return $queuekey;
 }
 
