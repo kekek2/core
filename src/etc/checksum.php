@@ -83,6 +83,7 @@ foreach ($commands as $what => $command)
                 $str = fgets($pipe, 1024);
                 if ($str !== false)
                 {
+                    $str = $what . ": " . $str;
                     $message = $str;
                     foreach ($messages as $en => $ru)
                     {
@@ -93,7 +94,7 @@ foreach ($commands as $what => $command)
                         }
                     }
                     file_notice($what, $message, $priority = 1);
-                    echo "\n" . $what . ": " . $str;
+                    echo "\n" . $str;
                     $error = true;
                     usleep(2000);
                 }
