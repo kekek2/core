@@ -22,7 +22,7 @@ done
 [ "$PRINCIPAL" == "" ] && echo "No principal name" && exit 0;
 [ "$DOMAIN" == "" ] && echo "No domain name" && exit 0;
 [ "$KERB_COMPUTER_NAME" == "" ] && echo "No Kerberos name for host" && exit 0;
-[ "$ENCTYPES" == "2008" ] && ENCTYPES="--enctypes 28";
+[ "$ENCTYPES" == "2008" ] && ENCTYPES_PARAM="--enctypes 28";
 
 
 PASSWORD="${PASSWORD%\'}"
@@ -33,7 +33,7 @@ TICKET=$?
 rm ${PASS_TMP}
 [ $TICKET != 0 ] && echo "No ticket" && exit 0;
 
-/usr/local/sbin/msktutil -c --verbose -b "${BASENAME}"  -s ${PRINCIPAL}.${DOMAIN} -k ${KEYTAB} --computer-name ${KERB_COMPUTER_NAME} --upn ${PRINCIPAL}.${DOMAIN} ${ENCTYPES}
+/usr/local/sbin/msktutil -c --verbose -b "${BASENAME}"  -s ${PRINCIPAL}.${DOMAIN} -k ${KEYTAB} --computer-name ${KERB_COMPUTER_NAME} --upn ${PRINCIPAL}.${DOMAIN} ${ENCTYPES_PARAM}
 
 chmod +r ${KEYTAB}
 
