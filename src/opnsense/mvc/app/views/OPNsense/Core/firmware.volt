@@ -403,6 +403,25 @@ POSSIBILITY OF SUCH DAMAGE.
             });
         });
 
+        $("#upload").click(function () {
+            var formData = new FormData($("#repoform")[0]);
+            $("#upload_progress").addClass("fa fa-spinner fa-pulse");
+            $.ajax({
+                url: "/api/core/firmware/uploadrepository",
+                type: "POST",
+                data: formData,
+                processData: false,  // tell jQuery not to process the data
+                contentType: false   // tell jQuery not to set contentType
+            }).done(function (data) {
+                if (data.status == "ok")
+                    $('#message').attr('class', 'alert alert-info');
+                else
+                    $('#message').attr('class', 'alert alert-danger');
+                $('#message').attr('style', '').html("{{  lang._('Repository upload: ') }}" + data.status)
+                $("#upload_progress").removeClass("fa fa-spinner fa-pulse");
+            });
+            return false;
+        });
 
     });
 </script>
@@ -423,6 +442,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 <li id="plugintab"><a data-toggle="tab" href="#plugins">{{ lang._('Plugins') }}</a></li>
                 <li id="updatetab"><a data-toggle="tab" href="#updates">{{ lang._('Updates') }}</a></li>
                 <li id="progresstab"><a data-toggle="tab" href="#progress">{{ lang._('Progress') }}</a></li>
+                <li id="settingstab"><a data-toggle="tab" href="#settings">{{ lang._('Settings') }}</a></li>
             </ul>
             <div class="tab-content content-box tab-content">
                 <div id="packages" class="tab-pane fade in active">
@@ -439,6 +459,58 @@ POSSIBILITY OF SUCH DAMAGE.
                 </div>
                 <div id="progress" class="tab-pane fade in">
                     <textarea name="output" id="update_status" class="form-control" rows="20" wrap="hard" readonly style="max-width:100%; font-family: monospace;"></textarea>
+                </div>
+                <div id="settings" class="tab-pane fade in">
+                    <table class="table table-striped table-responsive">
+                        <tbody>
+                        <tr>
+                            <td style="width: 150px;"><a id="help_for_mirror" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> {{ lang._('Firmware Mirror') }}</td>
+                            <td>
+                                <select class="selectpicker" id="firmware_mirror">
+                                </select>
+                                <div style="display:none;" id="firmware_mirror_other">
+                                    <input type="text" id="firmware_mirror_value">
+                                </div>
+                                <div class="hidden" for="help_for_mirror">
+                                    <strong>
+                                        {{ lang._("Select an alternate firmware mirror.") }}
+                                    </strong>
+                                </div>
+                            </td>
+                            <td>
+                                <form method="post" enctype="multipart/form-data" id="repoform">
+                                    <input name="repofile" type="file" id="repofile" /><br/>
+                                </form>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="width: 150px;"><a id="help_for_mirror_subscription" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> {{ lang._('Subscription') }}</td>
+                            <td>
+                                <input type="text" id="firmware_mirror_subscription">
+                                <div class="hidden" for="help_for_mirror_subscription">
+                                    <strong>
+                                        {{ lang._("Provide subscription key.") }}
+                                    </strong>
+                                </div>
+                            </td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td>
+                                <button class="btn btn-primary" id="change_mirror" type="button"><i id="change_mirror_progress" class=""></i> {{ lang._('Save') }}</button>
+                            </td>
+                            <td>
+                                <button class="btn btn-primary" id="upload" type="button"><i id="upload_progress" class=""></i> {{ lang._('Upload repository') }}</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="3">
+                                {{ lang._('In order to apply these settings a firmware update must be performed after save, which can include a reboot of the system.') }}
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
