@@ -96,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             }
 
                             file_put_contents($cert_path, $crt);
-                            chmod($cert_path, 644);
+                            chmod($cert_path, 0644);
                             $installed_crt_info = openssl_x509_parse(file_get_contents($installed_crt_path));
 
                         } else {
