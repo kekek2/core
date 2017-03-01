@@ -82,6 +82,14 @@ function if_openvpn_interfaces()
                     $oic['type'] = 'none';
                     $oic['virtual'] = true;
                     $oic['networks'] = array();
+
+                    if (!empty($settings['tunnel_network'])) {
+                        list($ip, $mask) = explode('/', $settings['tunnel_network']);
+                        $oic['subnet'] = $mask;
+                        $mask = __gen_subnet_mask($mask);
+                        list($ip1, $ip2) = __get_interface_ip($ip, $mask);
+                        $oic['ipaddr'] = $ip1;
+                    }
                     $interfaces['openvpn'] = $oic;
                     break 2;
                 }
@@ -104,3 +112,37 @@ function if_openvpn_xmlrpc_sync()
 
     return $result;
 }
+
+function __gen_subnet_mask($bits)
+{
+    return long2ip(__gen_subnet_mask_long($bits));
+}
+
+function __gen_subnet_mask_long($bits)
+{
+    $sm = 0;
+    for ($i = 0; $i < $bits; $i++) {
+        $sm >>= 1;
+        $sm |= 0x80000000;
+    }
+    return $sm;
+}
+
+function __get_interface_ip($ip, $mask)
+{
+    $baselong = __ip2long32($ip) & ip2long($mask);
+    $ip1 = __long2ip32($baselong + 1);
+    $ip2 = __long2ip32($baselong + 2);
+    return array($ip1, $ip2);
+}
+
+function __ip2long32($ip)
+{
+    return ( ip2long($ip) & 0xFFFFFFFF );
+}
+
+function __long2ip32($ip)
+{
+    return long2ip($ip & 0xFFFFFFFF);
+}
+
