@@ -1,9 +1,16 @@
 body {
-  padding-top: 40px;
   padding-bottom: 40px;
-  background-color: #eee;
 }
-
+.navbar {
+  border-radius: 0;
+  border: 0;
+}
+.navbar-default {
+  background: #3C3C3B;
+}
+.navbar-brand {
+  padding: 10px;
+}
 .form-signin {
   max-width: 330px;
   padding: 15px;
@@ -37,4 +44,12 @@ body {
   margin-bottom: 10px;
   border-top-left-radius: 0;
   border-top-right-radius: 0;
+}
+.btn-primary {
+  background-color: #22BAA0;
+  border-color: #1AB498;
+}
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active, .btn-primary.active {
+  background-color: #1AB498;
+  border-color: #1AB498;
 }
