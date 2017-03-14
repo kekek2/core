@@ -714,30 +714,44 @@ function system_webgui_configure()
             if (!is_array($config['ca'])) {
                 $config['ca'] = array();
             }
-            $a_ca =& $config['ca'];
-            if (!is_array($config['cert'])) {
-                $config['cert'] = array();
-            }
-            $a_cert =& $config['cert'];
             log_error("Creating SSL Certificate for this host");
-            $cert = array();
-            $cert['refid'] = uniqid();
-            $cert['descr'] = 'webConfigurator default';
-            mwexec(
-                /* XXX ought to be replaced by PHP calls */
-                '/usr/local/bin/openssl req -new ' .
-                '-newkey rsa:4096 -sha256 -days 365 -nodes -x509 ' .
-                '-subj "/C=RU/ST=-/L=-/O=TING" ' .
-                '-keyout /tmp/ssl.key -out /tmp/ssl.crt'
-            );
-            $crt = file_get_contents('/tmp/ssl.crt');
-            $key = file_get_contents('/tmp/ssl.key');
-            unlink('/tmp/ssl.key');
-            unlink('/tmp/ssl.crt');
-            cert_import($cert, $crt, $key);
-            $a_cert[] = $cert;
-            $config['system']['webgui']['ssl-certref'] = $cert['refid'];
-            write_config('Importing HTTPS certificate');
+
+            $ca_name = "TING CA";
+            $ca = "";
+            $caref = "";
+            foreach ($config["ca"] as $conf_ca)
+            {
+                if ($conf_ca["descr"] == $ca_name)
+                {
+                    $ca = $conf_ca["crt"];
+                    $caref = $conf_ca["refid"];
+                    break;
+                }
+            }
+
+            if (!$ca)
+            {
+                log_error('Not found certificate ' . $ca_name);
+            }
+            else
+            {
+                $cert = ['refid' => uniqid(), 'descr' => 'webConfigurator default'];
+                if (!cert_create($cert, $caref, 2048, 365, ["organizationName" => "TING CA", "countryName" => "RU", "commonName" => $config["system"]["hostname"] . "." . $config["system"]["domain"], "stateOrProvinceName" => "-", "localityName" => "-"], 'sha256', "server_cert"))
+                {
+                    $input_errors = "";
+                    while ($ssl_err = openssl_error_string())
+                        $input_errors .= "openssl library returns:" . " " . $ssl_err;
+                    log_error($input_errors);
+                }
+                else
+                {
+                    $crt = base64_decode($cert['crt']);
+                    $key = base64_decode($cert['prv']);
+                    $config["cert"][] = $cert;
+                    $config['system']['webgui']['ssl-certref'] = $cert['refid'];
+                    write_config('Importing HTTPS certificate');
+                }
+            }
         } else {
             $crt = base64_decode($cert['crt']);
             $key = base64_decode($cert['prv']);
