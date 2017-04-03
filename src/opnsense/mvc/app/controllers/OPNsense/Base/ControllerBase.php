@@ -46,31 +46,13 @@ class ControllerBase extends ControllerRoot
      */
     public function getTranslator($cnf)
     {
-        $lang = 'en_US';
-
-        foreach ($cnf->object()->system->children() as $key => $node) {
-            if ($key == 'language') {
-                $lang = $node->__toString();
-                break;
-            }
-        }
-
-        $lang_encoding = $lang . '.UTF-8';
-        $textdomain = 'OPNsense';
-
         $ret = new ViewTranslator(array(
             'directory' => '/usr/local/share/locale',
             'defaultDomain' => 'OPNsense',
-            'locale' => $lang_encoding,
+            'locale' => "en_US.UTF-8",
         ));
 
-        /* this isn't being done by Phalcon */
-        putenv('LANG=' . $lang_encoding);
-        setlocale(LC_ALL, $lang_encoding);
-        textdomain($textdomain);
-        bindtextdomain($textdomain, '/usr/local/share/locale');
-        bind_textdomain_codeset($textdomain, $lang_encoding);
-
+        $this->setLocale();
         return $ret;
     }
 
