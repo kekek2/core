@@ -91,7 +91,19 @@ class Backend
         }
 
         $resp = "";
-        $stream = @stream_socket_client('unix://'.$this->configdSocket, $errorNumber, $errorMessage, $poll_timeout);
+        while (true) {
+            try {
+                $stream = @stream_socket_client('unix://' . $this->configdSocket, $errorNumber, $errorMessage, $poll_timeout);
+                break;
+            } catch (\Exception $ex) {
+                sleep(1);
+                $timeout_wait -= 1;
+                if ($timeout_wait <= 0) {
+                    $this->getLogger()->error("failed waiting for configd (doesn't seem to be running)");
+                    return null;
+                }
+            }
+        }
         if ($stream === false) {
             $this->getLogger()->error("Failed to connect to configd socket: $errorMessage while executing " . $event);
             return null;
