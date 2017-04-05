@@ -51,7 +51,7 @@ class ControllerRoot extends Controller
     /**
      * Set locale for gettext
      */
-    public function setLocale()
+    public static function setLocale()
     {
         $lang = 'en_US';
 

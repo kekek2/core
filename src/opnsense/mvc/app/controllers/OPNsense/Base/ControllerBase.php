@@ -52,7 +52,7 @@ class ControllerBase extends ControllerRoot
             'locale' => "en_US.UTF-8",
         ));
 
-        $this->setLocale();
+        self::setLocale();
         return $ret;
     }
 
