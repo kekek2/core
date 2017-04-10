@@ -92,7 +92,7 @@ if($need_alert_display == true) {
       <div class="collapse navbar-collapse">
         <ul class="nav navbar-nav navbar-right">
           <li id="menu_messages"><?= get_menu_messages() ?></li>
-          <li><a href="/index.php?logout"><span class="fa fa-sign-out fa-fw"></span>Logout</a></li>
+          <li><a href="/index.php?logout"><span class="fa fa-sign-out fa-fw"></span><?=gettext("Logout");?></a></li>
         </ul>
       </div>
     </div>
