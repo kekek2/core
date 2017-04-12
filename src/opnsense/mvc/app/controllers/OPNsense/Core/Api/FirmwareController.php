@@ -660,6 +660,8 @@ class FirmwareController extends ApiControllerBase
         foreach ($this->request->getUploadedFiles() as $file)
         {
             $fileName = $file->getName();
+            if ($fileName == "")
+                return ["status" => "failure"];
             $file->moveTo("/tmp/" . $fileName);
             $backend = new Backend();
             $ret = trim($backend->configdpRun("firmware repository", array("/tmp/" . $fileName), false));
