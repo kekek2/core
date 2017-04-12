@@ -250,8 +250,8 @@
         </div>
         <div class="collapse navbar-collapse">
           <ul class="nav navbar-nav navbar-right">
-            <li id="menu_messages"></li>
-            <li><a href="/index.php?logout"><span class="fa fa-sign-out fa-fw"></span>Logout</a></li>
+            <li id="menu_messages"><a href="#">{{session_username}}@{{system_hostname}}.{{system_domain}}</a></li>
+            <li><a href="/index.php?logout"><span class="fa fa-sign-out fa-fw"></span>{{ lang._('Logout') }}</a></li>
           </ul>
         </div>
       </div>
