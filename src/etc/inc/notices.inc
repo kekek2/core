@@ -52,15 +52,9 @@ function file_notice($id, $notice, $category = "General", $url = "", $priority =
 	 */
 
 	if (is_array($notice))
-    {
-        $notice_l = $notice[0];
-        $notice_q = isset($notice[1]) ? $notice[1] : $notice[0];
-    }
-    else
-    {
-        $notice_l = $notice;
         $notice_q = $notice;
-    }
+    else
+        $notice_q = [$notice, $notice];
 
 	global $notices_file;
 	if(!$queue = get_notices()) $queue = array();
@@ -80,9 +74,9 @@ function file_notice($id, $notice, $category = "General", $url = "", $priority =
 	}
 	fwrite($queueout, serialize($queue));
 	fclose($queueout);
-	log_error("New alert found: $notice_l");
-	notify_via_growl($notice_l);
-	notify_via_smtp($notice_l);
+	log_error("New alert found: $notice_q[0]");
+	notify_via_growl($notice_q[0]);
+	notify_via_smtp($notice_q[0]);
 	return $queuekey;
 }
 
@@ -190,9 +184,9 @@ function print_notices($notices, $category = "all")
 			if(strtolower($notice['category']) == strtolower($category)) {
 				if($notice['id'] != "") {
 					if($notice['url'] != "") {
-						$toreturn .= "<li><a href={$notice['url']}>{$notice['id']}</a> - {$notice['notice']}</li>";
+						$toreturn .= "<li><a href={$notice['url']}>{$notice['id']}</a> - {$notice['notice'][1]}</li>";
 					} else {
-						$toreturn .= "<li>{$notice['id']} - {$notice['notice']}</li>";
+						$toreturn .= "<li>{$notice['id']} - {$notice['notice'][1]}</li>";
 					}
 				}
 			}

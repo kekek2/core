@@ -19,7 +19,7 @@ class NoticeController extends ApiControllerBase
 
         $result = [];
         foreach ($notices as $key => $value)
-            $result[] = ["key" => $key, "txt" => preg_replace("/(\"|\'|\n|<.?\w+>)/i", "", ($value['notice'] != "" ? $value['notice'] : $value['id']))];
+            $result[] = ["key" => $key, "txt" => preg_replace("/(\"|\'|\n|<.?\w+>)/i", "", ($value['notice'][1] != "" ? $value['notice'][1] : $value['id']))];
 
         return $result;
     }

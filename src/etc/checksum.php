@@ -42,8 +42,8 @@ if ($config_error)
     if (Config::check_sha1($filename, file_get_contents($filename)) && are_notices_pending())
     {
         $notices = get_notices("config");
-        if (is_array($notices) && isset(end($notices)["notice"]))
-            echo end($notices)["notice"] . "\n";
+        if (is_array($notices) && isset(end($notices)["notice"][0]))
+            echo end($notices)["notice"][0] . "\n";
         else
         {
             echo "No valid config.xml found\n";
