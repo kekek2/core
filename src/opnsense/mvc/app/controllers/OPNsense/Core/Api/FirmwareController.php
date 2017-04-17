@@ -390,6 +390,8 @@ class FirmwareController extends ApiControllerBase
     {
         // todo: we might want to move these into configuration files later
         $mirrors = array();
+        $mirrors[''] = '(default)';
+        $mirrors['https://update0.smart-soft.ru/'] = 'Smart-Soft';
 
         $has_subscription = array();
 
