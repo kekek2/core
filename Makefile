@@ -145,8 +145,6 @@ CORE_DEPENDS?=		apinger \
 			zip \
 			ting-update \
 			ting-lang \
-			msktutil \
-			cyrus-sasl-gssapi \
 			ting-ioncube
 
 WRKDIR?=${.CURDIR}/work
