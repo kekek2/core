@@ -250,7 +250,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 	filter_configure();
 
-      if ($language_change)
+      if ($language_change && isset($config['SmartSoft']['HAVP']))
       {
           configd_run('template reload SmartSoft.HAVP');
           configd_run('havp restart');
