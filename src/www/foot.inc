@@ -41,7 +41,7 @@
               </table>
           </div>
           <div class="modal-footer">
-              <button type="button" class="btn btn-default" data-dismiss="modal"><?=gettext("Close");?></button>
+              <button type="button" onClick="return updatePref();" class="btn btn-default" data-dismiss="modal"><?=gettext("Save");?></button>
           </div>
         </div><!-- /modal-content -->
       </div><!-- /modal-dialog -->
