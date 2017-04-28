@@ -166,17 +166,25 @@ if ($installed_crt_info) {
                     <td><?php echo strftime("%Y-%m-%d", $module_info['validTo_time_t']); ?></td>
                     <td>
                         <?php
-                        if (isset($module_info['subject']['UNDEF'][2]))
-                            echo $module_info['subject']['UNDEF'][2];
-                        else
-                            echo "MODULE";
-                        if (!isset($module_info['subject']['UNDEF'][0]))
-                            echo " - " . gettext("Can not validate certificate");
-                        else
-                            if ($module_info['subject']['UNDEF'][0] != getCurrentMacAddress())
-                                echo " - " . gettext("License is not valid for this device");
 
-                        ?></td>
+                        if (isset($module_info['subject']['UNDEF'])) {
+                            if (isset($module_info['subject']['UNDEF'][2]))
+                                echo $module_info['subject']['UNDEF'][2];
+
+                            if (!isset($module_info['subject']['UNDEF'][0]))
+                                echo " " . gettext("Can not validate certificate");
+                            elseif ($module_info['subject']['UNDEF'][0] != getCurrentMacAddress())
+                                echo " " . gettext("License is not valid for this device");
+
+                        } elseif (isset($module_info['subject']['tingModule'])) {
+                            echo $module_info['subject']['tingModule'];
+
+                            if ($module_info['subject']['tingAddress'] != getCurrentMacAddress())
+                                echo " " . gettext("License is not valid for this device");
+                        }
+
+                        ?>
+                    </td>
                   </tr>
                 <?php } ?>
               <?php } ?>
