@@ -177,6 +177,7 @@ include("fbegin.inc");?>
       $('#'+selectedDiv).hide();
       $('#'+selectedDiv+'-config').val('close');
       showSave();
+      updatePref();
   }
 
   function showSave() {
