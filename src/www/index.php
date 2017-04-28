@@ -176,7 +176,7 @@ include("fbegin.inc");?>
   function closeWidget(selectedDiv) {
       $('#'+selectedDiv).hide();
       $('#'+selectedDiv+'-config').val('close');
-      showSave();
+      // showSave();
       updatePref();
   }
 
