@@ -21,6 +21,9 @@ ls /usr/local/etc/rc.d/* /etc/rc.d/* | while read rc_filename; do
 	# start/stop service
 	if [ "$is_enabled" == "YES" ]; then
 		if [ "$1" == "start" ]; then
+			# do nothing if service already running
+			$rc_filename status > /dev/null && continue
+
 			pre_run_var="`basename $rc_filename`_opnsense_bootup_run | /usr/bin/sed 's/-/_/g'"
 			eval "pre_run=\$"$pre_run_var""
 			if [ ! -z "$pre_run" ]; then
