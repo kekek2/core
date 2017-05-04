@@ -175,35 +175,6 @@ POSSIBILITY OF SUCH DAMAGE.
         $('.nav-tabs a').on('shown.bs.tab', function (e) {
             history.pushState(null, null, e.target.hash);
         });
-
-
-        $("#ShowKeytab").click(function() {
-            ajaxCall(url="/api/proxy/service/showkeytab", sendData={}, callback=function(data,status) {
-                $("#kerberos_output").html(data['response']);
-            });
-        });
-
-        $("#DeleteKeytab").click(function() {
-            ajaxCall(url="/api/proxy/service/deletekeytab", sendData={}, callback=function(data,status) {
-                $("#kerberos_output").html(data['response']);
-            });
-        });
-
-        $("#CreateKeytab").click(function() {
-            ajaxCall(url="/api/proxy/service/createkeytab", sendData={
-                        "admin_login":$("#admin_username").val(),
-                        "admin_password":$("#admin_password").val()}, callback=function(data,status) {
-                $("#kerberos_output").html(data['response']);
-            });
-        });
-
-        $("#TestKerbLogin").click(function() {
-            ajaxCall(url="/api/proxy/service/testkerblogin", sendData={
-                        "login":$("#username").val(),
-                        "password":$("#password").val()}, callback=function(data,status) {
-                $("#kerberos_output").html(data['response']);
-            });
-        });
     });
 
 
