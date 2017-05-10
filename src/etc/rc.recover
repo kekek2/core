@@ -64,7 +64,6 @@ _ypldap:*:160:
 hast:*:845:
 clamav:*:106:                                                                   
 havp:*:1002:
-voucher:*:1003:squid
 nogroup:*:65533:
 nobody:*:65534:
 
