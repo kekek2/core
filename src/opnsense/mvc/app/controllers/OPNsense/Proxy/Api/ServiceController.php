@@ -47,6 +47,7 @@ class ServiceController extends ApiControllerBase
     {
         if ($this->request->isPost()) {
             $backend = new Backend();
+            $backend->configdRun('proxy plugins start');
             $response = $backend->configdRun("proxy start", true);
             return array("response" => $response);
         } else {
@@ -62,6 +63,7 @@ class ServiceController extends ApiControllerBase
     {
         if ($this->request->isPost()) {
             $backend = new Backend();
+            $backend->configdRun('proxy plugins stop');
             $response = $backend->configdRun("proxy stop");
             return array("response" => $response);
         } else {
@@ -77,6 +79,7 @@ class ServiceController extends ApiControllerBase
     {
         if ($this->request->isPost()) {
             $backend = new Backend();
+            $backend->configdRun('proxy plugins restart');
             $response = $backend->configdRun("proxy restart");
             return array("response" => $response);
         } else {
@@ -147,7 +150,7 @@ class ServiceController extends ApiControllerBase
 
             // generate template
             $backend->configdRun('template reload OPNsense/Proxy');
-            $backend->configdRun('proxy plugins_reconfigure');
+            $backend->configdRun('proxy plugins reconfigure');
 
             // (res)start daemon
             if ($mdlProxy->general->enabled->__toString() == 1) {
