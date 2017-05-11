@@ -29,7 +29,7 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-openlog('opnsense', LOG_ODELAY, LOG_USER);
+openlog('ting', LOG_ODELAY, LOG_USER);
 register_shutdown_function('closelog');
 
 global $g; /* XXX make this a getter function for traceability */
