@@ -1168,11 +1168,14 @@ function ip_in_subnet($addr,$subnet)
 {
     if (is_ipaddrv6($addr)) {
         return (Net_IPv6::isInNetmask($addr, $subnet));
-    } else { /* XXX: Maybe check for IPv4 */
+    } elseif (is_ipaddrv4($addr)) {
         list($ip, $mask) = explode('/', $subnet);
-        $mask = (0xffffffff << (32 - $mask)) & 0xffffffff;
-        return ((ip2long($addr) & $mask) == (ip2long($ip) & $mask));
+        if (is_ipaddrv4($ip) && $mask <= 32) {
+            $mask = (0xffffffff << (32 - $mask)) & 0xffffffff;
+            return ((ip2long($addr) & $mask) == (ip2long($ip) & $mask));
+        }
     }
+    return false;
 }
 
 function is_private_ip($iptocheck)
@@ -1361,22 +1364,6 @@ function set_single_sysctl($name, $value)
         return false;
     }
     return true;
-}
-
-function mute_kernel_msgs()
-{
-    global $config;
-
-    if (isset($config['system']['enableserial'])) {
-        return;
-    }
-
-    exec('/sbin/conscontrol mute on');
-}
-
-function unmute_kernel_msgs()
-{
-    exec('/sbin/conscontrol mute off');
 }
 
 /****f* util/msort

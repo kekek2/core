@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         header(url_safe('Location: /system_advanced_sysctl.php'));
         exit;
     } else if (!empty($pconfig['apply'])) {
-        system_setup_sysctl();
+        system_sysctl_configure();
         clear_subsystem_dirty('sysctl');
         header(url_safe('Location: /system_advanced_sysctl.php'));
         exit;
@@ -223,7 +223,7 @@ $( document ).ready(function() {
                     <td>&nbsp;</td>
                     <td>
                       <input name="Submit" type="submit" class="btn btn-primary" value="<?=gettext("Save"); ?>" />
-                      <input type="button" class="btn btn-default" value="<?=gettext("Cancel");?>" onclick="window.location.href='<?=(isset($_SERVER['HTTP_REFERER']) ? html_safe($_SERVER['HTTP_REFERER']) : '/system_advanced_sysctl.php');?>'" />
+                      <input type="button" class="btn btn-default" value="<?=gettext("Cancel");?>" onclick="window.location.href='/system_advanced_sysctl.php'" />
 
 <?php
                       if (isset($id)) :?>

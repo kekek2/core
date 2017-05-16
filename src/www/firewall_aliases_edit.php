@@ -276,7 +276,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 }
 
-$referer = (isset($_SERVER['HTTP_REFERER']) ? html_safe($_SERVER['HTTP_REFERER']) : '/firewall_aliases.php');
 
 legacy_html_escape_form_data($pconfig);
 
@@ -580,7 +579,7 @@ endforeach;
                   <td>&nbsp;</td>
                   <td>
                     <input id="submit" name="submit" type="submit" class="btn btn-primary" value="<?=gettext("Save"); ?>" />
-                    <input type="button" class="btn btn-default" value="<?=gettext("Cancel");?>" onclick="window.location.href='<?=$referer;?>'" />
+                    <input type="button" class="btn btn-default" value="<?=gettext("Cancel");?>" onclick="window.location.href='/firewall_aliases.php'" />
                   </td>
                 </tr>
               </table>

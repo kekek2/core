@@ -79,18 +79,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['crypto_hardware'] = !empty($config['system']['crypto_hardware']) ? $config['system']['crypto_hardware'] : null;
     $pconfig['cryptodev_enable'] = isset($config['system']['cryptodev_enable']);
     $pconfig['thermal_hardware'] = !empty($config['system']['thermal_hardware']) ? $config['system']['thermal_hardware'] : null;
-    $pconfig['use_mfs_tmpvar'] = isset($config['system']['use_mfs_tmpvar']);
-    $pconfig['use_mfs_tmp'] = isset($config['system']['use_mfs_tmp']);
-    $pconfig['powerd_ac_mode'] = "hadp";
+    /* if the old use_mfs_tmpvar is found, set these flags, too */
+    $pconfig['use_mfs_var'] = isset($config['system']['use_mfs_tmpvar']) || isset($config['system']['use_mfs_var']);
+    $pconfig['use_mfs_tmp'] = isset($config['system']['use_mfs_tmpvar']) || isset($config['system']['use_mfs_tmp']);
     $pconfig['rrdbackup'] = !empty($config['system']['rrdbackup']) ? $config['system']['rrdbackup'] : null;
     $pconfig['dhcpbackup'] = !empty($config['system']['dhcpbackup']) ? $config['system']['dhcpbackup'] : null;
     $pconfig['netflowbackup'] = !empty($config['system']['netflowbackup']) ? $config['system']['netflowbackup'] : null;
+    $pconfig['powerd_ac_mode'] = "hadp";
     if (!empty($config['system']['powerd_ac_mode'])) {
         $pconfig['powerd_ac_mode'] = $config['system']['powerd_ac_mode'];
     }
     $pconfig['powerd_battery_mode'] = "hadp";
     if (!empty($config['system']['powerd_battery_mode'])) {
         $pconfig['powerd_battery_mode'] = $config['system']['powerd_battery_mode'];
+    }
+    $pconfig['powerd_normal_mode'] = "hadp";
+    if (!empty($config['system']['powerd_normal_mode'])) {
+        $pconfig['powerd_normal_mode'] = $config['system']['powerd_normal_mode'];
     }
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     //
@@ -114,6 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         $config['system']['powerd_ac_mode'] = $pconfig['powerd_ac_mode'];
         $config['system']['powerd_battery_mode'] = $pconfig['powerd_battery_mode'];
+        $config['system']['powerd_normal_mode'] = $pconfig['powerd_normal_mode'];
 
         if ($pconfig['crypto_hardware']) {
             $config['system']['crypto_hardware'] = $pconfig['crypto_hardware'];
@@ -133,9 +139,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             unset($config['system']['thermal_hardware']);
         }
 
-        if (!empty($pconfig['use_mfs_tmpvar'])) {
-            $config['system']['use_mfs_tmpvar'] = true;
-        } elseif (isset($config['system']['use_mfs_tmpvar'])) {
+        if (!empty($pconfig['use_mfs_var'])) {
+            $config['system']['use_mfs_var'] = true;
+        } elseif (isset($config['system']['use_mfs_var'])) {
+            unset($config['system']['use_mfs_var']);
+        }
+
+        /* the config used to have this, but we've split it up in 17.1 */
+        if (isset($config['system']['use_mfs_tmpvar'])) {
             unset($config['system']['use_mfs_tmpvar']);
         }
 
@@ -169,8 +180,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         system_resolvconf_generate(true);
         system_cron_configure();
         activate_powerd();
-        load_crypto_module();
-        load_thermal_module();
+        system_kernel_configure();
     }
 }
 
@@ -407,17 +417,39 @@ include("head.inc");
                 </td>
               </tr>
               <tr>
+                <td><a id="help_for_powerd_normal_mode" href="#" class="showhelp"><i class="fa fa-info-circle text-circle"></i></a>  <?=gettext('On Normal Power Mode'); ?></td>
+                <td>
+                  <select name="powerd_normal_mode" class="selectpicker" data-style="btn-default" data-width="auto">
+                    <option value="hadp"<?=$pconfig['powerd_normal_mode']=="hadp" ? "selected=\"selected\"" : "";?>>
+                      <?=gettext("Hiadaptive");?>
+                    </option>
+                    <option value="adp" <?=$pconfig['powerd_normal_mode']=="adp" ? "selected=\"selected\"" : "";?>>
+                      <?=gettext("Adaptive");?>
+                    </option>
+                    <option value="min" <?=$pconfig['powerd_normal_mode']=="min" ? "selected=\"selected\"" :"";?>>
+                      <?=gettext("Minimum");?>
+                    </option>
+                    <option value="max" <?=$pconfig['powerd_normal_mode']=="max" ? "selected=\"selected\"" : "";?>>
+                      <?=gettext("Maximum");?>
+                    </option>
+                  </select>
+                  <div class="hidden" for="help_for_powerd_normal_mode">
+                    <?=gettext("If the powerd utility can not determine the power state it uses \"normal\" for control."); ?>
+                  </div>
+                </td>
+              </tr>
+              <tr>
                 <th colspan="2" valign="top" class="listtopic"><?=gettext("RAM Disk Settings (Reboot to Apply Changes)"); ?></th>
               </tr>
               <tr>
-                <td><a id="help_for_use_mfs_tmpvar" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('/tmp and /var RAM disks'); ?></td>
+                <td><a id="help_for_use_mfs_var" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('/var RAM disk'); ?></td>
                 <td>
-                  <input name="use_mfs_tmpvar" type="checkbox" id="use_mfs_tmpvar" value="yes" <?=!empty($pconfig['use_mfs_tmpvar']) ? 'checked="checked"' : '';?>/>
-                  <?=gettext("Use memory file system for /tmp and /var"); ?>
-                  <div class="hidden" for="help_for_use_mfs_tmpvar">
+                  <input name="use_mfs_var" type="checkbox" id="use_mfs_var" value="yes" <?=!empty($pconfig['use_mfs_var']) ? 'checked="checked"' : '';?>/>
+                  <?=gettext("Use memory file system for /var"); ?>
+                  <div class="hidden" for="help_for_use_mfs_var">
                     <small class="formhelp">
-                    <?=gettext("Set this if you wish to use /tmp and /var as RAM disks (memory file system disks) " .
-                      "rather than use the hard disk. Setting this will cause the data /var to be lost on reboot, including log data."); ?>
+                    <?=gettext("Set this if you wish to use /var as a RAM disk (memory file system disks) " .
+                      "rather than using the hard disk. Setting this will cause the data /var to be lost on reboot, including log data."); ?>
                     </small>
                   </div>
                 </td>

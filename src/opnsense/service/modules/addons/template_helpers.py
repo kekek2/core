@@ -28,7 +28,7 @@
     package : configd
 """
 
-from operator import itemgetter
+import netaddr
 
 
 # noinspection PyPep8Naming
@@ -67,7 +67,7 @@ class Helpers(object):
         else:
             return False
 
-    def toList(self, tag, sortBy=None):
+    def toList(self, tag, sortBy=None, sortAs=None):
         """ if an item should be a list of items (repeating tag), use this method to make sure that we always return
             a list. The configuration doesn't know if a non repeating item is supposed to be a list of items, this makes
             it explicit.
@@ -84,7 +84,10 @@ class Helpers(object):
             return result
         else:
             # resort list by tag
-            return sorted(result, key=itemgetter(sortBy))
+            if sortAs is 'int':
+                return sorted(result, key=lambda d: int(d[sortBy]))
+            else:
+                return sorted(result, key=lambda d: d[sortBy])
 
     def getUUIDtag(self, uuid):
         """ retrieve tag name of registered uuid, returns __not_found__ if none available
@@ -105,3 +108,11 @@ class Helpers(object):
             return self._template_in_data['__uuid__'][uuid]
         else:
             return {}
+
+    @staticmethod
+    def getIPNetwork(network):
+        """ generate network object using netaddr
+            :param network: network
+            :return: IPNetwork
+        """
+        return netaddr.IPNetwork(network)

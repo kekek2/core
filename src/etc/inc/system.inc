@@ -175,11 +175,6 @@ function system_resolvconf_generate($dynupdate = false)
         }
     }
 
-    // Add EDNS support
-    if (isset($config['unbound']['enable']) && isset($config['unbound']['edns'])) {
-        $resolvconf .= "options edns0\n";
-    }
-
     $dnslock = lock('resolvconf', LOCK_EX);
 
     file_put_contents('/etc/resolv.conf', $resolvconf);
@@ -344,9 +339,14 @@ function get_nameservers()
     return $master_list;
 }
 
-function system_hosts_generate()
+function system_hosts_generate($verbose = false)
 {
     global $config;
+
+    if ($verbose) {
+        echo 'Generating /etc/hosts...';
+        flush();
+    }
 
     $syscfg = $config['system'];
 
@@ -374,21 +374,34 @@ function system_hosts_generate()
 
     dnsmasq_hosts_generate();
     unbound_hosts_generate();
+
+    if ($verbose) {
+        echo "done.\n";
+    }
 }
 
-function system_hostname_configure()
+function system_hostname_configure($verbose = false)
 {
     global $config;
 
+    if ($verbose) {
+        echo 'Setting hostname: ';
+        flush();
+    }
+
     $syscfg = $config['system'];
 
+    $hostname = "{$syscfg['hostname']}.{$syscfg['domain']}";
+
     /* set hostname */
-    $status = mwexecf('/bin/hostname %s', "{$syscfg['hostname']}.{$syscfg['domain']}");
+    mwexecf('/bin/hostname %s', $hostname);
 
     /* Setup host GUID ID.  This is used by ZFS. */
     mwexec("/etc/rc.d/hostid start");
 
-    return $status;
+    if ($verbose) {
+        echo "{$hostname}\n";
+    }
 }
 
 function system_routing_configure($interface = '')
@@ -664,6 +677,7 @@ function system_syslogd_start($verbose = false)
     try{
         // to ensure that Syslog model is initialized and configured
         $syslog = new OPNsense\Syslog\Syslog;
+
     }
     catch(Exception $e){}
 
@@ -1083,9 +1097,14 @@ EOD;
     return 0;
 }
 
-function system_firmware_configure()
+function system_firmware_configure($verbose = false)
 {
     global $config;
+
+    if ($verbose) {
+        echo 'Writing firmware setting...';
+        flush();
+    }
 
     /* rewrite the config via the defaults */
     $origin_conf = '/usr/local/etc/pkg/repos/origin.conf';
@@ -1115,6 +1134,10 @@ function system_firmware_configure()
             '/usr/local/sbin/opnsense-update %s %s',
             array('-sn', str_replace('/', '\/', $osabi . $config['system']['firmware']['flavour']))
         );
+    }
+
+    if ($verbose) {
+        echo "done.\n";
     }
 }
 
@@ -1169,10 +1192,19 @@ function system_reboot($sync = false)
     }
 }
 
-function system_setup_sysctl()
+function system_sysctl_configure($verbose = false)
 {
+    if ($verbose) {
+        echo 'Setting up extended sysctls...';
+        flush();
+    }
+
     activate_sysctls();
     system_arp_wrong_if();
+
+    if ($verbose) {
+        echo "done.\n";
+    }
 }
 
 function system_arp_wrong_if()
@@ -1230,28 +1262,77 @@ function get_possible_listen_ips($include_ipv6_link_local = false, $include_loop
     return $listenips;
 }
 
-function load_crypto_module()
+function system_kernel_configure($verbose = false)
 {
     global $config;
+
+    if ($verbose) {
+        echo 'Configuring kernel modules...';
+        flush();
+    }
+
+    /*
+     * Vital kernel modules can go missing on reboot due to
+     * /boot/loader.conf not materialising.  This is still
+     * an UFS problem, despite claims otherwise.  In any case,
+     * load all the modules again to make sure.
+     *
+     * Keep in sync with /usr/local/etc/erc.loader.d/20-modules
+     */
+    $mods = array(
+        'carp',
+        'if_bridge',
+        'if_gif',
+        'if_gre',
+        'if_lagg',
+        'if_tap',
+        'if_tun',
+        'if_vlan',
+        'pf',
+        'pflog',
+        'pfsync',
+    );
 
     if (!empty($config['system']['crypto_hardware'])) {
         log_error(sprintf('Loading %s cryptographic accelerator module.', $config['system']['crypto_hardware']));
-        mwexecf('/sbin/kldload %s', $config['system']['crypto_hardware'], true);
+        $mods[] = $config['system']['crypto_hardware'];
     }
-
     if (isset($config['system']['cryptodev_enable'])) {
         log_error('Loading cryptodev kernel module.');
-        mwexecf('/sbin/kldload %s', 'cryptodev', true);
+        $mods[] = 'cryptodev';
     }
-}
-
-function load_thermal_module()
-{
-    global $config;
 
     if (!empty($config['system']['thermal_hardware'])) {
         log_error(sprintf('Loading %s thermal monitor module.', $config['system']['thermal_hardware']));
-        mwexecf('/sbin/kldload %s', $config['system']['thermal_hardware'], true);
+        $mods[] = $config['system']['thermal_hardware'];
+    }
+
+    foreach ($mods as $mod) {
+        mwexecf('/sbin/kldload %s', $mod, true);
+    }
+
+    /* we now have /dev/pf, time to fix permissions for proxies */
+    chgrp('/dev/pf', 'proxy');
+    chmod('/dev/pf', 0660);
+
+    if ($verbose) {
+        echo "done.\n";
+    }
+}
+
+function system_devd_configure($verbose = false)
+{
+    if ($verbose) {
+        echo 'Starting device manager...';
+        flush();
+    }
+
+    exec('/sbin/devd');
+    /* historic sleep */
+    sleep(1);
+
+    if ($verbose) {
+        echo "done.\n";
     }
 }
 
@@ -1356,32 +1437,55 @@ function system_cron_configure($verbose = false)
     }
 }
 
+function system_console_mutable()
+{
+    /* this function name is a pun :) */
+
+    global $config;
+
+    return isset($config['system']['primaryconsole']) &&
+        ($config['system']['primaryconsole'] == 'serial' ||
+        $config['system']['primaryconsole'] == 'null');
+}
+
+function system_console_mute()
+{
+    if (system_console_mutable()) {
+        exec('/sbin/conscontrol mute on');
+    }
+}
+
+function system_console_unmute()
+{
+    if (system_console_mutable()) {
+        exec('/sbin/conscontrol mute off');
+    }
+}
+
 function system_console_types()
 {
     return array(
-        'serial' => array('value' => 'comconsole', 'name' => gettext('Serial Console')),
+        /* sorted by usage */
         'video' => array('value' => 'vidconsole', 'name' => gettext('VGA Console')),
+        'serial' => array('value' => 'comconsole', 'name' => gettext('Serial Console')),
         'efi' => array('value' => 'efi', 'name' => gettext('EFI Console')),
+        'null' => array('value' => 'nullconsole', 'name' => gettext('Mute Console')),
     );
 }
 
-function system_login_configure()
+function system_login_configure($verbose = false)
 {
     global $config;
+
+    if ($verbose) {
+        echo 'Configuring login behaviour...';
+        flush();
+    }
 
     configd_run('template reload OPNsense/Auth');
 
     $serialspeed = (!empty($config['system']['serialspeed']) && is_numeric($config['system']['serialspeed'])) ? $config['system']['serialspeed'] : '115200';
-    $serial_enabled = isset($config['system']['enableserial']);
 
-    // ** serial console - write out /boot.config
-    if ($serial_enabled) {
-        @file_put_contents('/boot.config', "-S{$serialspeed} -D\n");
-    } else {
-        @unlink('/boot.config');
-    }
-
-    // ** console settings in /boot/loader.conf
     $new_boot_config = array();
     $new_boot_config['comconsole_speed'] = null;
     $new_boot_config['boot_multicons'] = null;
@@ -1399,13 +1503,26 @@ function system_login_configure()
 
     $console_selection = array_unique($console_selection);
 
-    if ($serial_enabled) {
+    $output_enabled = count($console_selection) != 1 || !in_array('nullconsole', $console_selection);
+    $virtual_enabled = !count($console_selection) || in_array('vidconsole', $console_selection) ||
+        in_array('efi', $console_selection);
+    $serial_enabled = in_array('comconsole', $console_selection);
+
+    if (count($console_selection)) {
         $new_boot_config['console'] = '"' . implode(',', $console_selection) . '"';
-        $new_boot_config['comconsole_speed'] = '"'.$serialspeed.'"';
-        $new_boot_config['boot_serial'] = '"YES"';
         if (count($console_selection) >= 2) {
             $new_boot_config['boot_multicons'] = '"YES"';
         }
+    }
+
+    if ($serial_enabled) {
+        @file_put_contents('/boot.config', "-S{$serialspeed} -D\n");
+        $new_boot_config['comconsole_speed'] = '"'.$serialspeed.'"';
+        $new_boot_config['boot_serial'] = '"YES"';
+    } elseif (!$output_enabled) {
+        @file_put_contents('/boot.config', "-q -m\n");
+    } else {
+        @unlink('/boot.config');
     }
 
     /* reload static values from rc.loader.d */
@@ -1427,10 +1544,11 @@ function system_login_configure()
     /* write merged file back to target location */
     @file_put_contents('/boot/loader.conf', $new_loader_conf);
 
-    // ** setup /etc/ttys
+    /* setup /etc/ttys */
     $etc_ttys_lines = explode("\n", file_get_contents('/etc/ttys'));
     $fd = fopen('/etc/ttys', 'w');
-    $on_off_secure = $serial_enabled ? 'onifconsole secure' : 'off secure';
+    $on_off_secure_u = $serial_enabled ? 'onifconsole secure' : 'off secure';
+    $on_off_secure_v = $virtual_enabled ? 'on  secure' : 'off secure';
     $terminal_type = 'cons25'; /* XXX standard is 'xterm' for virtual, 'vt100' for serial */
     if (isset($config['system']['disableconsolemenu'])) {
         $console_type = 'Pc';
@@ -1440,15 +1558,22 @@ function system_login_configure()
         $serial_type = 'al.' . $serialspeed;
     }
     foreach ($etc_ttys_lines as $tty) {
+        /* first virtual terminal */
         if (strpos($tty, 'ttyv0') === 0) {
-            /* first virtual terminal */
-            fwrite($fd, "ttyv0\t\"/usr/libexec/getty {$console_type}\"\t\t{$terminal_type}\ton  secure\n");
+            fwrite($fd, "ttyv0\t\"/usr/libexec/getty {$console_type}\"\t\t{$terminal_type}\t${on_off_secure_v}\n");
             continue;
         }
+        /* all other virtual terminals */
+        foreach (array('ttyv1', 'ttyv2', 'ttyv3', 'ttyv4', 'ttyv5', 'ttyv6', 'ttyv7') as $virtualport) {
+            if (strpos($tty, $virtualport) === 0) {
+                fwrite($fd, "${virtualport}\t\"/usr/libexec/getty {$console_type}\"\t\txterm\t${on_off_secure_v}\n");
+                continue 2;
+            }
+        }
+        /* each serial terminal */
         foreach (array('ttyu0', 'ttyu1', 'ttyu2', 'ttyu3') as $serialport) {
             if (strpos($tty, $serialport) === 0) {
-                /* each serial terminal */
-                fwrite($fd, "{$serialport}\t\"/usr/libexec/getty {$serial_type}\"\t{$terminal_type}\t{$on_off_secure}\n");
+                fwrite($fd, "{$serialport}\t\"/usr/libexec/getty {$serial_type}\"\t{$terminal_type}\t{$on_off_secure_u}\n");
                 /* skip to next line in outer loop */
                 continue 2;
             }
@@ -1460,6 +1585,10 @@ function system_login_configure()
         }
     }
     fclose($fd);
+
+    if ($verbose) {
+        echo "done.\n";
+    }
 
     /* force init(8) to reload /etc/ttys */
     exec('/bin/kill -HUP 1');

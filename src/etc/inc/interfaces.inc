@@ -184,20 +184,19 @@ function interface_netgraph_needed($interface)
     return false;
 }
 
-function interfaces_loopback_configure()
+function interfaces_loopback_configure($verbose = false)
 {
-    if (file_exists("/var/run/booting")) {
-        echo gettext("Configuring loopback interface...");
+    if ($verbose) {
+        echo 'Configuring loopback interface...';
+        flush();
     }
 
     legacy_interface_setaddress('lo0', '127.0.0.1');
     interfaces_bring_up("lo0");
 
-    if (file_exists("/var/run/booting")) {
-        echo gettext("done.") . "\n";
+    if ($verbose) {
+        echo "done.\n";
     }
-
-    return 0;
 }
 
 function interfaces_vlan_configure($realif = '')
@@ -324,17 +323,16 @@ function interface_qinq_configure(&$vlan, $fd = null)
     legacy_netgraph_attach($qinqif);
 
     if (!empty($vlanif) && does_interface_exist($vlanif)) {
-        fwrite($fd, "shutdown {$qinqif}qinq:\n");
-        exec("/usr/sbin/ngctl msg {$qinqif}qinq: gettable", $result);
+        exec("/usr/sbin/ngctl msg {$vlanif}qinq: gettable", $result);
         if (empty($result)) {
-            fwrite($fd, "mkpeer {$qinqif}: vlan lower downstream\n");
-            fwrite($fd, "name {$qinqif}:lower {$vlanif}qinq\n");
-            fwrite($fd, "connect {$qinqif}: {$vlanif}qinq: upper nomatch\n");
+            fwrite($fd, "mkpeer {$vlanif}: vlan lower downstream\n");
+            fwrite($fd, "name {$vlanif}:lower {$vlanif}qinq\n");
+            fwrite($fd, "connect {$vlanif}: {$vlanif}qinq: upper nomatch\n");
         }
     } else {
-        fwrite($fd, "mkpeer {$qinqif}: vlan lower downstream\n");
-        fwrite($fd, "name {$qinqif}:lower {$vlanif}qinq\n");
-        fwrite($fd, "connect {$qinqif}: {$vlanif}qinq: upper nomatch\n");
+        fwrite($fd, "mkpeer {$vlanif}: vlan lower downstream\n");
+        fwrite($fd, "name {$vlanif}:lower {$vlanif}qinq\n");
+        fwrite($fd, "connect {$vlanif}: {$vlanif}qinq: upper nomatch\n");
     }
 
     if (!stristr($qinqif, "_vlan")) {
@@ -400,7 +398,6 @@ function interface_qinq2_configure(&$qinq, $fd, $macaddr)
         return;
     }
 
-    fwrite($fd, "shutdown {$if}h{$tag}:\n");
     fwrite($fd, "mkpeer {$if}qinq: eiface {$if}{$tag} ether\n");
     fwrite($fd, "name {$if}qinq:{$if}{$tag} {$if}h{$tag}\n");
     fwrite($fd, "msg {$if}qinq: addfilter { vlan={$tag} hook=\"{$if}{$tag}\" }\n");
@@ -1772,7 +1769,6 @@ function interfaces_carp_setup()
 
     if (file_exists("/var/run/booting")) {
         echo gettext("Configuring CARP settings...");
-        mute_kernel_msgs();
     }
     set_single_sysctl("net.inet.carp.preempt", "1");
 
@@ -1794,7 +1790,6 @@ function interfaces_carp_setup()
     }
 
     if (file_exists("/var/run/booting")) {
-        unmute_kernel_msgs();
         echo gettext("done.") . "\n";
     }
 }
