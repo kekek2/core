@@ -129,7 +129,7 @@ POSSIBILITY OF SUCH DAMAGE.
         $.upgrade_action = 'audit';
         $('#updatelist').hide();
         $('#update_status').show();
-        $('#updatetab > a').tab('show');
+        $('#progresstab > a').tab('show');
         $('#updatestatus').html("{{ lang._('Auditing...') }}");
         $("#audit").attr("style","");
         $("#audit_progress").addClass("fa fa-spinner fa-pulse");
