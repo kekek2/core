@@ -60,9 +60,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($code == '200' && preg_match('/^\w{0,32}$/', $body)) {
             $module = $body;
 
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, LICENSE_API_URL . "/{$licenseKey}/comp");
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+            $body = curl_exec($ch);
+            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            $company = ($code == '200' && preg_match('/^\w{0,48}$/', $body)) ? '' : $body;
+            $company = preg_replace('/[^\w\d- ]/', '', $company);
+
             $pkey = openssl_get_privatekey("file://{$installed_key_path}");
 
             $csrData = [
+                'C'  => 'RU',
+                'ST' => ' ',
+                'O'  => $company,
                 'tingAddress' => getCurrentMacAddress(),
                 'tingLicense' => $licenseKey,
                 'tingModule'  => $module,
