@@ -103,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $form_errors[] = gettext('Could not parse CRT.');
                         }
                     } else {
-                        $form_errors[] = gettext('Could not get license certificate.');
+                        $form_errors[] = gettext('Could not get license certificate.') . ' (Ex01)';
                     }
                 } else {
                     $json = json_decode($body, true);
@@ -111,14 +111,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (isset($json['message'])) {
                         $form_errors[] = $json['message'];
                     } else {
-                        $form_errors[] = gettext('Could not get license certificate.');
+                        $form_errors[] = gettext('Could not get license certificate.') . ' (Ex02)';
                     }
                 }
             } else {
                 $form_errors[] = gettext('Could not generate CSR.');
             }
         } else {
-          $form_errors[] = gettext('Could not get license certificate.');
+          $form_errors[] = gettext('Could not get license certificate.') . ' (Ex03)';
         }
     }
 }
