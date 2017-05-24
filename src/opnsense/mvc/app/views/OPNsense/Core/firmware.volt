@@ -110,7 +110,7 @@ POSSIBILITY OF SUCH DAMAGE.
     function upgrade() {
         $('#updatelist').hide();
         $('#update_status').show();
-        $('#updatetab > a').tab('show');
+        $('#progresstab > a').tab('show');
         $('#updatestatus').html("{{ lang._('Upgrading...') }}");
         $("#audit").attr("style","display:none");
         $("#upgrade").attr("style","");
