@@ -27,9 +27,12 @@
 
 set -e
 
+CLIENT_KEY="/usr/local/etc/ssl/ting-client.key"
+CLIENT_CERT="/usr/local/etc/ssl/ting-client.crt"
+ORIGIN="/usr/local/etc/pkg/repos/origin.conf"
 DESTDIR="/usr/local/opnsense/changelog"
 WORKDIR="/tmp/changelog"
-FETCH="fetch -aqT 5"
+FETCH="fetch -aqT 5 --cert=${CLIENT_CERT} --key=${CLIENT_KEY}"
 
 changelog_remove()
 {
@@ -39,10 +42,11 @@ changelog_remove()
 
 changelog_fetch()
 {
-	CORE_ABI=$(cat /usr/local/opnsense/version/opnsense.abi 2> /dev/null)
+	CORE_ABI=$(cat /usr/local/opnsense/version/ting.abi 2> /dev/null)
+
 	SYS_ABI=$(opnsense-verify -a 2> /dev/null)
 
-	URL="https://pkg.opnsense.org"
+	URL=$(sed -n 's/'"^[[:space:]]*url:[[:space:]]*"'\"pkg\+\(.*\)\/\/\${ABI.*/\1/p' ${ORIGIN})
 	URL="${URL}/${SYS_ABI}/${CORE_ABI}"
 	URL="${URL}/sets/changelog.txz"
 
