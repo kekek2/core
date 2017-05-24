@@ -42,12 +42,12 @@ changelog_remove()
 
 changelog_fetch()
 {
-	CORE_ABI=$(cat /usr/local/opnsense/version/ting.abi 2> /dev/null)
+	TING_ABI=$(cat /usr/local/opnsense/version/ting.abi 2> /dev/null)
 
 	SYS_ABI=$(opnsense-verify -a 2> /dev/null)
 
 	URL=$(sed -n 's/'"^[[:space:]]*url:[[:space:]]*"'\"pkg\+\(.*\)\/\/\${ABI.*/\1/p' ${ORIGIN})
-	URL="${URL}/${SYS_ABI}/${CORE_ABI}"
+	URL="${URL}/${SYS_ABI}/${TING_ABI}"
 	URL="${URL}/sets/changelog.txz"
 
 	rm -rf ${WORKDIR}

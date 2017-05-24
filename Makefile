@@ -57,9 +57,9 @@ _FLAVOUR!=	if [ -f ${OPENSSL} ]; then ${OPENSSL} version; fi
 FLAVOUR?=	${_FLAVOUR:[1]}
 
 .if "${FLAVOUR}" == OpenSSL || "${FLAVOUR}" == ""
-CORE_REPOSITORY?=	${CORE_ABI}/latest
+CORE_REPOSITORY?=	${TING_ABI}/latest
 .elif "${FLAVOUR}" == LibreSSL
-CORE_REPOSITORY?=	${CORE_ABI}/libressl
+CORE_REPOSITORY?=	${TING_ABI}/libressl
 .else
 CORE_REPOSITORY?=	${FLAVOUR}
 .endif
@@ -205,6 +205,7 @@ scripts: want-git
 		sed -i '' -e "s/%%CORE_COMMIT%%/${CORE_COMMIT}/g" \
 		    -e "s/%%CORE_NAME%%/${CORE_NAME}/g" \
 		    -e "s/%%CORE_ABI%%/${CORE_ABI}/g" \
+		    -e "s/%%TING_ABI%%/${TING_ABI}/g" \
 		    ${DESTDIR}/${PKG_SCRIPT}; \
 	fi
 .endfor

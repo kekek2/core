@@ -60,6 +60,7 @@ install-${TARGET}: force
 			    -e "s=%%CORE_REPOSITORY%%=${CORE_REPOSITORY}=g" \
 			    -e "s=%%CORE_NAME%%=${CORE_NAME}=g" \
 			    -e "s=%%CORE_ABI%%=${CORE_ABI}=g" \
+			    -e "s=%%TING_ABI%%=${TING_ABI}=g" \
 			    "${DESTDIR}${ROOT_${TARGET}}/${TREE}/$${FILE}"; \
 			mv -v "${DESTDIR}${ROOT_${TARGET}}/${TREE}/$${FILE}" \
 			    "${DESTDIR}${ROOT_${TARGET}}/${TREE}/$${FILE%%.in}"; \
