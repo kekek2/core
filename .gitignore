@@ -7,7 +7,6 @@
 /src/etc/php.ini
 /src/etc/php/**
 /src/etc/pkg.conf
-/src/etc/pkg/**
 /src/etc/ssh/**
 /src/lib/**
 /src/opnsense/changelog
