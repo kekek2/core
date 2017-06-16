@@ -71,7 +71,7 @@ CORE_ORIGIN?=		${CORE_NAME}
 CORE_COMMENT?=		TING ${CORE_FAMILY} package
 CORE_MAINTAINER?=	evbevz@gmail.com
 CORE_WWW?=		http://smart-soft.ru/
-CORE_MESSAGE?=		Thanks for using TING...
+CORE_MESSAGE?=
 # CORE_DEPENDS_armv6 is empty
 CORE_DEPENDS_amd64?=	beep bsdinstaller
 CORE_DEPENDS_i386?=	${CORE_DEPENDS_amd64}
@@ -172,7 +172,6 @@ manifest: want-git
 	@echo "desc: \"${CORE_HASH}\""
 	@echo "maintainer: \"${CORE_MAINTAINER}\""
 	@echo "www: \"${CORE_WWW}\""
-	@echo "message: \"${CORE_MESSAGE}\""
 	@echo "categories: [ \"sysutils\", \"www\" ]"
 	@echo "licenselogic: \"single\""
 	@echo "licenses: [ \"BSD2CLAUSE\" ]"
