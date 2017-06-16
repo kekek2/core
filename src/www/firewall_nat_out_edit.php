@@ -69,7 +69,7 @@ function formTranslateAddresses() {
     // add Aliases
     foreach (legacy_list_aliases("network") as $alias) {
         if ($alias['type'] == "host") {
-            $retval[$alias['name']] = $alias['name'];;
+            $retval[$alias['name']] = $alias['name'];
         }
     }
 
@@ -276,9 +276,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $natent['destination']['address'] = trim($pconfig['destination']) ;
         } else {
             if (is_ipaddrv6($pconfig['destination'])) {
-                $natent['destination']['address'] = gen_subnetv6(trim($pconfig['destination']), $pconfig['destination_subnet']) . "/" . $pconfig['destination_subnet'];;
+                $natent['destination']['address'] = gen_subnetv6(trim($pconfig['destination']), $pconfig['destination_subnet']) . "/" . $pconfig['destination_subnet'];
             } else {
-                $natent['destination']['address'] = gen_subnet(trim($pconfig['destination']), $pconfig['destination_subnet']) . "/" . $pconfig['destination_subnet'];;
+                $natent['destination']['address'] = gen_subnet(trim($pconfig['destination']), $pconfig['destination_subnet']) . "/" . $pconfig['destination_subnet'];
             }
         }
 
@@ -781,7 +781,7 @@ include("head.inc");
                   <td>&nbsp;</td>
                   <td>
                     <input name="Submit" type="submit" class="btn btn-primary" value="<?=gettext("Save"); ?>" />
-                    <input type="button" class="btn btn-default" value="<?=gettext("Cancel");?>" onclick="window.location.href='<?=(isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/firewall_nat_out.php');?>'" />
+                    <input type="button" class="btn btn-default" value="<?=gettext("Cancel");?>" onclick="window.location.href='/firewall_nat_out.php'" />
 <?php
                     if (isset($id)):
 ?>

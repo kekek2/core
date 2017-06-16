@@ -700,7 +700,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 }
                 break;
             case "track6":
-                if (!empty($pconfig['track6-prefix-id--hex']) && !is_numeric("0x" . $pconfig['track6-prefix-id--hex'])) {
+                if (!empty($pconfig['track6-prefix-id--hex']) && !ctype_xdigit($pconfig['track6-prefix-id--hex'])) {
                     $input_errors[] = gettext("You must enter a valid hexadecimal number for the IPv6 prefix ID.");
                 } elseif (!empty($pconfig['track6-interface'])) {
                     $ipv6_delegation_length = calculate_ipv6_delegation_length($pconfig['track6-interface']);
@@ -1126,7 +1126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     $new_config['ipaddrv6'] = "track6";
                     $new_config['track6-interface'] = $pconfig['track6-interface'];
                     $new_config['track6-prefix-id'] = 0;
-                    if (is_numeric("0x" . $pconfig['track6-prefix-id--hex'])) {
+                    if (ctype_xdigit($pconfig['track6-prefix-id--hex'])) {
                         $new_config['track6-prefix-id'] = intval($pconfig['track6-prefix-id--hex'], 16);
                     }
                     break;
@@ -2104,10 +2104,7 @@ include("head.inc");
                             <input name="adv_dhcp_config_file_override_path"   type="text" id="adv_dhcp_config_file_override_path"  value="<?=$pconfig['adv_dhcp_config_file_override_path'];?>" />
                             <div class="hidden" for="help_for_dhcp_config_file_override_path">
                               <small class="formhelp">
-                              <?=gettext("The value in this field is the full absolute path to a DHCP client configuration file.  [/[dirname/[.../]]filename[.ext]] <br /> " .
-                              "Value Substitutions in Config File: {interface}, {hostname}, {mac_addr_asciiCD}, {mac_addr_hexCD} <br />" .
-                              "Where C is U(pper) or L(ower) Case, and D is \" :-.\" Delimiter (space, colon, hyphen, or period) (omitted for none). <br />" .
-                              "Some ISPs may require certain options be or not be sent."); ?>
+                              <?= gettext('The value in this field is the full absolute path to a DHCP client configuration file.') ?>
                               <a target="FreeBSD_DHCP" href="http://www.freebsd.org/cgi/man.cgi?query=dhclient.conf&amp;sektion=5"><?=gettext("FreeBSD manual");?></a>
                               </small>
                             </div>
@@ -2637,8 +2634,7 @@ include("head.inc");
                             <input name="adv_dhcp6_interface_statement_script" type="text" id="adv_dhcp6_interface_statement_script" value="<?=htmlspecialchars($pconfig['adv_dhcp6_interface_statement_script']);?>" />
                             <div class="hidden" for="help_for_dhcp6_intf_stmt">
                               <small class="formhelp">
-                                <?=gettext("The value in this field is the absolute path to a script invoked on certain conditions including when a reply message is received. <br />" .
-                                "[/[dirname/[.../]]filename[.ext]] "); ?>
+                              <?= gettext('The value in this field is the absolute path to a script invoked on certain conditions including when a reply message is received.') ?>
                               </small>
                             </div>
                           </td>
@@ -2724,9 +2720,7 @@ include("head.inc");
                             <input name="adv_dhcp6_config_file_override_path" type="text" id="adv_dhcp6_config_file_override_path"  value="<?=$pconfig['adv_dhcp6_config_file_override_path'];?>" />
                             <div class="hidden" for="help_for_adv_dhcp6_config_file_override_path">
                               <small class="formhelp">
-                              <?=sprintf(gettext('The value in this field is the full absolute path to a DHCP client configuration file.  [/[dirname/[.../]]filename[.ext]] %s' .
-                              'Value Substitutions in Config File: {interface}, {hostname}, {mac_addr_asciiCD}, {mac_addr_hexCD} %sWhere C is U(pper) or L(ower) Case, and D is " :-." Delimiter (space, colon, hyphen, or period) (omitted for none).%s' .
-                              'Some ISPs may require certain options be or not be sent.'),'<br />','<br />','<br />') ?>
+                                  <?= gettext('The value in this field is the full absolute path to a DHCP client configuration file.') ?>
                               </small>
                             </div>
                           </td>
@@ -3409,7 +3403,7 @@ include("head.inc");
                         <td width="22%"></td>
                         <td width="78%">
                           <input id="save" name="Submit" type="submit" class="btn btn-primary" value="<?=gettext("Save"); ?>" />
-                          <input id="cancel" type="button" class="btn btn-default" value="<?=gettext("Cancel");?>" onclick="window.location.href='<?=(isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/interfaces.php');?>'" />
+                          <input id="cancel" type="button" class="btn btn-default" value="<?=gettext("Cancel");?>" onclick="window.location.href='/interfaces.php'" />
                           <input name="if" type="hidden" id="if" value="<?=$if;?>" />
 <?php
                           if ($pconfig['if'] == $a_ppps[$pppid]['if']) : ?>

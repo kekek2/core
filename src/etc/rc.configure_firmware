@@ -36,11 +36,12 @@ if (!file_exists('/conf/config.xml')) {
 }
 
 require_once 'config.inc';
+require_once 'auth.inc';
 require_once 'util.inc';
 require_once 'system.inc';
 
 /* upgrade config before doing anything else */
 convert_config(true);
 
-system_firmware_configure();
-system_login_configure();
+system_firmware_configure(true);
+system_login_configure(true);

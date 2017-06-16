@@ -689,7 +689,7 @@ $( document ).ready(function() {
                       </tbody>
                     </table>
                     <div class="hidden" for="help_for_srcport">
-                      <?=gettext("Specify the source port or port range for this rule"); ?>.
+                      <?=gettext("When using the TCP or UDP protocols, specify the source port or port range for this rule"); ?>.
                       <b><?=gettext("This is usually"); ?>
                         <em><?=gettext("random"); ?></em>
                          <?=gettext("and almost never equal to the destination port range (and should usually be 'any')"); ?>.
@@ -833,7 +833,7 @@ $( document ).ready(function() {
                       </tbody>
                     </table>
                     <div class="hidden" for="help_for_dstport">
-                      <?=gettext("Specify the port or port range for the destination of the packet for this mapping."); ?>
+                      <?=gettext("When using the TCP or UDP protocols, specify the port or port range for the destination of the packet for this mapping."); ?>
                     </div>
                   </td>
                 </tr>
@@ -1022,7 +1022,7 @@ $( document ).ready(function() {
                   <td>&nbsp;</td>
                   <td>
                     <input name="Submit" type="submit" class="btn btn-primary" value="<?=gettext("Save"); ?>" />
-                    <input type="button" class="btn btn-default" value="<?=gettext("Cancel");?>" onclick="window.location.href='<?=isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/firewall_nat.php';?>'" />
+                    <input type="button" class="btn btn-default" value="<?=gettext("Cancel");?>" onclick="window.location.href='/firewall_nat.php'" />
                     <?php if (isset($id)): ?>
                     <input name="id" type="hidden" value="<?=$id;?>" />
                     <?php endif; ?>

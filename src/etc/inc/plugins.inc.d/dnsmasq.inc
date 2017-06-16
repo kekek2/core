@@ -55,6 +55,19 @@ function dnsmasq_services()
     return $services;
 }
 
+function dnsmasq_xmlrpc_sync()
+{
+    $result = array();
+
+    $result[] = array(
+        'description' => gettext('DNS Forwarder'),
+        'section' => 'dnsmasq',
+        'id' => 'dnsforwarder',
+    );
+
+    return $result;
+}
+
 function dnsmasq_configure()
 {
     /* XXX stub that prevents dnsmasq from starting again on bootup */
@@ -85,11 +98,7 @@ function dnsmasq_configure_do($verbose = false)
         flush();
     }
 
-    $args = "";
-
-    if (isset($config['dnsmasq']['regdhcp'])) {
-        $args .= " -H /var/etc/dnsmasq-hosts ";
-    }
+    $args = ' -H /var/etc/dnsmasq-hosts ';
 
     /* Setup listen port, if non-default */
     if (isset($config['dnsmasq']['port']) && is_port($config['dnsmasq']['port'])) {
@@ -268,6 +277,13 @@ function _dnsmasq_add_host_entries()
     } else {
         file_put_contents('/var/etc/dnsmasq-hosts', $lhosts . $dhosts);
     }
+
+    /*
+     * Several reports indicated 600 permissions on this file.
+     * The reason is currently unknown, but setting it to 644
+     * as it should be brings the service back to life.
+     */
+    chmod('/var/etc/dnsmasq-hosts', 0644);
 }
 
 function _dnsmasq_dhcpleases_start()

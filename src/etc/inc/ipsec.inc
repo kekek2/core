@@ -432,7 +432,7 @@ function ipsec_convert_to_modp($index)
     return $convertion;
 }
 
-function ipsec_configure()
+function ipsec_configure($verbose = false)
 {
     global $config, $p2_ealgos, $ipsec_loglevels;
 
@@ -487,8 +487,8 @@ function ipsec_configure()
         @mkdir('/usr/local/etc/ipsec.d/ocspcerts');
         @mkdir('/usr/local/etc/ipsec.d/reqs');
 
-        if (file_exists("/var/run/booting")) {
-            echo gettext("Configuring IPsec VPN...");
+        if ($verbose) {
+            echo 'Configuring IPsec VPN...';
         }
 
         /* fastforwarding is not compatible with ipsec tunnels */
@@ -520,7 +520,7 @@ function ipsec_configure()
 
             if (!is_ipaddr($rg)) {
                 $filterdns_list[] = "{$rg}";
-                if(! file_exists("/var/run/booting")) {
+                if (!file_exists('/var/run/booting')) {
                     $rg = resolve_retry($rg);
                 }
                 if (!is_ipaddr($rg)) {
@@ -943,7 +943,7 @@ EOD;
                     $authentication .= "\n\tleftcert={$certpath}/cert-{$ph1ent['ikeid']}.crt";
                 }
                 if (!empty($ph1ent['caref'])) {
-                    $ca = lookup_ca($ph1ent['caref']);;
+                    $ca = lookup_ca($ph1ent['caref']);
                     if (!empty($ca)) {
                          $rightca = "";
                          foreach (cert_get_subject_array($ca['crt']) as $ca_field) {
@@ -1281,8 +1281,8 @@ EOD;
         killbypid('/var/run/filterdns-ipsec.pid');
     }
 
-    if (file_exists("/var/run/booting")) {
-        echo "done\n";
+    if ($verbose) {
+        echo "done.\n";
     }
 
     return count($filterdns_list);

@@ -120,92 +120,28 @@ function does_interface_exist($interface)
     }
 }
 
-function interface_netgraph_needed($interface)
+function interfaces_loopback_configure($verbose = false)
 {
-    global $config;
-
-    if (isset($config['pptpd']['mode']) && $config['pptpd']['mode'] == 'server') {
-        if ('wan' == $interface) {
-            return true;
-        }
-    }
-
-    if (isset($config['l2tp']['mode']) && $config['l2tp']['mode'] == 'server') {
-        if ($config['l2tp']['interface'] == $interface) {
-            return true;
-        }
-    }
-
-    if (isset($config['pppoes']['pppoe'])) {
-        foreach ($config['pppoes']['pppoe'] as $pppoe) {
-            if ($pppoe['mode'] != 'server') {
-                continue;
-            }
-            if ($pppoe['interface'] == $interface) {
-                return true;
-            }
-        }
-    }
-
-    if (isset($config['interfaces'][$interface]['ipaddr'])) {
-        switch ($config['interfaces'][$interface]['ipaddr']) {
-            case 'ppp':
-            case 'pppoe':
-            case 'l2tp':
-            case 'pptp':
-                return true;
-            default:
-                break;
-        }
-    }
-
-    $realif = get_real_interface($interface);
-
-    if (isset($config['ppps']['ppp'])) {
-        foreach ($config['ppps']['ppp'] as $pppid => $ppp) {
-            $ports = explode(',', $ppp['ports']);
-            foreach ($ports as $pid => $port) {
-                $port = get_real_interface($port);
-                if ($realif == $port) {
-                    return true;
-                }
-                /*
-                 * Find the parent interfaces of the vlans in the MLPPP
-                 * configs there should be only one element in the array
-                 */
-                $parent_if = get_parent_interface($port);
-                if ($realif == $parent_if[0]) {
-                    return true;
-                }
-            }
-        }
-    }
-
-    return false;
-}
-
-function interfaces_loopback_configure()
-{
-    if (file_exists("/var/run/booting")) {
-        echo gettext("Configuring loopback interface...");
+    if ($verbose) {
+        echo 'Configuring loopback interface...';
+        flush();
     }
 
     legacy_interface_setaddress('lo0', '127.0.0.1');
-    interfaces_bring_up("lo0");
+    legacy_interface_flags('lo0', 'up');
 
-    if (file_exists("/var/run/booting")) {
-        echo gettext("done.") . "\n";
+    if ($verbose) {
+        echo "done.\n";
     }
-
-    return 0;
 }
 
-function interfaces_vlan_configure($realif = '')
+function interfaces_vlan_configure($realif = '', $verbose = false)
 {
     global $config;
 
-    if (file_exists("/var/run/booting")) {
-        echo gettext("Configuring VLAN interfaces...");
+    if ($verbose) {
+        echo 'Configuring VLAN interfaces...';
+        flush();
     }
 
     if (isset($config['vlans']['vlan'])) {
@@ -216,14 +152,12 @@ function interfaces_vlan_configure($realif = '')
             if (!empty($realif) && $realif != $vlan['vlanif']) {
                 continue;
             }
-
-            /* XXX: Maybe we should report any errors?! */
             interface_vlan_configure($vlan);
         }
     }
 
-    if (file_exists("/var/run/booting")) {
-        echo gettext("done.") . "\n";
+    if ($verbose) {
+        echo "done.\n";
     }
 }
 
@@ -276,14 +210,12 @@ function interface_vlan_configure(&$vlan)
     } else {
         $tmpvlanif = legacy_interface_create('vlan');
         legacy_interface_rename($tmpvlanif, $vlanif);
-        legacy_netgraph_rename($tmpvlanif, $vlanif);
+        mwexecf('/usr/sbin/ngctl name %s: %s', array($tmpvlanif, $vlanif));
     }
 
     legacy_vlan_tag($vlanif, $if, $vlan['tag']);
 
     interfaces_bring_up($vlanif);
-
-    /* XXX: ermal -- for now leave it here at the moment it does not hurt. */
     interfaces_bring_up($if);
 
     return $vlanif;
@@ -321,7 +253,6 @@ function interface_qinq_configure(&$vlan, $fd = null)
 
     /* make sure the parent is converted to ng_vlan(4) and is up */
     interfaces_bring_up($qinqif);
-    legacy_netgraph_attach($qinqif);
 
     if (!empty($vlanif) && does_interface_exist($vlanif)) {
         exec("/usr/sbin/ngctl msg {$vlanif}qinq: gettable", $result);
@@ -366,19 +297,23 @@ function interface_qinq_configure(&$vlan, $fd = null)
     return $vlanif;
 }
 
-function interfaces_qinq_configure()
+function interfaces_qinq_configure($verbose = false)
 {
     global $config;
-    if (file_exists("/var/run/booting")) {
-        echo gettext("Configuring QinQ interfaces...");
+
+    if ($verbose) {
+        echo 'Configuring QinQ interfaces...';
+        flush();
     }
+
     if (isset($config['qinqs']['qinqentry'])) {
         foreach ($config['qinqs']['qinqentry'] as $qinq) {
             interface_qinq_configure($qinq);
         }
     }
-    if (file_exists("/var/run/booting")) {
-        echo gettext("done.") . "\n";
+
+    if ($verbose) {
+        echo "done.\n";
     }
 }
 
@@ -427,12 +362,13 @@ function interfaces_test_wireless_capability($if, $cap)
     return false;
 }
 
-function interfaces_create_wireless_clones()
+function interfaces_create_wireless_clones($verbose = false)
 {
     global $config;
 
-    if (file_exists("/var/run/booting")) {
-        echo gettext("Creating wireless clone interfaces...");
+    if ($verbose) {
+        echo 'Creating wireless clone interfaces...';
+        flush();
     }
 
     $iflist = get_configured_interface_list();
@@ -452,14 +388,13 @@ function interfaces_create_wireless_clones()
             if (does_interface_exist($clone['cloneif'])) {
                 continue;
             }
-            /* XXX: Maybe we should report any errors?! */
             interface_wireless_clone($clone['cloneif'], $clone);
         }
     }
-    if (file_exists("/var/run/booting")) {
-        echo gettext("done.") . "\n";
-    }
 
+    if ($verbose) {
+        echo "done.\n";
+    }
 }
 
 function interfaces_bridge_configure($checkmember = 0, $realif = '')
@@ -708,12 +643,13 @@ function interface_bridge_add_member($bridgeif, $interface)
     legacy_bridge_member($bridgeif, $interface);
 }
 
-function interfaces_lagg_configure($realif = '')
+function interfaces_lagg_configure($realif = '', $verbose = false)
 {
     global $config;
 
-    if (file_exists('/var/run/booting')) {
-        echo gettext("Configuring LAGG interfaces...");
+    if ($verbose) {
+        echo 'Configuring LAGG interfaces...';
+        flush();
     }
 
     $i = 0;
@@ -731,8 +667,8 @@ function interfaces_lagg_configure($realif = '')
         }
     }
 
-    if (file_exists('/var/run/booting')) {
-        echo gettext("done.") . "\n";
+    if ($verbose) {
+        echo "done.\n";
     }
 }
 
@@ -990,11 +926,7 @@ function interface_gif_configure(&$gif, $gifkey = "")
     $iflist = get_configured_interface_list();
     foreach ($iflist as $ifname) {
         if ($config['interfaces'][$ifname]['if'] == $gifif) {
-            if (get_interface_gateway($ifname)) {
-                system_routing_configure($ifname);
-                break;
-            }
-            if (get_interface_gateway_v6($ifname)) {
+            if (get_interface_gateway($ifname) || get_interface_gateway_v6($ifname)) {
                 system_routing_configure($ifname);
                 break;
             }
@@ -1022,23 +954,15 @@ function interface_gif_configure(&$gif, $gifkey = "")
     return $gifif;
 }
 
-function interfaces_configure()
+function interfaces_configure($verbose = false)
 {
     global $config;
 
-    /* Set up our loopback interface */
-    interfaces_loopback_configure();
-
-    /* create the unconfigured wireless clones */
-    interfaces_create_wireless_clones();
-
-    /* set up LAGG virtual interfaces */
-    interfaces_lagg_configure();
-
-    /* set up VLAN virtual interfaces */
-    interfaces_vlan_configure();
-
-    interfaces_qinq_configure();
+    interfaces_loopback_configure($verbose);
+    interfaces_create_wireless_clones($verbose);
+    interfaces_lagg_configure('', $verbose);
+    interfaces_vlan_configure('', $verbose);
+    interfaces_qinq_configure($verbose);
 
     $iflist = get_configured_interface_with_descr();
     $delayed_list = array();
@@ -1046,10 +970,7 @@ function interfaces_configure()
     $track6_list = array();
 
     /* This is needed to speedup interfaces on bootup. */
-    $reload = false;
-    if (!file_exists("/var/run/booting")) {
-        $reload = true;
-    }
+    $reload = !file_exists('/var/run/booting');
 
     foreach ($iflist as $if => $ifname) {
         $realif = $config['interfaces'][$if]['if'];
@@ -1060,13 +981,7 @@ function interfaces_configure()
         } elseif (!empty($config['interfaces'][$if]['ipaddrv6']) && $config['interfaces'][$if]['ipaddrv6'] == 'track6') {
             $track6_list[$if] = $ifname;
         } else {
-            if (file_exists("/var/run/booting")) {
-                printf(gettext("Configuring %s interface..."), $ifname);
-            }
-            interface_configure($if, $reload);
-            if (file_exists("/var/run/booting")) {
-                echo gettext("done.") . "\n";
-            }
+            interface_configure($if, $reload, false, $verbose);
         }
     }
 
@@ -1076,77 +991,36 @@ function interfaces_configure()
      *  2 - Do load gre/gif/bridge with parent/member as vip
      */
 
-    /* set up GRE virtual interfaces */
     interfaces_gre_configure(1);
-
-    /* set up GIF virtual interfaces */
     interfaces_gif_configure(1);
-
-    /* set up BRIDGe virtual interfaces */
     interfaces_bridge_configure(1);
 
     foreach ($track6_list as $if => $ifname) {
-        if (file_exists("/var/run/booting")) {
-            printf(gettext("Configuring %s interface..."), $ifname);
-        }
-        interface_configure($if, $reload);
-        if (file_exists("/var/run/booting")) {
-            echo gettext("done.") . "\n";
-        }
+        interface_configure($if, $reload, false, $verbose);
     }
 
-    /* bring up vip interfaces */
-    interfaces_vips_configure();
-
-    /* set up GRE virtual interfaces */
+    interfaces_vips_configure('', $verbose);
     interfaces_gre_configure(2);
-
-    /* set up GIF virtual interfaces */
     interfaces_gif_configure(2);
 
     foreach ($delayed_list as $if => $ifname) {
-        if (file_exists("/var/run/booting")) {
-            printf(gettext("Configuring %s interface..."), $ifname);
-        }
-
-        interface_configure($if, $reload);
-
-        if (file_exists("/var/run/booting")) {
-            echo gettext("done.") . "\n";
-        }
+        interface_configure($if, $reload, false, $verbose);
     }
 
-    /* set up BRIDGe virtual interfaces */
     interfaces_bridge_configure(2);
 
     foreach ($bridge_list as $if => $ifname) {
-        if (file_exists("/var/run/booting")) {
-            printf(gettext("Configuring %s interface..."), $ifname);
-        }
-
-        interface_configure($if, $reload);
-
-        if (file_exists("/var/run/booting")) {
-            echo gettext("done.") . "\n";
-        }
+        interface_configure($if, $reload, false, $verbose);
     }
 
-    /* configure interface groups */
     interfaces_group_setup();
 
-    if (!file_exists("/var/run/booting")) {
-        /* reconfigure static routes (kernel may have deleted them) */
-        system_routing_configure();
-
-        /* reload IPsec tunnels */
-        ipsec_configure();
-
-        /* restart dns servers */
-        dnsmasq_configure_do();
-        unbound_configure_do();
-
-        /* reload dhcpd (interface enabled/disabled status may have changed) */
-        services_dhcpd_configure();
+    if ($reload) {
+        system_routing_configure('', $verbose);
+        ipsec_configure($verbose);
+        dnsmasq_configure_do($verbose);
+        unbound_configure_do($verbose);
+        services_dhcpd_configure('all', array(), $verbose);
     }
 
     return 0;
@@ -1432,8 +1306,6 @@ function interface_ppps_configure($interface)
     }
 
     if (file_exists("/var/run/booting")) {
-        $descr = isset($ifcfg['descr']) ? $ifcfg['descr'] : strtoupper($interface);
-        echo "starting {$ifcfg['if']} link...";
         // Do not re-configure the interface if we are booting and it's already been started
         if (isvalidpid("/var/run/{$ppp['type']}_{$interface}.pid")) {
             return 0;
@@ -1461,7 +1333,6 @@ function interface_ppps_configure($interface)
             case "pppoe":
                 /* Bring the parent interface up */
                 interfaces_bring_up($port);
-                legacy_netgraph_attach($port);
                 /* Enable setautosrc to automatically change mac address if parent interface's changes */
                 mwexecf('/usr/sbin/ngctl msg %s: setautosrc 1', array($port));
                 break;
@@ -1484,7 +1355,6 @@ function interface_ppps_configure($interface)
                     log_error(sprintf('Could not get a PPTP/L2TP Remote IP address from %s for %s in interfaces_ppps_configure.', $dhcp_gateway, $gway));
                     return 0;
                 }
-                legacy_netgraph_attach($port);
                 break;
             case "ppp":
                 if (!file_exists("{$port}")) {
@@ -1764,20 +1634,21 @@ EOD;
     return 1;
 }
 
-function interfaces_carp_setup()
+function interfaces_carp_setup($verbose = false)
 {
     global $config;
 
-    if (file_exists("/var/run/booting")) {
-        echo gettext("Configuring CARP settings...");
+    if ($verbose) {
+        echo 'Configuring CARP settings...';
+        flush();
     }
+
     set_single_sysctl("net.inet.carp.preempt", "1");
 
     if (!empty($config['hasync']['pfsyncinterface'])) {
         $carp_sync_int = get_real_interface($config['hasync']['pfsyncinterface']);
     }
 
-    /* setup pfsync interface */
     if (!empty($carp_sync_int) && isset($config['hasync']['pfsyncenabled'])) {
         if (isset($config['hasync']['pfsyncpeerip']) && is_ipaddr($config['hasync']['pfsyncpeerip'])) {
             $syncpeer = "syncpeer " . $config['hasync']['pfsyncpeerip'];
@@ -1790,8 +1661,8 @@ function interfaces_carp_setup()
         mwexec("/sbin/ifconfig pfsync0 -syncdev -syncpeer down", false);
     }
 
-    if (file_exists("/var/run/booting")) {
-        echo gettext("done.") . "\n";
+    if ($verbose) {
+        echo "done.\n";
     }
 }
 
@@ -1854,7 +1725,7 @@ function interface_ipalias_cleanup($interface, $inet = 'inet4')
     }
 }
 
-function interfaces_vips_configure($interface = '')
+function interfaces_vips_configure($interface = '', $verbose = false)
 {
     global $config;
 
@@ -1882,7 +1753,7 @@ function interfaces_vips_configure($interface = '')
             }
         }
         if ($carp_setuped == true) {
-            interfaces_carp_setup();
+            interfaces_carp_setup($verbose);
         }
         if ($anyproxyarp == true) {
             interface_proxyarp_configure();
@@ -2669,7 +2540,7 @@ function interface_vlan_adapt_mtu($vlanifs, $mtu)
     }
 }
 
-function interface_configure($interface = 'wan', $reloadall = false, $linkupevent = false)
+function interface_configure($interface = 'wan', $reloadall = false, $linkupevent = false, $verbose = false)
 {
     global $config;
 
@@ -2677,6 +2548,13 @@ function interface_configure($interface = 'wan', $reloadall = false, $linkupeven
 
     if (!isset($wancfg['enable'])) {
         return;
+    }
+
+    $wandescr = !empty($wancfg['descr']) ? strtoupper($wancfg['descr']) : strtoupper($interface);
+
+    if ($verbose) {
+        echo sprintf('Configuring %s interface...', $wandescr);
+        flush();
     }
 
     $realif = get_real_interface($interface);
@@ -2848,10 +2726,6 @@ function interface_configure($interface = 'wan', $reloadall = false, $linkupeven
         interfaces_bring_up($wancfg['if']);
     }
 
-    if (!interface_netgraph_needed($interface)) {
-        legacy_netgraph_detach($realif);
-    }
-
     if (!file_exists("/var/run/booting")) {
         link_interface_to_vips($interface, "update");
 
@@ -2886,7 +2760,6 @@ function interface_configure($interface = 'wan', $reloadall = false, $linkupeven
         }
 
         if ($reloadall == true) {
-            /* reconfigure static routes (kernel may have deleted them) */
             system_routing_configure($interface);
 
             /* reload ipsec tunnels */
@@ -2905,6 +2778,10 @@ function interface_configure($interface = 'wan', $reloadall = false, $linkupeven
     }
 
     interfaces_staticarp_configure($interface);
+
+    if ($verbose) {
+        echo "done.\n";
+    }
 
     return 0;
 }
@@ -3280,7 +3157,7 @@ function interface_dhcpv6_configure($interface = 'wan', $wancfg)
     } else {
         /* skip address request if this is set */
         if (!isset($wancfg['dhcp6prefixonly'])) {
-            $dhcp6cconf .= "        send ia-na 0;   # request stateful address\n";
+            $dhcp6cconf .= "  send ia-na 0;   # request stateful address\n";
         }
         if (is_numeric($wancfg['dhcp6-ia-pd-len'])) {
             $dhcp6cconf .= "  send ia-pd 0;  # request prefix delegation\n";
@@ -4649,22 +4526,12 @@ function get_interface_mac($interface)
     return $macinfo["macaddr"];
 }
 
-/****f* interfaces/is_jumbo_capable
- * NAME
- *   is_jumbo_capable - Test if interface is jumbo frame capable.  Useful for determining VLAN capability.
- * INPUTS
- *   $int             - string containing interface name
- * RESULT
- *   boolean          - true or false
- ******/
 function is_jumbo_capable($iface)
 {
     $intf_details = legacy_interface_details(trim($iface));
-    if (in_array('vlan_mtu', $intf_details['capabilities'])) {
-        return true;
-    } else {
-        return false;
-    }
+
+    return isset($intf_details['capabilities']) &&
+        in_array('vlan_mtu', $intf_details['capabilities']);
 }
 
 function get_vip_descr($ipaddress)

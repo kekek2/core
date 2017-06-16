@@ -43,9 +43,8 @@ $g = array(
 	"product_website" => "http://www.smart-soft.ru",
 	"product_email" => "support@smart-soft.ru",
 	"product_copyright_owner" => "Smart-Soft Ltd..",
-	"product_copyright_years" => "2016",
+	"product_copyright_years" => "2016-2017",
 	"product_copyright_url" => "http://www.smart-soft.ru",
-	"latest_config" => "11.2",
 );
 
 require_once("xmlparse.inc");
@@ -162,7 +161,7 @@ function convert_config($verbose = false)
     if ($verbose) {
         passthru($mvc_migration);
     } else {
-        mwexecf($mvc_migraton);
+        mwexecf($mvc_migration);
     }
 }
 

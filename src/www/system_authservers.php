@@ -554,21 +554,20 @@ endif; ?>
                 <tr class="auth_ldap auth_options hidden">
                   <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Search scope");?></td>
                   <td>
-                    <div>
-                      <?=gettext("Level:");?><br/>
-                      <select name='ldap_scope' id='ldap_scope' class="formselect selectpicker" data-style="btn-default">
-                          <option value="one" <?=$pconfig['ldap_scope'] == 'one' ?  "selected=\"selected\"" : "";?>>
-                              <?=gettext('One Level');?>
-                          </option>
-                          <option value="subtree" <?=$pconfig['ldap_scope'] == 'subtree' ?  "selected=\"selected\"" : "";?>>
-                              <?=gettext('Entire Subtree');?>
-                          </option>
-                      </select>
-                    </div>
-                    <div>
-                      <?=gettext("Base DN:");?><br/>
-                      <input name="ldap_basedn" type="text" id="ldap_basedn" size="40" value="<?=$pconfig['ldap_basedn'];?>"/>
-                    </div>
+                    <select name='ldap_scope' id='ldap_scope' class="formselect selectpicker" data-style="btn-default">
+                      <option value="one" <?=$pconfig['ldap_scope'] == 'one' ?  "selected=\"selected\"" : "";?>>
+                        <?=gettext('One Level');?>
+                      </option>
+                      <option value="subtree" <?=$pconfig['ldap_scope'] == 'subtree' ?  "selected=\"selected\"" : "";?>>
+                        <?=gettext('Entire Subtree');?>
+                      </option>
+                    </select>
+                  </td>
+                </tr>
+                <tr class="auth_ldap auth_options hidden">
+                  <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Base DN");?></td>
+                  <td>
+                    <input name="ldap_basedn" type="text" id="ldap_basedn" size="40" value="<?=$pconfig['ldap_basedn'];?>"/>
                   </td>
                 </tr>
                 <tr class="auth_ldap auth_options hidden">
@@ -581,9 +580,8 @@ endif; ?>
                     <br/>
                     <div class="hidden" for="help_for_ldapauthcontainers">
                       <small class="formhelp">
-                        <?=gettext("Semicolon separated. This will be prepended to the search base DN above or you can specify full container path containing a DC= component.");?><br />
-                        <?=gettext("Example:");?> CN=Users;DC=example,DC=com<br />
-                        <?=gettext("Example:");?> OU=Staff;OU=Freelancers
+                        <br/><?= gettext('Semicolon-separated list of distinguished names optionally containing DC= components.') ?>
+                        <br/><?=gettext("Example:");?> OU=Freelancers,O=Company,DC=example,DC=com;CN=Users,OU=Staff,O=Company
                       </small>
                     </div>
                   </td>
@@ -761,7 +759,7 @@ $i = 0;
 ?>
                 <tr>
                   <td><?=$server['name']?></td>
-                  <td><?=!empty($authCNFOptions[$server['type']]) ? $authCNFOptions[$server['type']]['description'] : "";;?></td>
+                  <td><?= !empty($authCNFOptions[$server['type']]) ? $authCNFOptions[$server['type']]['description'] : '' ?></td>
                   <td><?=$server['host'];?></td>
                   <td>
                     <?php if ($i < (count($a_server) - 1)) :

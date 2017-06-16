@@ -31,7 +31,9 @@ require_once("config.inc");
 require_once("interfaces.inc");
 require_once("openvpn.inc");
 require_once("filter.inc");
+require_once("auth.inc");
 require_once('ipsec.inc');
+require_once('rrd.inc');
 require_once("util.inc");
 require_once("system.inc");
 require_once("services.inc");
@@ -39,26 +41,35 @@ require_once("interfaces.inc");
 
 global $config;
 
-$config = parse_config();
+$config = parse_config(true);
+
+log_error("rc.reload_all: Reloading web GUI.");
+
+system_webgui_configure(true);
 
 log_error("rc.reload_all: Reloading all configuration settings.");
 
-system_firmware_configure();
-system_login_configure();
-system_timezone_configure();
-system_hostname_configure();
-system_hosts_generate();
-system_resolvconf_generate();
-system_routing_enable();
-interfaces_configure();
-services_dyndns_configure();
-system_cron_configure();
+system_firmware_configure(true);
+system_login_configure(true);
+system_timezone_configure(true);
+system_hostname_configure(true);
+system_hosts_generate(true);
+system_resolvconf_generate(true);
+services_dhcpd_configure('all', array(), true);
+interfaces_configure(true);
+services_dyndns_configure('', true);
+system_cron_configure(true);
+
 mwexec_bg('/usr/local/etc/rc.sshd');
 mwexec_bg('/usr/local/etc/rc.restart_webgui');
 
 if (function_exists('plugins_configure')) {
-    plugins_configure('local');
+    log_error("rc.reload_all: Reloading all plugin settings.");
+    plugins_configure('local', true);
 }
 
+enable_rrd_graphing(true);
+
 log_error("rc.reload_all: Reloading filter configuration.");
-filter_configure_sync();
+
+filter_configure_sync(true);

@@ -100,7 +100,7 @@
                     </directory>
                     <cache_mem type="IntegerField">
                         <default>256</default>
-                        <MinimumValue>1</MinimumValue>
+                        <MinimumValue>0</MinimumValue>
                         <ValidationMessage>Specify a positive memory cache size. (number of MB's)</ValidationMessage>
                         <Required>Y</Required>
                     </cache_mem>
@@ -214,7 +214,7 @@
             </sslcertificate>
             <sslnobumpsites type="CSVListField">
               <Required>N</Required>
-              <mask>/^([a-zA-Z0-9.:,]){0,}/</mask>
+              <mask>/^([a-zA-Z0-9\.:\[\]\s\-]*?,)*([a-zA-Z0-9\.:\[\]\s\-]*)$/</mask>
               <ValidationMessage>Please enter ip addresses or domain names here</ValidationMessage>
             </sslnobumpsites>
             <ssl_crtd_storage_max_size type="IntegerField">

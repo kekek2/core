@@ -58,16 +58,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = $_POST;
 
     if (!empty($pconfig['apply'])) {
+        system_resolvconf_generate();
         unbound_configure_do();
         services_dhcpd_configure();
         clear_subsystem_dirty('unbound');
-        /* Update resolv.conf in case the interface bindings exclude localhost. */
-        system_resolvconf_generate();
         header(url_safe('Location: /services_unbound.php'));
         exit;
     } else {
         // perform validations
-        if (isset($pconfig['enable']) && isset($config['dnsmasq']['enable']) && (empty($pconfig['port']) || $pconfig['port'] == '53')) {
+        $unbound_port = empty($pconfig['port']) ? "53" : $pconfig['port'];
+        $dnsmasq_port = empty($config['dnsmasq']['port']) ? "53" : $config['dnsmasq']['port'];
+        if (isset($pconfig['enable']) && isset($config['dnsmasq']['enable']) && $unbound_port == $dnsmasq_port) {
             $input_errors[] = gettext("The DNS Forwarder is still active. Disable it before enabling the DNS Resolver.");
         }
         if (!empty($pconfig['regdhcpdomain']) && !is_domain($pconfig['regdhcpdomain'])) {

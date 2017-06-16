@@ -167,7 +167,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $config['system']['dnsserver'][] = $pconfig[$dnsopt];
             }
         }
-        $olddnsallowoverride = !empty($config['system']['dnsallowoverride']);
 
         $config['system']['dnsallowoverride'] = !empty($pconfig['dnsallowoverride']);
 
@@ -244,10 +243,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if($restart_syslog) {
     	    system_syslogd_start();
     	}
-
-        if ($olddnsallowoverride != $config['system']['dnsallowoverride']) {
-            configd_run("dns reload");
-        }
 
         filter_configure();
 
@@ -347,9 +342,31 @@ include("head.inc");
                   endforeach;?>
                 </select>
                 <div class="hidden" for="help_for_language">
+                  <strong>
                   <small class="formhelp">
-                    <?=gettext("Choose a language for the webConfigurator"); ?>
+                    <?= gettext('Choose a language for the web GUI.') ?>
                   </small>
+                  </strong>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><a id="help_for_theme" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Theme"); ?></td>
+              <td>
+                <select name="theme" class="selectpicker" data-size="10" data-width="auto">
+<?php
+                  $curtheme = get_current_theme();
+                  foreach (return_dir_as_array('/usr/local/opnsense/www/themes/') as $file):?>
+                  <option <?=$file == $curtheme ? "selected=\"selected\"" : "";?>>
+                    <?=$file;?>
+                  </option>
+<?php
+                  endforeach; ?>
+                </select>
+                <div class="hidden" for="help_for_theme">
+                  <strong>
+                    <?= gettext('This will change the look and feel of the GUI.') ?>
+                  </strong>
                 </div>
               </td>
             </tr>
@@ -381,14 +398,17 @@ include("head.inc");
                           </option>
 <?php
                           foreach(return_gateways_array() as $gwname => $gwitem):
-                            if(is_ipaddrv4(lookup_gateway_ip_by_name($pconfig[$dnsgw])) && is_ipaddrv6($gwitem['gateway'])) {
-                              continue;
-                            }
-                            if(is_ipaddrv6(lookup_gateway_ip_by_name($pconfig[$dnsgw])) && is_ipaddrv4($gwitem['gateway'])) {
-                              continue;
+                            if ($pconfig[$dnsgw] != "none") {
+                              if (is_ipaddrv4(lookup_gateway_ip_by_name($pconfig[$dnsgw])) && is_ipaddrv6($gwitem['gateway'])) {
+                                continue;
+                              }
+                              if (is_ipaddrv6(lookup_gateway_ip_by_name($pconfig[$dnsgw])) && is_ipaddrv4($gwitem['gateway'])) {
+                                continue;
+                              }
                             }?>
-                            <option value="<?=$gwname;?>" <?=$pconfig[$dnsgw] == $gwname ? "selected=\"selected\"" : "" ;?>>
-                              <?=$gwname;?> - <?=$gwitem['friendlyiface'];?> - <?$gwitem['gateway'];?>
+
+                            <option value="<?=$gwname;?>" <?=$pconfig[$dnsgw] == $gwname ? 'selected="selected"' : '' ?>>
+                              <?=$gwname;?> - <?=$gwitem['friendlyiface'];?> - <?=$gwitem['gateway'];?>
                             </option>
 <?php
                              endforeach;?>
@@ -415,7 +435,8 @@ include("head.inc");
             <tr>
               <td><a id="help_for_dnsservers_opt" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("DNS server options"); ?></td>
               <td>
-                <input name="dnsallowoverride" type="checkbox" value="yes" <?=$pconfig['dnsallowoverride'] ? "checked=\"checked\"" : ""; ;?> />
+                <input name="dnsallowoverride" type="checkbox" value="yes" <?= $pconfig['dnsallowoverride'] ? 'checked="checked"' : '' ?>/>
+                <strong>
                   <?=gettext("Allow DNS server list to be overridden by DHCP/PPP on WAN"); ?>
                 <div class="hidden" for="help_for_dnsservers_opt">
                   <small class="formhelp">

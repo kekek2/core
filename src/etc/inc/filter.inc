@@ -311,13 +311,22 @@ function filter_rules_sort()
     }
 }
 
-function filter_pflog_start()
+function filter_pflog_start($verbose = false)
 {
     if (isvalidpid('/var/run/filterlog.pid')) {
         return;
     }
 
+    if ($verbose) {
+        echo 'Starting PFLOG...';
+        flush();
+    }
+
     mwexec('/usr/local/sbin/filterlog -i pflog0 -p /var/run/filterlog.pid');
+
+    if ($verbose) {
+        echo "done.\n";
+    }
 }
 
 function filter_configure()
@@ -330,7 +339,7 @@ function filter_configure()
      */
     if (!file_exists("/var/run/booting")) {
         configd_run('filter reload');
-        if ( !empty($config['hasync']['synchronizetoip'])) {
+        if (!empty($config['hasync']['synchronizetoip'])) {
             configd_run('filter sync restart');
         }
     }
@@ -397,6 +406,7 @@ function filter_configure_sync($verbose = false)
     /* generate aliases */
     update_filter_reload_status(gettext("Creating aliases"));
     $aliases = filter_generate_aliases($FilterIflist, $after_filter_configure_run);
+    $aliases .= filter_generate_network_aliases();
     $gateways = filter_generate_gateways();
 
     if ($verbose) {
@@ -490,6 +500,7 @@ function filter_configure_sync($verbose = false)
     update_filter_reload_status(gettext("Setting up SCRUB information"));
     $rules .= filter_generate_scrubing($FilterIflist);
     $rules .= "\n";
+    update_filter_reload_status(gettext("Generating rules"));
     $rules .= $fw->anchorToText('nat,binat,rdr', 'head');
     $rules .= "{$natrules}\n";
     $rules .= $fw->anchorToText('nat,binat,rdr', 'tail');
@@ -500,6 +511,8 @@ function filter_configure_sync($verbose = false)
     $rules .= $fw->anchorToText('fw', 'tail');
 
     unset($aliases, $gateways, $natrules, $pfrules);
+
+    update_filter_reload_status(gettext("Executing packet filter reload"));
 
     // Copy rules.debug to rules.debug.old
     if (file_exists('/tmp/rules.debug')) {
@@ -569,6 +582,8 @@ function filter_configure_sync($verbose = false)
         $_grbg = exec('/sbin/pfctl -t bogonsv6 -T kill 2>/dev/null');
     }
 
+    update_filter_reload_status(gettext("Reloading filterdns daemon"));
+
     if (!empty($filterdns)) {
         @file_put_contents('/var/etc/filterdns.conf', implode('', $filterdns));
         unset($filterdns);
@@ -589,6 +604,8 @@ function filter_configure_sync($verbose = false)
     } else {
         killbypid('/var/run/filterdns.pid');
     }
+
+    update_filter_reload_status(gettext("Flushing schedule state"));
 
     /* run items scheduled for after filter configure run */
     foreach ($after_filter_configure_run as $afcr) {
@@ -854,6 +871,35 @@ function filter_generate_aliases(&$FilterIflist, &$after_filter_configure_run)
     }
 
     return $aliases;
+}
+
+/**
+ * generate aliases for internal networks, so eventually we don't need logic in the rule parsing to bind the
+ * existing network/ip options.
+ */
+function filter_generate_network_aliases()
+{
+    global $config;
+    $result = "### define internal aliases\n";
+    $interface_config = legacy_interfaces_details();
+    foreach (legacy_config_get_interfaces(array("enable" => true)) as $if => $ifdetail) {
+        $networks = array();
+        $addresses = array();
+        if (!empty($ifdetail['if']) && !empty($interface_config[$ifdetail['if']])) {
+            $properties = $interface_config[$ifdetail['if']];
+            if (!empty($properties['ipv4'])) {
+                $networks[] = gen_subnet($properties['ipv4'][0]['ipaddr'], $properties['ipv4'][0]['subnetbits']);
+                $addresses[] = $properties['ipv4'][0]['ipaddr'];
+            }
+            if (!empty($properties['ipv6']) && empty($properties['ipv6'][0]['link-local'])) {
+                $networks[] = gen_subnetv6($properties['ipv6'][0]['ipaddr'], $properties['ipv6'][0]['subnetbits']);
+                $addresses[] = $properties['ipv6'][0]['ipaddr'];
+            }
+        }
+        $result .= "table <internal-{$if}> { " . implode(' ', $networks) . " } \n";
+        $result .= "table <internal-{$if}ip> { " . implode(' ', $addresses) . " } \n";
+    }
+    return $result;
 }
 
 function filter_generate_gateways()
@@ -1732,12 +1778,12 @@ function filter_nat_rules_generate(&$FilterIflist)
     }
 
     // prevent redirection on ports with "lock out" protection
-    if (!isset($config['system']['webgui']['noantilockout'])) {
-        $alports = implode(" ", filter_core_antilockout_ports());
-        if ( !empty($FilterIflist['lan']['if']) ) {
+    $lockoutprts = filter_core_antilockout_ports();
+    if (count($lockoutprts) > 0) {
+        $alports = implode(' ', $lockoutprts);
+        if (!empty($FilterIflist['lan']['if']) ) {
             $alintrf = $FilterIflist['lan']['if'];
-        } elseif ( !empty($FilterIflist['wan']['if']) ) {
-            // single-interface deployment, add to WAN
+        } elseif (count($config['interfaces']) == 1 && !empty($FilterIflist['wan']['if']) ) {
             $alintrf = $FilterIflist['wan']['if'];
         } else {
             $alintrf = null;

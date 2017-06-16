@@ -28,7 +28,7 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-function activate_powerd()
+function system_powerd_configure($verbose = false)
 {
     global $config;
 
@@ -36,22 +36,37 @@ function activate_powerd()
         exec('/usr/bin/killall powerd');
     }
 
-    if(isset($config['system']['powerd_enable'])) {
-        $ac_mode = "hadp";
-        if (!empty($config['system']['powerd_ac_mode'])) {
-            $ac_mode = $config['system']['powerd_ac_mode'];
-        }
+    if (!isset($config['system']['powerd_enable'])) {
+        return;
+    }
 
-        $battery_mode = "hadp";
-        if (!empty($config['system']['powerd_battery_mode'])) {
-            $battery_mode = $config['system']['powerd_battery_mode'];
-        }
+    if ($verbose) {
+        echo 'Starting power daemon...';
+        flush();
+    }
 
-        $normal_mode = "hadp";
-        if (!empty($config['system']['powerd_normal_mode'])) {
-            $normal_mode = $config['system']['powerd_normal_mode'];
-        }
-        mwexec("/usr/sbin/powerd -b $battery_mode -a $ac_mode -n $normal_mode");
+    $ac_mode = 'hadp';
+    if (!empty($config['system']['powerd_ac_mode'])) {
+        $ac_mode = $config['system']['powerd_ac_mode'];
+    }
+
+    $battery_mode = 'hadp';
+    if (!empty($config['system']['powerd_battery_mode'])) {
+        $battery_mode = $config['system']['powerd_battery_mode'];
+    }
+
+    $normal_mode = 'hadp';
+    if (!empty($config['system']['powerd_normal_mode'])) {
+        $normal_mode = $config['system']['powerd_normal_mode'];
+    }
+
+    mwexecf(
+        '/usr/sbin/powerd -b %s -a %s -n %s',
+        array($battery_mode, $ac_mode, $normal_mode)
+    );
+
+    if ($verbose) {
+        echo "done.\n";
     }
 }
 
@@ -135,11 +150,16 @@ function activate_sysctls()
     set_sysctl($sysctls);
 }
 
-function system_resolvconf_generate($dynupdate = false)
+function system_resolvconf_generate($verbose = false)
 {
     global $config;
 
     $syscfg = $config['system'];
+
+    if ($verbose) {
+        echo 'Generating /etc/resolv.conf...';
+        flush();
+    }
 
     // Do not create blank domain lines, it breaks tools like dig.
     if($syscfg['domain']) {
@@ -175,22 +195,10 @@ function system_resolvconf_generate($dynupdate = false)
         }
     }
 
-    // Add EDNS support
-    if (isset($config['unbound']['enable']) && isset($config['unbound']['edns'])) {
-        $resolvconf .= "options edns0\n";
-    }
-
     $dnslock = lock('resolvconf', LOCK_EX);
 
     file_put_contents('/etc/resolv.conf', $resolvconf);
     chmod('/etc/resolv.conf', 0644);
-
-    if (!file_exists("/var/run/booting")) {
-        /* restart dhcpd (nameservers may have changed) */
-        if (!$dynupdate) {
-            services_dhcpd_configure();
-        }
-    }
 
     /* setup static routes for DNS servers. */
     for ($dnscounter=1; $dnscounter<5; $dnscounter++) {
@@ -217,7 +225,10 @@ function system_resolvconf_generate($dynupdate = false)
     }
 
     unlock($dnslock);
-    return 0;
+
+    if ($verbose) {
+        echo "done.\n";
+    }
 }
 
 function get_locale_list()
@@ -228,17 +239,13 @@ function get_locale_list()
     $locales['en_US'] = gettext('English');
     $locales['cs_CZ'] = gettext('Czech');
     $locales['zh_CN'] = gettext('Chinese (Simplified)');
-    $locales['nl_NL'] = gettext('Dutch');
     $locales['fr_FR'] = gettext('French');
     $locales['de_DE'] = gettext('German');
     $locales['it_IT'] = gettext('Italian');
     $locales['ja_JP'] = gettext('Japanese');
-    $locales['mn_MN'] = gettext('Mongolian');
-    $locales['pt_BR'] = gettext('Portuguese');
+    $locales['pt_BR'] = gettext('Portuguese (Brazil)');
+    $locales['pt_PR'] = gettext('Portuguese (Portugal)');
     $locales['ru_RU'] = gettext('Russian');
-    $locales['es_ES'] = gettext('Spanish');
-    $locales['sv_SE'] = gettext('Swedish');
-    $locales['tr_TR'] = gettext('Turkish');
 
     return $locales;
 }
@@ -350,9 +357,14 @@ function get_nameservers()
     return $master_list;
 }
 
-function system_hosts_generate()
+function system_hosts_generate($verbose = false)
 {
     global $config;
+
+    if ($verbose) {
+        echo 'Generating /etc/hosts...';
+        flush();
+    }
 
     $syscfg = $config['system'];
 
@@ -380,6 +392,10 @@ function system_hosts_generate()
 
     dnsmasq_hosts_generate();
     unbound_hosts_generate();
+
+    if ($verbose) {
+        echo "done.\n";
+    }
 }
 
 function system_hostname_configure($verbose = false)
@@ -406,9 +422,14 @@ function system_hostname_configure($verbose = false)
     }
 }
 
-function system_routing_configure($interface = '')
+function system_routing_configure($interface = '', $verbose = false)
 {
     global $config;
+
+    if ($verbose) {
+        echo 'Setting up routes...';
+        flush();
+    }
 
     $gatewayip = "";
     $interfacegw = "";
@@ -506,6 +527,15 @@ function system_routing_configure($interface = '')
     }
 
     system_staticroutes_configure($interface);
+
+    set_sysctl(array(
+      'net.inet.ip.forwarding' => '1',
+      'net.inet6.ip6.forwarding' => '1'
+    ));
+
+    if ($verbose) {
+        echo "done.\n";
+    }
 
     return 0;
 }
@@ -653,7 +683,7 @@ function system_staticroutes_configure($interface = '')
     return 0;
 }
 
-function system_routing_enable()
+function system_syslogd_fixup_server($server)
 {
     global $config;
 
@@ -661,6 +691,7 @@ function system_routing_enable()
       "net.inet.ip.forwarding" => "1",
       "net.inet6.ip6.forwarding" => "1"
     ));
+
 }
 
 function system_syslogd_start($verbose = false)
@@ -702,12 +733,17 @@ function system_clear_log($logfile, $restart_syslogd = true)
     configd_run("syslog start");
 }
 
-function system_webgui_configure()
+
+function system_webgui_configure($verbose = false)
 {
     global $config;
 
+    if ($verbose) {
+        echo 'Starting web GUI...';
+        flush();
+    }
+
     chdir('/usr/local/www');
-    @unlink('/usr/local/www/csrf/csrf-secret.php');
 
     /* defaults */
     $portarg = "80";
@@ -721,7 +757,6 @@ function system_webgui_configure()
     }
 
     if ($config['system']['webgui']['protocol'] == "https") {
-        // Ensure that we have a webConfigurator CERT
         $cert =& lookup_cert($config['system']['webgui']['ssl-certref']);
         if(!is_array($cert) && !$cert['crt'] && !$cert['prv']) {
             if (!is_array($config['ca'])) {
@@ -732,10 +767,10 @@ function system_webgui_configure()
                 $config['cert'] = array();
             }
             $a_cert =& $config['cert'];
-            log_error("Creating SSL Certificate for this host");
+            log_error("Creating SSL certificate for this host");
             $cert = array();
             $cert['refid'] = uniqid();
-            $cert['descr'] = 'webConfigurator default';
+            $cert['descr'] = 'Web GUI SSL certificate';
             mwexec(
                 /* XXX ought to be replaced by PHP calls */
                 '/usr/local/bin/openssl req -new ' .
@@ -750,7 +785,7 @@ function system_webgui_configure()
             cert_import($cert, $crt, $key);
             $a_cert[] = $cert;
             $config['system']['webgui']['ssl-certref'] = $cert['refid'];
-            write_config('Importing HTTPS certificate');
+            write_config('Created web GUI SSL certificate');
         } else {
             $crt = base64_decode($cert['crt']);
             $key = base64_decode($cert['prv']);
@@ -779,8 +814,12 @@ function system_webgui_configure()
     /* regenerate the php.ini files in case the setup has changed */
     mwexec('/usr/local/etc/rc.php_ini_setup');
 
-    /* attempt to start lighthttpd and return true if ok */
-    return !mwexec("/usr/local/sbin/lighttpd -f /var/etc/lighty-webConfigurator.conf");
+    /* start lighthttpd */
+    mwexec('/usr/local/sbin/lighttpd -f /var/etc/lighty-webConfigurator.conf');
+
+    if ($verbose) {
+        echo "done.\n";
+    }
 }
 
 /*
@@ -1056,8 +1095,11 @@ EOD;
 
         // Harden SSL a bit for PCI conformance testing
         $lighty_config .= "ssl.use-sslv2 = \"disable\"\n";
-
-        $lighty_config .= 'ssl.cipher-list = "ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:AES:CAMELLIA:DES-CBC3-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!aECDH:!EDH-DSS-DES-CBC3-SHA:!EDH-RSA-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA"' . PHP_EOL;
+        if (empty($config['system']['webgui']['ssl-ciphers'])) {
+            $lighty_config .= 'ssl.cipher-list = "ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:AES:CAMELLIA:DES-CBC3-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!aECDH:!EDH-DSS-DES-CBC3-SHA:!EDH-RSA-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA"' . PHP_EOL;
+        } else {
+            $lighty_config .= 'ssl.cipher-list = "'.$config['system']['webgui']['ssl-ciphers'].'"' . PHP_EOL;
+        }
 
         if(!(empty($ca) || (strlen(trim($ca)) == 0))) {
             $lighty_config .= "ssl.ca-file = \"/var/etc/{$ca_location}\"\n\n";
@@ -1263,6 +1305,8 @@ function get_possible_listen_ips($include_ipv6_link_local = false, $include_loop
 
 function system_kernel_configure($verbose = false)
 {
+    global $config;
+
     if ($verbose) {
         echo 'Configuring kernel modules...';
         flush();
@@ -1291,10 +1335,6 @@ function system_kernel_configure($verbose = false)
         'pfsync',
     );
 
-    /* we now have /dev/pf, time to fix permissions for proxies */
-    chgrp('/dev/pf', 'proxy');
-    chmod('/dev/pf', 0660);
-
     if (!empty($config['system']['crypto_hardware'])) {
         log_error(sprintf('Loading %s cryptographic accelerator module.', $config['system']['crypto_hardware']));
         $mods[] = $config['system']['crypto_hardware'];
@@ -1312,6 +1352,10 @@ function system_kernel_configure($verbose = false)
     foreach ($mods as $mod) {
         mwexecf('/sbin/kldload %s', $mod, true);
     }
+
+    /* we now have /dev/pf, time to fix permissions for proxies */
+    chgrp('/dev/pf', 'proxy');
+    chmod('/dev/pf', 0660);
 
     if ($verbose) {
         echo "done.\n";
@@ -1480,6 +1524,9 @@ function system_login_configure($verbose = false)
         flush();
     }
 
+    /* depends on user account locking */
+    local_sync_accounts();
+
     configd_run('template reload OPNsense/Auth');
 
     $serialspeed = (!empty($config['system']['serialspeed']) && is_numeric($config['system']['serialspeed'])) ? $config['system']['serialspeed'] : '115200';
@@ -1488,6 +1535,7 @@ function system_login_configure($verbose = false)
     $new_boot_config['comconsole_speed'] = null;
     $new_boot_config['boot_multicons'] = null;
     $new_boot_config['boot_serial'] = null;
+    $new_boot_config['kern.vty'] = '"vt"';
     $new_boot_config['console'] = null;
 
     $console_types = system_console_types();
@@ -1521,6 +1569,10 @@ function system_login_configure($verbose = false)
         @file_put_contents('/boot.config', "-q -m\n");
     } else {
         @unlink('/boot.config');
+    }
+
+    if (empty($config['system']['usevirtualterminal'])) {
+        $new_boot_config['kern.vty'] = '"sc"';
     }
 
     /* reload static values from rc.loader.d */
@@ -1585,8 +1637,7 @@ function system_login_configure($verbose = false)
     fclose($fd);
 
     if ($verbose) {
-        echo "done\n";
-        flush();
+        echo "done.\n";
     }
 
     /* force init(8) to reload /etc/ttys */

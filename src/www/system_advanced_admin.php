@@ -39,10 +39,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['webguiproto'] = $config['system']['webgui']['protocol'];
     $pconfig['webguiport'] = $config['system']['webgui']['port'];
     $pconfig['ssl-certref'] = $config['system']['webgui']['ssl-certref'];
+    if (!empty($config['system']['webgui']['ssl-ciphers'])) {
+        $pconfig['ssl-ciphers'] = explode(':', $config['system']['webgui']['ssl-ciphers']);
+    } else {
+        $pconfig['ssl-ciphers'] = array();
+    }
     $pconfig['disablehttpredirect'] = isset($config['system']['webgui']['disablehttpredirect']);
     $pconfig['disableconsolemenu'] = isset($config['system']['disableconsolemenu']);
+    $pconfig['usevirtualterminal'] = isset($config['system']['usevirtualterminal']);
     $pconfig['disableintegratedauth'] = !empty($config['system']['disableintegratedauth']);
-    $pconfig['sudo_allow_wheel'] = isset($config['system']['sudo_allow_wheel']);
+    $pconfig['sudo_allow_wheel'] = $config['system']['sudo_allow_wheel'];
     $pconfig['noantilockout'] = isset($config['system']['webgui']['noantilockout']);
     $pconfig['nodnsrebindcheck'] = isset($config['system']['webgui']['nodnsrebindcheck']);
     $pconfig['nohttpreferercheck'] = isset($config['system']['webgui']['nohttpreferercheck']);
@@ -63,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     /* input validation */
     if (!empty($pconfig['webguiport'])) {
         if (!is_port($pconfig['webguiport'])) {
-            $input_errors[] = gettext("You must specify a valid webConfigurator port number");
+            $input_errors[] = gettext('You must specify a valid web GUI port number');
         }
     }
 
@@ -84,9 +90,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     if (count($input_errors) ==0) {
         // flag web ui for restart
+        if (!empty($pconfig['ssl-ciphers'])) {
+            $newciphers = implode(':', $pconfig['ssl-ciphers']);
+        } else {
+            $newciphers = '';
+        }
         if ($config['system']['webgui']['protocol'] != $pconfig['webguiproto'] ||
             $config['system']['webgui']['port'] != $pconfig['webguiport'] ||
             $config['system']['webgui']['ssl-certref'] != $pconfig['ssl-certref'] ||
+            $config['system']['webgui']['ssl-ciphers'] != $newciphers ||
             ($pconfig['disablehttpredirect'] == "yes") != !empty($config['system']['webgui']['disablehttpredirect'])
             ) {
             $restart_webgui = true;
@@ -97,6 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $config['system']['webgui']['protocol'] = $pconfig['webguiproto'];
         $config['system']['webgui']['port'] = $pconfig['webguiport'];
         $config['system']['webgui']['ssl-certref'] = $pconfig['ssl-certref'];
+        $config['system']['webgui']['ssl-ciphers'] = $newciphers;
 
         if ($pconfig['disablehttpredirect'] == "yes") {
             $config['system']['webgui']['disablehttpredirect'] = true;
@@ -115,14 +128,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             unset($config['system']['disableconsolemenu']);
         }
 
+        if (!empty($pconfig['usevirtualterminal'])) {
+            $config['system']['usevirtualterminal'] = true;
+        } elseif (isset($config['system']['usevirtualterminal'])) {
+            unset($config['system']['usevirtualterminal']);
+        }
+
         if (!empty($pconfig['disableintegratedauth'])) {
             $config['system']['disableintegratedauth'] = true;
         } elseif (isset($config['system']['disableintegratedauth'])) {
             unset($config['system']['disableintegratedauth']);
         }
 
-        if ($pconfig['sudo_allow_wheel'] == "yes") {
-            $config['system']['sudo_allow_wheel'] = true;
+        if (!empty($pconfig['sudo_allow_wheel'])) {
+            $config['system']['sudo_allow_wheel'] = $pconfig['sudo_allow_wheel'];
         } elseif (isset($config['system']['sudo_allow_wheel'])) {
             unset($config['system']['sudo_allow_wheel']);
         }
@@ -315,7 +334,7 @@ include("head.inc");
           <form method="post" name="iform" id="iform">
             <table class="table table-clean-form opnsense_standard_table_form">
               <tr>
-                <td width="22%"><strong><?=gettext("webConfigurator");?></strong></td>
+                <td width="22%"><strong><?=gettext('Web GUI');?></strong></td>
                 <td  width="78%" align="right">
                   <small><?=gettext("full help"); ?> </small>
                   <i class="fa fa-toggle-off text-danger" style="cursor: pointer;" id="show_all_help_page" type="button"></i>
@@ -361,13 +380,31 @@ include("head.inc");
                     </div>
                   </td>
                 </tr>
+                <tr class="ssl_opts">
+                  <td><a id="help_for_sslciphers" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("SSL Ciphers"); ?></td>
+                  <td>
+                      <select name="ssl-ciphers[]" class="selectpicker"  multiple="multiple" data-live-search="true" title="<?=gettext("System defaults");?>">
+<?php
+                      $ciphers = json_decode(configd_run("system ssl ciphers"), true);
+                      foreach ($ciphers as $cipher => $cipher_data):?>
+                        <option value="<?=$cipher;?>" <?= !empty($pconfig['ssl-ciphers']) && in_array($cipher, $pconfig['ssl-ciphers']) ? 'selected="selected"' : '' ?>>
+                          <?=!empty($cipher_data['description']) ? $cipher_data['description'] : $cipher;?>
+                        </option>
+<?php
+                      endforeach;?>
+                      </select>
+                      <div class="hidden" for="help_for_sslciphers">
+                        <?=gettext("Limit SSL cipher selection in case the system defaults are undesired. Note that restrictive use may lead to an inaccessible web GUI.");?>
+                      </div>
+                  </td>
+                </tr>
                 <tr>
                   <td><a id="help_for_webguiport" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("TCP port"); ?></td>
                   <td>
                     <input name="webguiport" type="text" value="<?=$pconfig['webguiport'];?>" />
                     <div class="hidden" for="help_for_webguiport">
                       <small class="formhelp">
-                      <?=gettext("Enter a custom port number for the webConfigurator " .
+                      <?=gettext("Enter a custom port number for the web GUI " .
                                             "above if you want to override the default (80 for HTTP, 443 " .
                                             "for HTTPS). Changes will take effect immediately after save."); ?>
                       </small>
@@ -378,10 +415,10 @@ include("head.inc");
                   <td><a id="help_for_disablehttpredirect" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("WebGUI redirect"); ?></td>
                   <td width="78%">
                     <input name="disablehttpredirect" type="checkbox" value="yes" <?= empty($pconfig['disablehttpredirect']) ? '' : 'checked="checked"';?> />
-                    <?=gettext("Disable webConfigurator redirect rule"); ?>
+                    <strong><?= gettext('Disable web GUI redirect rule') ?></strong>
                     <div class="hidden" for="help_for_disablehttpredirect">
                       <small class="formhelp">
-                      <?= gettext("When this is unchecked, access to the webConfigurator " .
+                          <?= gettext("When this is unchecked, access to the web GUI " .
                                           "is always permitted even on port 80, regardless of the listening port configured. " .
                                           "Check this box to disable this automatically added redirect rule.");
                                           ?>
@@ -393,10 +430,10 @@ include("head.inc");
                   <td><a id="help_for_loginautocomplete" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("WebGUI Login Autocomplete"); ?></td>
                   <td>
                     <input name="loginautocomplete" type="checkbox" value="yes" <?= empty($pconfig['loginautocomplete']) ? '' : 'checked="checked"' ?> />
-                    <?=gettext("Enable webConfigurator login autocomplete"); ?>
+                    <strong><?= gettext('Enable web GUI login autocomplete') ?></strong>
                     <div class="hidden" for="help_for_loginautocomplete">
                       <small class="formhelp">
-                      <?= gettext("When this is checked, login credentials for the webConfigurator " .
+                          <?= gettext("When this is checked, login credentials for the web GUI " .
                                           "may be saved by the browser. While convenient, some security standards require this to be disabled. " .
                                           "Check this box to enable autocomplete on the login form so that browsers will prompt to save credentials (NOTE: Some browsers do not respect this option).");?>
                       </small>
@@ -407,10 +444,10 @@ include("head.inc");
                   <td><a id="help_for_quietlogin" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("WebGUI login messages") ?></td>
                   <td>
                     <input name="quietlogin" type="checkbox" value="yes" <?= empty($pconfig['quietlogin']) ? '' : 'checked="checked"' ?>/>
-                    <?=gettext("Disable logging of webConfigurator successful logins"); ?>
+                    <strong><?= gettext('Disable logging of web GUI successful logins') ?></strong>
                     <div class="hidden" for="help_for_quietlogin">
                       <small class="formhelp">
-                      <?=gettext("When this is checked, successful logins to the webConfigurator " .
+                          <?=gettext("When this is checked, successful logins to the web GUI " .
                                           "will not be logged.");?>
                       </small>
                     </div>
@@ -420,15 +457,16 @@ include("head.inc");
                   <td><a id="help_for_noantilockout" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Anti-lockout"); ?></td>
                   <td>
                     <input name="noantilockout" type="checkbox" value="yes" <?= empty($pconfig['noantilockout']) ? '' : 'checked="checked"' ?>/>
-                    <?=gettext("Disable webConfigurator anti-lockout rule"); ?>
+                    <strong><?= gettext('Disable web GUI anti-lockout rule') ?></strong>
                     <div class="hidden" for="help_for_noantilockout">
                       <small class="formhelp">
-                      <?= sprintf(gettext("When this is unchecked, access to the webConfigurator " .
-                                          "on the %s interface is always permitted, regardless of the user-defined firewall " .
-                                          "rule set. Check this box to disable this automatically added rule, so access " .
-                                          "to the webConfigurator is controlled by the user-defined firewall rules " .
-                                          "(ensure you have a firewall rule in place that allows you in, or you will " .
-                                          "lock yourself out!)"), (empty($config['interfaces']['lan']) ? gettext("WAN") : gettext("LAN"))); ?>
+                      <?= sprintf(gettext("When this is unchecked, access to the web GUI " .
+                                  "on the %s interface is always permitted, regardless of the user-defined firewall " .
+                                  "rule set. Check this box to disable this automatically added rule, so access " .
+                                  "to the web GUI is controlled by the user-defined firewall rules " .
+                                  "(ensure you have a firewall rule in place that allows you in, or you will " .
+                                  "lock yourself out!)"), count($config['interfaces']) == 1 && !empty($config['interfaces']['wan']['if']) ?
+                                  gettext('WAN') : gettext('LAN')) ?>
                       <em><?= gettext('Hint: the "Set interface(s) IP address" option in the console menu resets this setting as well.'); ?></em>
                       </small>
                     </div>
@@ -443,7 +481,7 @@ include("head.inc");
                       <small class="formhelp">
                       <?= sprintf(gettext("When this is unchecked, your system is protected against %sDNS Rebinding attacks%s. " .
                                           "This blocks private IP responses from your configured DNS servers. Check this box to disable this protection if it interferes with " .
-                                          "webConfigurator access or name resolution in your environment."),'<a href="http://en.wikipedia.org/wiki/DNS_rebinding">','</a>') ?>
+                                          "web GUI access or name resolution in your environment."),'<a href="http://en.wikipedia.org/wiki/DNS_rebinding">','</a>') ?>
                       </small>
                     </div>
                   </td>
@@ -468,10 +506,10 @@ include("head.inc");
                     <?=gettext("Disable HTTP_REFERER enforcement check"); ?>
                     <div class="hidden" for="help_for_nohttpreferercheck">
                       <small class="formhelp">
-                      <?=sprintf(gettext("When this is unchecked, access to the webConfigurator " .
+                      <?=sprintf(gettext("When this is unchecked, access to the web GUI " .
                                           "is protected against HTTP_REFERER redirection attempts. " .
                                           "Check this box to disable this protection if you find that it interferes with " .
-                                          "webConfigurator access in certain corner cases such as using external scripts to interact with this system. More information on HTTP_REFERER is available from %sWikipedia%s."),
+                                          "web GUI access in certain corner cases such as using external scripts to interact with this system. More information on HTTP_REFERER is available from %sWikipedia%s."),
                                           '<a target="_blank" href="http://en.wikipedia.org/wiki/HTTP_referrer">','</a>') ?>
                       </small>
                     </div>
@@ -530,21 +568,10 @@ include("head.inc");
                   <th colspan="2"><?=gettext("Console Options"); ?></th>
                 </tr>
                 <tr>
-                  <td><a id="help_for_serialspeed" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Serial Speed")?></td>
-                  <td>
-                    <select name="serialspeed" id="serialspeed" class="formselect selectpicker">
-                      <option value="115200" <?=$pconfig['serialspeed'] == "115200" ? 'selected="selected"' : '' ?>>115200</option>
-                      <option value="57600" <?=$pconfig['serialspeed'] == "57600" ? 'selected="selected"' : '' ?>>57600</option>
-                      <option value="38400" <?=$pconfig['serialspeed'] == "38400" ? 'selected="selected"' : '' ?>>38400</option>
-                      <option value="19200" <?=$pconfig['serialspeed'] == "19200" ? 'selected="selected"' : '' ?>>19200</option>
-                      <option value="14400" <?=$pconfig['serialspeed'] == "14400" ? 'selected="selected"' : '' ?>>14400</option>
-                      <option value="9600" <?=$pconfig['serialspeed'] == "9600" ? 'selected="selected"' : '' ?>>9600</option>
-                    </select>
-                    <div class="hidden" for="help_for_serialspeed">
-                      <small class="formhelp">
-                      <?=gettext("Allows selection of different speeds for the serial console port."); ?>
-                      </small>
-                    </div>
+                  <td><i class="fa fa-info-circle text-muted"></i></a> <?= gettext('Console driver') ?></td>
+                  <td width="78%">
+                    <input name="usevirtualterminal" type="checkbox" value="yes" <?= empty($pconfig['usevirtualterminal']) ? '' : 'checked="checked"' ?>  />
+                    <strong><?= gettext('Use the virtual terminal driver (vt)') ?></strong>
                   </td>
                 </tr>
                 <tr>
@@ -581,17 +608,28 @@ include("head.inc");
                   </td>
                 </tr>
                 <tr>
-                  <td><i class="fa fa-info-circle text-muted"></i></a> <?= gettext("Console menu") ?></td>
-                  <td width="78%">
-                    <input name="disableconsolemenu" type="checkbox" value="yes" <?= empty($pconfig['disableconsolemenu']) ? '' : 'checked="checked"' ?>  />
-                    <?=gettext("Password protect the console menu"); ?>
+                  <td><a id="help_for_serialspeed" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Serial Speed")?></td>
+                  <td>
+                    <select name="serialspeed" id="serialspeed" class="formselect selectpicker">
+                      <option value="115200" <?=$pconfig['serialspeed'] == "115200" ? 'selected="selected"' : '' ?>>115200</option>
+                      <option value="57600" <?=$pconfig['serialspeed'] == "57600" ? 'selected="selected"' : '' ?>>57600</option>
+                      <option value="38400" <?=$pconfig['serialspeed'] == "38400" ? 'selected="selected"' : '' ?>>38400</option>
+                      <option value="19200" <?=$pconfig['serialspeed'] == "19200" ? 'selected="selected"' : '' ?>>19200</option>
+                      <option value="14400" <?=$pconfig['serialspeed'] == "14400" ? 'selected="selected"' : '' ?>>14400</option>
+                      <option value="9600" <?=$pconfig['serialspeed'] == "9600" ? 'selected="selected"' : '' ?>>9600</option>
+                    </select>
+                    <div class="hidden" for="help_for_serialspeed">
+                      <small class="formhelp">
+                      <?=gettext("Allows selection of different speeds for the serial console port."); ?>
+                      </small>
+                    </div>
                   </td>
                 </tr>
                 <tr>
-                  <td><i class="fa fa-info-circle text-muted"></i> <?= gettext("Sudo usage") ?></td>
+                  <td><i class="fa fa-info-circle text-muted"></i></a> <?= gettext("Console menu") ?></td>
                   <td width="78%">
-                    <input name="sudo_allow_wheel" type="checkbox" value="yes" <?= empty($pconfig['sudo_allow_wheel']) ? '' : 'checked="checked"' ?>  />
-                    <?= gettext('Allow administrators to use the Sudo utility') ?>
+                    <input name="disableconsolemenu" type="checkbox" value="yes" <?= empty($pconfig['disableconsolemenu']) ? '' : 'checked="checked"' ?>  />
+                    <strong><?=gettext("Password protect the console menu"); ?></strong>
                   </td>
                 </tr>
                 <tr>
@@ -602,6 +640,16 @@ include("head.inc");
                     <div class="hidden" for="help_for_disableintegratedauth">
                         <?=gettext("Disable OPNsense integrated authentication module for console access, falling back to normal unix authentication.");?>
                     </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td><i class="fa fa-info-circle text-muted"></i> <?= gettext("Sudo usage") ?></td>
+                  <td width="78%">
+                    <select name="sudo_allow_wheel" id="sudo_allow_wheel" class="formselect selectpicker">
+                      <option value="" <?= empty($pconfig['sudo_allow_wheel']) ? 'selected="selected"' : '' ?>><?= gettext('Disallow') ?></option>
+                      <option value="1" <?= $pconfig['sudo_allow_wheel'] == 1 ? 'selected="selected"' : '' ?>><?= gettext('Ask password') ?></option>
+                      <option value="2" <?= $pconfig['sudo_allow_wheel'] == 2 ? 'selected="selected"' : '' ?>><?= gettext('No password') ?></option>
+                    </select>
                   </td>
                 </tr>
                 <tr>

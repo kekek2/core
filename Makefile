@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2016 Franco Fichtner <franco@opnsense.org>
+# Copyright (c) 2014-2017 Franco Fichtner <franco@opnsense.org>
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -41,17 +41,16 @@ CORE_VERSION=	${CORE_COMMIT:C/-.*$//1}
 CORE_HASH=	${CORE_COMMIT:C/^.*-//1}
 .endif
 
-CORE_ABI?=	16.7
+CORE_ABI?=	17.1
 CORE_ARCH?=	${ARCH}
+CORE_BIND?=	911
+CORE_PHP?=	70
 CORE_PY?=	27
 
-.if ${CORE_ABI} == 16.7
-CORE_PHP_SUHOSIN=php-suhosin
-CORE_PHP?=	56
-.else
-CORE_PHP?=	70
+.if "${CORE_RELEASE}" == yes
+CORE_NAME?=		opnsense
+CORE_FAMILY?=		release
 .endif
-
 
 _FLAVOUR!=	if [ -f ${OPENSSL} ]; then ${OPENSSL} version; fi
 FLAVOUR?=	${_FLAVOUR:[1]}
@@ -67,19 +66,17 @@ CORE_REPOSITORY?=	${FLAVOUR}
 CORE_PACKAGESITE?=	https://update0.smart-soft.ru
 
 CORE_NAME?=		ting
-CORE_FAMILY?=		development
+CORE_FAMILY?=		stable
 CORE_ORIGIN?=		${CORE_NAME}
 CORE_COMMENT?=		TING ${CORE_FAMILY} package
 CORE_MAINTAINER?=	evbevz@gmail.com
-CORE_WWW?=		https://smart-soft.ru/
+CORE_WWW?=		http://smart-soft.ru/
 CORE_MESSAGE?=		Thanks for using TING...
 # CORE_DEPENDS_armv6 is empty
 CORE_DEPENDS_amd64?=	beep bsdinstaller
 CORE_DEPENDS_i386?=	${CORE_DEPENDS_amd64}
 CORE_DEPENDS?=		apinger \
-			bind910 \
-			bsnmp-regex \
-			bsnmp-ucd \
+			bind${CORE_BIND} \
 			ca_root_nss \
 			choparp \
 			cpustats \
@@ -92,21 +89,18 @@ CORE_DEPENDS?=		apinger \
 			ifinfo \
 			flock \
 			flowd \
-			igmpproxy \
 			isc-dhcp43-client \
 			isc-dhcp43-relay \
 			isc-dhcp43-server \
 			lighttpd \
-			miniupnpd \
 			mpd5 \
 			ntp \
 			openssh-portable \
-			openvpn \
+			openvpn23 \
 			pam_opnsense \
 			pecl-radius \
 			pftop \
 			phalcon \
-			${CORE_PHP_SUHOSIN} \
 			php${CORE_PHP}-ctype \
 			php${CORE_PHP}-curl \
 			php${CORE_PHP}-dom \
@@ -131,7 +125,6 @@ CORE_DEPENDS?=		apinger \
 			py${CORE_PY}-ujson \
 			radvd \
 			rate \
-			relayd \
 			rrdtool12 \
 			samplicator \
 			squid \
@@ -141,12 +134,10 @@ CORE_DEPENDS?=		apinger \
 			suricata \
 			syslog-ng \
 			unbound \
-			wol \
-			zip \
 			ting-update \
 			ting-lang \
-			msktutil \
-			cyrus-sasl-gssapi
+			cyrus-sasl-gssapi \
+			zip
 
 WRKDIR?=${.CURDIR}/work
 WRKSRC?=${WRKDIR}/src

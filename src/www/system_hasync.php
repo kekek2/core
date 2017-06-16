@@ -35,11 +35,18 @@ if (!isset($config['hasync']) || !is_array($config['hasync'])) {
 }
 $a_hasync = &$config['hasync'];
 
-$checkbox_names = array('pfsyncenabled', 'synchronizeusers', 'synchronizeauthservers', 'synchronizecerts',
-                        'synchronizerules', 'synchronizeschedules', 'synchronizealiases', 'synchronizenat',
-                        'synchronizeipsec', 'synchronizeopenvpn', 'synchronizedhcpd', 'synchronizewol',
-                        'synchronizestaticroutes', 'synchronizelb', 'synchronizevirtualip',
-                        'synchronizednsforwarder','synchronizednsresolver', 'synchronizeshaper', 'synchronizecaptiveportal'
+$checkbox_names = array(
+    'pfsyncenabled',
+    'synchronizealiases',
+    'synchronizeauthservers',
+    'synchronizecerts',
+    'synchronizedhcpd',
+    'synchronizenat',
+    'synchronizerules',
+    'synchronizeschedules',
+    'synchronizestaticroutes',
+    'synchronizeusers',
+    'synchronizevirtualip',
 );
 
 $syncplugins = array();
@@ -192,9 +199,10 @@ include("head.inc");
                     <input  name="username" type="text" value="<?=$pconfig['username'];?>" />
                     <div class="hidden" for="help_for_username">
                       <small class="formhelp">
-                      <?=gettext('Enter the webConfigurator username of the system entered above for synchronizing your configuration.') ?><br />
-                      <br />
-                      <b><?=gettext('Do not use the Synchronize Config to IP and username option on backup cluster members!') ?></b>
+                      <?=gettext('Enter the web GUI username of the system entered above for synchronizing your configuration.') ?><br />
+                      <div class="well well-sm">
+                        <b><?=gettext('Do not use the Synchronize Config to IP and username option on backup cluster members!') ?></b>
+                      </div>
                       </small>
                     </div>
                   </td>
@@ -205,9 +213,10 @@ include("head.inc");
                     <input  type="password" name="password" value="<?=$pconfig['password']; ?>" />
                     <div class="hidden" for="help_for_password">
                       <small class="formhelp">
-                      <?=gettext('Enter the webConfigurator password of the system entered above for synchronizing your configuration.') ?><br />
-                      <br />
-                      <b><?=gettext('Do not use the Synchronize Config to IP and password option on backup cluster members!') ?></b>
+                      <?=gettext('Enter the web GUI password of the system entered above for synchronizing your configuration.') ?><br />
+                      <div class="well well-sm">
+                        <b><?=gettext('Do not use the Synchronize Config to IP and password option on backup cluster members!') ?></b>
+                      </div>
                       </small>
                     </div>
                   </td>
@@ -290,31 +299,6 @@ include("head.inc");
                   </td>
                 </tr>
                 <tr>
-                  <td><a id="help_for_synchronizeipsec" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('IPsec') ?></td>
-                  <td>
-                    <input type="checkbox" name="synchronizeipsec" value="on" <?=!empty($pconfig['synchronizeipsec']) ? "checked=\"checked\"" : "";?> />
-                    <div class="hidden" for="help_for_synchronizeipsec">
-                      <small class="formhelp">
-                      <?=gettext('Automatically sync the IPsec configuration to the other HA host when changes are made.') ?>
-                      </small>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td><a id="help_for_synchronizeopenvpn" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('OpenVPN') ?></td>
-                  <td>
-                    <input type="checkbox" name="synchronizeopenvpn" value="on" <?=!empty($pconfig['synchronizeopenvpn']) ? "checked=\"checked\"" :"";?> />
-                    <div class="hidden" for="help_for_synchronizeopenvpn">
-                      <small class="formhelp">
-                      <?=gettext('Automatically sync the OpenVPN configuration to the other HA host when changes are made.') ?>
-                      <br/>
-                      <br/>
-                      <b><?=gettext('Using this option implies "Synchronize Certificates" as they are required for OpenVPN.') ?></b>
-                      </small>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
                   <td><a id="help_for_synchronizedhcpd" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('DHCPD') ?></td>
                   <td>
                     <input type="checkbox" name="synchronizedhcpd" value="on" <?=!empty($pconfig['synchronizedhcpd']) ? "checked=\"checked\"" : "";?> />
@@ -326,17 +310,7 @@ include("head.inc");
                   </td>
                 </tr>
                 <tr>
-                  <td><a id="help_for_synchronizewol" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Wake on LAN') ?></td>
-                  <td>
-                    <input type="checkbox" name="synchronizewol" value="on" <?=!empty($pconfig['synchronizewol']) ? "checked=\"checked\"" : "";?> />
-                    <div class="hidden" for="help_for_synchronizewol">
-                      <small class="formhelp">
-                      <?=gettext('Automatically sync the WoL configuration to the other HA host when changes are made.') ?>
-                      </small>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
+
                   <td><a id="help_for_synchronizestaticroutes" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Static Routes') ?></td>
                   <td>
                     <input type="checkbox" name="synchronizestaticroutes" value="on" <?=!empty($pconfig['synchronizestaticroutes']) ? "checked=\"checked\"" :"";?> />
@@ -348,17 +322,7 @@ include("head.inc");
                   </td>
                 </tr>
                 <tr>
-                  <td><a id="help_for_synchronizelb" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Load Balancer') ?></td>
-                  <td>
-                    <input type="checkbox" name="synchronizelb" value="on" <?=!empty($pconfig['synchronizelb']) ? "checked=\"checked\"" :"";?> />
-                    <div class="hidden" for="help_for_synchronizelb">
-                      <small class="formhelp">
-                      <?=gettext('Automatically sync the Load Balancer configuration to the other HA host when changes are made.') ?>
-                      </small>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
+
                   <td><a id="help_for_synchronizevirtualip" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Virtual IPs') ?></td>
                   <td>
                     <input type="checkbox" name="synchronizevirtualip" value="on" <?=!empty($pconfig['synchronizevirtualip']) ? "checked=\"checked\"" : "";?> />
@@ -369,50 +333,7 @@ include("head.inc");
                     </div>
                   </td>
                 </tr>
-                <tr>
-                  <td><a id="help_for_synchronizednsforwarder" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('DNS Forwarder') ?></td>
-                  <td>
-                    <input type="checkbox" name="synchronizednsforwarder" value="on" <?=!empty($pconfig['synchronizednsforwarder']) ? "checked=\"checked\"" :"";?> />
-                    <div class="hidden" for="help_for_synchronizednsforwarder">
-                      <small class="formhelp">
-                      <?=gettext('Automatically sync the DNS Forwarder configuration to the other HA host when changes are made.') ?>
-                      </small>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td><a id="help_for_synchronizednsresolver" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('DNS Resolver') ?></td>
-                  <td>
-                    <input type="checkbox" name="synchronizednsresolver" value="on" <?=!empty($pconfig['synchronizednsresolver']) ? "checked=\"checked\"" :"";?> />
-                    <div class="hidden" for="help_for_synchronizednsresolver">
-                      <small class="formhelp">
-                      <?=gettext('Automatically sync the DNS Resolver configuration to the other HA host when changes are made.') ?>
-                      </small>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td><a id="help_for_synchronizeshaper" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Traffic Shaper') ?></td>
-                  <td>
-                    <input type="checkbox" name="synchronizeshaper" value="on" <?=!empty($pconfig['synchronizeshaper']) ? "checked=\"checked\"" :"";?> />
-                    <div class="hidden" for="help_for_synchronizeshaper">
-                      <small class="formhelp">
-                      <?=gettext('Automatically sync the TrafficShaper configuration to the other HA host when changes are made.') ?>
-                      </small>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td><a id="help_for_synchronizecaptiveportal" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Captive Portal') ?></td>
-                  <td>
-                    <input type="checkbox" name="synchronizecaptiveportal" value="on" <?=!empty($pconfig['synchronizecaptiveportal']) ? "checked=\"checked\"" :"";?> />
-                    <div class="hidden" for="help_for_synchronizecaptiveportal">
-                      <small class="formhelp">
-                      <?=gettext('Automatically sync the Captive Portal configuration to the other HA host when changes are made.') ?>
-                      </small>
-                    </div>
-                  </td>
-                </tr>
+
                 <!-- Hook xmlrpc sync plugins -->
 <?php
                 foreach ($syncplugins as $syncid => $synccnf):?>
@@ -431,7 +352,7 @@ include("head.inc");
                   <td></td>
                   <td>
                     <input name="Submit" type="submit" class="btn btn-primary" value="Save" />
-                    <input type="button" class="btn btn-default" value="<?=gettext("Cancel");?>" onclick="window.location.href='<?=(isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/system_hasync.php');?>'" />
+                    <input type="button" class="btn btn-default" value="<?=gettext("Cancel");?>" onclick="window.location.href='/system_hasync.php'" />
                   </td>
                 </tr>
               </table>

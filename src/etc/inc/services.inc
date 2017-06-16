@@ -1393,8 +1393,9 @@ function services_dhcrelay_configure($verbose = false)
                         break;
                     }
                 }
-            } else
-            $destif = get_real_interface("wan");
+            } else {
+                $destif = get_real_interface("wan");
+            }
         }
 
         if (!empty($destif)) {
@@ -1415,7 +1416,7 @@ function services_dhcrelay_configure($verbose = false)
     }
 
     if ($verbose) {
-        echo "done\n";
+        echo "done.\n";
     }
 }
 
@@ -1529,7 +1530,7 @@ function services_dhcrelay6_configure($verbose = false)
     }
 
     if ($verbose) {
-        echo "done\n";
+        echo "done.\n";
     }
 }
 
@@ -1568,8 +1569,8 @@ function services_dyndns_list()
     );
 }
 
-function services_dyndns_configure_client($conf) {
-
+function services_dyndns_configure_client($conf)
+{
     if (!isset($conf['enable'])) {
         return;
     }
@@ -1597,7 +1598,7 @@ function services_dyndns_configure_client($conf) {
     );
 }
 
-function services_dyndns_configure($int = '')
+function services_dyndns_configure($int = '', $verbose = false)
 {
     global $config;
 
@@ -1605,8 +1606,9 @@ function services_dyndns_configure($int = '')
         $dyndnscfg = $config['dyndnses']['dyndns'];
         $gwgroups = return_gateway_groups_array();
         if (is_array($dyndnscfg)) {
-            if (file_exists("/var/run/booting")) {
-                echo gettext("Starting dynamic DNS clients...");
+            if ($verbose) {
+                echo 'Starting dynamic DNS clients...';
+                flush();
             }
 
             foreach ($dyndnscfg as $dyndns) {
@@ -1619,8 +1621,8 @@ function services_dyndns_configure($int = '')
                 }
             }
 
-            if (file_exists("/var/run/booting")) {
-                echo gettext("done.") . "\n";
+            if ($verbose) {
+                echo "done.\n";
             }
         }
     }

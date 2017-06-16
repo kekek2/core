@@ -97,20 +97,40 @@ class MenuItem
     private $selected = false;
 
     /**
+     * class method getters
+     * @var array
+     */
+    private static $internalClassGetterNames = null;
+
+    /**
+     * class method setters
+     * @var array
+     */
+    private static $internalClassSetterNames = null;
+
+    /**
+     * map internal methods to support faster case-insensitive matching
+     * @var array|null
+     */
+    private static $internalClassMethodAliases = null;
+
+    /**
      * Find setter for property, ignore case
      * @param string $name property name
      * @return null|string method name
      */
     private function getXmlPropertySetterName($name)
     {
-        $class_methods = get_class_methods($this);
-        foreach ($class_methods as $method_name) {
-            if ("set".strtolower($name) == strtolower($method_name)) {
-                return $method_name;
+        if (!isset(self::$internalClassMethodAliases[$name])) {
+            self::$internalClassMethodAliases[$name] = null;
+            $propKey = strtolower($name);
+            foreach (self::$internalClassSetterNames as $methodName => $propValue) {
+                if ($propKey == strtolower($propValue)) {
+                    self::$internalClassMethodAliases[$name] = $methodName;
+                }
             }
         }
-
-        return null;
+        return self::$internalClassMethodAliases[$name];
     }
 
     /**
@@ -123,6 +143,23 @@ class MenuItem
         $this->id = $id;
         $this->visibleName = $id;
         $this->parent = $parent;
+        $prop_exclude_list = array("getXmlPropertySetterName" => true);
+        if (self::$internalClassMethodAliases === null) {
+            self::$internalClassMethodAliases = array();
+            self::$internalClassSetterNames = array();
+            self::$internalClassGetterNames = array();
+            // cache method names, get_class_methods() should always return the initial methods.
+            // Caching the methods delivers quite some performance at minimal memory cost.
+            foreach (get_class_methods($this) as $methodName) {
+                if (!isset($prop_exclude_list[$methodName])) {
+                    if (substr($methodName, 0, 3) == "get") {
+                        self::$internalClassGetterNames[$methodName] = substr($methodName, 3);
+                    } elseif (substr($methodName, 0, 3) == "set") {
+                        self::$internalClassSetterNames[$methodName] = substr($methodName, 3);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -244,6 +281,15 @@ class MenuItem
     }
 
     /**
+     * is node visible
+     * @return bool
+     */
+    public function isVisible()
+    {
+        return $this->visibility  != 'delete';
+    }
+
+    /**
      * check if this item is selected
      * @return bool is this item selected
      */
@@ -277,7 +323,9 @@ class MenuItem
         // set attributes
         foreach ($properties as $propname => $propvalue) {
             $methodName = $newMenuItem->getXmlPropertySetterName($propname);
-            $newMenuItem->$methodName((string)$propvalue);
+            if ($methodName !== null) {
+                $newMenuItem->$methodName((string)$propvalue);
+            }
         }
 
         $orderNum = sprintf("%05d", $newMenuItem->getOrder());
@@ -340,34 +388,19 @@ class MenuItem
     public function toggleSelected($url)
     {
         $this->selected = false;
-        foreach ($this->getFilteredChildren() as $nodeId => $node) {
-            $node->toggleSelected($url);
-            if ($node->getUrl() != "") {
-                // hash part isn't available on server end
-                $menuItemUrl = explode("#", $node->getUrl())[0];
-                $match =  str_replace(array(".", "*","?"), array("\.", ".*","\?"), $menuItemUrl);
-                if (preg_match("@^{$match}$@", "{$url}")) {
-                    $node->select();
+        foreach ($this->children as $nodeId => &$node) {
+            if ($node->isVisible()) {
+                $node->toggleSelected($url);
+                if ($node->getUrl() != "") {
+                    // hash part isn't available on server end
+                    $menuItemUrl = explode("#", $node->getUrl())[0];
+                    $match =  str_replace(array(".", "*","?"), array("\.", ".*","\?"), $menuItemUrl);
+                    if (preg_match("@^{$match}$@", "{$url}")) {
+                        $node->select();
+                    }
                 }
             }
         }
-    }
-
-    /**
-     * Menu items are pluggable and can override already existing sections.
-     * This function filters the available child items and only return the still existing ones.
-     * @return array filtered set of children
-     */
-    private function getFilteredChildren()
-    {
-        $result = array();
-        foreach ($this->children as $key => $node) {
-            if ($node->getVisibility() != 'delete') {
-                $result[$key] = $node;
-            }
-        }
-        ksort($result);
-        return $result;
     }
 
     /**
@@ -377,23 +410,16 @@ class MenuItem
     public function getChildren()
     {
         $result = array();
-        $properties = array();
-        // probe this object for available setters, so we know what to publish to the outside world.
-        $prop_exclude_list = array("getXmlPropertySetterName");
-        $class_methods = get_class_methods($this);
-        foreach ($class_methods as $method_name) {
-            if (substr($method_name, 0, 3) == "get" && in_array($method_name, $prop_exclude_list) == false) {
-                $properties[$method_name] = substr($method_name, 3);
-            }
-        }
-
         // sort by order/id and map getters to array items
-        foreach ($this->getFilteredChildren() as $key => $node) {
-            $result[$node->id] = new \stdClass();
-            foreach ($properties as $methodName => $propName) {
-                $result[$node->id]->{$propName} = $node->$methodName();
+        foreach ($this->children as $key => &$node) {
+            if ($node->isVisible()) {
+                $result[$key] = new \stdClass();
+                foreach (self::$internalClassGetterNames as $methodName => $propName) {
+                    $result[$key]->{$propName} = $node->$methodName();
+                }
             }
         }
+        ksort($result);
 
         return $result;
     }
@@ -405,8 +431,8 @@ class MenuItem
      */
     public function findNodeById($id)
     {
-        foreach ($this->getFilteredChildren() as $key => $node) {
-            if (strtolower($node->getId()) == strtolower($id)) {
+        foreach ($this->children as $key => &$node) {
+            if ($node->isVisible() && strtolower($node->getId()) == strtolower($id)) {
                 return $node;
             }
         }

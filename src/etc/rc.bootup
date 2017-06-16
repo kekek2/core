@@ -2,6 +2,7 @@
 <?php
 
 /*
+    Copyright (C) 2014-2016 Franco Fichtner <franco@opnsense.org>
     Copyright (C) 2004-2009 Scott Ullrich <sullrich@pfsense.org>.
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
     Copyright (C) 2009 Erik Kristensen
@@ -57,8 +58,15 @@ foreach ($inc_files as $inc_file) {
 
 echo "done.\n";
 
-system_devd_configure(true);
-system_login_configure(true);
+/*
+ * Now mute console messages from kernel for this script, it
+ * has consequences for printing bootup info and can clobber
+ * stty probing during interface auto-detection.
+ */
+system_console_mute();
+
+/* loopback device is required early for syslog and the installer */
+interfaces_loopback_configure(true);
 
 $setup_installer = is_install_media();
 if ($setup_installer) {
@@ -85,6 +93,9 @@ global $config;
 $config = parse_config(true);
 convert_config();
 
+system_devd_configure(true);
+system_login_configure(true);
+
 /*
  *  Determine if we need to throw a interface exception
  *  and ask the user to reassign interfaces.  This will
@@ -100,94 +111,43 @@ system_sysctl_configure(true);
 system_timezone_configure(true);
 system_firmware_configure(true);
 system_hostname_configure(true);
-
-/* make hosts file */
-system_hosts_generate();
-
-/* configure loopback interface */
-interfaces_loopback_configure();
-
-/* start syslogd */
+system_hosts_generate(true);
 system_syslogd_start(true);
 
-/* set up interfaces */
-system_console_mute();
-openvpn_prepare_all();
-interfaces_configure();
-system_console_unmute();
+openvpn_prepare_all(true);
+interfaces_configure(true);
+openvpn_resync_all(null, true);
 
-/* start OpenVPN server & clients */
-echo "Syncing OpenVPN settings...";
-openvpn_resync_all();
-echo "done.\n";
-
-/* generate resolv.conf */
-system_resolvconf_generate();
-
-/* setup pf */
+system_resolvconf_generate(true);
 filter_configure_sync(true);
-
-/* start pflog */
-echo "Starting PFLOG...";
-filter_pflog_start();
-echo "done.\n";
-
-/* reconfigure our gateway monitor */
-echo "Setting up gateway monitors...";
-setup_gateways_monitor();
-echo "done.\n";
-
-echo "Synchronizing user settings...";
-local_sync_accounts();
-echo "done.\n";
-
-/* start ssh daemon */
-mwexec("/usr/local/etc/rc.sshd");
-
-/* start web server */
-echo 'Starting webConfigurator...'. (system_webgui_configure() ? "done.\n" : "failed.\n");
-
+filter_pflog_start(true);
+setup_gateways_monitor(true);
+system_webgui_configure(true);
 system_cron_configure(true);
-system_routing_configure();
-system_routing_enable();
+system_routing_configure('', true);
+
 dnsmasq_configure_do(true);
 unbound_configure_do(true);
 services_dhcpd_configure('all', array(), true);
-system_hosts_generate();
+system_hosts_generate(true);
 services_dhcrelay_configure(true);
 services_dhcrelay6_configure(true);
 
-/* dyndns service updates */
-mwexec("/usr/local/etc/rc.dyndns.update");
+mwexec("/usr/local/etc/rc.sshd"); /* XXX convert to plugin */
+mwexec("/usr/local/etc/rc.dyndns.update"); /* XXX convert to plugin */
 
-/* Run a filter configure now that most all services have started */
+prefer_ipv4_or_ipv6();
 filter_configure_sync(true);
 
-/* start all registered plugins */
 if (function_exists('plugins_configure')) {
     plugins_configure('bootup', true);
 }
 
 /* start IPsec tunnels */
-$ipsec_dynamic_hosts = ipsec_configure();
+$ipsec_dynamic_hosts = ipsec_configure(true);
 
-/* load graphing functions */
 enable_rrd_graphing(true);
-
-/* if we are operating at 1000 then increase timeouts.
-   this was never accounted for after moving to 1000 hz */
-$kern_hz = get_single_sysctl('kern.clockrate');
-$kern_hz = substr($kern_hz, strpos($kern_hz, 'hz = ') + 5);
-$kern_hz = substr($kern_hz, 0, strpos($kern_hz, ','));
-if ($kern_hz == '1000') {
-    set_single_sysctl('net.inet.tcp.rexmit_min' , '30');
-}
-
-/* If powerd is enabled, lets launch it */
-activate_powerd();
-
-/* Set preferred protocol */
-prefer_ipv4_or_ipv6();
+system_powerd_configure(true);
 
 /*
  * Give syslogd a kick after everything else has been
@@ -198,8 +158,7 @@ system_syslogd_start(true);
 
 /* If there are ipsec dynamic hosts try again to reload the tunnels as rc.newipsecdns does */
 if ($ipsec_dynamic_hosts) {
-    ipsec_configure();
-    filter_configure();
+    ipsec_configure(true);
 }
 
 // generate configuration data for all installed templates
@@ -229,7 +188,7 @@ if ($setup_installer) {
     if ($root) {
         $root['shell'] = '/usr/local/etc/rc.installer';
         $root['name'] = 'installer';
-        local_user_set($root);
+        local_user_set($root, true);
 
         mwexec("/usr/local/etc/rc.sshd installer");
 
@@ -239,5 +198,7 @@ if ($setup_installer) {
         echo "password works for both accounts.  Remote login via SSH is possible.\n\n";
     }
 }
+
+system_console_unmute();
 
 exit(0);

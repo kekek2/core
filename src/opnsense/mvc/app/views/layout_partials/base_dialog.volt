@@ -34,32 +34,56 @@ label           :   dialog label
 
 #}
 
+{%- macro base_dialog_header(header_text) %}
+      </tbody>
+    </table>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-striped table-condensed">
+        <colgroup>
+            <col class="col-md-3"/>
+            <col class="col-md-{{ 12-3-msgzone_width|default(5) }}"/>
+            <col class="col-md-{{ msgzone_width|default(5) }}"/>
+        </colgroup>
+        <thead>
+          <tr colspan="3">
+            <th><h2>{{header_text}}</h2></th>
+          </tr>
+        </thead>
+        <tbody>
+{%- endmacro %}
+
+{# Volt templates in php7 have issues with scope sometimes, copy input values to make them more unique #}
+{% set base_dialog_id=id %}
+{% set base_dialog_fields=fields %}
+{% set base_dialog_label=label %}
+
 {# Find if there are help supported or advanced field on this page #}
-{% set help=false %}
-{% set advanced=false %}
-{% for field in fields|default({})%}
+{% set base_dialog_help=false %}
+{% set base_dialog_advanced=false %}
+{% for field in base_dialog_fields|default({})%}
     {% for name,element in field %}
         {% if name=='help' %}
-            {% set help=true %}
+            {% set base_dialog_help=true %}
         {% endif %}
         {% if name=='advanced' %}
-            {% set advanced=true %}
+            {% set base_dialog_advanced=true %}
         {% endif %}
     {% endfor %}
-    {% if help|default(false) and advanced|default(false) %}
+    {% if base_dialog_help|default(false) and base_dialog_advanced|default(false) %}
         {% break %}
     {% endif %}
 {% endfor %}
 
-<div class="modal fade" id="{{id}}" tabindex="-1" role="dialog" aria-labelledby="{{id}}Label" aria-hidden="true">
+<div class="modal fade" id="{{base_dialog_id}}" tabindex="-1" role="dialog" aria-labelledby="{{base_dialog_id}}Label" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="{{id}}Label">{{label}}</h4>
+                <h4 class="modal-title" id="{{base_dialog_id}}Label">{{base_dialog_label}}</h4>
             </div>
             <div class="modal-body">
-                <form id="frm_{{id}}">
+                <form id="frm_{{base_dialog_id}}">
                   <div class="table-responsive">
                     <table class="table table-striped table-condensed">
                         <colgroup>
@@ -68,33 +92,26 @@ label           :   dialog label
                             <col class="col-md-{{ msgzone_width|default(5) }}"/>
                         </colgroup>
                         <tbody>
-                        {%  if advanced|default(false) or help|default(false) %}
+                        {%  if base_dialog_advanced|default(false) or base_dialog_help|default(false) %}
                         <tr>
-                            <td>{% if advanced|default(false) %}<a href="#"><i class="fa fa-toggle-off text-danger" id="show_advanced_formDialog{{id}}"></i> </a><small>{{ lang._('advanced mode') }} </small>{% endif %}</td>
+                            <td>{% if base_dialog_advanced|default(false) %}<a href="#"><i class="fa fa-toggle-off text-danger" id="show_advanced_formDialog{{base_dialog_id}}"></i> </a><small>{{ lang._('advanced mode') }} </small>{% endif %}</td>
                             <td colspan="2" style="text-align:right;">
-                                {% if help|default(false) %}<small>{{ lang._('full help') }} </small><a href="#"><i class="fa fa-toggle-off text-danger" id="show_all_help_formDialog{{id}}"></i></a>{% endif %}
+                                {% if base_dialog_help|default(false) %}<small>{{ lang._('full help') }} </small><a href="#"><i class="fa fa-toggle-off text-danger" id="show_all_help_formDialog{{base_dialog_id}}"></i></a>{% endif %}
                             </td>
                         </tr>
                         {% endif %}
-                        {% for field in fields|default({})%}
+                        {% for field in base_dialog_fields|default({})%}
+                            {% set advanced=false %}
+                            {% set help=false %}
+                            {% set style=false %}
+                            {% set hint=false %}
+                            {% set style=false %}
+                            {% set maxheight=false %}
+                            {% set width=false %}
+                            {% set allownew=false %}
                             {% if field['type'] == 'header' %}
                               {# close table and start new one with header #}
-                        </tbody>
-                    </table>
-                  </div>
-                  <div class="table-responsive">
-                    <table class="table table-striped table-condensed">
-                        <colgroup>
-                            <col class="col-md-3"/>
-                            <col class="col-md-{{ 12-3-msgzone_width|default(5) }}"/>
-                            <col class="col-md-{{ msgzone_width|default(5) }}"/>
-                        </colgroup>
-                        <thead>
-                          <tr colspan="3">
-                            <th><h2>{{field['label']}}</h2></th>
-                          </tr>
-                        </thead>
-                        <tbody>
+                              {{ base_dialog_header(field['label']) }}
                             {% else %}
                               {{ partial("layout_partials/form_input_tr",field)}}
                             {% endif %}
@@ -107,7 +124,7 @@ label           :   dialog label
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">{{ lang._('Close') }}</button>
                 {% if hasSaveBtn|default('true') == 'true' %}
-                <button type="button" class="btn btn-primary" id="btn_{{id}}_save">{{ lang._('Save changes') }}<i id="btn_{{id}}_save_progress" class=""></i></button>
+                <button type="button" class="btn btn-primary" id="btn_{{base_dialog_id}}_save">{{ lang._('Save changes') }}<i id="btn_{{base_dialog_id}}_save_progress" class=""></i></button>
                 {% endif %}
             </div>
         </div>

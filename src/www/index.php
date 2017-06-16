@@ -103,8 +103,6 @@ include("head.inc");
 include("fbegin.inc");?>
 
 <?php
-  ## If it is the first time webConfigurator has been
-  ## accessed since initial install show this stuff.
   if (isset($config['trigger_initial_wizard'])) :?>
   <script type="text/javascript">
       $( document ).ready(function() {
@@ -281,7 +279,7 @@ include("fbegin.inc");?>
               if (classname.indexOf('col-md') > -1) {
                   widget_col.removeClass(classname);
               }
-           });;
+           });
            widget_col.addClass('col-md-'+(12 / $("#column_count_input").val()));
          });
       });

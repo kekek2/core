@@ -235,6 +235,7 @@
       <permitrootlogin>1</permitrootlogin>
     </ssh>
     <disablebeep>1</disablebeep>
+    <crypto_hardware>aesni</crypto_hardware>
   </system>
   <interfaces>
     <wan>

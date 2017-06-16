@@ -392,8 +392,10 @@ function local_sync_accounts()
     }
 }
 
-function local_user_set(&$user)
+function local_user_set(&$user, $force_password = false)
 {
+    global $config;
+
     if (empty($user['password'])) {
         log_error(sprintf(
           gettext('There is something wrong in your config because user %s password is missing!'),
@@ -404,6 +406,7 @@ function local_user_set(&$user)
 
     $user_uid = $user['uid'];
     $user_name = $user['name'];
+    $user_pass = $user['password'];
     $user_home = "/home/{$user_name}";
     $user_shell = '/sbin/nologin';
     $user_group = 'nobody';
@@ -424,6 +427,11 @@ function local_user_set(&$user)
     /* unlock valid shell users */
     if (!is_account_disabled($user_name) && !is_account_expired($user_name)) {
         $lock_account = 'unlock';
+    }
+
+    /* passwords only when integrated auth is disabled or forced */
+    if (!$force_password && empty($config['system']['disableintegratedauth'])) {
+        $user_pass = '*';
     }
 
     /* root user special handling */
@@ -452,7 +460,7 @@ function local_user_set(&$user)
       " -g {$user_group} -s {$user_shell} -d {$user_home}".
       " -c ".escapeshellarg($comment)." -H 0 2>&1";
     $fd = popen($cmd, 'w');
-    fwrite($fd, $user['password']);
+    fwrite($fd, $user_pass);
     pclose($fd);
 
     /* create user directory if required */

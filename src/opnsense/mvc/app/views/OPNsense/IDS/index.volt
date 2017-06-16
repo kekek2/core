@@ -153,6 +153,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     if (status == "success" || data['status'].toLowerCase().trim() == "ok") {
                         result_status = true;
                     }
+                    $('#scheduled_updates').show();
                     callback_funct(result_status);
                 });
             });
@@ -205,7 +206,68 @@ POSSIBILITY OF SUCH DAMAGE.
          * load content on tab changes
          */
         $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
-            if (e.target.id == 'rule_tab'){
+            if (e.target.id == 'settings_tab'){
+                loadGeneralSettings();
+            } else if (e.target.id == 'download_settings_tab') {
+                /**
+                 * grid for installable rule files
+                 */
+                $('#grid-rule-files').bootgrid('destroy'); // always destroy previous grid, so data is always fresh
+                $("#grid-rule-files").UIBootgrid({
+                    search:'/api/ids/settings/listRulesets',
+                    get:'/api/ids/settings/getRuleset/',
+                    set:'/api/ids/settings/setRuleset/',
+                    toggle:'/api/ids/settings/toggleRuleset/',
+                    options:{
+                        navigation:0,
+                        formatters:{
+                            rowtoggle: function (column, row) {
+                                var toggle = " <button type=\"button\" class=\"btn btn-xs btn-default command-edit\" data-row-id=\"" + row.filename + "\"><span class=\"fa fa-pencil\"></span></button> ";
+                                if (parseInt(row[column.id], 2) == 1) {
+                                    toggle += "<span style=\"cursor: pointer;\" class=\"fa fa-check-square-o command-toggle\" data-value=\"1\" data-row-id=\"" + row.filename + "\"></span>";
+                                } else {
+                                    toggle += "<span style=\"cursor: pointer;\" class=\"fa fa-square-o command-toggle\" data-value=\"0\" data-row-id=\"" + row.filename + "\"></span>";
+                                }
+                                return toggle;
+                            }
+                        },
+                        converters: {
+                            // show "not installed" for rules without timestamp (not on disc)
+                            rulets: {
+                                from: function (value) {
+                                    return value;
+                                },
+                                to: function (value) {
+                                    if ( value == null ) {
+                                        return "{{ lang._('not installed') }}";
+                                    } else {
+                                        return value;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                // display file settings (if available)
+                ajaxGet(url="/api/ids/settings/getRulesetproperties", sendData={}, callback=function(data, status) {
+                    if (status == "success") {
+                        var rows = [];
+                        // generate rows with field references
+                        $.each(data['properties'], function(key, value) {
+                            rows.push('<tr><td>'+key+'</td><td><input class="rulesetprop" data-id="'+key+'" type="text"></td></tr>');
+                        });
+                        $("#grid-rule-files-settings > tbody").html(rows.join(''));
+                        // update with data
+                        $(".rulesetprop").each(function(){
+                            $(this).val(data['properties'][$(this).data('id')]);
+                        });
+                        if (rows.length > 0) {
+                            $("#grid-rule-files-settings").parent().parent().show();
+                            $("#updateSettings").show();
+                        }
+                    }
+                });
+            } else if (e.target.id == 'rule_tab'){
                 //
                 // activate rule tab page
                 //
@@ -273,48 +335,10 @@ POSSIBILITY OF SUCH DAMAGE.
                         toggle:'/api/ids/settings/toggleUserRule/'
                     }
                 );
-
             }
         })
 
-        /**
-         * grid for installable rule files
-         */
-        $("#grid-rule-files").UIBootgrid(
-                {   search:'/api/ids/settings/listRulesets',
-                    get:'/api/ids/settings/getRuleset/',
-                    set:'/api/ids/settings/setRuleset/',
-                    toggle:'/api/ids/settings/toggleRuleset/',
-                    options:{
-                        navigation:0,
-                        formatters:{
-                            rowtoggle: function (column, row) {
-                                var toggle = " <button type=\"button\" class=\"btn btn-xs btn-default command-edit\" data-row-id=\"" + row.filename + "\"><span class=\"fa fa-pencil\"></span></button> ";
-                                if (parseInt(row[column.id], 2) == 1) {
-                                    toggle += "<span style=\"cursor: pointer;\" class=\"fa fa-check-square-o command-toggle\" data-value=\"1\" data-row-id=\"" + row.filename + "\"></span>";
-                                } else {
-                                    toggle += "<span style=\"cursor: pointer;\" class=\"fa fa-square-o command-toggle\" data-value=\"0\" data-row-id=\"" + row.filename + "\"></span>";
-                                }
-                                return toggle;
-                            }
-                        },
-                        converters: {
-                            // show "not installed" for rules without timestamp (not on disc)
-                            rulets: {
-                                from: function (value) {
-                                    return value;
-                                },
-                                to: function (value) {
-                                    if ( value == null ) {
-                                        return "{{ lang._('not installed') }}";
-                                    } else {
-                                        return value;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
+
 
         /*************************************************************************************************************
          * UI button Commands
@@ -340,6 +364,16 @@ POSSIBILITY OF SUCH DAMAGE.
                 }
             });
         });
+        $("#updateSettings").click(function(){
+            $("#updateSettings_progress").addClass("fa fa-spinner fa-pulse");
+            var settings = {};
+            $(".rulesetprop").each(function(){
+                settings[$(this).data('id')] = $(this).val();
+            });
+            ajaxCall(url="/api/ids/settings/setRulesetproperties", sendData={'properties': settings}, callback=function(data,status) {
+                $("#updateSettings_progress").removeClass("fa fa-spinner fa-pulse");
+            });
+        });
 
         /**
          * update (userdefined) rules
@@ -361,15 +395,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 // when done, disable progress animation and reload grid.
                 $('#grid-rule-files').bootgrid('reload');
                 updateStatus();
-                if ($('#scheduled_updates').is(':hidden') ){
-                    // save and reconfigure on initial download (tries to create a cron job)
-                    actionReconfigure(function(status){
-                        loadGeneralSettings();
-                        $("#updateRulesAct_progress").removeClass("fa fa-spinner fa-pulse");
-                    });
-                } else {
-                    $("#updateRulesAct_progress").removeClass("fa fa-spinner fa-pulse");
-                }
+                $("#updateRulesAct_progress").removeClass("fa fa-spinner fa-pulse");
             });
         });
 
@@ -421,6 +447,18 @@ POSSIBILITY OF SUCH DAMAGE.
             }
         });
 
+        $("#grid-rule-files-search").keydown(function (e) {
+            var searchString = $(this).val();
+            $("#grid-rule-files > tbody > tr").each(function(){
+                var itemName = $(this).children('td:eq(1)').html();
+                if (itemName.toLowerCase().indexOf(searchString.toLowerCase())>=0) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        });
+
         /**
          * Change sid to action selector after DialogAlert show
          */
@@ -459,13 +497,15 @@ POSSIBILITY OF SUCH DAMAGE.
         /**
          * Initialize
          */
-        loadGeneralSettings();
         updateStatus();
 
         // update history on tab state and implement navigation
-        if(window.location.hash != "") {
-            $('a[href="' + window.location.hash + '"]').click()
+        if (window.location.hash != "") {
+            $('a[href="' + window.location.hash + '"]').click();
+        } else {
+            $('a[href="#settings"]').click();
         }
+
         $('.nav-tabs a').on('shown.bs.tab', function (e) {
             history.pushState(null, null, e.target.hash);
         });
@@ -508,22 +548,27 @@ POSSIBILITY OF SUCH DAMAGE.
 </script>
 
 <ul class="nav nav-tabs" data-tabs="tabs" id="maintabs">
-    <li class="active"><a data-toggle="tab" href="#settings" id="settings_tab">{{ lang._('Settings') }}</a></li>
+    <li><a data-toggle="tab" href="#settings" id="settings_tab">{{ lang._('Settings') }}</a></li>
+    <li><a data-toggle="tab" href="#download_settings" id="download_settings_tab">{{ lang._('Download') }}</a></li>
     <li><a data-toggle="tab" href="#rules" id="rule_tab">{{ lang._('Rules') }}</a></li>
     <li><a data-toggle="tab" href="#userrules" id="userrules_tab">{{ lang._('User defined') }}</a></li>
     <li><a data-toggle="tab" href="#alerts" id="alert_tab">{{ lang._('Alerts') }}</a></li>
     <li><a href="" id="scheduled_updates" style="display:none">{{ lang._('Schedule') }}</a></li>
 </ul>
 <div class="tab-content content-box tab-content">
-    <div id="settings" class="tab-pane fade in active">
+    <div id="settings" class="tab-pane fade in">
         {{ partial("layout_partials/base_form",['fields':formGeneralSettings,'id':'frm_GeneralSettings'])}}
-        <!-- add installable rule files -->
-        <table class="table table-striped table-condensed table-responsive">
-            <colgroup>
-                <col class="col-md-3"/>
-                <col class="col-md-9"/>
-            </colgroup>
-            <tbody>
+        <div class="col-md-12">
+            <hr/>
+            <button class="btn btn-primary" id="reconfigureAct" type="button"><b>{{ lang._('Apply') }}</b> <i id="reconfigureAct_progress" class=""></i></button>
+            <br/>
+            <br/>
+        </div>
+    </div>
+    <div id="download_settings" class="tab-pane fade in">
+      <!-- add installable rule files -->
+      <table class="table table-striped table-condensed table-responsive">
+          <tbody>
             <tr>
                 <td><div class="control-label">
                     <i class="fa fa-info-circle text-muted"></i>
@@ -534,35 +579,57 @@ POSSIBILITY OF SUCH DAMAGE.
                   <table class="table table-condensed table-responsive">
                     <tr>
                       <td>
-                        <button data-toggle="tooltip" id="enableSelectedRuleSets" type="button" class="btn btn-xs btn-default btn-primary">{{ lang._('Enable selected') }}</span></button>
-                        <button data-toggle="tooltip" id="disableSelectedRuleSets" type="button" class="btn btn-xs btn-default btn-primary">{{ lang._('Disable selected') }}</span></button>
+                        <div class="row">
+                          <div class="col-xs-9">
+                            <button data-toggle="tooltip" id="enableSelectedRuleSets" type="button" class="btn btn-xs btn-default btn-primary">{{ lang._('Enable selected') }}</span></button>
+                            <button data-toggle="tooltip" id="disableSelectedRuleSets" type="button" class="btn btn-xs btn-default btn-primary">{{ lang._('Disable selected') }}</span></button>
+                          </div>
+                          <div class="col-xs-3" style="padding-top:0px;">
+                            <input type="text" placeholder="{{ lang._('Search') }}" id="grid-rule-files-search" value=""/>
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   </table>
-                <table id="grid-rule-files" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogRuleset">
-                    <thead>
-                    <tr>
-                        <th data-column-id="filename" data-type="string" data-visible="false" data-identifier="true">{{ lang._('Filename') }}</th>
-                        <th data-column-id="description" data-type="string" data-sortable="false" data-visible="true">{{ lang._('Description') }}</th>
-                        <th data-column-id="modified_local" data-type="rulets" data-sortable="false" data-visible="true">{{ lang._('Last updated') }}</th>
-                        <th data-column-id="filter_str" data-type="string" data-identifier="true">{{ lang._('Filter') }}</th>
-                        <th data-column-id="enabled" data-formatter="rowtoggle" data-sortable="false" data-width="10em">{{ lang._('Commands') }}</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    </tbody>
-                </table>
+                  <div style="max-height: 400px; width: 100%; margin: 0; overflow-y: auto;" id="grid-rule-files-container">
+                    <table id="grid-rule-files" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogRuleset">
+                        <thead>
+                        <tr>
+                            <th data-column-id="filename" data-type="string" data-visible="false" data-identifier="true">{{ lang._('Filename') }}</th>
+                            <th data-column-id="description" data-type="string" data-sortable="false" data-visible="true">{{ lang._('Description') }}</th>
+                            <th data-column-id="modified_local" data-type="rulets" data-sortable="false" data-visible="true">{{ lang._('Last updated') }}</th>
+                            <th data-column-id="filter_str" data-type="string" data-identifier="true">{{ lang._('Filter') }}</th>
+                            <th data-column-id="enabled" data-formatter="rowtoggle" data-sortable="false" data-width="10em">{{ lang._('Commands') }}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                  </div>
                 </td>
             </tr>
-            </tbody>
-        </table>
-        <div class="col-md-12">
-            <hr/>
-            <button class="btn btn-primary" id="reconfigureAct" type="button"><b>{{ lang._('Apply') }}</b><i id="reconfigureAct_progress" class=""></i></button>
-            <button class="btn btn-primary" id="updateRulesAct" type="button"><b>{{ lang._('Download & Update Rules') }}</b><i id="updateRulesAct_progress" class=""></i></button>
-            <br/>
-            <i>{{ lang._('Please use "Download & Update Rules" to fetch your initial ruleset, automatic updating can be scheduled after the first download.') }} </i>
-        </div>
+            <tr style="display:none">
+                <td><div class="control-label">
+                    <i class="fa fa-info-circle text-muted"></i>
+                    <b>{{ lang._('Settings') }}</b>
+                    </div>
+                </td>
+                <td>
+                  <table id="grid-rule-files-settings" class="table-condensed table-hover">
+                    <tbody>
+                    </tbody>
+                  </table>
+                </td>
+            </tr>
+          </tbody>
+      </table>
+      <div class="col-md-12">
+          <hr/>
+          <button class="btn btn-primary" style="display:none" id="updateSettings" type="button"><b>{{ lang._('Save') }}</b> <i id="updateSettings_progress" class=""></i></button>
+          <button class="btn btn-primary" id="updateRulesAct" type="button"><b>{{ lang._('Download & Update Rules') }}</b> <i id="updateRulesAct_progress" class=""></i></button>
+          <br/>
+          <i>{{ lang._('Please use "Download & Update Rules" to fetch your initial ruleset, automatic updating can be scheduled after the first download.') }} </i>
+      </div>
     </div>
     <div id="rules" class="tab-pane fade in">
         <div class="bootgrid-header container-fluid">
@@ -607,7 +674,7 @@ POSSIBILITY OF SUCH DAMAGE.
         </table>
         <div class="col-md-12">
             <hr/>
-            <button class="btn btn-primary act_update" type="button"><b>{{ lang._('Apply') }}</b><i class="act_update_progress"></i></button>
+            <button class="btn btn-primary act_update" type="button"><b>{{ lang._('Apply') }}</b> <i class="act_update_progress"></i></button>
             <br/>
             <br/>
         </div>
@@ -638,7 +705,7 @@ POSSIBILITY OF SUCH DAMAGE.
         </table>
         <div class="col-md-12">
             <hr/>
-            <button class="btn btn-primary act_update" type="button"><b>{{ lang._('Apply') }}</b><i class="act_update_progress"></i></button>
+            <button class="btn btn-primary act_update" type="button"><b>{{ lang._('Apply') }}</b> <i class="act_update_progress"></i></button>
             <br/>
             <br/>
         </div>
