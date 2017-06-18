@@ -1,6 +1,6 @@
 TING: {
   fingerprints: "/usr/local/etc/pkg/fingerprints/TING",
-  url: "pkg+https://update0.smart-soft.ru/${ABI}/1.0/latest",
+  url: "pkg+https://update0.smart-soft.ru/${ABI}/%%CORE_REPOSITORY%%",
   signature_type: "fingerprints",
   mirror_type: "srv",
   priority: 11,
