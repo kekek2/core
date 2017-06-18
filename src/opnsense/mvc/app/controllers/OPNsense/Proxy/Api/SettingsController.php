@@ -33,9 +33,6 @@ use \OPNsense\Cron\Cron;
 use \OPNsense\Core\Config;
 use \OPNsense\Base\UIModelGrid;
 
-// For configure root crontab
-require_once("util.inc");
-require_once("services.inc");
 include_once('/usr/local/opnsense/contrib/simplepie/idn/idna_convert.class.php');
 
 /**
@@ -46,14 +43,6 @@ class SettingsController extends ApiMutableModelControllerBase
 {
     static protected $internalModelName = 'proxy';
     static protected $internalModelClass = '\OPNsense\Proxy\Proxy';
-
-    protected function setActionHook()
-    {
-        // ugly hack
-        global $config;
-        $config = Config::getInstance()->toArray();
-        configure_cron();
-    }
 
     /**
      *
