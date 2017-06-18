@@ -229,7 +229,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         /* timezone change first */
         system_timezone_configure();
 
-        if ($language_change) {
+        if ($language_change && isset($config['SmartSoft']['HAVP'])) {
           configd_run('template reload SmartSoft.HAVP');
           configd_run('havp restart');
         }
