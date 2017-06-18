@@ -98,6 +98,8 @@ class Voucher implements IAuthConnector
         $row = $results->fetchArray();
         if ($row['cnt'] == 0) {
             // new database, setup
+            chgrp($db_path, "voucher");
+            chmod($db_path, 0660);
             $sql_create = "
                 create table vouchers (
                       username      varchar2  -- username
@@ -134,6 +136,7 @@ class Voucher implements IAuthConnector
 
     private function setStartTime($username, $starttime)
     {
+        $this->dbHandle->exec("PRAGMA journal_mode=off");
         $stmt = $this->dbHandle->prepare('
                                 update vouchers
                                 set    starttime = :starttime
