@@ -574,6 +574,7 @@ class FirmwareController extends ApiControllerBase
     {
         // todo: we might want to move these into configuration files later
         $mirrors = array();
+
         $has_subscription = array();
 
         $flavours = array();
