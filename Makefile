@@ -137,7 +137,6 @@ CORE_DEPENDS?=		apinger \
 			unbound \
 			ting-update \
 			ting-lang \
-			cyrus-sasl-gssapi \
 			zip
 
 WRKDIR?=${.CURDIR}/work

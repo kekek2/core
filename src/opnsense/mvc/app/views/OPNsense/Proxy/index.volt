@@ -244,7 +244,6 @@ POSSIBILITY OF SUCH DAMAGE.
 {% endfor %}
     {# add custom content #}
     <li><a data-toggle="tab" href="#remote_acls"><b>{{ lang._('Remote Access Control Lists') }}</b></a></li>
-    <li><a data-toggle="tab" href="#kerberos"><b>{{ lang._('Kerberos Authentication') }}</b></a></li>
 </ul>
 
 <div class="content-box tab-content">
@@ -327,46 +326,6 @@ POSSIBILITY OF SUCH DAMAGE.
             </tr>
             </tbody>
         </table>
-    </div>
-    <div id="kerberos" class="tab-pane fade">
-        <div class="col-md-12">
-            <br/>
-            <table class="table opnsense_standard_table_form">
-              <tbody>
-                    <tr>
-                        <td width="22%">{{ lang._('AD admin login') }}</td>
-                        <td width="78%"><input type="text" id="admin_username" value=""></td>
-                   </tr>
-                   <tr>
-                        <td width="22%">{{ lang._('AD admin password') }}</td>
-                        <td width="78%"><input type="password" id="admin_password" value=""></td>
-                    </tr>
-                </body>
-            </table>
-            <button class="btn btn-primary" id="CreateKeytab" type="button"><b>{{ lang._('Create keytab') }}</b></button>
-            <br/>
-            <br/>
-            <table class="table opnsense_standard_table_form">
-              <tbody>
-                    <tr>
-                        <td width="22%">{{ lang._('Username') }}</td>
-                        <td width="78%"><input type="text" id="username" value=""></td>
-                   </tr>
-                   <tr>
-                        <td width="22%">{{ lang._('Password') }}</td>
-                        <td width="78%"><input type="password" id="password" value=""></td>
-                    </tr>
-                </body>
-            </table>
-            <button class="btn btn-primary" id="TestKerbLogin" type="button"><b>{{ lang._('Test Keberos login') }}</b></button>
-            <hr/>
-            <button class="btn btn-primary" id="ShowKeytab" type="button"><b>{{ lang._('Show keytab') }}</b></button>
-            <button class="btn btn-primary" id="DeleteKeytab" type="button"><b>{{ lang._('Delete keytab') }}</b></button>
-            <hr/>
-            <p><b>{{ lang._('Output') }}</b></p>
-            <pre id="kerberos_output"></pre>
-            <br/>
-        </div>
     </div>
 </div>
 
