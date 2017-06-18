@@ -136,8 +136,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 	
 	$restart_syslog = $config['system']['hostname'] != $pconfig['hostname'] || $config['system']['timezone'] != $pconfig['timezone'];
 	
-        $timezone_changed = $config['system']['timezone'] != $pconfig['timezone'];
-
         $config['system']['hostname'] = $pconfig['hostname'];
         $config['system']['domain'] = $pconfig['domain'];
         $config['system']['timezone'] = $pconfig['timezone'];
@@ -228,6 +226,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         write_config();
 
+        /* timezone change first */
+        system_timezone_configure();
+
         if ($language_change) {
           configd_run('template reload SmartSoft.HAVP');
           configd_run('havp restart');
@@ -240,14 +241,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         dnsmasq_configure_do();
         unbound_configure_do();
         services_dhcpd_configure();
-        system_timezone_configure();
-
-        if ($timezone_changed) {
-            // force real radvd restart
-            $radvd = find_service_by_name('radvd');
-            killbypid($radvd['pidfile'], 'TERM', true);
-            services_radvd_configure();
-        }
 
         if($restart_syslog) {
     	    system_syslogd_start();
