@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# Check pkg cache dir
+PKG_CACHEDIR=`/usr/sbin/pkg config PKG_CACHEDIR`
+[ -d ${PKG_CACHEDIR} ] || mkdir ${PKG_CACHEDIR}
