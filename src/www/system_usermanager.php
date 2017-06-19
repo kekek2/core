@@ -214,13 +214,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     } elseif (isset($pconfig['save'])) {
         // save user
         /* input validation */
-        if (isset($id)) {
-            $reqdfields = explode(" ", "usernamefld");
-            $reqdfieldsn = array(gettext("Username"));
-        } else {
-            $reqdfields = explode(" ", "usernamefld passwordfld1");
-            $reqdfieldsn = array(gettext("Username"), gettext("Password"));
-        }
+        $reqdfields = explode(' ', 'usernamefld');
+        $reqdfieldsn = array(gettext('Username'));
 
         do_input_validation($pconfig, $reqdfields, $reqdfieldsn, $input_errors);
 
@@ -228,12 +223,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $input_errors[] = gettext("The username contains invalid characters.");
         }
 
-        if (strlen($_POST['usernamefld']) > 16) {
-            $input_errors[] = gettext("The username is longer than 16 characters.");
+        if (strlen($pconfig['usernamefld']) > 32) {
+            $input_errors[] = gettext("The username is longer than 32 characters.");
         }
 
-        if (($pconfig['passwordfld1']) && ($pconfig['passwordfld1'] != $pconfig['passwordfld2'])) {
-            $input_errors[] = gettext("The passwords do not match.");
+        if ($pconfig['passwordfld1'] != $pconfig['passwordfld2']) {
+            $input_errors[] = gettext('The passwords do not match.');
+        }
+
+        if (!empty($pconfig['passwordfld1']) && !empty($pconfig['gen_new_password'])) {
+            $input_errors[] = gettext('Cannot set random password due to explicit input.');
         }
 
         if (!empty($pconfig['disabled']) && $_SESSION['Username'] === $a_user[$id]['name']) {
@@ -243,8 +242,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if (isset($id)) {
             $oldusername = $a_user[$id]['name'];
         } else {
-            $oldusername = "";
+            $oldusername = '';
+
+            if (empty($pconfig['passwordfld1']) && empty($pconfig['gen_new_password'])) {
+                $input_errors[] = gettext('A password is required.');
+            }
         }
+
         /* make sure this user name is unique */
         if (count($input_errors) == 0) {
             foreach ($a_user as $userent) {
@@ -254,6 +258,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 }
             }
         }
+
         /* also make sure it is not reserved */
         if (count($input_errors) == 0) {
             $system_users = explode("\n", file_get_contents("/etc/passwd"));
@@ -266,14 +271,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
         }
 
-       /*
-       * Check for a valid expirationdate if one is set at all (valid means,
-       * DateTime puts out a time stamp so any DateTime compatible time
-       * format may be used. to keep it simple for the enduser, we only
-       * claim to accept MM/DD/YYYY as inputs. Advanced users may use inputs
-       * like "+1 day", which will be converted to MM/DD/YYYY based on "now".
-       * Otherwhise such an entry would lead to an invalid expiration data.
-       */
+        /*
+         * Check for a valid expirationdate if one is set at all (valid means,
+         * DateTime puts out a time stamp so any DateTime compatible time
+         * format may be used. to keep it simple for the enduser, we only
+         * claim to accept MM/DD/YYYY as inputs. Advanced users may use inputs
+         * like "+1 day", which will be converted to MM/DD/YYYY based on "now".
+         * Otherwhise such an entry would lead to an invalid expiration data.
+         */
         if (!empty($pconfig['expires'])) {
             try {
                 $expdate = new DateTime($pconfig['expires']);
@@ -305,6 +310,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             /* the user password was modified */
             if (!empty($pconfig['passwordfld1'])) {
                 local_user_set_password($userent, $pconfig['passwordfld1']);
+            } elseif (!empty($pconfig['gen_new_password'])) {
+                local_user_set_password($userent);
             }
 
             isset($pconfig['scope']) ? $userent['scope'] = $pconfig['scope'] : $userent['scope'] = "system";
@@ -312,7 +319,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $userent['name'] = $pconfig['usernamefld'];
             $userent['descr'] = $pconfig['descr'];
             $userent['expires'] = $pconfig['expires'];
-            $userent['authorizedkeys'] = base64_encode($pconfig['authorizedkeys']);
+            $userent['authorizedkeys'] = base64_encode(trim($pconfig['authorizedkeys']));
             $userent['ipsecpsk'] = $pconfig['ipsecpsk'];
             if (!empty($pconfig['gen_otp_seed'])) {
                 // generate 160bit base32 encoded secret
@@ -382,6 +389,11 @@ include("head.inc");
 
 <script type="text/javascript">
 $( document ).ready(function() {
+    // unhide otp QR code if found
+    $('#otp_unhide').click(function () {
+        $(this).hide();
+        $('#otp_qrcode').show();
+    });
     // remove certificate association
     $(".act-del-cert").click(function(event){
       var certid = $(this).data('certid');
@@ -555,7 +567,7 @@ $( document ).ready(function() {
                   <tr>
                     <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Username");?></td>
                     <td>
-                      <input name="usernamefld" type="text" class="formfld user" id="usernamefld" size="20" maxlength="16" value="<?=$pconfig['usernamefld'];?>" <?= $pconfig['scope'] == "system" || !empty($pconfig['user_dn']) ? "readonly=\"readonly\"" : "";?> />
+                      <input name="usernamefld" type="text" class="formfld user" id="usernamefld" size="20" maxlength="32" value="<?=$pconfig['usernamefld'];?>" <?= $pconfig['scope'] == "system" || !empty($pconfig['user_dn']) ? "readonly=\"readonly\"" : "";?> />
                       <input name="oldusername" type="hidden" id="oldusername" value="<?=$pconfig['usernamefld'];?>" />
                     </td>
                   </tr>
@@ -564,21 +576,20 @@ $( document ).ready(function() {
                   <tr>
                     <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("User distinguished name");?></td>
                     <td>
-                      <input name="user_dn" type="text" class="formfld user" id="user_dn" size="20" maxlength="16" value="<?=$pconfig['user_dn'];?>"/ readonly>
-                    </td>
-                  </tr>
-<?php
-                  else:?>
-                  <tr>
-                    <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Password");?></td>
-                    <td>
-                      <input name="passwordfld1" type="password" class="formfld pwd" id="passwordfld1" size="20" value="" /><br/>
-                      <input name="passwordfld2" type="password" class="formfld pwd" id="passwordfld2" size="20" value="" />&nbsp;
-                      <small><?= gettext("(confirmation)"); ?></small>
+                      <input name="user_dn" type="text" class="formfld user" id="user_dn" size="20" value="<?=$pconfig['user_dn'];?>"/ readonly>
                     </td>
                   </tr>
 <?php
                   endif;?>
+                  <tr>
+                    <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Password");?></td>
+                    <td>
+                      <input name="passwordfld1" type="password" class="formfld pwd" id="passwordfld1" size="20" value="" /><br/>
+                      <input name="passwordfld2" type="password" class="formfld pwd" id="passwordfld2" size="20" value="" />
+                      <small><?= gettext("(confirmation)"); ?></small><br/><br/>
+                      <input type="checkbox" name="gen_new_password" <?= !empty($pconfig['gen_new_password']) ? 'checked="checked"' : '' ?>/>&nbsp;<small><?=gettext('Generate a scrambled password to prevent local database logins for this user.') ?></small>
+                    </td>
+                  </tr>
                   <tr>
                     <td><a id="help_for_fullname" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Full name");?></td>
                     <td>
@@ -824,19 +835,23 @@ $( document ).ready(function() {
                   <tr id="usercertchck">
                     <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Certificate");?></td>
                     <td>
-                      <input type="checkbox" id="chkNewCert" name="chkNewCert" /> <?=gettext("Click to create a user certificate."); ?> (<?=gettext("Redirects on save"); ?>)
+                      <input type="checkbox" id="chkNewCert" name="chkNewCert" /> <?= gettext('Click to create a user certificate.') ?>
                     </td>
                   </tr>
 <?php
                 endif;?>
                   <tr>
-                    <td><a id="help_for_otp_seed" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a>  <?=gettext("OTP seed");?></td>
+                    <td><a id="help_for_otp_seed" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('OTP seed') ?></td>
                     <td>
                       <input name="otp_seed" type="text" value="<?=$pconfig['otp_seed'];?>"/>
-                      <input type="checkbox" name="gen_otp_seed"/>&nbsp;<small><?=gettext("generate new (160bit) secret");?></small>
+                      <input type="checkbox" name="gen_otp_seed"/>&nbsp;<small><?= gettext('Generate new secret (160 bit)') ?></small>
                       <div class="hidden" for="help_for_otp_seed">
                         <small class="formhelp">
                         <?=gettext("OTP (base32) seed to use when a one time password authenticator is used");?><br/>
+                        </small>
+                      </div>
+                    </td>
+                  </tr>
 <?php
                         if (!empty($pconfig['otp_seed'])):
                             // construct google url, using token, username and this machines hostname
@@ -844,18 +859,25 @@ $( document ).ready(function() {
                             $otp_url .= $pconfig['usernamefld']."@".htmlspecialchars($config['system']['hostname'])."?secret=";
                             $otp_url .= $pconfig['otp_seed'];
                         ?>
-                            <br/>
-                            <?=gettext("When using google authenticator, scan the following qrcode for easy setup:");?><br/>
-                            <div id="otp_qrcode"></div>
-                            <script type="text/javascript">
-                                $('#otp_qrcode').qrcode('<?= $otp_url ?>');
-                            </script>
-<?php
-                        endif;?>
+                  <tr>
+                    <td><a id="help_for_otp_code" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('OTP QR code') ?></td>
+                    <td>
+                      <label class="btn btn-primary" id="otp_unhide"><?= gettext('Click to unhide') ?></label>
+                      <div style="display:none;" id="otp_qrcode"></div>
+                      <script type="text/javascript">
+                        $('#otp_qrcode').qrcode('<?= $otp_url ?>');
+                      </script>
+                      </div>
+                      <div class="hidden" for="help_for_otp_code">
+                        <small class="formhelp">
+                        <?= gettext('Scan this QR code for easy setup with external apps.') ?>
                         </small>
                       </div>
                     </td>
                   </tr>
+<?php
+                        endif;?>
+                  <tr>
                   <tr>
                     <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Authorized keys");?></td>
                     <td>

@@ -1,7 +1,7 @@
 <?php
 
 /*
-    Copyright (C) 2015-2016 Franco Fichtner <franco@opnsense.org>
+    Copyright (C) 2015-2017 Franco Fichtner <franco@opnsense.org>
     Copyright (C) 2004-2007 Scott Ullrich <sullrich@gmail.com>
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
     All rights reserved.
@@ -41,11 +41,13 @@ function killbyname($procname, $sig = 'TERM')
 
 function killbypid($pidfile, $sig = 'TERM', $waitforit = false)
 {
-    if (!isvalidpid($pidfile)) {
+    if (is_numeric($pidfile) && $pidfile > 1) {
+        mwexecf('/bin/kill -%s %s', array($sig, $pidfile));
+    } elseif (isvalidpid($pidfile)) {
+        mwexecf('/bin/pkill -%s -F %s', array($sig, $pidfile));
+    } else {
         return;
     }
-
-    mwexecf('/bin/pkill -%s -F %s', array($sig, $pidfile));
 
     if (!$waitforit) {
         return;
@@ -58,11 +60,13 @@ function killbypid($pidfile, $sig = 'TERM', $waitforit = false)
 
 function isvalidpid($pidfile)
 {
-    if (!file_exists($pidfile)) {
-        return false;
+    if (is_numeric($pidfile) && $pidfile > 1) {
+        return mwexecf('/bin/kill -0 %s', $pidfile, true) == 0;
+    } elseif (file_exists($pidfile)) {
+        return mwexecf('/bin/pgrep -nF %s', $pidfile, true) == 0;
     }
 
-    return mwexecf('/bin/pgrep -nF %s', $pidfile, true) == 0;
+    return false;
 }
 
 function is_process_running($process)
@@ -547,19 +551,20 @@ function is_macaddr($macaddr, $partial=false)
    aliases cannot be:
   bad chars: anything except a-z 0-9 and underscore
   bad names: empty string, pure numeric, pure underscore
-  reserved words: pre-defined service/protocol/port names which should not be ambiguous, and the words "port" and  "pass" */
+  reserved words: pre-defined service/protocol/port names which should not be ambiguous and pf keywords */
 
 function is_validaliasname($name)
 {
-    /* Array of reserved words */
-    $reserved = array("port", "pass");
+    $reserved = array('all', 'pass', 'block', 'out', 'queue', 'max', 'min', 'pptp', 'pppoe', 'L2TP', 'OpenVPN', 'IPsec');
 
     if (!is_string($name) || strlen($name) >= 32 || preg_match('/(^_*$|^\d*$|[^a-z0-9_])/i', $name)) {
         return false;
     }
-    if (in_array($name, $reserved, true) || getservbyname($name, "tcp") || getservbyname($name, "udp") || getprotobyname($name)) {
-        return; /* return NULL */
+
+    if (in_array($name, $reserved, true) || getservbyname($name, 'tcp') || getservbyname($name, 'udp') || getprotobyname($name)) {
+        return null;
     }
+
     return true;
 }
 
@@ -1007,7 +1012,8 @@ function url_safe($format, $args = array())
     }
 
     foreach ($args as $id => $arg) {
-        $args[$id] = urlencode($arg);
+        /* arguments could be empty, so force default */
+        $args[$id] = !empty($arg) ? urlencode($arg) : '';
     }
 
     return vsprintf($format, $args);
@@ -1085,21 +1091,6 @@ function is_alias($name)
 {
     global $aliastable;
     return array_key_exists($name, $aliastable);
-}
-
-function alias_get_type($name)
-{
-    global $config;
-
-    if (is_array($config['aliases']['alias'])) {
-        foreach ($config['aliases']['alias'] as $alias) {
-            if ($name == $alias['name']) {
-                return $alias['type'];
-            }
-        }
-    }
-
-    return "";
 }
 
 /* expand a host or network alias, if necessary */
@@ -1229,7 +1220,7 @@ function update_filter_reload_status($text, $first = false)
         @unlink($filter_reload_status);
     }
 
-    file_put_contents(
+    @file_put_contents(
       $filter_reload_status,
       sprintf("%s: %s\n", microtime(true), $text),
       FILE_APPEND

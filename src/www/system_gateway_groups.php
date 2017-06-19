@@ -29,7 +29,6 @@
 
 require_once("guiconfig.inc");
 require_once("interfaces.inc");
-require_once("openvpn.inc");
 require_once("system.inc");
 require_once("services.inc");
 require_once("rrd.inc");
@@ -88,6 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $retval = system_routing_configure();
 
         configd_run('dyndns reload');
+        configd_run('rfc2136 reload');
         configd_run('ipsecdns reload');
         configd_run('filter reload');
 

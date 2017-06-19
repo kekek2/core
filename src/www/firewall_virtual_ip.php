@@ -263,6 +263,11 @@ $main_buttons = array(
       $("#action").val("move");
       $("#iform").submit();
     });
+
+    // select All
+    $("#selectAll").click(function(){
+        $(".rule_select").prop("checked", $(this).prop("checked"));
+    });
   });
   </script>
   <?php include("fbegin.inc"); ?>
@@ -287,7 +292,7 @@ $main_buttons = array(
               <table class="table table-striped">
                 <thead>
                   <tr>
-                    <td></td>
+                    <td><input type="checkbox" id="selectAll"></td>
                     <td><?=gettext("Virtual IP address");?></td>
                     <td><?=gettext("Interface");?></td>
                     <td><?=gettext("Type");?></td>
@@ -304,7 +309,7 @@ $main_buttons = array(
                     if(!empty($vipent['subnet']) || !empty($vipent['range']) || !empty($vipent['subnet_bits']) || (isset($vipent['range']['from']) && !empty($vipent['range']['from']))): ?>
                   <tr ondblclick="document.location='firewall_virtual_ip_edit.php?id=<?=$i;?>';">
                     <td>
-                      <input type="checkbox" name="rule[]" value="<?=$i;?>"  />
+                      <input class="rule_select" type="checkbox" name="rule[]" value="<?=$i;?>"  />
                     </td>
                     <td>
                       <?=($vipent['type'] == "single" || $vipent['type'] == "network") && !empty($vipent['subnet_bits']) ? $vipent['subnet']."/".$vipent['subnet_bits'] : "";?>

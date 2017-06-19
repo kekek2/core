@@ -33,8 +33,6 @@ require_once("filter.inc");
 require_once("rrd.inc");
 require_once("system.inc");
 require_once("interfaces.inc");
-require_once("ipsec.inc");
-require_once("openvpn.inc");
 require_once("services.inc");
 
 function list_interfaces() {
@@ -312,7 +310,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           if ($changes > 0) {
               // reload filter, rrd when interfaces have changed (original from apply action)
               filter_configure();
-              enable_rrd_graphing();
+              rrd_configure();
           }
           header(url_safe('Location: /interfaces_assign.php'));
           exit;
@@ -436,14 +434,14 @@ include("head.inc");
                           </button>
                         </td>
                       </tr>
+<?php
+                      endif; ?>
                       <tr>
                         <td colspan="2"></td>
                         <td>
                           <input name="Submit" type="submit" class="btn btn-primary" value="<?=gettext("Save"); ?>" />
                         </td>
                       </tr>
-<?php
-                      endif; ?>
                     </tbody>
                   </table>
                 </div>

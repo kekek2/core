@@ -43,7 +43,7 @@
     <link rel="stylesheet" href="/ui/css/font-awesome.min.css">
 
     <!-- JQuery -->
-    <script type="text/javascript" src="/ui/js/jquery-1.12.0.min.js"></script>
+    <script type="text/javascript" src="/ui/js/jquery-1.12.4.min.js"></script>
     <script type="text/javascript">
             // setup default scripting after page loading.
             $( document ).ready(function() {
@@ -191,7 +191,7 @@
             <img class="brand-logo" src="/ui/themes/{{ui_theme|default('opnsense')}}/build/images/ting-green.png" height="30" alt="logo"/>
           </a>
           <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navigation">
-            <span class="sr-only">Toggle navigation</span>
+            <span class="sr-only">{{ lang._('Toggle navigation') }}</span>
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
@@ -238,6 +238,7 @@
       </section>
 
     </div>
+
 
   </main>
 

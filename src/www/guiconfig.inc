@@ -261,20 +261,13 @@ function print_service_banner($service)
     }
 }
 
-function get_std_save_message()
+function get_std_save_message($raw = false)
 {
-    $filter_related = false;
-    $filter_pages = array("nat", "filter");
-    $to_return = gettext("The changes have been applied successfully.");
-    foreach($filter_pages as $fp) {
-        if (stristr($_SERVER['SCRIPT_FILENAME'], $fp)) {
-            $filter_related = true;
-        }
+    if ($raw == true) {
+        return 'The changes have been applied successfully.';
     }
-    if ($filter_related) {
-        $to_return .= "<br />" . gettext("You can also <a href=\"status_filter_reload.php\">monitor</a> the filter reload progress.");
-    }
-    return $to_return;
+
+    return gettext('The changes have been applied successfully.');
 }
 
 function get_specialnets($only_enabled=false)
@@ -415,7 +408,7 @@ function pconfig_to_address(&$adr, $padr, $pmask, $pnot=false, $pbeginport=0, $p
     if (is_alias($pbeginport)) {
         $adr['port'] = $pbeginport;
     } elseif (($pbeginport != 0) && ($pbeginport != "any")) {
-        if ($pbeginport != $pendport) {
+        if ($pbeginport != $pendport && !empty($pendport)) {
             $adr['port'] = $pbeginport . "-" . $pendport;
         } else {
             $adr['port'] = $pbeginport;

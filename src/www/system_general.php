@@ -39,32 +39,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = array();
 
     if (isset($_GET['savemsg'])) {
-        $savemsg = htmlspecialchars($_GET['savemsg']);
+        $savemsg = htmlspecialchars(gettext($_GET['savemsg']));
     }
 
-    $pconfig['dns1gw'] = null;
-    $pconfig['dns2gw'] = null;
-    $pconfig['dns3gw'] = null;
-    $pconfig['dns4gw'] = null ;
     $pconfig['theme'] = $no_change_config['theme'];
     $pconfig['language'] = null;
-    $pconfig['timezone'] = "Etc/UTC";
+    $pconfig['timezone'] = 'Etc/UTC';
     $pconfig['prefer_ipv4'] = isset($config['system']['prefer_ipv4']);
     $pconfig['gw_switch_default'] = isset($config['system']['gw_switch_default']);
     $pconfig['hostname'] = $config['system']['hostname'];
     $pconfig['domain'] = $config['system']['domain'];
 
-    if (isset($config['system']['dnsserver'])) {
-        list($pconfig['dns1'],$pconfig['dns2'],$pconfig['dns3'],$pconfig['dns4']) = $config['system']['dnsserver'];
-    } else {
-        list($pconfig['dns1'],$pconfig['dns2'],$pconfig['dns3'],$pconfig['dns4']) = null;
-    }
-    foreach (array('dns1gw', 'dns2gw', 'dns3gw', 'dns4gw') as $dnsgwopt) {
-        if (!empty($config['system'][$dnsgwopt])) {
-            $pconfig[$dnsgwopt] = $config['system'][$dnsgwopt];
-        } else {
-            $pconfig[$dnsgwopt] = "none";
-        }
+    for ($dnscounter = 1; $dnscounter < 9; $dnscounter++) {
+        $dnsname = "dns{$dnscounter}";
+        $pconfig[$dnsname] = !empty($config['system']['dnsserver'][$dnscounter - 1]) ? $config['system']['dnsserver'][$dnscounter - 1] : null;
+
+        $dnsgwname= "dns{$dnscounter}gw";
+        $pconfig[$dnsgwname] = !empty($config['system'][$dnsgwname]) ? $config['system'][$dnsgwname] : 'none';
     }
 
     $pconfig['dnsallowoverride'] = isset($config['system']['dnsallowoverride']);
@@ -75,9 +66,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
     $pconfig['dnslocalhost'] = isset($config['system']['dnslocalhost']);
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['timezone']) && $pconfig['timezone'] <> $_POST['timezone']) {
-        filter_pflog_start();
-    }
     $input_errors = array();
     $pconfig = $_POST;
 
@@ -96,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $ignore_posted_dnsgw = array();
 
-    for ($dnscounter=1; $dnscounter<3; $dnscounter++){
+    for ($dnscounter = 1; $dnscounter < 9; $dnscounter++){
       $dnsname="dns{$dnscounter}";
       $dnsgwname="dns{$dnscounter}gw";
       if (!empty($pconfig[$dnsname]) && !is_ipaddr($pconfig[$dnsname])) {
@@ -118,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
     /* XXX cranky low-level call, please refactor */
     $direct_networks_list = explode(' ', filter_get_direct_networks_list(filter_generate_optcfg_array()));
-    for ($dnscounter=1; $dnscounter<3; $dnscounter++) {
+    for ($dnscounter = 1; $dnscounter < 9; $dnscounter++) {
         $dnsitem = "dns{$dnscounter}";
         $dnsgwitem = "dns{$dnscounter}gw";
         if (!empty($pconfig[$dnsgwitem])) {
@@ -133,9 +121,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     if (count($input_errors) == 0) {
-	
-	$restart_syslog = $config['system']['hostname'] != $pconfig['hostname'] || $config['system']['timezone'] != $pconfig['timezone'];
-	
+
+        $restart_syslog = $config['system']['hostname'] != $pconfig['hostname'] || $config['system']['timezone'] != $pconfig['timezone'];
+
         $config['system']['hostname'] = $pconfig['hostname'];
         $config['system']['domain'] = $pconfig['domain'];
         $config['system']['timezone'] = $pconfig['timezone'];
@@ -160,14 +148,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             unset($config['system']['gw_switch_default']);
         }
 
-        $olddnsservers = $config['system']['dnsserver'];
-        $config['system']['dnsserver'] = array();
-        foreach (array('dns1', 'dns2', 'dns3', 'dns4') as $dnsopt) {
-            if (!empty($pconfig[$dnsopt])) {
-                $config['system']['dnsserver'][] = $pconfig[$dnsopt];
-            }
-        }
-
         $config['system']['dnsallowoverride'] = !empty($pconfig['dnsallowoverride']);
 
         if($pconfig['dnslocalhost'] == "yes") {
@@ -176,12 +156,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             unset($config['system']['dnslocalhost']);
         }
 
-        /* which interface should the dns servers resolve through? */
+        $olddnsservers = $config['system']['dnsserver'];
+        $config['system']['dnsserver'] = array();
+
         $outdnscounter = 0;
-        for ($dnscounter=1; $dnscounter<5; $dnscounter++) {
+        for ($dnscounter = 1; $dnscounter < 9; $dnscounter++) {
             $dnsname="dns{$dnscounter}";
             $dnsgwname="dns{$dnscounter}gw";
             $olddnsgwname = !empty($config['system'][$dnsgwname]) ? $config['system'][$dnsgwname] : "none" ;
+
+            if (!empty($pconfig[$dnsname])) {
+                $config['system']['dnsserver'][] = $pconfig[$dnsname];
+            }
 
             if ($ignore_posted_dnsgw[$dnsgwname]) {
                 $thisdnsgwname = "none";
@@ -226,29 +212,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         write_config();
 
-        /* timezone change first */
+        /* time zone change first */
         system_timezone_configure();
+
+        filter_pflog_start();
+        prefer_ipv4_or_ipv6();
+        system_hostname_configure();
+        system_hosts_generate();
+        system_resolvconf_generate();
+        plugins_configure('dns');
+        services_dhcpd_configure();
+        filter_configure();
 
         if ($language_change && isset($config['SmartSoft']['HAVP'])) {
           configd_run('template reload SmartSoft.HAVP');
           configd_run('havp restart');
         }
-
-        prefer_ipv4_or_ipv6();
-        system_hostname_configure();
-        system_hosts_generate();
-        system_resolvconf_generate();
-        dnsmasq_configure_do();
-        unbound_configure_do();
-        services_dhcpd_configure();
-
         if($restart_syslog) {
-    	    system_syslogd_start();
-    	}
+            system_syslogd_start();
+        }
 
-        filter_configure();
-
-        header(url_safe('Location: /system_general.php?savemsg=%s', array(get_std_save_message())));
+        header(url_safe('Location: /system_general.php?savemsg=%s', array(get_std_save_message(true))));
         exit;
     }
 }
@@ -357,9 +341,8 @@ include("head.inc");
               <td>
                 <select name="theme" class="selectpicker" data-size="10" data-width="auto">
 <?php
-                  $curtheme = get_current_theme();
                   foreach (return_dir_as_array('/usr/local/opnsense/www/themes/') as $file):?>
-                  <option <?=$file == $curtheme ? "selected=\"selected\"" : "";?>>
+                  <option <?= $file == $pconfig['theme'] ? 'selected="selected"' : '' ?>>
                     <?=$file;?>
                   </option>
 <?php
@@ -387,7 +370,7 @@ include("head.inc");
                   </thead>
                   <tbody>
 <?php
-                    for ($dnscounter=1; $dnscounter<3; $dnscounter++):
+                    for ($dnscounter = 1; $dnscounter < 9; $dnscounter++):
                       $dnsgw = "dns{$dnscounter}gw";?>
                     <tr>
                       <td>

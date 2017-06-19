@@ -1,7 +1,7 @@
 <?php
 
 /*
-    Copyright (C) 2014-2016 Franco Fichtner <franco@opnsense.org>
+    Copyright (C) 2014-2017 Franco Fichtner <franco@opnsense.org>
     Copyright (C) 2010 Ermal Luci
     Copyright (C) 2005-2006 Colin Smith <ethethlay@gmail.com>
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
@@ -36,6 +36,14 @@ function dnsmasq_enabled()
     return isset($config['dnsmasq']['enable']);
 }
 
+function dnsmasq_configure()
+{
+    return array(
+        'dns' => array('dnsmasq_configure_do'),
+        'hosts' => array('dnsmasq_hosts_generate:0'),
+    );
+}
+
 function dnsmasq_services()
 {
     $services = array();
@@ -46,7 +54,7 @@ function dnsmasq_services()
 
     $pconfig = array();
     $pconfig['name'] = 'dnsmasq';
-    $pconfig['description'] = gettext('DNS Forwarder');
+    $pconfig['description'] = gettext('Dnsmasq DNS');
     $pconfig['php']['restart'] = array('dnsmasq_configure_do');
     $pconfig['php']['start'] = array('dnsmasq_configure_do');
     $pconfig['pidfile'] = '/var/run/dnsmasq.pid';
@@ -60,18 +68,12 @@ function dnsmasq_xmlrpc_sync()
     $result = array();
 
     $result[] = array(
-        'description' => gettext('DNS Forwarder'),
+        'description' => gettext('Dnsmasq DNS'),
         'section' => 'dnsmasq',
         'id' => 'dnsforwarder',
     );
 
     return $result;
-}
-
-function dnsmasq_configure()
-{
-    /* XXX stub that prevents dnsmasq from starting again on bootup */
-    return array();
 }
 
 function dnsmasq_configure_do($verbose = false)
@@ -94,7 +96,7 @@ function dnsmasq_configure_do($verbose = false)
     }
 
     if ($verbose) {
-        echo 'Starting DNS Forwarder...';
+        echo 'Starting Dnsmasq DNS...';
         flush();
     }
 

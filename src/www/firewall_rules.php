@@ -31,7 +31,7 @@
 require_once("guiconfig.inc");
 require_once("filter.inc");
 require_once("logs.inc");
-
+require_once("system.inc");
 
 if (!isset($config['filter']['rule'])) {
     $config['filter']['rule'] = array();
@@ -50,6 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = $pconfig['id'];
     }
     if (isset($pconfig['apply'])) {
+        system_cron_configure();
         filter_configure();
         clear_subsystem_dirty('filter');
         $savemsg = sprintf(
@@ -249,6 +250,11 @@ $( document ).ready(function() {
       $("#fw_category").addClass('hidden');
   }
 
+  // select All
+  $("#selectAll").click(function(){
+      $(".rule_select").prop("checked", $(this).prop("checked"));
+  });
+
 });
 </script>
 
@@ -289,7 +295,7 @@ $( document ).ready(function() {
                 <table class="table table-striped table-hover" id="rules">
                   <thead>
                     <tr>
-                      <th>&nbsp;</th>
+                      <th><input type="checkbox" id="selectAll"></th>
                       <th>&nbsp;</th>
                       <th><?=gettext("Proto");?></th>
                       <th><?=gettext("Source");?></th>
@@ -445,7 +451,7 @@ $( document ).ready(function() {
 ?>
                   <tr class="rule" data-category="<?=!empty($filterent['category']) ? $filterent['category'] : "";?>">
                     <td>
-                      <input type="checkbox" name="rule[]" value="<?=$i;?>"  />
+                      <input class="rule_select" type="checkbox" name="rule[]" value="<?=$i;?>"  />
                     </td>
                     <td>
                       <a href="#" class="act_toggle" id="toggle_<?=$i;?>" data-toggle="tooltip" title="<?=(empty($filterent['disabled'])) ? gettext("disable rule") : gettext("enable rule");?>"><span class="glyphicon <?=$iconfn;?>"></span></a>

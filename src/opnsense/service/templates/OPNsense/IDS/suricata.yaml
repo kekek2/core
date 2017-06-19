@@ -39,7 +39,7 @@ runmode: workers
 # If set to auto, the variable is internally switch to 'router' in IPS mode
 # and 'sniffer-only' in IDS mode.
 # This feature is currently only used by the reject* keywords.
-#host-mode: sniffer-only
+host-mode: auto
 
 # Run suricata as user and group.
 #run-as:
@@ -58,7 +58,9 @@ runmode: workers
 # Preallocated size for packet. Default is 1514 which is the classical
 # size for pcap on ethernet. You should adjust this value to the highest
 # packet size (MTU + hardware header) on your system.
-#default-packet-size: 1514
+{% if helpers.exists('OPNsense.IDS.general.defaultPacketSize') %}
+default-packet-size: {{OPNsense.IDS.general.defaultPacketSize|default('1514')}}
+{% endif %}
 
 # The default logging directory.  Any log or output file will be
 # placed here if its not specified with a full path name.  This can be

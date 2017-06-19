@@ -253,7 +253,7 @@ function openvpn_validate_port($value, $name)
     return false;
 }
 
-function openvpn_validate_cidr($value, $name, $multiple = false, $ipproto = "ipv4")
+function openvpn_validate_cidr($value, $name, $multiple = false, $ipproto = 'ipv4', $allow_hosts = false)
 {
     $value = trim($value);
     $error = false;
@@ -267,8 +267,8 @@ function openvpn_validate_cidr($value, $name, $multiple = false, $ipproto = "ipv
     }
 
     foreach ($networks as $network) {
-        if ($ipproto == "ipv4") {
-            $error = !openvpn_validate_cidr_ipv4($network);
+        if ($ipproto == 'ipv4') {
+            $error = !openvpn_validate_cidr_ipv4($network, $allow_hosts);
         } else {
             $error = !openvpn_validate_cidr_ipv6($network);
         }
@@ -284,11 +284,17 @@ function openvpn_validate_cidr($value, $name, $multiple = false, $ipproto = "ipv
     }
 }
 
-function openvpn_validate_cidr_ipv4($value) {
+function openvpn_validate_cidr_ipv4($value, $allow_hosts = false)
+{
     $value = trim($value);
     if (!empty($value)) {
         list($ip, $mask) = explode('/', $value);
         if (!is_ipaddrv4($ip) or !is_numeric($mask) or ($mask > 32) or ($mask < 0)) {
+            return false;
+        }
+        /* IPv4 case is very strict, cannot be a host address */
+        $mask = (0xffffffff << (32 - $mask)) & 0xffffffff;
+        if (!$allow_hosts && (ip2long($ip) & $mask) != ip2long($ip)) {
             return false;
         }
     }
@@ -301,7 +307,7 @@ function openvpn_validate_cidr_ipv6($value)
     if (!empty($value)) {
         list($ipv6, $prefix) = explode('/', $value);
         if (empty($prefix)) {
-            $prefix = "128";
+            $prefix = '128';
         }
         if (!is_ipaddrv6($ipv6) or !is_numeric($prefix) or ($prefix > 128) or ($prefix < 0)) {
             return false;
@@ -310,7 +316,7 @@ function openvpn_validate_cidr_ipv6($value)
     return true;
 }
 
-function openvpn_add_dhcpopts(& $settings, & $conf)
+function openvpn_add_dhcpopts(&$settings, &$conf)
 {
     if (!empty($settings['dns_domain'])) {
         $conf .= "push \"dhcp-option DOMAIN {$settings['dns_domain']}\"\n";
@@ -451,9 +457,10 @@ function openvpn_reconfigure($mode, $settings, $device_only = false)
     if (is_ipaddr($ipaddr)) {
         $iface_ip=$ipaddr;
     } elseif (!empty($interface) && $interface != "any") {
-        $iface_ip=get_interface_ip($interface);
-        if (empty($iface_ip)) {
+        if (stristr($settings['protocol'], "6") !== false) {
             $iface_ip = get_interface_ipv6($interface);
+        } else {
+            $iface_ip = get_interface_ip($interface);
         }
     }
 
@@ -930,14 +937,13 @@ function openvpn_resync_csc_conf($settings, $server)
 
     if (!empty($settings['tunnel_network'])) {
         list($ip, $mask) = explode('/', $settings['tunnel_network']);
-        $baselong = ip2long32($ip) & gen_subnet_mask_long($mask);
-        $serverip = long2ip32($baselong + 1);
-        $clientip = long2ip32($baselong + 2);
-        /* Because this is being pushed, the order from the client's point of view. */
-        if ($server['dev_mode'] != 'tap' && empty($server['topology_subnet'])) {
+        if ($server['dev_mode'] == 'tun' && empty($server['topology_subnet'])) {
+            $baselong = ip2long32($ip) & gen_subnet_mask_long($mask);
+            $serverip = long2ip32($baselong + 1);
+            $clientip = long2ip32($baselong + 2);
             $conf .= "ifconfig-push {$clientip} {$serverip}\n";
         } else {
-            $conf .= "ifconfig-push {$clientip} " . gen_subnet_mask($mask) . "\n";
+            $conf .= "ifconfig-push {$ip} " . gen_subnet_mask($mask) . "\n";
         }
     }
     if (!empty($settings['tunnel_networkv6'])) {

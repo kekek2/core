@@ -45,13 +45,9 @@ TING_ABI?=	1.1
 CORE_ABI?=	17.1
 CORE_ARCH?=	${ARCH}
 CORE_BIND?=	911
+CORE_OPENVPN?=	23
 CORE_PHP?=	70
 CORE_PY?=	27
-
-.if "${CORE_RELEASE}" == yes
-CORE_NAME?=		opnsense
-CORE_FAMILY?=		release
-.endif
 
 _FLAVOUR!=	if [ -f ${OPENSSL} ]; then ${OPENSSL} version; fi
 FLAVOUR?=	${_FLAVOUR:[1]}
@@ -97,7 +93,7 @@ CORE_DEPENDS?=		apinger \
 			mpd5 \
 			ntp \
 			openssh-portable \
-			openvpn23 \
+			openvpn${CORE_OPENVPN} \
 			pam_opnsense \
 			pecl-radius \
 			pftop \
@@ -269,7 +265,7 @@ upgrade: plist-check upgrade-check package
 	@${PKG} add ${PKGDIR}/*.txz
 	@${LOCALBASE}/etc/rc.restart_webgui
 
-lint: force
+lint: plist-check
 	find ${.CURDIR}/src ${.CURDIR}/Scripts \
 	    -name "*.sh" -type f -print0 | xargs -0 -n1 sh -n
 	find ${.CURDIR}/src ${.CURDIR}/Scripts \
@@ -309,13 +305,6 @@ style: want-pear-PHP_CodeSniffer
 
 style-fix: want-pear-PHP_CodeSniffer
 	phpcbf --standard=ruleset.xml ${.CURDIR}/src/opnsense || true
-
-setup: force
-	${.CURDIR}/src/etc/rc.php_ini_setup
-
-health: force
-	# check test script output and advertise a failure...
-	[ "`${.CURDIR}/src/etc/rc.php_test_run`" == "FCGI-PASSED PASSED" ]
 
 test: want-phpunit
 	@cd ${.CURDIR}/src/opnsense/mvc/tests && \

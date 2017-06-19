@@ -29,7 +29,9 @@
 
 require_once("guiconfig.inc");
 require_once("services.inc");
+require_once("system.inc");
 require_once("interfaces.inc");
+require_once("plugins.inc.d/rfc2136.inc");
 
 if (!isset($config['dnsupdates']['dnsupdate'])) {
     $config['dnsupdates']['dnsupdate'] = array();
@@ -46,6 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     } else {
         $pconfig['enable'] = true;
     }
+
     $pconfig['host'] = isset($id) && !empty($a_rfc2136[$id]['host']) ? $a_rfc2136[$id]['host'] : null;
     $pconfig['ttl'] = isset($id) &&!empty($a_rfc2136[$id]['ttl']) ? $a_rfc2136[$id]['ttl'] : 60;
     $pconfig['keydata'] = isset($id) &&!empty($a_rfc2136[$id]['keydata']) ? $a_rfc2136[$id]['keydata'] : null;
@@ -54,6 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['server'] = isset($id) &&!empty($a_rfc2136[$id]['server']) ? $a_rfc2136[$id]['server'] : null;
     $pconfig['interface'] = isset($id) &&!empty($a_rfc2136[$id]['interface']) ? $a_rfc2136[$id]['interface'] : null;
     $pconfig['descr'] = isset($id) &&!empty($a_rfc2136[$id]['descr']) ? $a_rfc2136[$id]['descr'] : null;
+    $pconfig['recordtype'] = isset($id) && !empty($a_rfc2136[$id]['recordtype']) ? $a_rfc2136[$id]['recordtype'] : null;
 
     $pconfig['usetcp'] = isset($a_rfc2136[$id]['usetcp']);
     $pconfig['usepublicip'] = isset($a_rfc2136[$id]['usepublicip']);
@@ -96,6 +100,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $rfc2136['interface'] = $pconfig['interface'];
         $rfc2136['descr'] = $pconfig['descr'];
 
+        if (!empty($pconfig['recordtype'])) {
+            $rfc2136['recordtype'] = $pconfig['recordtype'];
+        }
+
         if (isset($id)) {
             $a_rfc2136[$id] = $rfc2136;
         } else {
@@ -103,23 +111,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
 
         write_config('New/Edited RFC2136 dnsupdate entry was posted');
+        system_cron_configure();
 
         if (!empty($pconfig['force'])) {
-            services_dnsupdate_process("", $rfc2136['host'], true);
-        } else {
-            services_dnsupdate_process();
+            rfc2136_configure_do(false, '', $rfc2136['host'], true);
         }
+
         header(url_safe('Location: /services_rfc2136.php'));
         exit;
     }
 }
 
-
-
 legacy_html_escape_form_data($pconfig);
 include("head.inc");
-?>
 
+?>
 <body>
 <?php include("fbegin.inc"); ?>
   <section class="page-content-main">
@@ -170,6 +176,17 @@ include("head.inc");
                     </td>
                   </tr>
                   <tr>
+                    <td><a id="help_for_recordtype" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Record Type");?></td>
+                    <td>
+                      <input name="recordtype" type="radio" value="" <?= empty($pconfig['recordtype']) ? 'checked="checked"' : '' ?> /> <?=gettext('All');?> &nbsp;
+                      <input name="recordtype" type="radio" value="A" <?= $pconfig['recordtype'] == 'A' ? 'checked="checked"' : '' ?> /> <?=gettext('A (IPv4)');?> &nbsp;
+                      <input name="recordtype" type="radio" value="AAAA" <?= $pconfig['recordtype'] == 'AAAA' ? 'checked="checked"' : '' ?> /> <?=gettext('AAAA (IPv6)');?>
+                      <div class="hidden" for="help_for_recordtype">
+                        <?=gettext("'All' will update all available record types.");?>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
                     <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("TTL"); ?> (<?=gettext("seconds");?>)</td>
                     <td>
                       <input name="ttl" type="text" id="ttl" value="<?=$pconfig['ttl'];?>" />
@@ -189,7 +206,7 @@ include("head.inc");
                     <td>
                       <input name="keytype" type="radio" value="zone" <?= $pconfig['keytype'] == "zone" ? "checked=\"checked\"" :""; ?> /> <?=gettext("Zone");?> &nbsp;
                       <input name="keytype" type="radio" value="host" <?= $pconfig['keytype'] == "host" ? "checked=\"checked\"" :""; ?> /> <?=gettext("Host");?> &nbsp;
-                      <input name="keytype" type="radio" value="user" <?= $pconfig['keytype'] == "user" ? "checked=\"checked\"" :""; ?> /> <?=gettext(" User");?>
+                      <input name="keytype" type="radio" value="user" <?= $pconfig['keytype'] == "user" ? "checked=\"checked\"" :""; ?> /> <?=gettext("User");?>
                     </td>
                   </tr>
                   <tr>
@@ -230,12 +247,12 @@ include("head.inc");
                   <tr>
                     <td>&nbsp;</td>
                     <td>
-                      <input name="save" type="submit" class="btn btn-primary" value="<?=gettext("Save");?>" onclick="enable_change(true)" />
-                      <a href="services_rfc2136.php"><input name="Cancel" type="button" class="btn btn-default" value="<?=gettext("Cancel");?>" /></a>
-                      <input name="force" type="submit" class="btn btn-default" value="<?=gettext("Save &amp; Force Update");?>" onclick="enable_change(true)" />
+                      <button name="save" type="submit" class="btn btn-primary" value="save"><?= gettext('Save') ?></button>
                       <?php if (isset($id)): ?>
-                      <input name="id" type="hidden" value="<?=$id;?>" />
+                        <button name="force" type="submit" class="btn btn-primary" value="force"><?= gettext('Save and Force Update') ?></button>
+                        <input name="id" type="hidden" value="<?=$id;?>" />
                       <?php endif; ?>
+                      <a href="services_rfc2136.php" class="btn btn-default"><?= gettext('Cancel') ?></a>
                     </td>
                   </tr>
                   <tr>

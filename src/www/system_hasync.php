@@ -37,6 +37,7 @@ $a_hasync = &$config['hasync'];
 
 $checkbox_names = array(
     'pfsyncenabled',
+    'disablepreempt',
     'synchronizealiases',
     'synchronizeauthservers',
     'synchronizecerts',
@@ -49,11 +50,7 @@ $checkbox_names = array(
     'synchronizevirtualip',
 );
 
-$syncplugins = array();
-
-if (function_exists('plugins_xmlrpc_sync')) {
-    $syncplugins = plugins_xmlrpc_sync();
-}
+$syncplugins = plugins_xmlrpc_sync();
 
 foreach (array_keys($syncplugins) as $key) {
     $checkbox_names[] = 'synchronize'.$key;
@@ -103,13 +100,13 @@ include("head.inc");
 <body>
 <?php include("fbegin.inc"); ?>
 <section class="page-content-main">
-  <div class="container-fluid">
-    <div class="row">
-      <section class="col-xs-12">
-        <div class="content-box">
-          <div class="table-responsive">
-            <form method="post">
-              <table class="table table-clean-form opnsense_standard_table_form">
+  <form method="post">
+    <div class="container-fluid">
+      <div class="row">
+        <section class="col-xs-12">
+          <div class="tab-content content-box col-xs-12 __mb">
+            <div class="table-responsive">
+              <table class="table table-striped opnsense_standard_table_form">
                 <tr>
                   <td width="22%"><strong><?=gettext('State Synchronization') ?></strong></td>
                   <td  width="78%" align="right">
@@ -130,6 +127,15 @@ include("head.inc");
                       <br/><br/>
                       <b><?=gettext('Clicking save will force a configuration sync if it is enabled! (see Configuration Synchronization Settings below)') ?></b>
                       </small>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td><a id="help_for_disablepreempt" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Disable preempt') ?></td>
+                  <td>
+                    <input type="checkbox" name="disablepreempt" value="on" <?= !empty($pconfig['disablepreempt']) ? "checked=\"checked\"" : "";?> />
+                    <div class="hidden" for="help_for_disablepreempt">
+                      <?=gettext("When this device is configured as CARP master it will try to switch to master when powering up, this option will keep this one slave if there already is a master on the network");?>
                     </div>
                   </td>
                 </tr>
@@ -173,6 +179,12 @@ include("head.inc");
                     </div>
                   </td>
                 </tr>
+              </table>
+            </div>
+          </div>
+          <div class="tab-content content-box col-xs-12 __mb">
+            <div class="table-responsive">
+              <table class="table table-striped opnsense_standard_table_form">
                 <tr>
                   <th colspan="2" class="listtopic"><?=gettext('Configuration Synchronization Settings (XMLRPC Sync)') ?></th>
                 </tr>
@@ -356,12 +368,12 @@ include("head.inc");
                   </td>
                 </tr>
               </table>
-            </form>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
-  </div>
+  </form>
 </section>
 
 

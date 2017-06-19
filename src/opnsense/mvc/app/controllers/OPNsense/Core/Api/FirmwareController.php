@@ -1,7 +1,7 @@
 <?php
 
 /**
- *    Copyright (c) 2015-2016 Franco Fichtner <franco@opnsense.org>
+ *    Copyright (c) 2015-2017 Franco Fichtner <franco@opnsense.org>
  *    Copyright (c) 2015-2016 Deciso B.V.
  *    All rights reserved.
  *
@@ -59,10 +59,8 @@ class FirmwareController extends ApiControllerBase
             } elseif (array_key_exists('updates', $response) && $response['updates'] == 0) {
                 $response['status_msg'] = gettext('There are no updates available on the selected mirror.');
                 $response['status'] = 'none';
-            } elseif ((array_key_exists(0, $response['upgrade_packages']) &&
-                $response['upgrade_packages'][0]['name'] == 'pkg') ||
-                (array_key_exists(0, $response['reinstall_packages']) &&
-                $response['reinstall_packages'][0]['name'] == 'pkg')) {
+            } elseif (array_key_exists(0, $response['upgrade_packages']) &&
+                $response['upgrade_packages'][0]['name'] == 'pkg') {
                 $response['status_upgrade_action'] = 'pkg';
                 $response['status'] = 'ok';
                 $response['status_msg'] = gettext('There is a mandatory update for the package manager available.');
@@ -99,11 +97,21 @@ class FirmwareController extends ApiControllerBase
              * reinstall_packages: array with { name: <package_name>, version: <package_version> }
              * upgrade_packages: array with { name: <package_name>,
              *     current_version: <current_version>, new_version: <new_version> }
+             * downgrade_packages: array with { name: <package_name>,
+             *     current_version: <current_version>, new_version: <new_version> }
              */
-            foreach (array('new_packages', 'reinstall_packages', 'upgrade_packages') as $pkg_type) {
+            foreach (array('new_packages', 'reinstall_packages', 'upgrade_packages', 'downgrade_packages') as $pkg_type) {
                 if (isset($response[$pkg_type])) {
                     foreach ($response[$pkg_type] as $value) {
                         switch ($pkg_type) {
+                            case 'downgrade_packages':
+                                $sorted[$value['name']] = array(
+                                    'reason' => gettext('downgrade'),
+                                    'old' => $value['current_version'],
+                                    'new' => $value['new_version'],
+                                    'name' => $value['name'],
+                                );
+                                break;
                             case 'new_packages':
                                 $sorted[$value['name']] = array(
                                     'new' => $value['version'],
@@ -122,7 +130,7 @@ class FirmwareController extends ApiControllerBase
                                 break;
                             case 'upgrade_packages':
                                 $sorted[$value['name']] = array(
-                                    'reason' => gettext('update'),
+                                    'reason' => gettext('upgrade'),
                                     'old' => $value['current_version'],
                                     'new' => $value['new_version'],
                                     'name' => $value['name'],
@@ -446,6 +454,7 @@ class FirmwareController extends ApiControllerBase
 
         return $result;
     }
+
     /**
      * retrieve upgrade status (and log file of current process)
      */
@@ -457,7 +466,7 @@ class FirmwareController extends ApiControllerBase
 
         $result['log'] = $cmd_result;
 
-        if (trim($cmd_result) == 'Execute error') {
+        if ($cmd_result == null) {
             $result['status'] = 'error';
         } elseif (strpos($cmd_result, '***DONE***') !== false) {
             $result['status'] = 'done';
@@ -519,9 +528,11 @@ class FirmwareController extends ApiControllerBase
                 /* figure out local and remote plugins */
                 $plugin = explode('-', $translated['name']);
                 if (count($plugin)) {
-                    if ($plugin[0] == 'os' || ($type == 'local' && $plugin[0] == 'ospriv') ||
-                        ($devel && $type == 'remote' && $plugin[0] == 'ospriv')) {
-                        $plugins[$translated['name']] = $translated;
+                    if ($plugin[0] == 'os') {
+                        if ($type == 'local' || ($type == 'remote' &&
+                            ($devel || end($plugin) != 'devel'))) {
+                            $plugins[$translated['name']] = $translated;
+                        }
                     }
                 }
             }
@@ -576,6 +587,7 @@ class FirmwareController extends ApiControllerBase
         $mirrors = array();
         $mirrors[''] = '(default)';
         $mirrors['https://update0.smart-soft.ru/'] = 'Smart-Soft';
+
 
         $has_subscription = array();
 

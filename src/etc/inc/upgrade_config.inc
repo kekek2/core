@@ -1295,8 +1295,8 @@ function upgrade_046_to_047() {
 	}
 }
 
-
-function upgrade_047_to_048() {
+function upgrade_047_to_048()
+{
 	global $config;
 	if (!empty($config['dyndns'])) {
 		$config['dyndnses'] = array();
@@ -1311,7 +1311,7 @@ function upgrade_047_to_048() {
 			$tempdyn['host'] = $config['dyndns'][0]['host'];
 			$tempdyn['mx'] = $config['dyndns'][0]['mx'];
 			$tempdyn['interface'] = "wan";
-			$tempdyn['descr'] = sprintf('Upgraded Dyndns %s', $tempdyn['type']);
+			$tempdyn['descr'] = sprintf('Upgraded dynamic DNS %s', $tempdyn['type']);
 			$config['dyndnses']['dyndns'][] = $tempdyn;
 		}
 		unset($config['dyndns']);
@@ -2107,7 +2107,7 @@ function upgrade_054_to_055()
 		$rrdcreate .= "RRA:AVERAGE:0.5:60:1000 ";
 		$rrdcreate .= "RRA:AVERAGE:0.5:720:1000 ";
 
-		create_new_rrd("$rrdcreate");
+		rrd_create("$rrdcreate");
 		/* create temporary xml from new RRD */
 		dump_rrd_to_xml("/tmp/{$databasetmp}", "/tmp/{$xmldumptmp}");
 
@@ -2136,7 +2136,7 @@ function upgrade_054_to_055()
 		mwexec("$rrdtool resize {$rrddbpath}/{$database} 3 GROW 2000;/bin/mv resize.rrd {$rrddbpath}/{$database} 2>&1");
 		unset($rrdxmlarray);
 	}
-	enable_rrd_graphing();
+	rrd_configure();
 }
 
 function upgrade_055_to_056() {
@@ -2191,15 +2191,6 @@ function upgrade_057_to_058() {
 	if (is_array($config['ipsec']['phase2']))
 		foreach($config['ipsec']['phase2'] as & $ph2ent)
 			$ph2ent['mode'] = 'tunnel';
-}
-
-function upgrade_058_to_059() {
-	global $config;
-
-	if (is_array($config['schedules']['schedule'])) {
-		foreach ($config['schedules']['schedule'] as & $schedl)
-			$schedl['schedlabel'] = uniqid();
-	}
 }
 
 function upgrade_059_to_060() {
@@ -2717,7 +2708,7 @@ function upgrade_080_to_081()
 		@unlink("/tmp/{$xmldump}");
 		@unlink("/tmp/{$xmldumpnew}");
 	}
-	enable_rrd_graphing();
+	rrd_configure();
 
 	foreach($config['filter']['rule'] as & $rule) {
 		if (isset($rule['protocol']) && !empty($rule['protocol']))
@@ -2943,7 +2934,7 @@ function upgrade_095_to_096()
 		mwexec("{$cmd} 2>&1");
 
 	}
-	enable_rrd_graphing();
+	rrd_configure();
 }
 
 function upgrade_096_to_097()

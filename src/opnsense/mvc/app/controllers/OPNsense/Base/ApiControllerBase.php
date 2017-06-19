@@ -91,7 +91,7 @@ class ApiControllerBase extends ControllerRoot
     {
         // disable view processing
         set_error_handler(array($this, 'APIErrorHandler'));
-        self::setLocale(self::getLangEncode(), 'OPNsense');
+        self::setLocale(self::getLangEncode());
     }
 
     /**
@@ -133,21 +133,24 @@ class ApiControllerBase extends ControllerRoot
                                 $dispatchError = null;
                                 // check number of parameters using reflection
                                 $object_info = new \ReflectionObject($this);
-                                $req_c = $object_info->getMethod($callMethodName)->getNumberOfRequiredParameters();
-                                if ($req_c > count($dispatcher->getParams())) {
-                                    $dispatchError = 'action ' . $dispatcher->getActionName() .
-                                      ' expects at least '. $req_c . ' parameter(s)';
-                                } else {
-                                    // if body is send as json data, parse to $_POST first
-                                    $dispatchError = $this->parseJsonBodyData();
+                                if ($object_info->hasMethod($callMethodName)) {
+                                    // only inspect parameters if object exists
+                                    $req_c = $object_info->getMethod($callMethodName)->getNumberOfRequiredParameters();
+                                    if ($req_c > count($dispatcher->getParams())) {
+                                        $dispatchError = 'action ' . $dispatcher->getActionName() .
+                                            ' expects at least ' . $req_c . ' parameter(s)';
+                                    }
                                 }
+                                // if body is send as json data, parse to $_POST first
+                                $dispatchError = empty($dispatchError) ? $this->parseJsonBodyData() : $dispatchError;
+
                                 if ($dispatchError != null) {
                                     // send error to client
                                     $this->response->setStatusCode(400, "Bad Request");
                                     $this->response->setContentType('application/json', 'UTF-8');
                                     $this->response->setJsonContent(
                                         array('message' => $dispatchError,
-                                              'status'  => 400)
+                                            'status'  => 400)
                                     );
                                     $this->response->send();
                                     return false;
@@ -172,6 +175,7 @@ class ApiControllerBase extends ControllerRoot
             // handle UI ajax requests
             // use session data and ACL to validate request.
             if (!$this->doAuth()) {
+                $this->response->setStatusCode(401, "Unauthorized");
                 return false;
             }
 
@@ -186,8 +190,11 @@ class ApiControllerBase extends ControllerRoot
             ) {
                 // missing csrf, exit.
                 $this->getLogger()->error("no matching csrf found for request");
+                $this->response->setStatusCode(403, "Forbidden");
                 return false;
             }
+            // when request is using a json body (based on content type), parse it first
+            $this->parseJsonBodyData();
         }
     }
 
@@ -196,7 +203,7 @@ class ApiControllerBase extends ControllerRoot
      * @param $dispatcher
      * @return string json data
      */
-    protected function afterExecuteRoute($dispatcher)
+    public function afterExecuteRoute($dispatcher)
     {
         // exit when reponse headers are already set
         if ($this->response->getHeaders()->get("Status") != null) {

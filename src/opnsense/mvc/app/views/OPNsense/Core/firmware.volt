@@ -1,7 +1,7 @@
 {#
 
-Copyright (c) 2015-2016 Franco Fichtner <franco@opnsense.org>
-Copyright (c) 2015–2016 Deciso B.V.
+Copyright (c) 2015-2017 Franco Fichtner <franco@opnsense.org>
+Copyright (c) 2015-2016 Deciso B.V.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -14,7 +14,7 @@ this list of conditions and the following disclaimer.
 this list of conditions and the following disclaimer in the documentation
 and/or other materials provided with the distribution.
 
-THIS SOFTWARE IS PROVIDED “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES,
+THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
 INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
 AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
 AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
@@ -611,69 +611,66 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="row">
         <div class="col-md-12" id="content">
             <ul class="nav nav-tabs" data-tabs="tabs">
-                <li id="packagestab" class="active"><a data-toggle="tab" href="#packages">{{ lang._('Packages') }}</a></li>
+                <li id="updatetab" class="active"><a data-toggle="tab" href="#updates">{{ lang._('Updates') }}</a></li>
                 <li id="plugintab"><a data-toggle="tab" href="#plugins">{{ lang._('Plugins') }}</a></li>
-                <li id="updatetab"><a data-toggle="tab" href="#updates">{{ lang._('Updates') }}</a></li>
-                <li id="progresstab"><a data-toggle="tab" href="#progress">{{ lang._('Progress') }}</a></li>
+                <li id="packagestab"><a data-toggle="tab" href="#packages">{{ lang._('Packages') }}</a></li>
                 <li id="settingstab"><a data-toggle="tab" href="#settings">{{ lang._('Settings') }}</a></li>
             </ul>
             <div class="tab-content content-box tab-content">
-                <div id="packages" class="tab-pane fade in active">
-                    <table class="table table-striped table-condensed table-responsive" id="packageslist">
-                    </table>
+                <div id="updates" class="tab-pane fade in active">
+                    <textarea name="output" id="update_status" class="form-control" rows="25" wrap="hard" readonly style="max-width:100%; font-family: monospace; display: none;"></textarea>
+                    <table class="table table-striped table-condensed table-responsive" id="updatelist"></table>
                 </div>
                 <div id="plugins" class="tab-pane fade in">
                     <table class="table table-striped table-condensed table-responsive" id="pluginlist">
                     </table>
                 </div>
-                <div id="updates" class="tab-pane fade in">
-                    <table class="table table-striped table-condensed table-responsive" id="updatelist">
-                    </table>
-                </div>
-                <div id="progress" class="tab-pane fade in">
-                    <textarea name="output" id="update_status" class="form-control" rows="20" wrap="hard" readonly style="max-width:100%; font-family: monospace;"></textarea>
+                <div id="packages" class="tab-pane fade in">
+                    <table class="table table-striped table-condensed table-responsive" id="packageslist"></table>
                 </div>
                 <div id="settings" class="tab-pane fade in">
                     <table class="table table-striped table-responsive">
                         <tbody>
-                        <tr>
-                            <td style="width: 150px;"><a id="help_for_mirror" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> {{ lang._('Firmware Mirror') }}</td>
-                            <td>
-                                <select class="selectpicker" id="firmware_mirror">
-                                </select>
-                                <div style="display:none;" id="firmware_mirror_other">
-                                    <input type="text" id="firmware_mirror_value">
-                                </div>
-                                <div class="hidden" for="help_for_mirror">
-                                    <strong>
-                                        {{ lang._("Select an alternate firmware mirror.") }}
-                                    </strong>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="width: 150px;"><a id="help_for_mirror_subscription" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> {{ lang._('Subscription') }}</td>
-                            <td>
-                                <input type="text" id="firmware_mirror_subscription">
-                                <div class="hidden" for="help_for_mirror_subscription">
-                                    <strong>
-                                        {{ lang._("Provide subscription key.") }}
-                                    </strong>
-                                </div>
-                            </td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td></td>
-                            <td>
-                                <button class="btn btn-primary" id="change_mirror" type="button"><i id="change_mirror_progress" class=""></i> {{ lang._('Save') }}</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td colspan="3">
-                                {{ lang._('In order to apply these settings a firmware update must be performed after save, which can include a reboot of the system.') }}
-                            </td>
-                        </tr>
+                            <tr>
+                                <td style="width: 150px;"><a id="help_for_mirror" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> {{ lang._('Firmware Mirror') }}</td>
+                                <td>
+                                    <select class="selectpicker" id="firmware_mirror">
+                                    </select>
+                                    <div style="display:none;" id="firmware_mirror_other">
+                                        <input type="text" id="firmware_mirror_value">
+                                    </div>
+                                    <div class="hidden" for="help_for_mirror">
+                                        <strong>
+                                            {{ lang._('Select an alternate firmware mirror.') }}
+                                        </strong>
+                                    </div>
+                                </td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td style="width: 150px;"><a id="help_for_mirror_subscription" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> {{ lang._('Subscription') }}</td>
+                                <td>
+                                    <input type="text" id="firmware_mirror_subscription">
+                                    <div class="hidden" for="help_for_mirror_subscription">
+                                        <strong>
+                                            {{ lang._('Provide subscription key.') }}
+                                        </strong>
+                                    </div>
+                                </td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td>
+                                    <button class="btn btn-primary" id="change_mirror" type="button"><i id="change_mirror_progress" class=""></i> {{ lang._('Save') }}</button>
+                                </td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3">
+                                    {{ lang._('In order to apply these settings a firmware update must be performed after save, which can include a reboot of the system.') }}
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>

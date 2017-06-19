@@ -1,7 +1,7 @@
 <?php
 
 /**
- *    Copyright (C) 2016 Deciso B.V.
+ *    Copyright (C) 2016-2017 Deciso B.V.
  *
  *    All rights reserved.
  *
@@ -37,23 +37,31 @@ class FilterRule
 {
     private $rule = array();
     private $interfaceMapping = array();
+    private $gatewayMapping = array();
 
     private $procorder = array(
         'disabled' => 'parseIsComment',
         'type' => 'parseType',
-        'direction' => 'parseReplaceSimple,any:',
+        'direction' => 'parseReplaceSimple,any:|:in',
         'log' => 'parseBool,log',
         'quick' => 'parseBool,quick',
         'interface' => 'parseInterface',
+        'gateway' => 'parseRoute',
         'ipprotocol' => 'parsePlain',
         'protocol' => 'parseReplaceSimple,tcp/udp:{tcp udp},proto ',
         'from' => 'parsePlain,from {,}',
         'from_port' => 'parsePlain, port {,}',
+        'os' => 'parsePlain, os {","}',
         'to' => 'parsePlain,to {,}',
         'to_port' => 'parsePlain, port {,}',
+        'icmp-type' => 'parsePlain,icmp-type {,}',
         'icmp6-type' => 'parsePlain,icmp6-type {,}',
         'flags' => 'parsePlain, flags ',
         'state' => 'parseState',
+        'set-prio' => 'parsePlain, set prio ',
+        'prio' => 'parsePlain, prio ',
+        'tag' => 'parsePlain, tag ',
+        'tagged' => 'parsePlain, tagged ',
         'allowopts' => 'parseBool,allow-opts',
         'label' => 'parsePlain,label ",",63'
     );
@@ -81,7 +89,7 @@ class FilterRule
         if (!empty($maxsize) && strlen($value) > $maxsize) {
             $value = substr($value, 0, $maxsize);
         }
-        return $value == '' ? "" : $prefix . $value . $suffix . " ";
+        return $value == null || $value === '' ? '' : $prefix . $value . $suffix . ' ';
     }
 
     /**
@@ -141,6 +149,20 @@ class FilterRule
     }
 
     /**
+     * parse gateway (route-to)
+     * @param string $value field value
+     * @return string
+     */
+    private function parseRoute($value)
+    {
+        if (!empty($this->gatewayMapping[$value]['logic'])) {
+            return " " . $this->gatewayMapping[$value]['logic'] . " ";
+        } else {
+            return "";
+        }
+    }
+
+    /**
      * parse boolean, return text from $valueTrue / $valueFalse
      * @param string $value field value
      * @return string
@@ -172,6 +194,64 @@ class FilterRule
     }
 
     /**
+     * convert source/destination address entries as used by the gui
+     * @param array $rule rule
+     */
+    private function convertAddress(&$rule)
+    {
+        $fields = array();
+        $fields['source'] = 'from';
+        $fields['destination'] = 'to';
+        $interfaces = $this->interfaceMapping;
+        foreach ($fields as $tag => $target) {
+            if (!empty($rule[$tag])) {
+                if (isset($rule[$tag]['any'])) {
+                    $rule[$target] = 'any';
+                } elseif (!empty($rule[$tag]['network'])) {
+                    $network_name = $rule[$tag]['network'];
+                    $matches = "";
+                    if ($network_name == '(self)') {
+                        $rule[$target] = "(self)";
+                    } elseif (preg_match("/^(wan|lan|opt[0-9]+)ip$/", $network_name, $matches)) {
+                        if (!empty($interfaces[$matches[1]]['if'])) {
+                            $rule[$target] = "({$interfaces["{$matches[1]}"]['if']})";
+                        }
+                    } else {
+                        if (!empty($interfaces[$network_name]['if'])) {
+                            $rule[$target] = "({$interfaces[$network_name]['if']}:network)";
+                        }
+                    }
+                } elseif (!empty($rule[$tag]['address'])) {
+                    if (Util::isIpAddress($rule[$tag]['address']) || Util::isSubnet($rule[$tag]['address']) ||
+                      Util::isPort($rule[$tag]['address'])
+                    ) {
+                        $rule[$target] = $rule[$tag]['address'];
+                    } elseif (Util::isAlias($rule[$tag]['address'])) {
+                        $rule[$target] = '$'.$rule[$tag]['address'];
+                    }
+                }
+                if (!empty($rule[$target]) && $rule[$target] != 'any' && isset($rule[$tag]['not'])) {
+                    $rule[$target] = "!" . $rule[$target];
+                }
+                if (isset($rule['protocol']) && in_array(strtolower($rule['protocol']), array("tcp","udp","tcp/udp"))) {
+                    $port = str_replace('-', ':', $rule[$tag]['port']);
+                    if (Util::isPort($port)) {
+                        $rule[$target."_port"] = $port;
+                    } elseif (Util::isAlias($port)) {
+                        $rule[$target."_port"] = '$'.$port;
+                    }
+                }
+                if (!isset($rule[$target])) {
+                    // couldn't convert address, disable rule
+                    // dump all tag contents in target (from/to) for reference
+                    $rule['disabled'] = true;
+                    $rule[$target] = json_encode($rule[$tag]);
+                }
+            }
+        }
+    }
+
+    /**
      * preprocess internal rule data to detail level of actual ruleset
      * handles shortcuts, like inet46 and multiple interfaces
      * @return array
@@ -193,6 +273,7 @@ class FilterRule
                 $tmp = $this->rule;
                 $tmp['interface'] = $interface;
                 $tmp['ipprotocol'] = $ipproto;
+                $this->convertAddress($tmp);
                 $tmp['from'] = empty($tmp['from']) ? "any" : $tmp['from'];
                 $tmp['to'] = empty($tmp['to']) ? "any" : $tmp['to'];
                 // disable rule when interface not found
@@ -234,9 +315,22 @@ class FilterRule
                                               "/" . $tmp['max-src-conn-rates'] . ", overload <virusprot> flush global ";
                     }
                 }
+                // icmp-type switch (ipv4/ipv6)
+                if ($tmp['protocol'] == "icmp" && !empty($tmp['icmptype'])) {
+                    if ($ipproto == 'inet') {
+                        $tmp['icmp-type'] = $tmp['icmptype'];
+                    } elseif ($ipproto == 'inet6') {
+                        $tmp['icmp6-type'] = $tmp['icmptype'];
+                    }
+                }
                 // icmpv6
                 if ($ipproto == 'inet6' && !empty($tmp['protocol']) && $tmp['protocol'] == "icmp") {
                     $tmp['protocol'] = 'ipv6-icmp';
+                }
+                // set prio
+                if (isset($tmp['set-prio']) && $tmp['set-prio'] !== ""
+                  && isset($tmp['set-prio-low']) && $tmp['set-prio-low'] !== "" ) {
+                    $tmp['set-prio'] = "({$tmp['set-prio']}, {$tmp['set-prio-low']})";
                 }
                 $result[] = $tmp;
             }
@@ -247,11 +341,13 @@ class FilterRule
     /**
      * init FilterRule
      * @param array $interfaceMapping internal interface mapping
+     * @param array $gatewayMapping internal gateway mapping
      * @param array $conf rule configuration
      */
-    public function __construct(&$interfaceMapping, $conf)
+    public function __construct(&$interfaceMapping, &$gatewayMapping, $conf)
     {
         $this->interfaceMapping = $interfaceMapping;
+        $this->gatewayMapping = $gatewayMapping;
         $this->rule = $conf;
     }
 
