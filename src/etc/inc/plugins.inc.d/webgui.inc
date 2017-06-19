@@ -77,7 +77,7 @@ function webgui_configure_do($verbose = false)
                 /* XXX ought to be replaced by PHP calls */
                 '/usr/local/bin/openssl req -new ' .
                 '-newkey rsa:4096 -sha256 -days 365 -nodes -x509 ' .
-                '-subj "/C=NL/ST=Zuid-Holland/L=Middelharnis/O=OPNsense" ' .
+                '-subj "/C=RU/ST=-/L=-/O=TING" ' .
                 '-keyout /tmp/ssl.key -out /tmp/ssl.crt'
             );
             $crt = file_get_contents('/tmp/ssl.crt');
@@ -151,7 +151,7 @@ EOD;
 
     $lighty_port = $port;
 
-    if(!isset($config['syslog']['nologlighttpd'])) {
+    if($config['OPNsense']['Syslog']['LogWebServer'] == 1) {
         $lighty_use_syslog = <<<EOD
 ## where to send error-messages to
 server.errorlog-use-syslog="enable"
@@ -169,7 +169,7 @@ fastcgi.server = ( ".php" =>
       "socket" => "{$fast_cgi_path}",
       "max-procs" => 2,
       "bin-environment" => (
-        "PHP_FCGI_CHILDREN" => "3",
+        "PHP_FCGI_CHILDREN" => "5",
         "PHP_FCGI_MAX_REQUESTS" => "100"
       ),
       "bin-path" => "/usr/local/bin/php-cgi"
