@@ -44,5 +44,8 @@ if pgrep -q php-cgi; then
 	pkill -HUP php-cgi
 fi
 
+# ensure fingerprints revoked dir exists
+[ -d /usr/local/etc/pkg/fingerprints/TING/revoked ] || mkdir -p /usr/local/etc/pkg/fingerprints/TING/revoked
+
 echo "Reloading firmware configuration"
 /usr/local/etc/rc.configure_firmware
