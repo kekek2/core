@@ -46,7 +46,7 @@ changelog_fetch()
 
 	SYS_ABI=$(opnsense-verify -a 2> /dev/null)
 
-	URL=$(sed -n 's/'"^[[:space:]]*url:[[:space:]]*"'\"pkg\+\(.*\)\/\/\${ABI.*/\1/p' ${ORIGIN})
+	URL=$(sed -n 's/'"^[[:space:]]*url:[[:space:]]*"'\"pkg\+\(.*\)\/\(\/*\)\${ABI.*/\1/p' ${ORIGIN})
 	URL="${URL}/${SYS_ABI}/${TING_ABI}"
 	URL="${URL}/sets/changelog.txz"
 
