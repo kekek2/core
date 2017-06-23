@@ -48,4 +48,13 @@ fi
 # ensure fingerprints revoked dir exists
 [ -d /usr/local/etc/pkg/fingerprints/TING/revoked ] || mkdir -p /usr/local/etc/pkg/fingerprints/TING/revoked
 
+echo "Flush Phalcon volt templates"
+rm -f /usr/local/opnsense/mvc/app/cache/*.php
+
+echo "Reloading GUI configuration"
+/usr/local/etc/rc.php_ini_setup
+if pgrep -q php-cgi; then
+    pkill -HUP php-cgi
+fi
+
 /usr/local/etc/rc.configure_firmware
