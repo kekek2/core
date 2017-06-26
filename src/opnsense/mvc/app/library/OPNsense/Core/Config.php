@@ -287,15 +287,15 @@ class Config extends Singleton
             $backups = $this->getBackups(true, true);
             if (count($backups) > 0) {
                 // load last backup
-                file_notice("config", 'No valid config.xml found, attempting last known config restore.', $priority = 2);
+                file_notice("config", ['No valid config.xml found, attempting last known config restore.', gettext('No valid config.xml found, attempting last known config restore.')], "config", 2);
                 $this->restoreBackup($backups[0]);
             } else {
                 // in case there are no backups, restore defaults.
-                file_notice("config", 'No valid config.xml found, attempting to restore factory config.', $priority = 2);
+                file_notice("config", ['No valid config.xml found, attempting to restore factory config.', gettext('No valid config.xml found, attempting to restore factory config.')], "config", 2);
                 try {
                     $this->restoreBackup('/usr/local/etc/config.xml');
                 } catch (\Exception $e) {
-                    file_notice("config", 'Checksum for /usr/local/etc/config.xml missing. Anyware using this file', $priority = 2);
+                    file_notice("config", ['Checksum for /usr/local/etc/config.xml missing. Anyware using this file', gettext('Checksum for /usr/local/etc/config.xml missing. Anyware using this file')], "config", 2);
                     file_put_contents($this->config_file . ".sum", sha1(file_get_contents($this->config_file)));
                     $this->load();
                 }
@@ -328,7 +328,7 @@ class Config extends Singleton
             throw new ConfigException('empty file');
         }
 
-        if (!$this->check_sha1($filename, $xml))
+        if (!self::check_sha1($filename, $xml))
             throw new ConfigException('checksum not match');
         
         set_error_handler(
@@ -478,7 +478,7 @@ class Config extends Singleton
                 $result = array ();
                 foreach ($backups as $filename) {
 		    if ($onlyChecksum) {
-			if (!$this->check_sha1($filename, file_get_contents($filename)))
+			if (!self::check_sha1($filename, file_get_contents($filename)))
 			    continue;
 			$result[] = $filename;
 			continue;
@@ -596,7 +596,7 @@ class Config extends Singleton
         }
     }
     
-    public function check_sha1($file_name, $xml)
+    public static function check_sha1($file_name, $xml)
     {
         return str_replace(array("\r", "\n"), '', file_get_contents($file_name . ".sum")) == sha1($xml);
     }
