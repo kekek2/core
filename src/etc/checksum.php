@@ -1,7 +1,7 @@
 #!/usr/local/bin/php
 <?php
-require_once("util.inc");
 require_once("config.inc");
+require_once("notices.inc");
 
 $descriptorspec = array(
    0 => array("pipe", "r"),
@@ -21,19 +21,17 @@ foreach ($commands as $what => $command)
 {
     $process = proc_open($command, $descriptorspec, $pipes);
     if ($what != "packages")
-        fread($pipes[2], 1024);
-    $err = false;
+        fgets($pipes[2], 1024);
     while (!feof($pipes[2]))
     {
-        $str = substr(fread($pipes[2], 1024), 0, -1);
-        if (strlen($str) > 0)
+        $str = substr(fgets($pipes[2], 1024), 0, -1);
+        if ($str !== false)
         {
-            $err = true;
-            syslog(LOG_ERR, $str);
+            file_notice($what, $str, $priority = 2);
+            sleep(1);
         }
     }
+    fclose($pipes[2]);
     proc_close($process);
-    if ($err)
-        mark_subsystem_dirty($what);
 }
 
