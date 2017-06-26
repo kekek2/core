@@ -1,6 +1,19 @@
 
   </div>
   <!-- /row-->
+  <?php
+  require_once("util.inc");
+  require_once("dirtys_messages.inc");
+
+  foreach ($dirtys_messages as $dirty => $message)  
+  {
+    if (is_subsystem_dirty($dirty))
+    {
+        print_info_box($message);
+        clear_subsystem_dirty($dirty);
+    }
+  }
+    ?>
 </main>
 
 <?php

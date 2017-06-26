@@ -18,6 +18,8 @@ fi
 # endless loop
 while : ; do
 
+/usr/local/etc/checkflags.php
+
 # We `set -e' to force exit if we encounter an error.
 # This is mainly useful in case we lose our tty (happens when
 # an ssh connection breaks, for example), in which case our stdout

@@ -25,6 +25,8 @@
 
 .include "Mk/defaults.mk"
 
+SHA1!=          which sha1 || echo true
+
 all:
 	@cat ${.CURDIR}/README.md | ${PAGER}
 
@@ -79,6 +81,7 @@ CORE_DEPENDS_i386?=	${CORE_DEPENDS_amd64}
 CORE_DEPENDS?=		apinger \
 			bind${CORE_BIND} \
 			ca_root_nss \
+			cfv \
 			choparp \
 			cpustats \
 			dhcp6 \
@@ -223,6 +226,7 @@ bootstrap: force
 	    CORE_REPOSITORY=${CORE_REPOSITORY}
 
 plist: force
+	@${SHA1} -q ${.CURDIR}/src/etc/config.xml.sample > ${.CURDIR}/src/etc/config.xml.sum.sample
 	@(${MAKE} -C ${.CURDIR}/contrib plist && \
 	    ${MAKE} -C ${.CURDIR}/src plist) | sort
 
