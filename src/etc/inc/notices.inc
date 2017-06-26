@@ -53,7 +53,7 @@ function file_notice($id, $notice, $category = "General", $url = "", $priority =
 
 	global $notices_file;
 	if(!$queue = get_notices()) $queue = array();
-	$queuekey = time();
+	$queuekey = sprintf("%.4f", microtime(true));
 	$toqueue = array(
 				'id'		=> $id,
 				'notice'	=> $notice,

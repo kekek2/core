@@ -26,10 +26,7 @@ foreach ($commands as $what => $command)
     {
         $str = substr(fgets($pipes[2], 1024), 0, -1);
         if ($str !== false)
-        {
             file_notice($what, $str, $priority = 2);
-            sleep(1);
-        }
     }
     fclose($pipes[2]);
     proc_close($process);
