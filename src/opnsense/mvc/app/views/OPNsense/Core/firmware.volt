@@ -585,6 +585,26 @@ POSSIBILITY OF SUCH DAMAGE.
             });
         });
 
+        $("#upload").click(function () {
+            var formData = new FormData($("#repoform")[0]);
+            $("#upload_progress").addClass("fa fa-spinner fa-pulse");
+            $.ajax({
+                url: "/api/core/firmware/uploadrepository",
+                type: "POST",
+                data: formData,
+                processData: false,  // tell jQuery not to process the data
+                contentType: false   // tell jQuery not to set contentType
+            }).done(function (data) {
+                if (data.status == "ok")
+                    $('#message').attr('class', 'alert alert-info');
+                else
+                    $('#message').attr('class', 'alert alert-danger');
+                $('#message').attr('style', '').html("{{  lang._('Repository upload: ') }}" + data.status)
+                $("#upload_progress").removeClass("fa fa-spinner fa-pulse");
+            });
+            return false;
+        });
+
         // update history on tab state and implement navigation
         if(window.location.hash != "") {
             $('a[href="' + window.location.hash + '"]').click()
@@ -650,6 +670,11 @@ POSSIBILITY OF SUCH DAMAGE.
                                     </strong>
                                 </div>
                             </td>
+                            <td>
+                                <form method="post" enctype="multipart/form-data" id="repoform">
+                                    <input name="repofile" type="file" id="repofile" /><br/>
+                                </form>
+                            </td>
                         </tr>
                         <tr>
                             <td style="width: 150px;"><a id="help_for_mirror_subscription" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> {{ lang._('Subscription') }}</td>
@@ -667,6 +692,9 @@ POSSIBILITY OF SUCH DAMAGE.
                             <td></td>
                             <td>
                                 <button class="btn btn-primary" id="change_mirror" type="button"><i id="change_mirror_progress" class=""></i> {{ lang._('Save') }}</button>
+                            </td>
+                            <td>
+                                <button class="btn btn-primary" id="upload" type="button"><i id="upload_progress" class=""></i> {{ lang._('Upload repository') }}</button>
                             </td>
                         </tr>
                         <tr>

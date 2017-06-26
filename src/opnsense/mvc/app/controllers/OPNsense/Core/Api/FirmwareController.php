@@ -39,6 +39,7 @@ use \OPNsense\Core\Config;
  */
 class FirmwareController extends ApiControllerBase
 {
+    private static $localRepo = "/var/tmp/sets/";
     /**
      * retrieve available updates
      * @return array
@@ -576,6 +577,7 @@ class FirmwareController extends ApiControllerBase
         $mirrors = array();
         $mirrors[''] = '(default)';
         $mirrors['https://update0.smart-soft.ru/'] = 'Smart-Soft';
+        $mirrors['file://' . FirmwareController::$localRepo] = 'Local repo';
 
         $has_subscription = array();
 
@@ -648,5 +650,22 @@ class FirmwareController extends ApiControllerBase
         }
 
         return $response;
+    }
+
+    public function uploadRepositoryAction()
+    {
+        $this->sessionClose(); // long running action, close session
+        if (!$this->request->hasFiles())
+            return ["status" => "failure"];
+        foreach ($this->request->getUploadedFiles() as $file)
+        {
+            $fileName = $file->getName();
+            $file->moveTo("/tmp/" . $fileName);
+            $backend = new Backend();
+            $ret = trim($backend->configdpRun("firmware repository", array("/tmp/" . $fileName), false));
+            unlink("/tmp/" . $fileName);
+            return ['status' => $ret == "OK" ? "ok" : "failure"];
+        }
+        return ["status" => "failure"];
     }
 }
