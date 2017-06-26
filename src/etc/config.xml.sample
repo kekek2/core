@@ -236,6 +236,7 @@
     </ssh>
     <disablebeep>1</disablebeep>
     <crypto_hardware>aesni</crypto_hardware>
+    <language>ru_RU</language>
   </system>
   <interfaces>
     <wan>
