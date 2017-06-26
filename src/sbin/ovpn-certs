@@ -86,7 +86,7 @@ if(!$ca_found)
 			'countryName'		=> 'RU',
 			'stateOrProvinceName'	=> '-',
 			'localityName'		=> '-',
-			'organizationName'	=> '-',
+			'organizationName'	=> $ca_name,
 			'commonName'		=> $ca_name
 	    );
 	    if (!ca_create($ca, 2048, 3650, $dn))
