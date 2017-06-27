@@ -59,7 +59,7 @@ _FLAVOUR!=	if [ -f ${OPENSSL} ]; then ${OPENSSL} version; fi
 FLAVOUR?=	${_FLAVOUR:[1]}
 
 .if "${FLAVOUR}" == OpenSSL || "${FLAVOUR}" == ""
-CORE_REPOSITORY?=	${TING_ABI}/latest
+CORE_REPOSITORY?=	${TING_ABI}-fstec/latest
 .elif "${FLAVOUR}" == LibreSSL
 CORE_REPOSITORY?=	${TING_ABI}/libressl
 .else
