@@ -69,8 +69,10 @@ class ControllerRoot extends Controller
     /**
      * Set locale for gettext
      */
-    public static function setLocale($lang_encoding, $textdomain)
+    public static function setLocale($lang_encoding)
     {
+        $textdomain = 'OPNsense';
+
         /* this isn't being done by Phalcon */
         putenv('LANG=' . $lang_encoding);
         textdomain($textdomain);

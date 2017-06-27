@@ -41,21 +41,19 @@ class ControllerBase extends ControllerRoot
 {
     /**
      * translate a text
-     * @param OPNsense\Core\Config $cnf config handle
      * @return ViewTranslator
      */
-    public function getTranslator($cnf)
+    public function getTranslator()
     {
         $lang_encoding = self::getLangEncode();
-        $textdomain = 'OPNsense';
 
         $ret = new ViewTranslator(array(
             'directory' => '/usr/local/share/locale',
-            'defaultDomain' => $textdomain,
+            'defaultDomain' => 'OPNsense',
             'locale' => $lang_encoding,
         ));
 
-        self::setLocale($lang_encoding, $textdomain);
+        self::setLocale($lang_encoding);
         return $ret;
     }
 
@@ -192,7 +190,7 @@ class ControllerBase extends ControllerRoot
         $cnf = Config::getInstance();
 
         // set translator
-        $this->view->setVar('lang', $this->getTranslator($cnf));
+        $this->view->setVar('lang', $this->getTranslator());
         $this->view->menuSystem = $menu->getItems("/ui".$this->router->getRewriteUri());
 
         // set theme in ui_theme template var, let template handle its defaults (if there is no theme).
