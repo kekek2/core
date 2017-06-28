@@ -110,7 +110,7 @@ POSSIBILITY OF SUCH DAMAGE.
     function upgrade() {
         $('#updatelist').hide();
         $('#update_status').show();
-        $('#progresstab > a').tab('show');
+        $('#updatetab > a').tab('show');
         $('#updatestatus').html("{{ lang._('Upgrading...') }}");
         $("#audit").attr("style","display:none");
         $("#upgrade").attr("style","");
@@ -129,7 +129,7 @@ POSSIBILITY OF SUCH DAMAGE.
         $.upgrade_action = 'audit';
         $('#updatelist').hide();
         $('#update_status').show();
-        $('#progresstab > a').tab('show');
+        $('#updatetab > a').tab('show');
         $('#updatestatus').html("{{ lang._('Auditing...') }}");
         $("#audit").attr("style","");
         $("#audit_progress").addClass("fa fa-spinner fa-pulse");
