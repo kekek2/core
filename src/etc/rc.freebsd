@@ -59,8 +59,10 @@ ls /usr/local/etc/rc.d/[a-z]* /etc/rc.d/[a-z]* | while read rc_filename; do
 	if [ "${enabled}" == "YES" ]; then
 		# run our bootstrap command on startup
 		if [ "${1}" == "start" ]; then
-			# do nothing if service already running
-			$rc_filename status > /dev/null && continue
+			# do nothing if service is syslog-ng and already running
+			if [ "$rc_filename" == "/usr/local/etc/rc.d/syslog-ng" ]; then
+				$rc_filename status > /dev/null  && continue
+			fi
 
 			pre_run_var="${name}_opnsense_bootup_run"
 			pre_run_var="`echo ${pre_run_var}` | /usr/bin/sed 's/-/_/g'"
