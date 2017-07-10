@@ -35,19 +35,23 @@ import glob
 import copy
 import syslog
 import traceback
+import socket
 sys.path.insert(0, "/usr/local/opnsense/site-python")
+#sys.path.insert(0, "/usr/local/opnsense/site-python/pycharm-debug.egg")
 from sqlite3_helper import check_and_repair
 from lib.parse import parse_flow
 from lib.aggregate import AggMetadata
 import lib.aggregates
 from daemonize import Daemonize
-
+#import pydevd
+#pydevd.settrace('192.168.12.101', port=41341, stdoutToServer=True, stderrToServer=True)
 
 MAX_FILE_SIZE_MB=10
 MAX_LOGS=10
+SOCKET_PATH="/var/run/flowd.socket"
 
 
-def aggregate_flowd(do_vacuum=False):
+def aggregate_flowd(server, do_vacuum=False):
     """ aggregate collected flowd data
     :param do_vacuum: vacuum database after cleanup
     :return: None
@@ -62,14 +66,12 @@ def aggregate_flowd(do_vacuum=False):
             stream_agg_objects.append(agg_class(resolution))
 
     # parse flow data and stream to registered consumers
-    prev_recv = metadata.last_sync()
     commit_record_count = 0
-    for flow_record in parse_flow(prev_recv):
-        if flow_record is None or (prev_recv != flow_record['recv'] and commit_record_count > 100000):
+    for flow_record in parse_flow(server):
+        if (flow_record is None and commit_record_count > 0) or commit_record_count > 100000:
             # commit data on receive timestamp change or last record
             for stream_agg_object in stream_agg_objects:
                 stream_agg_object.commit()
-            metadata.update_sync_time(prev_recv)
         if flow_record is not None:
             # send to aggregator
             for stream_agg_object in stream_agg_objects:
@@ -78,7 +80,6 @@ def aggregate_flowd(do_vacuum=False):
                 flow_record_cpy = copy.copy(flow_record)
                 stream_agg_object.add(flow_record_cpy)
             commit_record_count += 1
-            prev_recv = flow_record['recv']
 
     # expire old data
     for stream_agg_object in stream_agg_objects:
@@ -135,6 +136,10 @@ class Main(object):
 
         vacuum_interval = (60*60*8) # 8 hour vacuum cycle
         vacuum_countdown = None
+        if os.path.exists(SOCKET_PATH):
+            os.remove(SOCKET_PATH)
+        server = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        server.bind(SOCKET_PATH)
         while self.running:
             # should we perform a vacuum
             if not vacuum_countdown or vacuum_countdown < time.time():
@@ -145,18 +150,21 @@ class Main(object):
 
             # run aggregate
             try:
-                aggregate_flowd(do_vacuum)
+                aggregate_flowd(server, do_vacuum)
             except:
                 syslog.syslog(syslog.LOG_ERR, 'flowd aggregate died with message %s' % (traceback.format_exc()))
                 return
             # rotate if needed
-            check_rotate()
+            #check_rotate()
             # wait for next pass, exit on sigterm
             for i in range(30):
                 if self.running:
                     time.sleep(0.5)
                 else:
                     break
+
+        server.close()
+        os.remove("/tmp/python_unix_sockets_example")
 
     def signal_handler(self, sig, frame):
         """ end (run) loop on signal
