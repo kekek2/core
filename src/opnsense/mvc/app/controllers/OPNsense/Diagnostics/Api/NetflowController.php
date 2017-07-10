@@ -129,7 +129,6 @@ class NetflowController extends ApiControllerBase
             // restart netflow, by calling stop (which will always stop the collectors) and start
             // (which will only start if there are collectors configured)
             $backend->configdRun("netflow stop");
-            $backend->configdRun("netflow start");
             $mdlNetflow = new Netflow();
             if ((string)$mdlNetflow->collect->enable == 1) {
                 // don't try to restart the collector, to avoid data loss on reconfigure
@@ -139,6 +138,7 @@ class NetflowController extends ApiControllerBase
                 }
                 // aggregation process maybe restarted at all time
                 $backend->configdRun("netflow aggregate restart");
+                $backend->configdRun("netflow start");
             } else {
                 // stop collector and agreggator
                 $backend->configdRun("netflow collect stop");
