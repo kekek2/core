@@ -50,12 +50,14 @@ class Syslog extends BaseModel
     private $Modified = false;
     private $BatchMode = false;
 
+    private $AllTargets = array();
+    private $AllCategories = array();
+
     private function getPredefinedTargets()
     {
         return array(
         array('program' => 'filterlog',                                           'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/filter.log',  'category' => 'filter'),
         array('program' => 'apinger',                                             'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/gateways.log','category' => 'gateways'),
-        array('program' => 'ntp,ntpd,ntpdate',                                    'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/ntpd.log',    'category' => 'ntpd'),
         array('program' => 'captiveportal',                                       'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/portalauth.log','category' => 'portalauth'),
         array('program' => 'ppp',                                                 'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/ppps.log',    'category' => null),
         array('program' => 'relayd',                                              'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/relayd.log',  'category' => 'relayd'),
@@ -105,8 +107,10 @@ class Syslog extends BaseModel
             && $item->Filter->__toString() == $filter
             && $item->ActionType->__toString() == $type
             && $item->Target->__toString() == $target
-            && $item->Category->__toString() == $category)
+            && $item->Category->__toString() == $category) {
+                $this->AllTargets[] = $uuid;
                 return;
+            }
         }
 
         $item = $this->LogTargets->Target->add();
@@ -115,6 +119,8 @@ class Syslog extends BaseModel
         $item->ActionType = $type;
         $item->Target = $target;
         $item->Category = $category;
+
+        $this->AllTargets[] = $item->getAttributes()["uuid"];
 
         $this->Modified = true;
         $this->saveIfModified();
@@ -164,6 +170,8 @@ class Syslog extends BaseModel
         {
             if($category->Name->__toString() == $name)
             {
+                $this->AllCategories[] = $uuid;
+
                 if($category->Description->__toString() == $description)
                     return;
 
@@ -177,6 +185,7 @@ class Syslog extends BaseModel
         $category = $this->LogCategories->Category->add();
         $category->Name = $name;
         $category->Description = $description;
+        $this->AllCategories[] = $category->getAttributes()["uuid"];
         $this->Modified = true;
         $this->saveIfModified();
     }
@@ -230,6 +239,23 @@ class Syslog extends BaseModel
         $this->BatchMode = true;
         $this->checkPredefinedCategories();
         $this->checkPredefinedTargets();
+
+        // cleanup old targets
+        foreach($this->LogTargets->Target->__items as $uuid => $item) 
+        {
+            if(!in_array($uuid, $this->AllTargets)) {
+                $this->LogTargets->Target->del($uuid);
+                $this->Modified = true;
+            }
+        }
+        // cleanup old categories
+        foreach($this->LogCategories->Category->__items as $uuid => $item) 
+        {
+            if(!in_array($uuid, $this->AllCategories)) {
+                $this->LogCategories->Category->del($uuid);
+                $this->Modified = true;
+            }
+        }
         $this->BatchMode = false;
         
         $this->saveIfModified();
@@ -241,7 +267,6 @@ class Syslog extends BaseModel
         $this->setCategory('dhcp',      gettext('DHCP service events'));
         $this->setCategory('filter',    gettext('Firewall events'));
         $this->setCategory('gateways',  gettext('Gateway Monitor events'));
-        $this->setCategory('ntpd',      gettext('Internet time events'));
         $this->setCategory('portalauth',gettext('Portal Auth events'));
         $this->setCategory('relayd',    gettext('Server Load Balancer events'));
         $this->setCategory('resolver',  gettext('Domain name resolver events'));
