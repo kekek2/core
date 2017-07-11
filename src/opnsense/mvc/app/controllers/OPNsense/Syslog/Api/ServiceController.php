@@ -221,7 +221,10 @@ class ServiceController extends ApiControllerBase
         $backend->configdRun("syslog dumplogtofile {$fullname} {$tmp}");
 
         $this->view->disable();
-        $this->response->setFileToSend($tmp, "{$config->system->hostname}-{$name}.log")->send();
+        $this->response->setFileToSend($tmp, "{$config->system->hostname}-{$name}.log");
+        $this->response->setContentType("text/plain","charset=utf-8");
+        $this->response->send();
         unlink($tmp);
+        die();
     }
 }
