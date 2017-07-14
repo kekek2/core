@@ -129,16 +129,42 @@ class NetflowController extends ApiControllerBase
             // restart netflow, by calling stop (which will always stop the collectors) and start
             // (which will only start if there are collectors configured)
             $backend->configdRun("netflow stop");
+            $backend->configdRun("netflow start");
             $mdlNetflow = new Netflow();
             if ((string)$mdlNetflow->collect->enable == 1) {
+
+                $backend->configdRun("netflow aggregate stop");
+                // wait until socket exist for a maximum of $connect_timeout
+                $timeout_wait = 10;
+                while (file_exists(Netflow::$socket_path)) {
+                    sleep(1);
+                    $timeout_wait -= 1;
+                    if ($timeout_wait <= 0) {
+                        $this->getLogger()->error("failed waiting for stopping flowd_aggregate.py");
+                        return array("status" => "error");
+                    }
+                }
+
+                $backend->configdRun("netflow aggregate start");
+                // wait until socket exist for a maximum of $connect_timeout
+                $timeout_wait = 10;
+                while (!file_exists(Netflow::$socket_path)) {
+                    sleep(1);
+                    $timeout_wait -= 1;
+                    if ($timeout_wait <= 0) {
+                        $this->getLogger()->error("failed waiting for starting flowd_aggregate.py");
+                        return array("status" => "error");
+                    }
+                }
+
                 // don't try to restart the collector, to avoid data loss on reconfigure
                 $response = $backend->configdRun("netflow collect status");
                 if (strpos($response, "not running") > 0) {
                     $backend->configdRun("netflow collect start");
                 }
+                else
+                    $backend->configdRun("netflow collect restart");
                 // aggregation process maybe restarted at all time
-                $backend->configdRun("netflow aggregate restart");
-                $backend->configdRun("netflow start");
             } else {
                 // stop collector and agreggator
                 $backend->configdRun("netflow collect stop");
