@@ -28,7 +28,7 @@
 all:
 	@cat ${.CURDIR}/README.md | ${PAGER}
 
-WANTS=		git pear-PHP_CodeSniffer phpunit
+WANTS=		git pear-PHP_CodeSniffer phpunit6
 
 .for WANT in ${WANTS}
 want-${WANT}: force
@@ -45,7 +45,7 @@ TING_ABI?=	1.1
 CORE_ABI?=	17.1
 CORE_ARCH?=	${ARCH}
 CORE_BIND?=	911
-CORE_OPENVPN?=	23
+CORE_OPENVPN?=	# empty for version 2.4
 CORE_PHP?=	70
 CORE_PY?=	27
 
@@ -306,7 +306,7 @@ style: want-pear-PHP_CodeSniffer
 style-fix: want-pear-PHP_CodeSniffer
 	phpcbf --standard=ruleset.xml ${.CURDIR}/src/opnsense || true
 
-test: want-phpunit
+test: want-phpunit6
 	@cd ${.CURDIR}/src/opnsense/mvc/tests && \
 	    phpunit --configuration PHPunit.xml
 

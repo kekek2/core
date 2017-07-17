@@ -608,7 +608,6 @@ class updatedns {
                         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, TRUE);
                     else
                         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
-                    curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_ANY);
                     curl_setopt($ch, CURLOPT_USERPWD, "{$this->_dnsUser}:{$this->_dnsPass}");
                 }
                 $server = str_replace("%IP%", $this->_dnsIP, $this->_dnsUpdateURL);
@@ -1282,7 +1281,7 @@ class updatedns {
     }
 
     function _checkIP() {
-        $ip_address = get_dyndns_ip($this->_if, $his->_useIPv6 ? 6 : 4);
+        $ip_address = get_dyndns_ip($this->_if, $this->_useIPv6 ? 6 : 4);
         if (!is_ipaddr($ip_address)) {
             if ($this->_dnsVerboseLog) {
                 log_error("Dynamic DNS ({$this->_dnsHost}): IP address could not be extracted");

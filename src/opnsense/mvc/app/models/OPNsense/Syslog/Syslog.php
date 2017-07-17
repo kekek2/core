@@ -61,7 +61,7 @@ class Syslog extends BaseModel
         array('program' => 'captiveportal',                                       'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/portalauth.log','category' => 'portalauth'),
         array('program' => 'ppp',                                                 'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/ppps.log',    'category' => null),
         array('program' => 'relayd',                                              'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/relayd.log',  'category' => 'relayd'),
-        array('program' => 'dnsmasq,filterdns,unbound',                           'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/resolver.log','category' => 'resolver'),
+        array('program' => 'filterdns,unbound',                                   'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/resolver.log','category' => 'dns'),
         array('program' => 'radvd,routed,rtsold,olsrd,zebra,ospfd,bgpd,miniupnpd','filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/routing.log', 'category' => null),
         array('program' => 'hostapd',                                             'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/wireless.log','category' => 'wireless'),
 
