@@ -139,6 +139,10 @@
                 </Target>
                 <Category type="TextField">
                 </Category>
+                <PID type="TextField">
+                </PID>
+                <SigNum type="TextField">
+                </SigNum>
             </Target>
         </LogTargets>
 
