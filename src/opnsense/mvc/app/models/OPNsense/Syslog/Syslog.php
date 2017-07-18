@@ -61,7 +61,7 @@ class Syslog extends BaseModel
         array('program' => 'captiveportal',                                       'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/portalauth.log','category' => 'portalauth'),
         array('program' => 'ppp',                                                 'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/ppps.log',    'category' => null),
         array('program' => 'relayd',                                              'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/relayd.log',  'category' => 'relayd'),
-        array('program' => 'dnsmasq,filterdns,unbound',                           'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/resolver.log','category' => 'resolver'),
+        array('program' => 'filterdns,unbound',                                   'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/resolver.log','category' => 'dns'),
         array('program' => 'radvd,routed,rtsold,olsrd,zebra,ospfd,bgpd,miniupnpd','filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/routing.log', 'category' => null),
         array('program' => 'hostapd',                                             'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/wireless.log','category' => 'wireless'),
 
@@ -89,13 +89,15 @@ class Syslog extends BaseModel
      * @param $category log category mapping, null if no category
      * @throws \ModelException
      */
-    public function setTarget($source, $filter, $type, $target, $category)
+    public function setTarget($source, $filter, $type, $target, $category, $pid = '', $signum = '')
     {
         $source = str_replace(' ', '', $source);
         $filter = str_replace(' ', '', $filter);
         $type = trim($type);
         $target = trim($target);
         $category = trim($category);
+        $pid = trim($pid);
+        $signum = trim($signum);
 
         $this->setSource($source);
 
@@ -107,7 +109,9 @@ class Syslog extends BaseModel
             && $item->Filter->__toString() == $filter
             && $item->ActionType->__toString() == $type
             && $item->Target->__toString() == $target
-            && $item->Category->__toString() == $category) {
+            && $item->Category->__toString() == $category
+            && $item->PID->__toString() == $pid
+            && $item->SigNum->__toString() == $signum) {
                 $this->AllTargets[] = $uuid;
                 return;
             }
@@ -119,6 +123,8 @@ class Syslog extends BaseModel
         $item->ActionType = $type;
         $item->Target = $target;
         $item->Category = $category;
+        $item->PID = $pid;
+        $item->SigNum = $signum;
 
         $this->AllTargets[] = $item->getAttributes()["uuid"];
 
@@ -290,7 +296,9 @@ class Syslog extends BaseModel
             $program = join(",", $params['facility']);
             $target =  self::$LOGS_DIRECTORY."/".$name.".log";
             $category = isset($params['remote']) ? $params['remote'] : null;
-            $this->setTarget($program, '*.*', 'file', $target, $category);
+            $pid = isset($params['pid']) ? $params['pid'] : null;
+            $signum = isset($params['pid']) && isset($params['signum']) ? $params['signum'] : null;
+            $this->setTarget($program, '*.*', 'file', $target, $category, $pid, $signum);
             if(isset($params['local']))
             {
                 $this->setLocalSocket($params['local']);
