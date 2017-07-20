@@ -25,7 +25,7 @@
 
                 saveFormToEndpoint(url="/api/syslog/settings/set",formid='syslog-remote',callback_ok=function(){
 
-                    $("#responseMsg").html('{{lang._("The changes have been applied successfully.")}}');
+                    $("#responseMsg").html('{{lang._('The changes have been applied successfully.')}}');
 
                     ajaxCall(url="/api/syslog/service/reload", sendData={},callback=function(data,status) {
 
