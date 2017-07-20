@@ -330,25 +330,6 @@ include("head.inc");
               </td>
             </tr>
             <tr>
-              <td><a id="help_for_theme" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Theme"); ?></td>
-              <td>
-                <select name="theme" class="selectpicker" data-size="10" data-width="auto">
-<?php
-                  foreach (return_dir_as_array('/usr/local/opnsense/www/themes/') as $file):?>
-                  <option <?= $file == $pconfig['theme'] ? 'selected="selected"' : '' ?>>
-                    <?=$file;?>
-                  </option>
-<?php
-                  endforeach; ?>
-                </select>
-                <div class="hidden" for="help_for_theme">
-                  <strong>
-                    <?= gettext('This will change the look and feel of the GUI.') ?>
-                  </strong>
-                </div>
-              </td>
-            </tr>
-            <tr>
               <th colspan="2" valign="top" class="listtopic"><?=gettext("Networking"); ?></th>
             </tr>
             <tr>
