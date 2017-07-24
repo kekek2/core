@@ -160,7 +160,7 @@ function legacy_vlan_tag($ifs, $member, $tag, $pcp)
     }
 }
 
-function legacy_interface_stats($ifs=null)
+function legacy_interface_stats($ifs = null)
 {
     if ($ifs != null) {
         // only request data for selected interface
@@ -218,7 +218,7 @@ function legacy_interfaces_details($intf = null)
     $current_interface = null;
     foreach ($ifconfig_data as $line) {
         $line_parts = explode(' ', $line);
-        if (strpos(trim($line), 'flags=') !== false) {
+        if (strpos(trim($line), 'flags=') !== false && $line[0] != "\t") {
             $current_interface = explode(':', $line)[0];
             $result[$current_interface] = array();
             $result[$current_interface]["capabilities"] = array();
@@ -226,6 +226,9 @@ function legacy_interfaces_details($intf = null)
             $result[$current_interface]["macaddr"] = "00:00:00:00:00:00";
             $result[$current_interface]["ipv4"] = array();
             $result[$current_interface]["ipv6"] = array();
+            if (preg_match("/ mtu ([0-9]*).*$/", $line, $matches)) {
+                $result[$current_interface]["mtu"] = $matches[1];
+            }
         } elseif (empty($current_interface)) {
             // skip parsing, no interface found (yet)
             continue;
@@ -273,8 +276,26 @@ function legacy_interfaces_details($intf = null)
                     return $a['link-local'] - $b['link-local'];
                 });
             }
+        } elseif (preg_match("/media: (.*)/", $line, $matches)) {
+            // media, when link is between parenthesis grep only the link part
+            $result[$current_interface]['media'] = $matches[1];
+            if (preg_match("/media: .*? \((.*?)\)/", $line, $matches)) {
+                $result[$current_interface]['media'] = $matches[1];
+            }
+        } elseif (preg_match("/status: (.*)$/", $line, $matches)) {
+            $result[$current_interface]['status'] = $matches[1];
+        } elseif (preg_match("/channel (\S*)/", $line, $matches)) {
+            $result[$current_interface]['channel'] = $matches[1];
+        } elseif (preg_match("/ssid (\".*?\"|\S*)/", $line, $matches)) {
+            $result[$current_interface]['ssid'] = $matches[1];
+        } elseif (preg_match("/laggproto (.*)$/", $line, $matches)) {
+            $result[$current_interface]['laggproto'] = $matches[1];
+        } elseif (preg_match("/laggport: (.*)$/", $line, $matches)) {
+            if (empty($result[$current_interface]['laggport'])) {
+                $result[$current_interface]['laggport'] = array();
+            }
+            $result[$current_interface]['laggport'][] = explode(' ', trim($matches[1]))[0];
         }
-
     }
 
     return $result;
