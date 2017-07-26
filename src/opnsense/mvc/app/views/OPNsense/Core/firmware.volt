@@ -625,13 +625,6 @@ POSSIBILITY OF SUCH DAMAGE.
                     <table class="table table-striped table-condensed table-responsive" id="pluginlist">
                     </table>
                 </div>
-                <div id="updates" class="tab-pane fade in">
-                    <table class="table table-striped table-condensed table-responsive" id="updatelist">
-                    </table>
-                </div>
-                <div id="progress" class="tab-pane fade in">
-                    <textarea name="output" id="update_status" class="form-control" rows="20" wrap="hard" readonly style="max-width:100%; font-family: monospace;"></textarea>
-                </div>
                 <div id="packages" class="tab-pane fade in">
                     <table class="table table-striped table-condensed table-responsive" id="packageslist"></table>
                 </div>
