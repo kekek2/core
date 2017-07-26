@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (c) 2015-2017 Franco Fichtner <franco@opnsense.org>
+# Copyright (c) 2017 Franco Fichtner <franco@opnsense.org>
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,51 +25,25 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-set -e
+SWAPUSE=$(grep -c use_swap_file /conf/config.xml)
+SWAPFILE=/usr/swap0
+SWAPSIZE=2048
+SWAPDEV=md98
 
-LOCKFILE="/tmp/pkg_upgrade.progress"
-PIPEFILE="/tmp/pkg_upgrade.pipe"
-TEE="/usr/bin/tee -a"
-RELEASE=
+# auto-configured fstab entries:
 
-if [ "${1}" = "upgrade" -a -n "${2}" ]; then
-	RELEASE=${2}
-elif [ "${1}" = "ALLOW_RISKY_MAJOR_UPGRADE" ]; then
-	RELEASE=$(cat /usr/local/opnsense/firmware-upgrade 2> /dev/null)
-fi
+swapon -a
 
-: > ${LOCKFILE}
-rm -f ${PIPEFILE}
-mkfifo ${PIPEFILE}
+# swap file option for SSDs:
 
-echo "***GOT REQUEST TO UPGRADE***" >> ${LOCKFILE}
-
-if [ -z "${RELEASE}" ]; then
-	# upgrade all packages if possible
-	${TEE} ${LOCKFILE} < ${PIPEFILE} &
-	opnsense-update -p 2>&1 > ${PIPEFILE}
-
-	# trigger a webgui restart to cope with changes
-	${TEE} ${LOCKFILE} < ${PIPEFILE} &
-	/usr/local/etc/rc.restart_webgui 2>&1 > ${PIPEFILE}
-
-	# if we can update base, we'll do that as well
-	if opnsense-update -c; then
-		${TEE} ${LOCKFILE} < ${PIPEFILE} &
-		if opnsense-update -bk 2>&1 > ${PIPEFILE}; then
-			echo '***REBOOT***' >> ${LOCKFILE}
-			sleep 5
-			/usr/local/etc/rc.reboot
-		fi
+if [ "${SWAPUSE}" != "0" ]; then
+	if [ ! -f ${SWAPFILE} ]; then
+		dd if=/dev/zero of=${SWAPFILE} bs=1m count=${SWAPSIZE}
+		chmod 0600 ${SWAPFILE}
+	fi
+	if mdconfig -a -t vnode -f ${SWAPFILE} -u ${SWAPDEV}; then
+		swapon /dev/${SWAPDEV}
 	fi
 else
-	# upgrade to a major release
-	${TEE} ${LOCKFILE} < ${PIPEFILE} &
-	if opnsense-update -ur ${RELEASE} 2>&1 > ${PIPEFILE}; then
-		echo '***REBOOT***' >> ${LOCKFILE}
-		sleep 5
-		/usr/local/etc/rc.reboot
-	fi
+	rm -f ${SWAPFILE}
 fi
-
-echo '***DONE***' >> ${LOCKFILE}

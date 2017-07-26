@@ -408,7 +408,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
     }
 
-    $std_ppp_copy_fieldnames = array("ptpid", "ports", "username", "phone", "apn", "provider", "idletimeout", "localip");
+    $std_ppp_copy_fieldnames = array("ptpid", "ports", "username", "phone", "apn", "provider", "idletimeout", "localip", 'hostuniq');
     foreach ($std_ppp_copy_fieldnames as $fieldname) {
         $pconfig[$fieldname] = isset($a_ppps[$pppid][$fieldname]) ? $a_ppps[$pppid][$fieldname] : null;
     }
@@ -417,7 +417,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['pppoe_dialondemand'] = isset($a_ppps[$pppid]['ondemand']);
     $pconfig['pptp_dialondemand'] = isset($a_ppps[$pppid]['ondemand']);
     $pconfig['pppoe_password'] = $pconfig['password']; // pppoe password field
-    $pconfig["pppoe_username"] =  $pconfig['username'];
+    $pconfig['pppoe_username'] =  $pconfig['username'];
+    $pconfig['pppoe_hostuniq'] =  $pconfig['hostuniq'];
     $pconfig['pppoe_idletimeout'] = $pconfig['idletimeout'];
 
     $pconfig['pptp_username'] = $pconfig['username'];
@@ -515,10 +516,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $toapplylist = unserialize(file_get_contents('/tmp/.interfaces.apply'));
                 foreach ($toapplylist as $ifapply => $ifcfgo) {
                     if (isset($config['interfaces'][$ifapply]['enable'])) {
-                        interface_bring_down($ifapply, false, $ifcfgo);
+                        interface_bring_down($ifapply, $ifcfgo);
                         interface_configure($ifapply, true);
                     } else {
-                        interface_bring_down($ifapply, true, $ifcfgo);
+                        interface_bring_down($ifapply, $ifcfgo);
                     }
                 }
             }
@@ -823,14 +824,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
 
             if (stristr($a_interfaces[$if]['if'], "_vlan")) {
-                $realhwif_array = get_parent_interface($a_interfaces[$if]['if']);
-                // Need code to handle MLPPP if we ever use $realhwif for MLPPP handling
-                $parent_realhwif = $realhwif_array[0];
-                $parent_if = convert_real_interface_to_friendly_interface_name($parent_realhwif);
-                if (!empty($parent_if) && !empty($config['interfaces'][$parent_if]['mtu'])) {
-                    if ($pconfig['mtu'] > intval($config['interfaces'][$parent_if]['mtu'])) {
-                        $input_errors[] = gettext("MTU of a vlan should not be bigger than parent interface.");
-                    }
+                $parentif = get_parent_interface($a_interfaces[$if]['if'])[0];
+                $intf_details = legacy_interface_details($parentif);
+                if ($intf_details['mtu'] < $pconfig['mtu']) {
+                    $input_errors[] = gettext("MTU of a vlan should not be bigger than parent interface.");
                 }
             } else {
                 foreach ($config['interfaces'] as $idx => $ifdata) {
@@ -1026,6 +1023,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     $new_ppp_config['password'] = base64_encode($pconfig['pppoe_password']);
                     if (!empty($pconfig['provider'])) {
                         $new_ppp_config['provider'] = $pconfig['provider'];
+                    }
+                    if (!empty($pconfig['pppoe_hostuniq'])) {
+                        $new_ppp_config['hostuniq'] = $pconfig['pppoe_hostuniq'];
                     }
                     $new_ppp_config['ondemand'] = !empty($pconfig['pppoe_dialondemand']);
                     if (!empty($pconfig['pppoe_idletimeout'])) {
@@ -2248,6 +2248,15 @@ include("head.inc");
                               <small class="formhelp">
                               <?=gettext("Hint: this field can usually be left empty"); ?>
                               </small>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td><a id="help_for_pppoe_hostuniq" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Host-Uniq"); ?></td>
+                          <td>
+                            <input name="pppoe_hostuniq" type="text" id="pppoe_hostuniq" value="<?=$pconfig['pppoe_hostuniq'];?>" />
+                            <div class="hidden" for="help_for_pppoe_hostuniq">
+                              <?= gettext('This field can usually be left empty unless specified by the provider.') ?>
                             </div>
                           </td>
                         </tr>
