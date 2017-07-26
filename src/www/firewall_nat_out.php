@@ -33,12 +33,7 @@ require_once("filter.inc");
 require_once("interfaces.inc");
 require_once("logs.inc");
 
-/**
- *   quite nasty, content provided by filter_generate_gateways (in filter.inc).
- *  Not going to solve this now, because filter_generate_gateways is not a propper function
- *  it returns both rules for the firewall and is kind of responsible for updating this global.
- */
-global $GatewaysList;
+$GatewaysList = return_gateways_array(false, true) + return_gateway_groups_array();
 
 if (!isset($config['nat']['outbound']))
     $config['nat']['outbound'] = array();
@@ -67,15 +62,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $mode = $config['nat']['outbound']['mode'];
         /* mutually exclusive settings - if user wants advanced NAT, we don't generate automatic rules */
         if ($pconfig['mode'] == "advanced" && ($mode == "automatic" || $mode == "hybrid")) {
-            /*
-             *    user has enabled advanced outbound NAT and doesn't have rules
-             *    lets automatically create entries
-             *    for all of the interfaces to make life easier on the pip-o-chap
-             */
-            if(empty($GatewaysList)) {
-                filter_generate_gateways();
-            }
-
             /* XXX cranky low-level call, please refactor */
             $FilterIflist = filter_generate_optcfg_array();
             $tonathosts = filter_nat_rules_automatic_tonathosts($FilterIflist, true);
@@ -114,7 +100,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             $savemsg = gettext("Default rules for each interface have been created.");
-            unset($GatewaysList);
         }
 
         $config['nat']['outbound']['mode'] = $pconfig['mode'];
@@ -246,6 +231,12 @@ include("head.inc");
         $("#action").val("toggle");
         $("#iform").submit();
     });
+
+    // select All
+    $("#selectAll").click(function(){
+        $(".rule_select").prop("checked", $(this).prop("checked"));
+    });
+
     // watch scroll position and set to last known on page load
     watchScrollPosition();
   });
@@ -341,7 +332,7 @@ include("head.inc");
               <thead>
                 <tr><th colspan="12"><?=gettext("Manual rules:"); ?></th></tr>
                 <tr>
-                    <th>&nbsp;</th>
+                    <th><input type="checkbox" id="selectAll"></th>
                     <th>&nbsp;</th>
                     <th><?=gettext("Interface");?></th>
                     <th class="hidden-xs hidden-sm"><?=gettext("Source");?></th>
@@ -362,7 +353,7 @@ include("head.inc");
 ?>
                   <tr <?=$mode == "disabled" || $mode == "automatic" || isset($natent['disabled'])?"class=\"text-muted\"":"";?> ondblclick="document.location='firewall_nat_out_edit.php?id=<?=$i;?>';">
                     <td>
-                      <input type="checkbox" name="rule[]" value="<?=$i;?>"  />
+                      <input class="rule_select" type="checkbox" name="rule[]" value="<?=$i;?>"  />
                     </td>
                     <td>
 <?php
@@ -459,18 +450,18 @@ include("head.inc");
                       elseif ($natent['target'] == "other-subnet")
                         $nat_address = $natent['targetip'] . '/' . $natent['targetip_subnet'];
                       else
-                        $nat_address = $natent['target'];
+                        $nat_address = htmlspecialchars($natent['target']);
 ?>
 <?php                 if (isset($natent['target']) && is_alias($natent['target'])): ?>
                         <span title="<?=htmlspecialchars(get_alias_description($natent['target']));?>" data-toggle="tooltip">
-                          <?=htmlspecialchars($nat_address);?>&nbsp;
+                          <?=$nat_address;?>&nbsp;
                         </span>
                         <a href="/firewall_aliases_edit.php?name=<?=htmlspecialchars($natent['target']);?>"
                             title="<?=gettext("edit alias");?>" data-toggle="tooltip">
                           <i class="fa fa-list"></i>
                         </a>
 <?php                 else: ?>
-                        <?=htmlspecialchars($nat_address);?>
+                        <?=$nat_address;?>
 <?php                 endif; ?>
                     </td>
                     <td class="hidden-xs hidden-sm">
@@ -556,15 +547,11 @@ include("head.inc");
 <?php
       // when automatic or hybrid, display "auto" table.
       if ($mode == "automatic" || $mode == "hybrid"):
-        if (empty($GatewaysList)) {
-            filter_generate_gateways();
-        }
         /* XXX cranky low-level call, please refactor */
         $FilterIflist = filter_generate_optcfg_array();
         $automatic_rules = filter_nat_rules_outbound_automatic(
           $FilterIflist, implode(' ', filter_nat_rules_automatic_tonathosts($FilterIflist))
         );
-        unset($GatewaysList);
 ?>
         <section class="col-xs-12">
           <div class="table-responsive content-box ">
@@ -623,7 +610,7 @@ include("head.inc");
                     } elseif ($natent['target'] == "other-subnet") {
                         $nat_address = $natent['targetip'] . '/' . $natent['targetip_subnet'];
                     } else  {
-                        $nat_address = $natent['target'];
+                        $nat_address = htmlspecialchars($natent['target']);
                     }
 ?>
                     <?=$nat_address;?>

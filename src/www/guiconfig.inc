@@ -261,20 +261,13 @@ function print_service_banner($service)
     }
 }
 
-function get_std_save_message()
+function get_std_save_message($raw = false)
 {
-    $filter_related = false;
-    $filter_pages = array("nat", "filter");
-    $to_return = gettext("The changes have been applied successfully.");
-    foreach($filter_pages as $fp) {
-        if (stristr($_SERVER['SCRIPT_FILENAME'], $fp)) {
-            $filter_related = true;
-        }
+    if ($raw == true) {
+        return 'The changes have been applied successfully.';
     }
-    if ($filter_related) {
-        $to_return .= "<br />" . gettext("You can also <a href=\"status_filter_reload.php\">monitor</a> the filter reload progress.");
-    }
-    return $to_return;
+
+    return gettext('The changes have been applied successfully.');
 }
 
 function get_specialnets($only_enabled=false)
@@ -415,7 +408,7 @@ function pconfig_to_address(&$adr, $padr, $pmask, $pnot=false, $pbeginport=0, $p
     if (is_alias($pbeginport)) {
         $adr['port'] = $pbeginport;
     } elseif (($pbeginport != 0) && ($pbeginport != "any")) {
-        if ($pbeginport != $pendport) {
+        if ($pbeginport != $pendport && !empty($pendport)) {
             $adr['port'] = $pbeginport . "-" . $pendport;
         } else {
             $adr['port'] = $pbeginport;
@@ -485,9 +478,7 @@ function display_top_tabs(& $tab_array, $no_drop_down = false)
             } else {
                 $selected = "";
             }
-            // Onclick in option will not work in some browser
-            // echo "<option onclick=\"document.location='{$ta[2]}';\"{$selected}>{$ta['0']}</option>\n";
-            echo "<option value=\"{$ta[2]}\"{$selected}>{$ta['0']}</option>\n";
+            echo "<option class=\"top_tab\" value=\"{$ta[2]}\"{$selected}>{$ta['0']}</option>\n";
         }
         echo "</select>\n<p>&nbsp;</p>";
         echo "<script type=\"text/javascript\">";
@@ -501,9 +492,9 @@ function display_top_tabs(& $tab_array, $no_drop_down = false)
         $tabscounter = 0;
         foreach ($tab_array as $ta) {
             if ($ta[1] == true) {
-                echo "  <li class=\"active\"><a href=\"{$ta[2]}\" role=\"tab\">{$ta[0]}</a></li>\n";
+                echo "  <li class=\"active\"><a class=\"top_tab\" href=\"{$ta[2]}\" role=\"tab\">{$ta[0]}</a></li>\n";
             } else {
-                echo "  <li><a href=\"{$ta[2]}\" role=\"tab\">{$ta[0]}</a></li>\n";
+                echo "  <li><a class=\"top_tab\" href=\"{$ta[2]}\" role=\"tab\">{$ta[0]}</a></li>\n";
             }
             $tabscounter++;
         }

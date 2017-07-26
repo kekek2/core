@@ -34,7 +34,7 @@ function legacy_interface_listget($flag = '')
     $ifs = null;
 
     exec($cmd_wlan . ' 2>&1', $out_wlan, $ret_wlan);
-    if (!$ret_wlan && isset($out_wlan[0])) {
+    if (!$ret_wlan && !empty($out_wlan[0])) {
         $ifs_wlan = explode(' ', $out_wlan[0]);
     }
 
@@ -72,9 +72,12 @@ function legacy_interface_flags($ifs, $flag, $report_errors=true)
     }
 }
 
-function legacy_interface_create($ifs)
+function legacy_interface_create($ifs, $name = null)
 {
     $cmd = '/sbin/ifconfig ' . escapeshellarg($ifs) . ' create';
+    if (!empty($name)) {
+        $cmd .= ' name ' . escapeshellarg($name);
+    }
     $new = null;
 
     exec($cmd . ' 2>&1', $out, $ret);
@@ -120,16 +123,6 @@ function legacy_interface_deladdress($ifs, $addr)
     }
 }
 
-function legacy_interface_rename($ifs, $name)
-{
-    $cmd = '/sbin/ifconfig ' . escapeshellarg($ifs) . ' name ' . escapeshellarg($name);
-
-    exec($cmd . ' 2>&1', $out, $ret);
-    if ($ret) {
-        log_error('The command `' . $cmd . '\' failed to execute');
-    }
-}
-
 function legacy_interface_mtu($ifs, $mtu)
 {
     $cmd = '/sbin/ifconfig ' . escapeshellarg($ifs) . ' mtu ' . escapeshellarg($mtu);
@@ -150,9 +143,9 @@ function legacy_bridge_member($ifs, $member)
     }
 }
 
-function legacy_vlan_tag($ifs, $member, $tag)
+function legacy_vlan_tag($ifs, $member, $tag, $pcp)
 {
-    $cmd = '/sbin/ifconfig ' . escapeshellarg($ifs) . ' vlandev ' . escapeshellarg($member) . ' vlan ' . escapeshellarg($tag);
+    $cmd = '/sbin/ifconfig ' . escapeshellarg($ifs) . ' vlandev ' . escapeshellarg($member) . ' vlan ' . escapeshellarg($tag) . ' vlanpcp '.escapeshellarg($pcp);
 
     exec($cmd . ' 2>&1', $out, $ret);
     if ($ret) {
@@ -160,7 +153,7 @@ function legacy_vlan_tag($ifs, $member, $tag)
     }
 }
 
-function legacy_interface_stats($ifs=null)
+function legacy_interface_stats($ifs = null)
 {
     if ($ifs != null) {
         // only request data for selected interface
@@ -196,7 +189,6 @@ function legacy_interface_stats($ifs=null)
 
 /**
  * detect interface capabilities using ifconfig -m
- * @param $intf filter on interface name (empty for all)
  * @return array list of interface specifics indexed by physical interface name
  */
 function legacy_interfaces_details($intf = null)
@@ -247,8 +239,15 @@ function legacy_interfaces_details($intf = null)
             $result[$current_interface]["macaddr"] = $line_parts[1];
         } elseif (strpos($line, "\tinet ") !== false) {
             // IPv4 information
-            $mask = substr_count(base_convert(hexdec($line_parts[3]), 10, 2), '1');
-            $result[$current_interface]["ipv4"][] = array("ipaddr" => $line_parts[1], "subnetbits" => $mask);
+            unset($mask);
+            for ($i = 0; $i < count($line_parts) - 1; ++$i) {
+                if ($line_parts[$i] == 'netmask') {
+                    $mask = substr_count(base_convert(hexdec($line_parts[($i + 1)]), 10, 2), '1');
+                }
+            }
+            if (isset($mask)) {
+                $result[$current_interface]["ipv4"][] = array("ipaddr" => $line_parts[1], "subnetbits" => $mask);
+            }
         } elseif (strpos($line, "\tinet6 ") !== false) {
             // IPv6 information
             $addr = strtok($line_parts[1], '%');
@@ -267,8 +266,26 @@ function legacy_interfaces_details($intf = null)
                     return $a['link-local'] - $b['link-local'];
                 });
             }
+        } elseif (preg_match("/media: (.*)/", $line, $matches)) {
+            // media, when link is between parenthesis grep only the link part
+            $result[$current_interface]['media'] = $matches[1];
+            if (preg_match("/media: .*? \((.*?)\)/", $line, $matches)) {
+                $result[$current_interface]['media'] = $matches[1];
+            }
+        } elseif (preg_match("/status: (.*)$/", $line, $matches)) {
+            $result[$current_interface]['status'] = $matches[1];
+        } elseif (preg_match("/channel (\S*)/", $line, $matches)) {
+            $result[$current_interface]['channel'] = $matches[1];
+        } elseif (preg_match("/ssid (\".*?\"|\S*)/", $line, $matches)) {
+            $result[$current_interface]['ssid'] = $matches[1];
+        } elseif (preg_match("/laggproto (.*)$/", $line, $matches)) {
+            $result[$current_interface]['laggproto'] = $matches[1];
+        } elseif (preg_match("/laggport: (.*)$/", $line, $matches)) {
+            if (empty($result[$current_interface]['laggport'])) {
+                $result[$current_interface]['laggport'] = array();
+            }
+            $result[$current_interface]['laggport'][] = $matches[1];
         }
-
     }
 
     return $result;
@@ -276,7 +293,7 @@ function legacy_interfaces_details($intf = null)
 
 /**
  * fetch interface details for one interface
- * @param $intf interface name
+ * @param $intf string interface name
  * @return array list of interface specifics
  */
 function legacy_interface_details($intf)

@@ -28,7 +28,9 @@
     package : configd
 """
 
+import collections
 import netaddr
+import operator
 
 
 # noinspection PyPep8Naming
@@ -116,3 +118,11 @@ class Helpers(object):
             :return: IPNetwork
         """
         return netaddr.IPNetwork(network)
+
+    @staticmethod
+    def sortDictList(lst, *operators):
+        if type(lst) == list:
+            lst.sort(key=operator.itemgetter(*operators))
+        elif type(lst) in (collections.OrderedDict, dict):
+            return [lst]
+        return lst

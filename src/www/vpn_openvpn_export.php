@@ -30,7 +30,7 @@
 */
 
 require_once("guiconfig.inc");
-require_once("openvpn.inc");
+require_once("plugins.inc.d/openvpn.inc");
 require_once("services.inc");
 require_once("filter.inc");
 require_once("interfaces.inc");
@@ -186,7 +186,7 @@ function openvpn_client_export_config($srvid, $usrid, $crtid, $useaddr, $verifys
     $conf .= "auth {$digest}{$nl}";
     $conf .= "tls-client{$nl}";
     $conf .= "client{$nl}";
-    if (!empty($settings['reneg-sec'])) {
+    if (isset($settings['reneg-sec']) && $settings['reneg-sec'] != "") {
         $conf .= "reneg-sec {$settings['reneg-sec']}{$nl}";
     }
     if (($expformat != "inlinedroid") && ($expformat != "inlineios")) {
@@ -629,7 +629,7 @@ function openvpn_client_export_sharedkey_config($srvid, $useaddr, $proxy, $zipco
     $conf .= "auth {$digest}\n";
     $conf .= "pull\n";
     $conf .= "resolv-retry infinite\n";
-    if (!empty($settings['reneg-sec'])) {
+    if (isset($settings['reneg-sec']) && $settings['reneg-sec'] != "") {
         $conf .= "reneg-sec {$settings['reneg-sec']}\n";
     }
     $conf .= "remote {$server_host} {$server_port}\n";
@@ -1171,7 +1171,7 @@ include("head.inc");
                 } else {
                     params['openvpnmanager'] = 0;
                 }
-                params['advancedoptions'] = escape($("#advancedoptions").val());
+                params['advancedoptions'] = $("#advancedoptions").val();
                 params['verifyservercn'] = $("#verifyservercn").val();
                 if ($(this).data('type') == 'cert') {
                     params['crtid'] = $(this).data('id');

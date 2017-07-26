@@ -2,7 +2,6 @@
 
 /**
  *    Copyright (C) 2015 Deciso B.V.
- *
  *    All rights reserved.
  *
  *    Redistribution and use in source and binary forms, with or without
@@ -25,8 +24,8 @@
  *    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  *    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *    POSSIBILITY OF SUCH DAMAGE.
- *
  */
+
 namespace OPNsense\Base;
 
 use OPNsense\Core\Config;
@@ -161,8 +160,9 @@ class ControllerBase extends ControllerRoot
             }
 
             // check for valid csrf on post requests
-            if ($this->request->isPost() && !$this->security->checkToken()) {
+            if ($this->request->isPost() && !$this->security->checkToken(null, null, false)) {
                 // post without csrf, exit.
+                $this->response->setStatusCode(403, "Forbidden");
                 return false;
             }
 
@@ -178,10 +178,14 @@ class ControllerBase extends ControllerRoot
         }
 
         // include csrf for volt view rendering.
-        $this->view->setVars([
-            'csrf_tokenKey' => $this->security->getTokenKey(),
-            'csrf_token' => $this->security->getToken()
-        ]);
+        $csrf_token = $this->session->get('$PHALCON/CSRF$');
+        $csrf_tokenKey = $this->session->get('$PHALCON/CSRF/KEY$');
+        if (empty($csrf_token) || empty($csrf_tokenKey)) {
+            // when there's no token in our session, request a new one
+            $csrf_token = $this->security->getToken();
+            $csrf_tokenKey = $this->security->getTokenKey();
+        }
+        $this->view->setVars(['csrf_tokenKey' => $csrf_tokenKey, 'csrf_token' => $csrf_token]);
 
         // link menu system to view, append /ui in uri because of rewrite
         $menu = new Menu\MenuSystem();
@@ -194,10 +198,15 @@ class ControllerBase extends ControllerRoot
         $this->view->menuSystem = $menu->getItems("/ui".$this->router->getRewriteUri());
 
         // set theme in ui_theme template var, let template handle its defaults (if there is no theme).
-        if ($cnf->object()->theme != null && !empty($cnf->object()->theme) &&
+        if ($cnf->object()->theme->count() > 0 && !empty($cnf->object()->theme) &&
             is_dir('/usr/local/opnsense/www/themes/'.(string)$cnf->object()->theme)
         ) {
             $this->view->ui_theme = $cnf->object()->theme;
+        }
+
+        $product_vars = json_decode(file_get_contents('/usr/local/opnsense/firmware-product'), true);
+        foreach ($product_vars as $product_key => $product_var) {
+            $this->view->$product_key = $product_var;
         }
 
         // info about the current user and box

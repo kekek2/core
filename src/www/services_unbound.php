@@ -43,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['enable'] = isset($a_unboundcfg['enable']);
     $pconfig['dnssec'] = isset($a_unboundcfg['dnssec']);
     $pconfig['forwarding'] = isset($a_unboundcfg['forwarding']);
+    $pconfig['reglladdr6'] = empty($a_unboundcfg['noreglladdr6']);
     $pconfig['regdhcp'] = isset($a_unboundcfg['regdhcp']);
     $pconfig['regdhcpstatic'] = isset($a_unboundcfg['regdhcpstatic']);
     $pconfig['txtsupport'] = isset($a_unboundcfg['txtsupport']);
@@ -102,6 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $a_unboundcfg['enable'] = !empty($pconfig['enable']);
             $a_unboundcfg['dnssec'] = !empty($pconfig['dnssec']);
             $a_unboundcfg['forwarding'] = !empty($pconfig['forwarding']);
+            $a_unboundcfg['noreglladdr6'] = empty($pconfig['reglladdr6']);
             $a_unboundcfg['regdhcp'] = !empty($pconfig['regdhcp']);
             $a_unboundcfg['regdhcpstatic'] = !empty($pconfig['regdhcpstatic']);
             $a_unboundcfg['txtsupport'] = !empty($pconfig['txtsupport']);
@@ -182,7 +184,7 @@ include_once("head.inc");
                           <select name="active_interface[]" multiple="multiple" size="3" class="selectpicker" data-live-search="true">
                             <option value="" <?=empty($pconfig['active_interface'][0]) ? 'selected="selected"' : ""; ?>><?=gettext("All");?></option>
 <?php
-                            foreach (get_possible_listen_ips(false, false) as $laddr):?>
+                            foreach (get_possible_listen_ips(false) as $laddr):?>
                             <option value="<?=$laddr['value'];?>" <?=!empty($pconfig['active_interface'][0]) && in_array($laddr['value'], $pconfig['active_interface']) ? 'selected="selected"' : "";?>><?=htmlspecialchars($laddr['name']);?></option>
 <?php
                             endforeach; ?>
@@ -234,7 +236,7 @@ include_once("head.inc");
                         </td>
                       </tr>
                       <tr>
-                        <td><a id="help_for_regdhcpstatic" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Static DHCP");?></td>
+                        <td><a id="help_for_regdhcpstatic" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('DHCP Static Mappings');?></td>
                         <td>
                           <input name="regdhcpstatic" type="checkbox" id="regdhcpstatic" value="yes" <?=!empty($pconfig['regdhcpstatic']) ? "checked=\"checked\"" : "";?> />
                           <strong><?=gettext("Register DHCP static mappings in the DNS Resolver");?></strong>
@@ -243,6 +245,19 @@ include_once("head.inc");
                                 "be registered in the DNS Resolver, so that their name can be ".
                                 "resolved. You should also set the domain in %s".
                                 "System: General setup%s to the proper value."),'<a href="system_general.php">','</a>');?>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td><a id="help_for_reglladdr6" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('DHCP IPv6 Link-local') ?></td>
+                        <td>
+                          <input name="reglladdr6" type="checkbox" id="reglladdr6" value="yes" <?= !empty($pconfig['reglladdr6']) ? 'checked="checked"' : '' ?>/>
+                          <strong><?= gettext('Register IPv6 link-local addresses in the DNS Resolver') ?></strong>
+                          <div class="hidden" for="help_for_reglladdr6">
+                            <?= gettext("If this option is unset, then IPv6 link-local " .
+                            "addresses will not be registered in the DNS Resolver, preventing " .
+                            "return of unreachable address from the DNS resolver when more " .
+                            "than one listen interface is configured."); ?>
                           </div>
                         </td>
                       </tr>
@@ -300,10 +315,10 @@ include_once("head.inc");
                           <?= sprintf(gettext("If the DNS Resolver is enabled, the DHCP".
                           " service (if enabled) will automatically serve the LAN IP".
                           " address as a DNS server to DHCP clients so they will use".
-                          " the DNS Resolver. If Forwarding, is enabled, the DNS Resolver will use the DNS servers".
-                          " entered in %sSystem: General setup%s".
-                          " or those obtained via DHCP or PPP on WAN if the &quot;Allow".
-                          " DNS server list to be overridden by DHCP/PPP on WAN&quot;".
+                          " the DNS Resolver. If Forwarding, is enabled, the DNS Resolver".
+                          " will use the DNS servers entered in %sSystem: General setup%s".
+                          " or those obtained via DHCP or PPP on WAN if the \"Allow".
+                          " DNS server list to be overridden by DHCP/PPP on WAN\"".
                           " is checked."),'<a href="system_general.php">','</a>');?>
                         </td>
                       </tr>

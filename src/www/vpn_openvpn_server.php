@@ -28,7 +28,7 @@
 */
 
 require_once("guiconfig.inc");
-require_once("openvpn.inc");
+require_once("plugins.inc.d/openvpn.inc");
 require_once("services.inc");
 require_once("interfaces.inc");
 
@@ -149,8 +149,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             } else {
                 $a_server[$id]['disable'] = true;
             }
-            openvpn_resync('server', $a_server[$id]);
             write_config();
+            openvpn_configure_single($a_server[$id]['vpnid']);
         }
         header(url_safe('Location: /vpn_openvpn_server.php'));
         exit;
@@ -318,7 +318,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $input_errors[] = gettext("The Server Bridge DHCP range is invalid (start higher than end).");
             }
         }
-        if (!empty($pconfig['reneg-sec']) && (string)((int)$pconfig['reneg-sec']) != $pconfig['reneg-sec']) {
+        if (isset($pconfig['reneg-sec']) && $pconfig['reneg-sec'] != "" && (string)((int)$pconfig['reneg-sec']) != $pconfig['reneg-sec']) {
             $input_errors[] = gettext("Renegotiate time should contain a valid number of seconds.");
         }
         do_input_validation($pconfig, $reqdfields, $reqdfieldsn, $input_errors);
@@ -401,9 +401,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $a_server[] = $server;
             }
 
-            openvpn_resync('server', $server);
             write_config();
-            openvpn_resync_csc(); // dump client specific overrides, the required set may have changed
+
+            openvpn_configure_single($server['vpnid']);
+            openvpn_configure_csc();
 
             header(url_safe('Location: /vpn_openvpn_server.php'));
             exit;
@@ -718,7 +719,7 @@ $( document ).ready(function() {
                         }
                                                     $grouplist = return_gateway_groups_array();
                         foreach ($grouplist as $name => $group) {
-                            if ($group['ipprotocol'] != inet) {
+                            if ($group['ipprotocol'] != "inet") {
                                 continue;
                             }
                             if ($group[0]['vip'] <> "") {

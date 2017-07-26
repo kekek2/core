@@ -45,6 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['ipv6allow'] = isset($config['system']['ipv6allow']);
     $pconfig['disablefilter'] = !empty($config['system']['disablefilter']);
     $pconfig['optimization'] = isset($config['system']['optimization']) ? $config['system']['optimization'] : "normal";
+    $pconfig['rulesetoptimization'] = isset($config['system']['rulesetoptimization']) ? $config['system']['rulesetoptimization'] : "basic";
     $pconfig['maximumstates'] = isset($config['system']['maximumstates']) ? $config['system']['maximumstates'] : null;
     $pconfig['maximumfrags'] = isset($config['system']['maximumfrags']) ? $config['system']['maximumfrags'] : null;
     $pconfig['adaptivestart'] = isset($config['system']['adaptivestart']) ? $config['system']['adaptivestart'] : null;
@@ -57,7 +58,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['schedule_states'] = isset($config['system']['schedule_states']);
     $pconfig['kill_states'] = isset($config['system']['kill_states']);
     $pconfig['skip_rules_gw_down'] = isset($config['system']['skip_rules_gw_down']);
+    $pconfig['gw_switch_default'] = isset($config['system']['gw_switch_default']);
     $pconfig['lb_use_sticky'] = isset($config['system']['lb_use_sticky']);
+    $pconfig['pf_share_forward'] = isset($config['system']['pf_share_forward']);
     $pconfig['srctrack'] = !empty($config['system']['srctrack']) ? $config['system']['srctrack'] : null;
     if (!isset($config['system']['disablenatreflection'])) {
         $pconfig['natreflection'] = "purenat";
@@ -95,6 +98,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $input_errors[] = gettext("The Firewall Maximum Table Entries value must be an integer.");
     }
     if (count($input_errors) == 0) {
+        if (!empty($pconfig['pf_share_forward'])) {
+            $config['system']['pf_share_forward'] = true;
+        } elseif (isset($config['system']['pf_share_forward'])) {
+            unset($config['system']['pf_share_forward']);
+        }
 
         if (!empty($pconfig['lb_use_sticky'])) {
             $config['system']['lb_use_sticky'] = true;
@@ -164,6 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
 
         $config['system']['optimization'] = $pconfig['optimization'];
+        $config['system']['rulesetoptimization'] = $pconfig['rulesetoptimization'];
         $config['system']['maximumstates'] = $pconfig['maximumstates'];
         $config['system']['maximumfrags'] = $pconfig['maximumfrags'];
         $config['system']['aliasesresolveinterval'] = $pconfig['aliasesresolveinterval'];
@@ -195,6 +204,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $config['system']['skip_rules_gw_down'] = true;
         } elseif (isset($config['system']['skip_rules_gw_down'])) {
             unset($config['system']['skip_rules_gw_down']);
+        }
+
+        if (!empty($pconfig['gw_switch_default'])) {
+            $config['system']['gw_switch_default'] = true;
+        } elseif (isset($config['system']['gw_switch_default'])) {
+            unset($config['system']['gw_switch_default']);
         }
 
         if (write_config())
@@ -364,6 +379,16 @@ include("head.inc");
                   </td>
                 </tr>
                 <tr>
+                  <td><a id="help_for_gw_switch_default" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Gateway switching') ?></td>
+                  <td>
+                    <input name="gw_switch_default" type="checkbox" id="gw_switch_default" value="yes" <?= !empty($pconfig['gw_switch_default']) ? 'checked="checked"' : '' ?> />
+                    <strong><?=gettext("Allow default gateway switching"); ?></strong><br />
+                    <div class="hidden" for="help_for_gw_switch_default">
+                      <?= gettext('If the link where the default gateway resides fails switch the default gateway to another available one. This feature has been deprecated.') ?>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
                   <th colspan="2" valign="top" class="listtopic"><?= gettext('Multi-WAN') ?></th>
                 </tr>
                 <tr>
@@ -389,6 +414,19 @@ include("head.inc");
                                           "By default this is 0, so source tracking is removed as soon as the state expires. " .
                                           "Setting this timeout higher will cause the source/destination relationship to persist for longer periods of time."); ?>
                       </small>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td><a id="help_for_pf_share_forward" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Shared forwarding');?> </td>
+                  <td>
+                    <input name="pf_share_forward" type="checkbox" id="pf_share_forward" value="yes" <?= !empty($pconfig['pf_share_forward']) ? 'checked="checked"' : '' ?>/>
+                    <strong><?=gettext('Use shared forwarding between packet filter, traffic shaper and captive portal'); ?></strong><br />
+                    <div class="hidden" for="help_for_pf_share_forward">
+                      <?= gettext('Using policy routing in the packet filter rules causes packets to skip ' .
+                                  'processing for the traffic shaper and captive portal tasks. ' .
+                                  'Using this option enables the sharing of such forwarding decisions ' .
+                                  'between all components to accomodate complex setups. Use with care.') ?>
                     </div>
                   </td>
                 </tr>
@@ -449,6 +487,40 @@ include("head.inc");
                         </tr>
                       </table>
                       </small>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td><a id="help_for_rulesetoptimization" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Firewall Rules Optimization");?></td>
+                  <td>
+                    <select onchange="update_description(this.selectedIndex);" name="rulesetoptimization" id="rulesetoptimization" class="selectpicker" data-style="btn-default">
+                      <option value="none"<?=$pconfig['rulesetoptimization']=="none" ? " selected=\"selected\"" : ""; ?>>
+                        <?=gettext("none");?>
+                      </option>
+                      <option value="basic"<?=$pconfig['rulesetoptimization']=="basic" ? " selected=\"selected\"" : ""; ?>>
+                        <?=gettext("basic");?>
+                      </option>
+                      <option value="profile"<?=$pconfig['rulesetoptimization']=="profile" ? " selected=\"selected\"" : ""; ?>>
+                        <?=gettext("profile");?>
+                      </option>
+                    </select>
+                    <div class="hidden" for="help_for_rulesetoptimization">
+                      <?=gettext("Select the type of rules optimization to use");?>
+                      <table class="table table-condensed">
+                        <tr>
+                          <td><strong><?=gettext("none");?></strong></td>
+                          <td><?=gettext("Disable the ruleset optimizer.");?></td>
+                        </tr>
+                        <tr>
+                          <td><strong><?=gettext("basic");?></strong></td>
+                          <td><?=gettext("(default) Basic ruleset optimization does four things to improve the performance of ruleset evaluations: remove duplicate rules; remove rules that are a subset of another rule; combine multiple rules into a table when advantageous; re-order the rules to improve evaluation performance");?></td>
+                        </tr>
+                        <tr>
+                          <td><strong><?=gettext("profile");?></strong></td>
+                          <td><?=gettext("Uses the currently loaded ruleset as a feedback profile to tailor the ordering of quick rules to actual network traffic.");?></td>
+                        </tr>
+                      </table>
+                      <hr/>
                     </div>
                   </td>
                 </tr>

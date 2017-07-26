@@ -39,6 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['webguiproto'] = $config['system']['webgui']['protocol'];
     $pconfig['webguiport'] = $config['system']['webgui']['port'];
     $pconfig['ssl-certref'] = $config['system']['webgui']['ssl-certref'];
+    $pconfig['compression'] = isset($config['system']['webgui']['compression']) ? $config['system']['webgui']['compression'] : null;
     if (!empty($config['system']['webgui']['ssl-ciphers'])) {
         $pconfig['ssl-ciphers'] = explode(':', $config['system']['webgui']['ssl-ciphers']);
     } else {
@@ -98,6 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if ($config['system']['webgui']['protocol'] != $pconfig['webguiproto'] ||
             $config['system']['webgui']['port'] != $pconfig['webguiport'] ||
             $config['system']['webgui']['ssl-certref'] != $pconfig['ssl-certref'] ||
+            $config['system']['webgui']['compression'] != $pconfig['compression'] ||
             $config['system']['webgui']['ssl-ciphers'] != $newciphers ||
             ($pconfig['disablehttpredirect'] == "yes") != !empty($config['system']['webgui']['disablehttpredirect'])
             ) {
@@ -118,6 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $config['system']['webgui']['port'] = $pconfig['webguiport'];
         $config['system']['webgui']['ssl-certref'] = $pconfig['ssl-certref'];
         $config['system']['webgui']['ssl-ciphers'] = $newciphers;
+        $config['system']['webgui']['compression'] = $pconfig['compression'];
 
         if ($pconfig['disablehttpredirect'] == "yes") {
             $config['system']['webgui']['disablehttpredirect'] = true;
@@ -271,12 +274,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         system_login_configure();
         system_hosts_generate();
-        dnsmasq_configure_do();
-        unbound_configure_do();
+        plugins_configure('dns');
         services_dhcpd_configure();
 
         if ($restart_sshd) {
-            configd_run('sshd restart', true);
+            configd_run('openssh restart', true);
         }
 
         if ($restart_webgui) {
@@ -394,6 +396,9 @@ include("head.inc");
                       <select name="ssl-ciphers[]" class="selectpicker"  multiple="multiple" data-live-search="true" title="<?=gettext("System defaults");?>">
 <?php
                       $ciphers = json_decode(configd_run("system ssl ciphers"), true);
+                      if ($ciphers == null) {
+                          $ciphers = array();
+                      }
                       foreach ($ciphers as $cipher => $cipher_data):?>
                         <option value="<?=$cipher;?>" <?= !empty($pconfig['ssl-ciphers']) && in_array($cipher, $pconfig['ssl-ciphers']) ? 'selected="selected"' : '' ?>>
                           <?=!empty($cipher_data['description']) ? $cipher_data['description'] : $cipher;?>
@@ -504,6 +509,29 @@ include("head.inc");
                       <?= gettext("Here you can specify alternate hostnames by which the router may be queried, to " .
                                           "bypass the DNS Rebinding Attack checks. Separate hostnames with spaces.") ?>
                       </small>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td><a id="help_for_compression" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("WebGui Compression")?></td>
+                  <td width="78%">
+                    <select name="compression" class="formselect selectpicker">
+                        <option value="" <?=empty($pconfig['compression'])? 'selected="selected"' : '';?>>
+                          <?=gettext("Off");?>
+                        </option>
+                        <option value="1" <?=$pconfig['compression'] == "1" ? 'selected="selected"' : '';?>>
+                          <?=gettext("Low");?>
+                        </option>
+                        <option value="5" <?=$pconfig['compression'] == "5" ? 'selected="selected"' : '';?>>
+                          <?=gettext("Medium");?>
+                        </option>
+                        <option value="9" <?=$pconfig['compression'] == "9" ? 'selected="selected"' : '';?>>
+                          <?=gettext("High");?>
+                        </option>
+                    </select>
+                    <div class="hidden" for="help_for_compression">
+                      <?=gettext("Enable compression of webgui pages and dynamic content.");?><br/>
+                      <?=gettext("Transfer less data to the client for an additional cost in processing power.");?>
                     </div>
                   </td>
                 </tr>
@@ -630,6 +658,22 @@ include("head.inc");
                       <small class="formhelp">
                       <?=gettext("Allows selection of different speeds for the serial console port."); ?>
                       </small>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td><a id="help_for_serialspeed" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Serial Speed")?></td>
+                  <td>
+                    <select name="serialspeed" id="serialspeed" class="formselect selectpicker">
+                      <option value="115200" <?=$pconfig['serialspeed'] == "115200" ? 'selected="selected"' : '' ?>>115200</option>
+                      <option value="57600" <?=$pconfig['serialspeed'] == "57600" ? 'selected="selected"' : '' ?>>57600</option>
+                      <option value="38400" <?=$pconfig['serialspeed'] == "38400" ? 'selected="selected"' : '' ?>>38400</option>
+                      <option value="19200" <?=$pconfig['serialspeed'] == "19200" ? 'selected="selected"' : '' ?>>19200</option>
+                      <option value="14400" <?=$pconfig['serialspeed'] == "14400" ? 'selected="selected"' : '' ?>>14400</option>
+                      <option value="9600" <?=$pconfig['serialspeed'] == "9600" ? 'selected="selected"' : '' ?>>9600</option>
+                    </select>
+                    <div class="hidden" for="help_for_serialspeed">
+                      <?=gettext("Allows selection of different speeds for the serial console port."); ?>
                     </div>
                   </td>
                 </tr>

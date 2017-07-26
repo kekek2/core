@@ -28,7 +28,7 @@
 */
 
 require_once("guiconfig.inc");
-require_once("openvpn.inc");
+require_once("plugins.inc.d/openvpn.inc");
 require_once("services.inc");
 require_once("interfaces.inc");
 
@@ -121,16 +121,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $a_csc[$id]['disable'] = true;
             }
             write_config();
-            openvpn_resync_csc();
+            openvpn_configure_csc();
         }
         header(url_safe('Location: /vpn_openvpn_csc.php'));
         exit;
     } else {
         /* perform validations */
-        if ($result = openvpn_validate_cidr($pconfig['tunnel_network'], 'IPv4 Tunnel Network')) {
+        if ($result = openvpn_validate_cidr($pconfig['tunnel_network'], 'IPv4 Tunnel Network', false, 'ipv4', true)) {
             $input_errors[] = $result;
         }
-        if ($result = openvpn_validate_cidr($pconfig['tunnel_networkv6'], 'IPv6 Tunnel Network', false, "ipv6")) {
+        if ($result = openvpn_validate_cidr($pconfig['tunnel_networkv6'], 'IPv6 Tunnel Network', false, 'ipv6', true)) {
             $input_errors[] = $result;
         }
         if ($result = openvpn_validate_cidr($pconfig['local_network'], 'IPv4 Local Network', true, "ipv4")) {
@@ -222,7 +222,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 @unlink('/var/etc/openvpn-csc/' . basename($old_csc_cn));
             }
             write_config();
-            openvpn_resync_csc();
+            openvpn_configure_csc();
 
             header(url_safe('Location: /vpn_openvpn_csc.php'));
             exit;

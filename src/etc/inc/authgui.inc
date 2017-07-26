@@ -168,10 +168,7 @@ function session_auth(&$Login_Error)
     );
 
     if (session_status() == PHP_SESSION_NONE) {
-        if (session_start()) {
-            $sess_name = session_name();
-            setcookie($sess_name, session_id(), null, '/', null, null, ($config['system']['webgui']['protocol'] == "https"));
-        }
+        session_start();
     }
 
     // Detect protocol change
@@ -264,7 +261,8 @@ function session_auth(&$Login_Error)
         $_SESSION = array();
 
         if (isset($_COOKIE[session_name()])) {
-            setcookie(session_name(), '', time()-42000, '/');
+            $secure = $config['system']['webgui']['protocol'] == "https";
+            setcookie(session_name(), '', time()-42000, '/', null, $secure, true);
         }
 
         /* and destroy it */
@@ -409,7 +407,7 @@ function display_login_form($Login_Error = '')
     <link href="/ui/themes/<?= $themename ?>/build/css/main.css" rel="stylesheet">
     <link href="/ui/themes/<?= $themename ?>/build/images/favicon.png" rel="shortcut icon">
     <!-- JQuery -->
-    <script type="text/javascript" src="/ui/js/jquery-1.12.0.min.js"></script>
+    <script type="text/javascript" src="/ui/js/jquery-1.12.4.min.js"></script>
 
 <?php
     if (file_exists("/usr/local/opnsense/www/themes/".$themename."/build/js/theme.js")):?>

@@ -34,7 +34,6 @@ require_once("guiconfig.inc");
 $ipsec_detail_array = array();
 $ipsec_tunnels = array();
 $ipsec_leases = array();
-$activetunnels = 0;
 
 if (isset($config['ipsec']['phase1'])) {
     $ipsec_leases = json_decode(configd_run("ipsec list leases"), true);
@@ -61,8 +60,13 @@ if (isset($config['ipsec']['phase1'])) {
         }
         foreach ($status_value['sas'] as $sas_key => $sas_value) {
             foreach ($sas_value['child-sas'] as $child_sa_key => $child_sa_value) {
-                $ipsec_tunnels[$child_sa_key]['active'] = true;
-                $activetunnels++;
+                if (!isset($ipsec_tunnels[$child_sa_key])) {
+                    /* XXX bug on strongSwan 5.5.2 appends -3 and -4 here? */
+                    $child_sa_key = preg_replace('/-[^-]+$/', '', $child_sa_key);
+                }
+                if (isset($ipsec_tunnels[$child_sa_key])) {
+                    $ipsec_tunnels[$child_sa_key]['active'] = true;
+                }
             }
         }
     }
@@ -105,7 +109,15 @@ if (isset($config['ipsec']['phase2'])) {
     </thead>
     <tbody>
       <tr>
-        <td><?= $activetunnels; ?></td>
+        <td>
+<?php
+        $activetunnels = 0;
+        foreach ($ipsec_tunnels as $ipsec_key => $ipsec) {
+            $activetunnels += $ipsec['active'] === true;
+        }
+        echo $activetunnels;
+?>
+        </td>
         <td><?= (count($ipsec_tunnels) - $activetunnels); ?></td>
         <td>
 <?php

@@ -169,7 +169,10 @@ if (function_exists("display_error_form") && !isset($config['system']['webgui'][
         }
         if ($found_host == false) {
             if (!security_checks_disabled()) {
-                display_error_form("501", "An HTTP_REFERER was detected other than what is defined in System -> Advanced (" . htmlspecialchars($_SERVER['HTTP_REFERER']) . ").  You can disable this check if needed in System -> Advanced -> Admin.");
+                display_error_form('501', sprintf(
+                    gettext('The HTTP_REFERER "%s" does not match the predefined settings. You can disable this check if needed under System: Settings: Administration.'),
+                    html_safe($_SERVER['HTTP_REFERER'])
+                ));
                 exit;
             }
             $security_passed = false;
@@ -196,14 +199,8 @@ function isAuthLocalIP($http_host)
 {
     global $config;
     $interface_list_ips = get_configured_ip_addresses();
-    foreach ($interface_list_ips as $ilips) {
+    foreach ($interface_list_ips as $ilips => $ifname) {
         if (strcasecmp($http_host, $ilips) == 0) {
-            return true;
-        }
-    }
-    $interface_list_ipv6s = get_configured_ipv6_addresses();
-    foreach ($interface_list_ipv6s as $ilipv6s) {
-        if (strcasecmp($http_host, $ilipv6s) == 0) {
             return true;
         }
     }
@@ -239,6 +236,8 @@ function index_users()
 {
     global $config;
 
+    $userindex = array();
+
     if (is_array($config['system']['user'])) {
         $i = 0;
         foreach($config['system']['user'] as $userent) {
@@ -247,7 +246,7 @@ function index_users()
         }
     }
 
-    return ($userindex);
+    return $userindex;
   }
 
 function &getUserEntry($name)
@@ -283,6 +282,8 @@ function &getGroupEntry($name)
     if (isset($groupindex[$name])) {
         return $config['system']['group'][$groupindex[$name]];
     }
+
+    return array();
 }
 
 function &getGroupEntryByGID($gid)
@@ -360,7 +361,6 @@ function local_sync_accounts()
     }
 
     /* remove local groups to avoid gid conflicts */
-    $gids = array();
     $fd = popen('/usr/sbin/pw groupshow -a', 'r');
     if ($fd) {
         while (!feof($fd)) {
@@ -473,6 +473,9 @@ function local_user_set(&$user, $force_password = false)
         @mkdir("{$user_home}/.ssh", 0700);
         @chown("{$user_home}/.ssh", $user_name);
         $keys = base64_decode($user['authorizedkeys']);
+        $keys = preg_split('/[\n\r]+/', $keys);
+        $keys[] = '';
+        $keys = implode($keys, "\n");
         @file_put_contents("{$user_home}/.ssh/authorized_keys", $keys);
         @chown("{$user_home}/.ssh/authorized_keys", $user_name);
     } else {
@@ -494,9 +497,15 @@ function local_user_del($user)
     local_group_del_user($user);
 }
 
-function local_user_set_password(&$user, $password)
+function local_user_set_password(&$user, $password = null)
 {
     $cost = 10;
+
+    if ($password == null) {
+        /* generate a random password */
+        $bytes = openssl_random_pseudo_bytes(50);
+        $password = pack('H*',bin2hex($bytes));
+    }
 
     $hash = password_hash($password, PASSWORD_BCRYPT, [ 'cost' => $cost ]);
     if ($hash !== false) {
@@ -606,9 +615,9 @@ function local_group_del_user($user)
 function local_group_set($group, $reset = false)
 {
     if (!isset($group['name']) || !isset($group['gid'])) {
-        // input data invalid
-        return false;
+        return;
     }
+
     $group_name = $group['name'];
     $group_gid = $group['gid'];
     $group_members = '';
@@ -721,6 +730,8 @@ function auth_get_authserver($name)
             }
         }
     }
+
+    return false;
 }
 
 function auth_get_authserver_list()

@@ -31,7 +31,7 @@
 require_once("guiconfig.inc");
 require_once("filter.inc");
 require_once("logs.inc");
-
+require_once("system.inc");
 
 if (!isset($config['filter']['rule'])) {
     $config['filter']['rule'] = array();
@@ -50,6 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = $pconfig['id'];
     }
     if (isset($pconfig['apply'])) {
+        system_cron_configure();
         filter_configure();
         clear_subsystem_dirty('filter');
         $savemsg = sprintf(
@@ -134,6 +135,11 @@ if (isset($_GET['if'])) {
     $selected_if = htmlspecialchars($_GET['if']);
 } else {
     $selected_if = "FloatingRules";
+}
+if (isset($_GET['category'])) {
+    $selected_category = !is_array($_GET['category']) ? array($_GET['category']) : $_GET['category'];
+} else {
+    $selected_category = array();
 }
 
 include("head.inc");
@@ -242,12 +248,39 @@ $( document ).ready(function() {
           $(this).css("background-color", $("#fw_category").data('stripe_color'));
         }
       });
+
+      // hook into tab changes, keep selected category/categories when following link
+      $(".top_tab").each(function(){
+          var add_link = "";
+          if (selected_values.length > 0) {
+              add_link = "&" + $.param({'category': selected_values});
+          }
+          if ($(this).is('A')) {
+              if ($(this).data('link') == undefined) {
+                  // move link to data tag
+                  $(this).data('link', $(this).attr('href'));
+              }
+              $(this).attr('href', $(this).data('link') + add_link);
+          } else if ($(this).is('OPTION')) {
+            if ($(this).data('link') == undefined) {
+                // move link to data tag
+                $(this).data('link', $(this).val());
+            }
+            $(this).val($(this).data('link') + add_link);
+          }
+      });
   });
+  $("#fw_category").change();
 
   // hide category search when not used
   if ($("#fw_category > option").length == 0) {
       $("#fw_category").addClass('hidden');
   }
+
+  // select All
+  $("#selectAll").click(function(){
+      $(".rule_select").prop("checked", $(this).prop("checked"));
+  });
 
 });
 </script>
@@ -289,7 +322,7 @@ $( document ).ready(function() {
                 <table class="table table-striped table-hover" id="rules">
                   <thead>
                     <tr>
-                      <th>&nbsp;</th>
+                      <th><input type="checkbox" id="selectAll"></th>
                       <th>&nbsp;</th>
                       <th><?=gettext("Proto");?></th>
                       <th><?=gettext("Source");?></th>
@@ -445,7 +478,7 @@ $( document ).ready(function() {
 ?>
                   <tr class="rule" data-category="<?=!empty($filterent['category']) ? $filterent['category'] : "";?>">
                     <td>
-                      <input type="checkbox" name="rule[]" value="<?=$i;?>"  />
+                      <input class="rule_select" type="checkbox" name="rule[]" value="<?=$i;?>"  />
                     </td>
                     <td>
                       <a href="#" class="act_toggle" id="toggle_<?=$i;?>" data-toggle="tooltip" title="<?=(empty($filterent['disabled'])) ? gettext("disable rule") : gettext("enable rule");?>"><span class="glyphicon <?=$iconfn;?>"></span></a>
@@ -654,7 +687,7 @@ $( document ).ready(function() {
                             }
                         }
                         foreach ($categories as $category):?>
-                        <option value="<?=$category;?>"><?=$category;?></option>
+                        <option value="<?=$category;?>" <?=in_array($category, $selected_category) ? "selected=\"selected\"" : "" ;?>><?=$category;?></option>
 <?php
                         endforeach;?>
                       </select>

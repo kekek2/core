@@ -108,9 +108,9 @@ function firmware_version_xmlrpc()
     global $config;
 
     return array(
-      'kernel' => array('version' => file_get_contents('/usr/local/opnsense/version/opnsense-update.kernel')),
-      'base' => array('version' => file_get_contents('/usr/local/opnsense/version/opnsense-update.base')),
       'firmware' => array('version' => file_get_contents('/usr/local/opnsense/version/opnsense')),
+      'kernel' => array('version' => file_get_contents('/usr/local/opnsense/version/kernel')),
+      'base' => array('version' => file_get_contents('/usr/local/opnsense/version/base')),
       'config_version' => $config['version'],
     );
 }
@@ -127,7 +127,6 @@ function filter_configure_xmlrpc()
     require_once("system.inc");
     require_once("util.inc");
     require_once("interfaces.inc");
-    require_once("openvpn.inc");
     require_once("services.inc");
     require_once("rrd.inc");
 
@@ -136,14 +135,9 @@ function filter_configure_xmlrpc()
     setup_gateways_monitor();
     system_hosts_generate();
     local_sync_accounts();
-    dnsmasq_configure_do();
-    unbound_configure_do();
+    plugins_configure('dns');
     services_dhcpd_configure();
-    openvpn_resync_all();
-
-    if (function_exists('plugins_configure')) {
-        plugins_configure('remote');
-    }
+    plugins_configure('remote');
 
     return true;
 }
@@ -158,8 +152,8 @@ function restore_config_section_xmlrpc($new_config)
     global $config;
 
     require_once("interfaces.inc");
+    require_once("services.inc");
     require_once("filter.inc");
-    require_once("ipsec.inc");
 
     // save old config
     $old_config = $config;
@@ -259,7 +253,7 @@ function restore_config_section_xmlrpc($new_config)
     }
 
     if (isset($old_config['ipsec']['enable']) !== isset($config['ipsec']['enable'])) {
-        ipsec_configure();
+        ipsec_configure_do();
     }
 
     unset($old_config);

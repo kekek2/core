@@ -29,8 +29,9 @@
 */
 
 require_once("guiconfig.inc");
+require_once("system.inc");
 require_once("filter.inc");
-require_once("ipsec.inc");
+require_once("plugins.inc.d/ipsec.inc");
 require_once("services.inc");
 require_once("interfaces.inc");
 
@@ -77,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $a_phase1 = &$config['ipsec']['phase1'];
     $a_phase2 = &$config['ipsec']['phase2'];
     if (isset($_POST['apply'])) {
-        ipsec_configure();
+        ipsec_configure_do();
         filter_configure();
         $savemsg = get_std_save_message();
         clear_subsystem_dirty('ipsec');
@@ -88,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             unset($config['ipsec']['enable']);
         }
         write_config();
-        ipsec_configure();
+        ipsec_configure_do();
         filter_configure();
         clear_subsystem_dirty('ipsec');
         header(url_safe('Location: /vpn_ipsec.php'));
@@ -104,7 +105,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach ($del_items as $p1entrydel) {
             /* remove static route if interface is not WAN */
             if ($a_phase1[$p1entrydel]['interface'] <> "wan") {
-                mwexec('/sbin/route delete -host ' . escapeshellarg($a_phase1[$p1entrydel]['remote-gateway']));
+                /* XXX does this even apply? only use of system.inc at the top! */
+                system_host_route($a_phase1[$p1entrydel]['remote-gateway'], $a_phase1[$p1entrydel]['remote-gateway'], true, false);
             }
             /* remove all phase2 entries that match the ikeid */
             $ikeid = $a_phase1[$p1entrydel]['ikeid'];

@@ -1,7 +1,7 @@
 <?php
+
 /**
  *    Copyright (C) 2015 Deciso B.V. - J. Schellevis
- *
  *    All rights reserved.
  *
  *    Redistribution and use in source and binary forms, with or without
@@ -24,9 +24,7 @@
  *    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  *    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *    POSSIBILITY OF SUCH DAMAGE.
- *
  */
-
 
 namespace OPNsense\Diagnostics\Api;
 
@@ -134,6 +132,7 @@ class SystemhealthController extends ApiControllerBase
             $from_timestamp = $this->getMaxRange($rra_info)["oldest_timestamp"];
             $to_timestamp = $this->getMaxRange($rra_info)["newest_timestamp"];
         }
+        $max_values = ($max_values <=0) ? 1 : $max_values;
 
         $archives = array();
         // find archive match
@@ -540,7 +539,9 @@ class SystemhealthController extends ApiControllerBase
         if ($rrd_details['filename'] != "") {
             $backend = new Backend();
             $response = $backend->configdpRun("systemhealth fetch ", array($rrd_details['filename']));
-            $xml = @simplexml_load_string($response);
+            if ($response != null) {
+                $xml = @simplexml_load_string($response);
+            }
         }
 
         if ($xml !== false) {
@@ -596,7 +597,7 @@ class SystemhealthController extends ApiControllerBase
         // collect interface names
         $intfmap = array();
         $config = Config::getInstance()->object();
-        if ($config->interfaces != null) {
+        if ($config->interfaces->count() > 0) {
             foreach ($config->interfaces->children() as $key => $node) {
                 $intfmap[(string)$key] = array("descr" => !empty((string)$node->descr) ? (string)$node->descr : $key);
             }

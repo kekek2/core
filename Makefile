@@ -28,7 +28,7 @@
 all:
 	@cat ${.CURDIR}/README.md | ${PAGER}
 
-WANTS=		git pear-PHP_CodeSniffer phpunit
+WANTS=		git pear-PHP_CodeSniffer phpunit6
 
 .for WANT in ${WANTS}
 want-${WANT}: force
@@ -44,14 +44,9 @@ CORE_HASH=	${CORE_COMMIT:C/^.*-//1}
 TING_ABI?=	1.1
 CORE_ABI?=	17.1
 CORE_ARCH?=	${ARCH}
-CORE_BIND?=	911
+CORE_OPENVPN?=	# empty for version 2.4
 CORE_PHP?=	70
 CORE_PY?=	27
-
-.if "${CORE_RELEASE}" == yes
-CORE_NAME?=		opnsense
-CORE_FAMILY?=		release
-.endif
 
 _FLAVOUR!=	if [ -f ${OPENSSL} ]; then ${OPENSSL} version; fi
 FLAVOUR?=	${_FLAVOUR:[1]}
@@ -64,20 +59,19 @@ CORE_REPOSITORY?=	${TING_ABI}/libressl
 CORE_REPOSITORY?=	${FLAVOUR}
 .endif
 
-CORE_PACKAGESITE?=	https://update0.smart-soft.ru
 
 CORE_NAME?=		ting
 CORE_FAMILY?=		stable
 CORE_ORIGIN?=		${CORE_NAME}
 CORE_COMMENT?=		TING ${CORE_FAMILY} package
 CORE_MAINTAINER?=	evbevz@gmail.com
-CORE_WWW?=		http://smart-soft.ru/
+CORE_PACKAGESITE?=	https://update0.smart-soft.ru
+CORE_WWW?=			http://smart-soft.ru/
 CORE_MESSAGE?=
 # CORE_DEPENDS_armv6 is empty
 CORE_DEPENDS_amd64?=	beep bsdinstaller
 CORE_DEPENDS_i386?=	${CORE_DEPENDS_amd64}
 CORE_DEPENDS?=		apinger \
-			bind${CORE_BIND} \
 			ca_root_nss \
 			choparp \
 			cpustats \
@@ -97,7 +91,7 @@ CORE_DEPENDS?=		apinger \
 			mpd5 \
 			ntp \
 			openssh-portable \
-			openvpn23 \
+			openvpn${CORE_OPENVPN} \
 			pam_opnsense \
 			pecl-radius \
 			pftop \
@@ -269,7 +263,7 @@ upgrade: plist-check upgrade-check package
 	@${PKG} add ${PKGDIR}/*.txz
 	@${LOCALBASE}/etc/rc.restart_webgui
 
-lint: force
+lint: plist-check
 	find ${.CURDIR}/src ${.CURDIR}/Scripts \
 	    -name "*.sh" -type f -print0 | xargs -0 -n1 sh -n
 	find ${.CURDIR}/src ${.CURDIR}/Scripts \
@@ -310,14 +304,7 @@ style: want-pear-PHP_CodeSniffer
 style-fix: want-pear-PHP_CodeSniffer
 	phpcbf --standard=ruleset.xml ${.CURDIR}/src/opnsense || true
 
-setup: force
-	${.CURDIR}/src/etc/rc.php_ini_setup
-
-health: force
-	# check test script output and advertise a failure...
-	[ "`${.CURDIR}/src/etc/rc.php_test_run`" == "FCGI-PASSED PASSED" ]
-
-test: want-phpunit
+test: want-phpunit6
 	@cd ${.CURDIR}/src/opnsense/mvc/tests && \
 	    phpunit --configuration PHPunit.xml
 

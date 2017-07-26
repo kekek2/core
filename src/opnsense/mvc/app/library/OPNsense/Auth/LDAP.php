@@ -33,7 +33,7 @@ namespace OPNsense\Auth;
  * Class LDAP connector
  * @package OPNsense\Auth
  */
-class LDAP implements IAuthConnector
+class LDAP extends Base implements IAuthConnector
 {
     /**
      * @var int ldap version to use
@@ -96,6 +96,10 @@ class LDAP implements IAuthConnector
      */
     private $userDNmap = array();
 
+    /**
+     * @var bool if true, startTLS will be initialized
+     */
+    private $useStartTLS = false;
     /**
      * close ldap handle if open
      */
@@ -211,11 +215,16 @@ class LDAP implements IAuthConnector
         }
 
         // translate config settings
+        // Encryption types: Standard ( none ), StartTLS and SSL
         if (strstr($config['ldap_urltype'], "Standard")) {
             $this->ldapBindURL = "ldap://";
+        } elseif (strstr($config['ldap_urltype'], "StartTLS")) {
+            $this->ldapBindURL = "ldap://";
+            $this->useStartTLS = true;
         } else {
             $this->ldapBindURL = "ldaps://";
         }
+
         $this->ldapBindURL .= strpos($config['host'], "::") !== false ? "[{$config['host']}]" : $config['host'];
         if (!empty($config['ldap_port'])) {
             $this->ldapBindURL .= ":{$config['ldap_port']}";
@@ -249,6 +258,14 @@ class LDAP implements IAuthConnector
 
         $this->closeLDAPHandle();
         $this->ldapHandle = @ldap_connect($bind_url);
+
+        if ($this->useStartTLS) {
+            ldap_set_option($this->ldapHandle, LDAP_OPT_PROTOCOL_VERSION, 3);
+            if (ldap_start_tls($this->ldapHandle) === false) {
+                $this->ldapHandle = null;
+                syslog(LOG_ERR, 'Could not startTLS on ldap connection (' .  ldap_error($this->ldapHandle).')');
+            }
+        }
 
         if ($this->ldapHandle !== false) {
             ldap_set_option($this->ldapHandle, LDAP_OPT_NETWORK_TIMEOUT, $timeout);
@@ -352,7 +369,10 @@ class LDAP implements IAuthConnector
     {
         // todo: implement SSL parts (legacy : ldap_setup_caenv)
         // authenticate user
-        if (array_key_exists($username, $this->userDNmap)) {
+        if (empty($password)) {
+            // prevent anonymous bind
+            return false;
+        } elseif (array_key_exists($username, $this->userDNmap)) {
             // we can map $username to distinguished name, just feed to connect
             $ldap_is_connected = $this->connect($this->ldapBindURL, $this->userDNmap[$username], $password);
             return $ldap_is_connected;

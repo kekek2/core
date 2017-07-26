@@ -1,7 +1,7 @@
 <?php
 
 /*
-    Copyright (C) 2015-2016 Franco Fichtner <franco@opnsense.org>
+    Copyright (C) 2015-2017 Franco Fichtner <franco@opnsense.org>
     Copyright (C) 2004-2007 Scott Ullrich <sullrich@gmail.com>
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
     All rights reserved.
@@ -41,11 +41,13 @@ function killbyname($procname, $sig = 'TERM')
 
 function killbypid($pidfile, $sig = 'TERM', $waitforit = false)
 {
-    if (!isvalidpid($pidfile)) {
+    if (is_numeric($pidfile) && $pidfile > 1) {
+        mwexecf('/bin/kill -%s %s', array($sig, $pidfile));
+    } elseif (isvalidpid($pidfile)) {
+        mwexecf('/bin/pkill -%s -F %s', array($sig, $pidfile));
+    } else {
         return;
     }
-
-    mwexecf('/bin/pkill -%s -F %s', array($sig, $pidfile));
 
     if (!$waitforit) {
         return;
@@ -58,11 +60,13 @@ function killbypid($pidfile, $sig = 'TERM', $waitforit = false)
 
 function isvalidpid($pidfile)
 {
-    if (!file_exists($pidfile)) {
-        return false;
+    if (is_numeric($pidfile) && $pidfile > 1) {
+        return mwexecf('/bin/kill -0 %s', $pidfile, true) == 0;
+    } elseif (file_exists($pidfile)) {
+        return mwexecf('/bin/pgrep -nF %s', $pidfile, true) == 0;
     }
 
-    return mwexecf('/bin/pgrep -nF %s', $pidfile, true) == 0;
+    return false;
 }
 
 function is_process_running($process)
@@ -388,6 +392,8 @@ function is_ipaddrv6($ipaddr)
     }
     if (strpos($ipaddr, ":") === false) {
         return false;
+    } elseif (strpos($ipaddr, "/") !== false) {
+        return false; // subnet is not an address
     } else {
         return Net_IPv6::checkIPv6($ipaddr);
     }
@@ -547,19 +553,20 @@ function is_macaddr($macaddr, $partial=false)
    aliases cannot be:
   bad chars: anything except a-z 0-9 and underscore
   bad names: empty string, pure numeric, pure underscore
-  reserved words: pre-defined service/protocol/port names which should not be ambiguous, and the words "port" and  "pass" */
+  reserved words: pre-defined service/protocol/port names which should not be ambiguous and pf keywords */
 
 function is_validaliasname($name)
 {
-    /* Array of reserved words */
-    $reserved = array("port", "pass");
+    $reserved = array('all', 'pass', 'block', 'out', 'queue', 'max', 'min', 'pptp', 'pppoe', 'L2TP', 'OpenVPN', 'IPsec');
 
     if (!is_string($name) || strlen($name) >= 32 || preg_match('/(^_*$|^\d*$|[^a-z0-9_])/i', $name)) {
         return false;
     }
-    if (in_array($name, $reserved, true) || getservbyname($name, "tcp") || getservbyname($name, "udp") || getprotobyname($name)) {
-        return; /* return NULL */
+
+    if (in_array($name, $reserved, true) || getservbyname($name, 'tcp') || getservbyname($name, 'udp') || getprotobyname($name)) {
+        return null;
     }
+
     return true;
 }
 
@@ -820,65 +827,26 @@ function get_configured_interface_with_descr($only_opt = false, $withdisabled = 
 
 /*
  *   get_configured_ip_addresses() - Return a list of all configured
- *   interfaces IP Addresses
+ *   interfaces IP Addresses (ipv4+ipv6)
  *
  */
 function get_configured_ip_addresses()
 {
     global $config;
-
     $ip_array = array();
-    $interfaces = get_configured_interface_list();
-    if (is_array($interfaces)) {
-        foreach($interfaces as $int) {
-            $ipaddr = get_interface_ip($int);
-            $ip_array[$int] = $ipaddr;
-        }
-    }
-    $interfaces = get_configured_carp_interface_list();
-    if (is_array($interfaces)) {
-        foreach($interfaces as $int => $ipaddr) {
-            $ip_array[$int] = $ipaddr;
-        }
-    }
 
-    /* pppoe server */
-    if (isset($config['pppoes']['pppoe'])) {
-        foreach($config['pppoes']['pppoe'] as $pppoe) {
-            if ($pppoe['mode'] == "server") {
-                if (is_ipaddr($pppoe['localip'])) {
-                    $int = "pppoes". $pppoe['pppoeid'];
-                    $ip_array[$int] = $pppoe['localip'];
+    foreach (legacy_interfaces_details() as $ifname => $if) {
+        foreach (array('ipv4', 'ipv6') as $iptype) {
+            if (!empty($if[$iptype])) {
+                foreach ($if[$iptype] as $addr) {
+                    if (!empty($addr['ipaddr'])) {
+                        $ip_array[$addr['ipaddr']] = $ifname;
+                    }
                 }
             }
         }
     }
-
     return $ip_array;
-}
-
-/*
- *   get_configured_ipv6_addresses() - Return a list of all configured
- *   interfaces IPv6 Addresses
- *
- */
-function get_configured_ipv6_addresses()
-{
-    $ipv6_array = array();
-    $interfaces = get_configured_interface_list();
-    if (is_array($interfaces)) {
-        foreach($interfaces as $int) {
-            $ipaddrv6 = get_interface_ipv6($int);
-            $ipv6_array[$int] = $ipaddrv6;
-        }
-    }
-    $interfaces = get_configured_carp_interface_list();
-    if (is_array($interfaces)) {
-        foreach($interfaces as $int => $ipaddrv6) {
-            $ipv6_array[$int] = $ipaddrv6;
-        }
-    }
-    return $ipv6_array;
 }
 
 /*
@@ -930,17 +898,18 @@ function get_interface_list($only_active = false, $include_dmesg = false)
 
     $ifnames_up = legacy_interface_listget('up');
     $ifnames = legacy_interface_listget();
+    $all_interfaces = legacy_config_get_interfaces(array('virtual' => false));
+    $all_interface_data = legacy_interfaces_details();
 
     if ($only_active) {
         $_ifnames = array();
-
+        $all_stats = legacy_interface_stats();
         foreach ($ifnames as $ifname) {
-            $ifinfo = legacy_interface_stats($ifname);
-            if ($ifinfo['link state'] == '2') {
+            $ifinfo = $all_stats[$ifname];
+            if (!empty($ifinfo['link state']) && $ifinfo['link state'] == '2') {
                 $_ifnames[] = $ifname;
             }
         }
-
         $ifnames = $_ifnames;
     }
 
@@ -950,16 +919,15 @@ function get_interface_list($only_active = false, $include_dmesg = false)
             continue;
         }
 
-        $ifdata = legacy_get_interface_addresses($ifname);
-
+        $ifdata = !empty($all_interface_data[$ifname]) ? $all_interface_data[$ifname] : array();
         $toput = array(
           'up' => in_array($ifname, $ifnames_up),
-          'ipaddr' => !empty($ifdata['ipaddr']) ? $ifdata['ipaddr'] : null,
-          'mac' => $ifdata['macaddr'],
+          'ipaddr' => !empty($ifdata['ipv4'][0]['ipaddr']) ? $ifdata['ipv4'][0]['ipaddr'] : null,
+          'mac' => !empty($ifdata['macaddr']) ? $ifdata['macaddr'] : null,
           'dmesg' => '',
         );
 
-        foreach (legacy_config_get_interfaces(array('virtual' => false)) as $name => $int) {
+        foreach ($all_interfaces as $name => $int) {
             if ($int['if'] == $ifname) {
                 $toput['friendly'] = $name;
                 break;
@@ -1007,7 +975,8 @@ function url_safe($format, $args = array())
     }
 
     foreach ($args as $id => $arg) {
-        $args[$id] = urlencode($arg);
+        /* arguments could be empty, so force default */
+        $args[$id] = !empty($arg) ? urlencode($arg) : '';
     }
 
     return vsprintf($format, $args);
@@ -1085,21 +1054,6 @@ function is_alias($name)
 {
     global $aliastable;
     return array_key_exists($name, $aliastable);
-}
-
-function alias_get_type($name)
-{
-    global $config;
-
-    if (is_array($config['aliases']['alias'])) {
-        foreach ($config['aliases']['alias'] as $alias) {
-            if ($name == $alias['name']) {
-                return $alias['type'];
-            }
-        }
-    }
-
-    return "";
 }
 
 /* expand a host or network alias, if necessary */
@@ -1229,7 +1183,7 @@ function update_filter_reload_status($text, $first = false)
         @unlink($filter_reload_status);
     }
 
-    file_put_contents(
+    @file_put_contents(
       $filter_reload_status,
       sprintf("%s: %s\n", microtime(true), $text),
       FILE_APPEND

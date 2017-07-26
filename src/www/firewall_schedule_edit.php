@@ -107,7 +107,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['name'] = $a_schedules[$configId]['name'];
     $pconfig['descr'] = $a_schedules[$configId]['descr'];
     $pconfig['timerange'] = isset($a_schedules[$configId]['timerange']) ? $a_schedules[$configId]['timerange'] : array();
-    $pconfig['schedlabel'] = isset($a_schedules[$configId]['schedlabel']) ? $a_schedules[$configId]['schedlabel'] : uniqid();
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['id']) && isset($a_schedules[$_POST['id']])) {
         $id = $_POST['id'];
@@ -115,18 +114,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = $_POST;
 
     // validate
-    if(strtolower($pconfig['name']) == "lan")
-        $input_errors[] = gettext("Schedule may not be named LAN.");
-    if(strtolower($pconfig['name']) == "wan")
-        $input_errors[] = gettext("Schedule may not be named WAN.");
-    if(strtolower($pconfig['name']) == "")
-        $input_errors[] = gettext("Schedule name cannot be blank.");
-    $x = is_validaliasname($pconfig['name']);
-    if (!isset($x)) {
-        $input_errors[] = gettext("Reserved word used for schedule name.");
-    } elseif ($x == false) {
-        $input_errors[] = gettext("The schedule name may only consist of the characters a-z, A-Z, 0-9");
+    if (strtolower($pconfig['name']) == 'lan') {
+        $input_errors[] = gettext('Schedule may not be named LAN.');
     }
+    if (strtolower($pconfig['name']) == 'wan') {
+        $input_errors[] = gettext('Schedule may not be named WAN.');
+    }
+    if (empty($pconfig['name'])) {
+        $input_errors[] = gettext('Schedule may not use a blank name.');
+    }
+
+    $valid = is_validaliasname($pconfig['name']);
+    if ($valid === false) {
+        $input_errors[] = sprintf(gettext('The schedule name must be less than 32 characters long and may only consist of the following characters: %s'), 'a-z, A-Z, 0-9, _');
+    } elseif ($valid === null) {
+        $input_errors[] = sprintf(gettext('The schedule name cannot be the internally reserved keyword "%s".'), $pconfig['name']);
+    }
+
     /* check for name conflicts */
     foreach ($a_schedules as $schedId => $schedule) {
         if ((!isset($id) || $schedId != $id) && $schedule['name'] == $pconfig['name']) {
@@ -197,7 +201,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $schedule['name'] = $pconfig['name'];
         $schedule['descr'] = $pconfig['descr'];
         $schedule['timerange'] = $pconfig['timerange'];
-        $schedule['schedlabel'] = $pconfig['schedlabel'];
 
         if (isset($id)) {
             $a_schedules[$id] = $schedule;
@@ -786,8 +789,7 @@ function removeRow(el) {
           <section class="col-xs-12">
             <div class="content-box tab-content">
               <form method="post" name="iform" id="iform">
-                <input type="hidden" name="schedlabel" value="<?=$pconfig['schedlabel'];?>"/>
-                  <table class="table table-clean-form opnsense_standard_table_form">
+                  <table class="table table-striped opnsense_standard_table_form">
                     <tbody>
                       <tr>
                         <td width="15%"><strong><?=gettext("Schedule information");?></strong></td>
@@ -797,7 +799,7 @@ function removeRow(el) {
                         </td>
                       </tr>
                       <tr>
-                        <td><a id="help_for_name" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Schedule Name");?></td>
+                        <td><i class="fa fa-info-circle text-muted"></i> <?= gettext('Name') ?></td>
                         <td>
 <?php
                             if (is_schedule_inuse($pconfig['name']) && isset($id)): ?>
@@ -809,9 +811,6 @@ function removeRow(el) {
 <?php
                             else: ?>
                           <input name="name" type="text" id="name" value="<?=$pconfig['name'];?>" />
-                          <div class="hidden" for="help_for_name">
-                            <?=gettext("The name of the alias may only consist of the characters a-z, A-Z and 0-9");?>
-                          </div>
 <?php
                             endif; ?>
                         </td>

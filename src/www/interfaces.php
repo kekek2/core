@@ -36,8 +36,6 @@ require_once("filter.inc");
 require_once("rrd.inc");
 require_once("system.inc");
 require_once("interfaces.inc");
-require_once("ipsec.inc");
-require_once("openvpn.inc");
 require_once("services.inc");
 
 /***************************************************************************************************************
@@ -524,14 +522,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     }
                 }
             }
-            /* restart plugins */
-            if (function_exists('plugins_configure')) {
-                plugins_configure('interface');
-            }
+
+            /*
+             * XXX possibly wrong to configure interfaces through newwanip
+             * when the interface is dynamic and this gets called again...
+             */
+            plugins_configure('newwanip');
+
             /* sync filter configuration */
             setup_gateways_monitor();
             filter_configure();
-            enable_rrd_graphing();
+            rrd_configure();
             if (is_subsystem_dirty('staticroutes') && (system_routing_configure() == 0)) {
                 clear_subsystem_dirty('staticroutes');
             }
@@ -2063,8 +2064,7 @@ include("head.inc");
                               <small class="formhelp">
                               <?=gettext("The values in this field are DHCP options to be sent when requesting a DHCP lease. [option declaration [, ...]] <br />" .
                               "Value Substitutions: {interface}, {hostname}, {mac_addr_asciiCD}, {mac_addr_hexCD} <br />" .
-                              "Where C is U(pper) or L(ower) Case, and D is \" :-.\" Delimiter (space, colon, hyphen, or period) (omitted for none). <br />" .
-                              "Some ISPs may require certain options be or not be sent."); ?>
+                              "Where C is U(pper) or L(ower) Case, and D is \" :-.\" Delimiter (space, colon, hyphen, or period) (omitted for none).") ?>
                               </small>
                             </div>
                             <hr/>
@@ -2072,8 +2072,8 @@ include("head.inc");
                             <input name="adv_dhcp_request_options" type="text" id="adv_dhcp_request_options" value="<?=$pconfig['adv_dhcp_request_options'];?>" />
                             <div class="hidden" for="help_for_dhcp_lease_requirements_and_requests">
                               <small class="formhelp">
-                              <?=gettext("The values in this field are DHCP option 55 to be sent when requesting a DHCP lease. [option [, ...]] <br />" .
-                              "Some ISPs may require certain options be or not be requested."); ?>
+                              <?=gettext("The values in this field are DHCP option 55 to be sent when requesting a DHCP lease. [option [, ...]]") ?>
+                              </small>
                             </div>
                             <hr/>
                             <?=gettext("Require Options");?>
@@ -2612,10 +2612,9 @@ include("head.inc");
                             <input name="adv_dhcp6_interface_statement_send_options" type="text" id="adv_dhcp6_interface_statement_send_options" value="<?=$pconfig['adv_dhcp6_interface_statement_send_options'];?>" />
                             <div class="hidden" for="help_for_dhcp6_intf_stmt">
                               <small class="formhelp">
-                              <?=gettext("The values in this field are DHCP send options to be sent when requesting a DHCP lease.  [option declaration [, ...]] <br />" .
+                              <?=gettext("The values in this field are DHCP send options to be sent when requesting a DHCP lease. [option declaration [, ...]] <br />" .
                               "Value Substitutions: {interface}, {hostname}, {mac_addr_asciiCD}, {mac_addr_hexCD} <br />" .
-                              "Where C is U(pper) or L(ower) Case, and D is \" :-.\" Delimiter (space, colon, hyphen, or period) (omitted for none). <br />" .
-                              "Some DHCP services may require certain options be or not be sent."); ?>
+                              "Where C is U(pper) or L(ower) Case, and D is \" :-.\" Delimiter (space, colon, hyphen, or period) (omitted for none).") ?>
                               </small>
                             </div>
                             <br />
@@ -2624,8 +2623,7 @@ include("head.inc");
                             <input name="adv_dhcp6_interface_statement_request_options" type="text" id="adv_dhcp6_interface_statement_request_options" value="<?=$pconfig['adv_dhcp6_interface_statement_request_options'];?>" />
                             <div class="hidden" for="help_for_dhcp6_intf_stmt">
                               <small class="formhelp">
-                              <?=gettext("The values in this field are DHCP request options to be sent when requesting a DHCP lease.  [option [, ...]] <br />" .
-                              "Some DHCP services may require certain options be or not be requested. "); ?>
+                              <?=gettext('The values in this field are DHCP request options to be sent when requesting a DHCP lease. [option [, ...]]') ?>
                               </small>
                             </div>
                             <br />

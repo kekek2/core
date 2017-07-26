@@ -1,7 +1,8 @@
 <?php
 
 /*
-    Copyright (C) 2016 Franco Fichtner <franco@opnsense.org>
+    Copyright (C) 2016 Deciso B.V.
+    Copyright (C) 2016-2017 Franco Fichtner <franco@opnsense.org>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -37,8 +38,6 @@ function pf_services()
             'description' => gettext('Packet Filter'),
             'configd' => array(
                 'restart' => array('filter reload'),
-                'start' => array('filter reload'),
-                'stop' => array('filter reload'),
             ),
             'nocheck' => true,
             'name' => 'pf',
@@ -46,4 +45,101 @@ function pf_services()
     }
 
     return $services;
+}
+
+function pf_cron()
+{
+    global $config;
+
+    $jobs = array();
+
+    if (isset($config['filter']['rule'])) {
+        foreach ($config['filter']['rule'] as $rule) {
+            if (!empty($rule['sched'])) {
+                $jobs[]['autocron'] = array('/usr/local/etc/rc.filter_configure', '0,15,30,45');
+                break;
+            }
+        }
+    }
+
+    return $jobs;
+}
+
+function pf_interfaces()
+{
+    global $config;
+
+    $interfaces = array();
+
+    /* add interface groups */
+    if (isset($config['ifgroups']['ifgroupentry'])) {
+        foreach($config['ifgroups']['ifgroupentry'] as $ifgen) {
+            $oc = array("enable" => true);
+            $oc['networks'] = array();
+            $oc['if'] = $ifgen['ifname'];
+            $oc['descr'] = $ifgen['ifname'];
+            $oc['virtual'] = true;
+            $oc['type'] = 'group';
+            $interfaces[$ifgen['ifname']] = $oc;
+        }
+    }
+
+    return $interfaces;
+}
+
+/**
+ * options we should probably remove from the system at some point, lets make them plugabble before removal
+ */
+function pf_firewall($fw)
+{
+    global $config;
+
+    $defaults = array();
+    $defaults['pass'] = array("type" => "pass", "log" => ($config['OPNsense']['Syslog']['Firewall']['LogDefaultPass'] == 1));
+
+    /*
+     *  pass traffic between statically routed subnets and the subnet on the
+     *  interface in question to avoid problems with complicated routing
+     *  topologies
+     */
+    if (isset($config['filter']['bypassstaticroutes']) && isset($config['staticroutes']['route']) && count($config['staticroutes']['route'])) {
+        $FilterIflist = filter_generate_optcfg_array();
+        $GatewaysList = return_gateways_array(false, true) + return_gateway_groups_array();
+
+        foreach (get_staticroutes() as $route) {
+            $friendly = $GatewaysList[$route['gateway']]['friendlyiface'];
+            if (is_array($FilterIflist[$friendly])) {
+                $oc = $FilterIflist[$friendly];
+                $routeent = explode("/", $route['network']);
+                if (is_ipaddrv4($routeent[0]) && is_ipaddrv4($oc['ip'])) {
+                    $sa = $oc['sa'];
+                    $sn = $oc['sn'];
+                } elseif (is_ipaddrv6($routeent[0]) && is_ipaddrv6($oc['ipv6'])) {
+                    $sa = $oc['sav6'];
+                    $sn = $oc['snv6'];
+                } else {
+                    continue;
+                }
+
+                $networks = array();
+                $networks[] = array('from' => "{$sa}/{$sn}", 'to' => $route['network']);
+                $networks[] = array('to' => "{$sa}/{$sn}", 'from' => $route['network']);
+                foreach ($networks as $network) {
+                    $fw->registerFilterRule(10,
+                      array('interface' => $friendly, 'statetype' => 'sloppy',
+                            'protocol' => 'tcp','flags' => 'any', 'from' => $network['from'],
+                            'to' => $network['to'], 'quick' => false,
+                            'label' => "pass traffic between statically routed subnets"),
+                      $defaults['pass']
+                    );
+                    $fw->registerFilterRule(10,
+                      array('interface' => $friendly, 'statetype' => 'sloppy',
+                            'from' => $network['from'],'to' => $network['to'], 'quick' => false,
+                            'label' => "pass traffic between statically routed subnets"),
+                      $defaults['pass']
+                    );
+                }
+            }
+        }
+    }
 }

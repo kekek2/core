@@ -36,7 +36,7 @@ use OPNsense\Core\Config;
  * Class Voucher user database connector
  * @package OPNsense\Auth
  */
-class Voucher implements IAuthConnector
+class Voucher extends Base implements IAuthConnector
 {
     /**
      * @var null reference id
@@ -459,5 +459,16 @@ class Voucher implements IAuthConnector
         };
 
         return $fields;
+    }
+
+    /**
+     * groups not supported
+     * @param string $username username to check
+     * @param string $gid group id
+     * @return boolean
+     */
+    public function groupAllowed($username, $gid)
+    {
+        return false;
     }
 }

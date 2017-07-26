@@ -53,7 +53,14 @@ function stdBootgridUI(obj, sourceUrl, options) {
                 } else {
                     return "<span style=\"cursor: pointer;\" class=\"fa fa-square-o command-toggle\" data-value=\"0\" data-row-id=\"" + row.uuid + "\"></span>";
                 }
-            }
+            },
+            "boolean": function (column, row) {
+                if (parseInt(row[column.id], 2) == 1) {
+                    return "<span class=\"fa fa-check\" data-value=\"1\" data-row-id=\"" + row.uuid + "\"></span>";
+                } else {
+                    return "<span class=\"fa fa-times\" data-value=\"0\" data-row-id=\"" + row.uuid + "\"></span>";
+                }
+            },
         }
     };
 
@@ -71,6 +78,9 @@ function stdBootgridUI(obj, sourceUrl, options) {
         $(this).find("tfoot td:first-child").attr('colspan',$(this).find("th").length - 1);
         $(this).find('tr[data-row-id]').each(function(){
             if ($(this).find('[class*="command-toggle"]').first().data("value") == "0") {
+                $(this).addClass("text-muted");
+            }
+            if ($(this).find('[class*="command-boolean"]').first().data("value") == "0") {
                 $(this).addClass("text-muted");
             }
         });
@@ -138,21 +148,21 @@ $.fn.UIBootgrid = function (params) {
                                 $('.selectpicker').selectpicker('refresh');
                                 // clear validation errors (if any)
                                 clearFormValidation('frm_' + editDlg);
-                            });
 
-                            // show dialog for pipe edit
-                            $('#'+editDlg).modal({backdrop: 'static', keyboard: false});
-                            // define save action
-                            $("#btn_"+editDlg+"_save").unbind('click').click(function(){
-                                if (gridParams['set'] != undefined) {
-                                    saveFormToEndpoint(url=gridParams['set']+uuid,
-                                        formid='frm_' + editDlg, callback_ok=function(){
-                                            $("#"+editDlg).modal('hide');
-                                            std_bootgrid_reload(gridId);
-                                        }, true);
-                                } else {
-                                    console.log("[grid] action set missing")
-                                }
+                                // show dialog for pipe edit
+                                $('#'+editDlg).modal({backdrop: 'static', keyboard: false});
+                                // define save action
+                                $("#btn_"+editDlg+"_save").unbind('click').click(function(){
+                                    if (gridParams['set'] != undefined) {
+                                        saveFormToEndpoint(url=gridParams['set']+uuid,
+                                            formid='frm_' + editDlg, callback_ok=function(){
+                                                $("#"+editDlg).modal('hide');
+                                                std_bootgrid_reload(gridId);
+                                            }, true);
+                                    } else {
+                                        console.log("[grid] action set missing")
+                                    }
+                                });
                             });
                         } else {
                             console.log("[grid] action get or data-editDialog missing")
@@ -172,21 +182,21 @@ $.fn.UIBootgrid = function (params) {
                                 $('.selectpicker').selectpicker('refresh');
                                 // clear validation errors (if any)
                                 clearFormValidation('frm_' + editDlg);
-                            });
 
-                            // show dialog for pipe edit
-                            $('#'+editDlg).modal({backdrop: 'static', keyboard: false});
-                            // define save action
-                            $("#btn_"+editDlg+"_save").unbind('click').click(function(){
-                                if (gridParams['add'] != undefined) {
-                                    saveFormToEndpoint(url=gridParams['add'],
-                                        formid='frm_' + editDlg, callback_ok=function(){
-                                            $("#"+editDlg).modal('hide');
-                                            std_bootgrid_reload(gridId);
-                                        }, true);
-                                } else {
-                                    console.log("[grid] action add missing")
-                                }
+                                // show dialog for pipe edit
+                                $('#'+editDlg).modal({backdrop: 'static', keyboard: false});
+                                // define save action
+                                $("#btn_"+editDlg+"_save").unbind('click').click(function(){
+                                    if (gridParams['add'] != undefined) {
+                                        saveFormToEndpoint(url=gridParams['add'],
+                                            formid='frm_' + editDlg, callback_ok=function(){
+                                                $("#"+editDlg).modal('hide');
+                                                std_bootgrid_reload(gridId);
+                                            }, true);
+                                    } else {
+                                        console.log("[grid] action add missing")
+                                    }
+                                });
                             });
                         } else {
                             console.log("[grid] action get or data-editDialog missing")

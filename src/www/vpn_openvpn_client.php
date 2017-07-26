@@ -28,7 +28,7 @@
 */
 
 require_once("guiconfig.inc");
-require_once("openvpn.inc");
+require_once("plugins.inc.d/openvpn.inc");
 require_once("services.inc");
 require_once("interfaces.inc");
 
@@ -167,8 +167,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             } else {
                 $a_client[$id]['disable'] = true;
             }
-            openvpn_resync('client', $a_client[$id]);
             write_config();
+            openvpn_configure_single($a_client[$id]['vpnid']);
         }
         header(url_safe('Location: /vpn_openvpn_client.php'));
         exit;
@@ -335,8 +335,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $a_client[] = $client;
             }
 
-            openvpn_resync('client', $client);
             write_config();
+
+            openvpn_configure_single($client['vpnid']);
 
             header(url_safe('Location: /vpn_openvpn_client.php'));
             exit;
@@ -589,7 +590,7 @@ $( document ).ready(function() {
               }
               $grouplist = return_gateway_groups_array();
               foreach ($grouplist as $name => $group) {
-                  if ($group['ipprotocol'] != inet) {
+                  if ($group['ipprotocol'] != "inet") {
                       continue;
                   }
                   if ($group[0]['vip'] <> "") {
@@ -700,9 +701,9 @@ $( document ).ready(function() {
             <td width="22%"><a id="help_for_auth_user_pass" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("User name/pass"); ?></td>
             <td width="78%">
               <div><?=gettext("Username"); ?></div>
-              <div><input name="auth_user" id="auth_user" class="form-control unknown" type="text" size="20" value="<?=htmlspecialchars($pconfig['auth_user']);?>" /></div>
+              <div><input name="auth_user" id="auth_user" class="form-control unknown" type="text" size="20" value="<?=$pconfig['auth_user'];?>" /></div>
               <div><?=gettext("Password"); ?></div>
-              <div><input name="auth_pass" id="auth_pass" type="password" class="form-control pwd" size="20" value="<?=htmlspecialchars($pconfig['auth_pass']);?>" /></div>
+              <div><input name="auth_pass" id="auth_pass" type="password" class="form-control pwd" size="20" value="<?=$pconfig['auth_pass'];?>" /></div>
               <div class="hidden" for="help_for_auth_user_pass">
                 <small class="helpform">
                 <?=gettext("Leave empty when no user name and password are needed."); ?>
