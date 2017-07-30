@@ -446,7 +446,7 @@ include("head.inc");
               <?php print_content_box(gettext('No interfaces found with a static IPv6 address.')); ?>
               <?php else: ?>
                 <div class="table-responsive">
-                  <table class="table table-striped opnsense_standard_table_form">
+                  <table class="table table-clean-form opnsense_standard_table_form">
                     <tr>
                       <td width="22%" valign="top"></td>
                       <td width="78%" align="right">
@@ -666,7 +666,7 @@ include("head.inc");
                           <input type="button" onclick="show_shownumbervalue()" value="<?=gettext("Advanced");?>" class="btn btn-xs btn-default"/> - <?=gettext("Show Additional BOOTP/DHCP Options");?>
                         </div>
                         <div id="shownumbervalue" style="display:none">
-                          <table class="table table-striped table-condensed" id="numberoptions_table">
+                          <table class="table table-clean-form table-condensed" id="numberoptions_table">
                             <thead>
                               <tr>
                                 <th></th>
@@ -760,7 +760,7 @@ include("head.inc");
           <section class="col-xs-12">
             <div class="tab-content content-box col-xs-12">
                 <div class="table-responsive">
-                  <table class="tabcont table table-striped" width="100%" border="0" cellpadding="0" cellspacing="0" summary="static mappings">
+                  <table class="tabcont table table-clean-form" width="100%" border="0" cellpadding="0" cellspacing="0" summary="static mappings">
                     <tr>
                       <td colspan="4" class="listtopic"><?=gettext("DHCPv6 Static Mappings for this interface.");?></td>
                       <td>&nbsp;</td>

@@ -357,7 +357,7 @@ if (isset($input_errors) && count($input_errors) > 0) {
            <div class="tab-content content-box col-xs-12">
                <form method="post" name="iform" id="iform">
                <div class="table-responsive">
-                <table class="table table-striped opnsense_standard_table_form">
+                <table class="table table-clean-form opnsense_standard_table_form">
                     <tr>
                       <td width="22%"><b><?=gettext("IKE Extensions"); ?> </b></td>
                       <td width="78%" align="right">
@@ -370,7 +370,9 @@ if (isset($input_errors) && count($input_errors) > 0) {
                     <td>
                         <input name="enable" type="checkbox" id="enable" value="yes" <?= !empty($pconfig['enable']) ? "checked=\"checked\"" : "";?> />
                         <div class="hidden" for="help_for_enabled">
+                          <small class="formhelp">
                             <?=gettext("Enable IPsec Mobile Client Support"); ?>
+                          </small>
                         </div>
                     </td>
                   </tr>
@@ -430,7 +432,9 @@ endfor; ?>
                     <td>
                         <input name="net_list" type="checkbox" id="net_list_enable" value="yes" <?= !empty($pconfig['net_list']) ? "checked=\"checked\"" : "";?> />
                         <div class="hidden" for="help_for_net_list">
+                          <small class="formhelp">
                             <?=gettext("Provide a list of accessible networks to clients"); ?><br />
+                          </small>
                         </div>
                     </td>
                   </tr>
@@ -439,8 +443,10 @@ endfor; ?>
                     <td>
                         <input name="save_passwd" type="checkbox" id="save_passwd_enable" value="yes" <?= !empty($pconfig['save_passwd']) ? "checked=\"checked\"" : "";?> />
                         <div class="hidden" for="help_for_save_passwd">
+                          <small class="formhelp">
                             <?=gettext("Allow clients to save Xauth passwords (Cisco VPN client only)."); ?><br />
                             <?=gettext("NOTE: With iPhone clients, this does not work when deployed via the iPhone configuration utility, only by manual entry."); ?><br />
+                          </small>
                         </div>
                     </td>
                   </tr>
@@ -450,7 +456,9 @@ endfor; ?>
                         <input name="dns_domain_enable" type="checkbox" id="dns_domain_enable" value="yes"  <?= !empty($pconfig['dns_domain']) ? "checked=\"checked\"" : "";?> onclick="dns_domain_change()" />
                         <input name="dns_domain" type="text" id="dns_domain" size="30" value="<?=$pconfig['dns_domain'];?>" />
                         <div class="hidden" for="help_for_dns_domain_enable">
+                          <small class="formhelp">
                             <?=gettext("Provide a default domain name to clients"); ?>
+                          </small>
                         </div>
                     </td>
                   </tr>
@@ -460,8 +468,10 @@ endfor; ?>
                         <input name="dns_split_enable" type="checkbox" id="dns_split_enable" value="yes" <?= !empty($pconfig['dns_split']) ? "checked=\"checked\"" : "";?> onclick="dns_split_change()" />
                         <input name="dns_split" type="text" class="form-control unknown" id="dns_split" size="30" value="<?=$pconfig['dns_split'];?>" />
                         <div class="hidden" for="help_for_dns_split_enable">
+                          <small class="formhelp">
                             <?=gettext("Provide a list of split DNS domain names to clients. Enter a comma separated list."); ?><br />
                             <?=gettext("NOTE: If left blank, and a default domain is set, it will be used for this value."); ?>
+                          </small>
                         </div>
                     </td>
                   </tr>
@@ -480,7 +490,9 @@ endfor; ?>
                           <input name="dns_server4" type="text" class="form-control unknown" id="dns_server4" size="20" value="<?=$pconfig['dns_server4'];?>" />
                         </div>
                         <div class="hidden" for="help_for_dns_server_enable">
+                          <small class="formhelp">
                             <?=gettext("Provide a DNS server list to clients"); ?>
+                          </small>
                         </div>
                     </td>
                   </tr>
@@ -495,7 +507,9 @@ endfor; ?>
                           <input name="wins_server2" type="text" class="form-control unknown" id="wins_server2" size="20" value="<?=$pconfig['wins_server2'];?>" />
                         </div>
                         <div class="hidden" for="help_for_wins_server_enable">
+                          <small class="formhelp">
                             <?=gettext("Provide a WINS server list to clients"); ?>
+                          </small>
                         </div>
                     </td>
                   </tr>
@@ -516,7 +530,9 @@ endforeach;
 ?>
                         </select>
                         <div class="hidden" for="help_for_pfs_group_enable">
+                          <small class="formhelp">
                             <?=gettext("Provide the Phase2 PFS group to clients ( overrides all mobile phase2 settings )"); ?>
+                          </small>
                         </div>
                     </td>
                   </tr>
@@ -526,7 +542,9 @@ endforeach;
                         <input name="login_banner_enable" type="checkbox" id="login_banner_enable" value="yes" <?= !empty($pconfig['login_banner']) ? "checked=\"checked\"" : "";?> onclick="login_banner_change()" />
                         <textarea name="login_banner" cols="65" rows="7" id="login_banner" class="formpre"><?=$pconfig['login_banner'];?></textarea>
                         <div class="hidden" for="help_for_login_banner_enable">
+                          <small class="formhelp">
                             <?=gettext("Provide a login banner to clients"); ?><br />
+                          </small>
                         </div>
                     </td>
                   </tr>

@@ -203,7 +203,7 @@ $main_buttons = array(
               <input type="hidden" id="id" name="id" value="" />
               <input type="hidden" id="action" name="act" value="" />
               <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-clean-form">
                   <thead>
                     <tr>
                       <th width="2%">&nbsp;</th>

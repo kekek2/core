@@ -386,7 +386,7 @@ include("head.inc");
         <section class="col-xs-12">
           <div class="content-box">
             <form method="post" name="iform" id="iform">
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <tr>
                   <td colspan="2">
                     <table>
@@ -406,7 +406,9 @@ include("head.inc");
                     <input name="disabled" type="checkbox" id="disabled" value="yes" <?= !empty($pconfig['disabled']) ? "checked=\"checked\"" : ""; ?> />
                     <strong><?=gettext("Disable this rule"); ?></strong>
                     <div class="hidden" for="help_for_disabled">
+                      <small class="formhelp">
                       <?=gettext("Set this option to disable this rule without removing it from the list."); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -415,8 +417,10 @@ include("head.inc");
                   <td width="78%" class="vtable">
                     <input type="checkbox" name="nonat" <?=!empty($pconfig['nonat']) ? " checked=\"checked\"" : ""; ?> />
                     <div class="hidden" for="help_for_do_not_nat">
+                      <small class="formhelp">
                       <?=gettext("Enabling this option will disable NAT for traffic matching this rule and stop processing Outbound NAT rules.");?><br />
                       <?=gettext("Hint: in most cases, you won't use this option.");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -434,8 +438,10 @@ include("head.inc");
                       </select>
                     </div>
                     <div class="hidden" for="help_for_interface">
+                      <small class="formhelp">
                       <?=gettext("Choose which interface this rule applies to"); ?>.<br />
                       <?=gettext("Hint: in most cases, you'll want to use WAN here"); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -452,7 +458,9 @@ include("head.inc");
                     endforeach; ?>
                     </select>
                     <div class="hidden" for="help_for_ipv46">
+                      <small class="formhelp">
                       <?=gettext("Select the Internet Protocol version this rule applies to");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -468,8 +476,10 @@ include("head.inc");
               </select>
                     </div>
                     <div class="hidden" for="help_for_proto">
+                      <small class="formhelp">
                       <?=gettext("Choose which IP protocol " ."this rule should match."); ?><br/>
                       <?=gettext("Hint: in most cases, you should specify"); ?> <em><?=gettext("TCP"); ?></em> &nbsp;<?=gettext("here."); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -507,7 +517,9 @@ include("head.inc");
                       </tr>
                     </table>
                     <div class="hidden" for="help_for_source">
+                      <small class="formhelp">
                       <?=gettext("Enter the source network for the outbound NAT mapping.");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -543,7 +555,9 @@ include("head.inc");
                       </tbody>
                     </table>
                     <div class="hidden" for="help_for_src_port">
+                      <small class="formhelp">
                       <?=gettext("(leave blank for any)");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -552,7 +566,9 @@ include("head.inc");
                   <td>
                     <input name="destination_not" type="checkbox" value="yes" <?= !empty($pconfig['destination_not']) ? "checked=\"checked\"" : "";?> />
                     <div class="hidden" for="help_for_dst_invert">
+                      <small class="formhelp">
                       <?=gettext("Use this option to invert the sense of the match."); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -589,7 +605,9 @@ include("head.inc");
                       </tr>
                     </table>
                     <div class="hidden" for="help_for_destination">
+                      <small class="formhelp">
                       <?=gettext("Enter the source network for the outbound NAT mapping.");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -625,7 +643,9 @@ include("head.inc");
                       </tbody>
                     </table>
                     <div class="hidden" for="help_for_dstport">
+                      <small class="formhelp">
                       <?=gettext("(leave blank for any)");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -661,6 +681,7 @@ include("head.inc");
                         </tr>
                       </table>
                       <div class="hidden" for="help_for_target">
+                        <small class="formhelp">
                         <?=gettext("Packets matching this rule will be mapped to the IP address given here.");?><br />
                         <?=sprintf(gettext("If you want this rule to apply to another IP address rather than the IP address of the interface chosen above, ".
                                 "select it here (you will need to define %sVirtual IP addresses%s on the interface first)."),'<a href="firewall_virtual_ip.php">','</a>')?>
@@ -673,7 +694,9 @@ include("head.inc");
                     <input name="log" type="checkbox" id="log" value="yes" <?= !empty($pconfig['log']) ? "checked=\"checked\"" : ""; ?> />
                     <strong><?=gettext("Log packets that are handled by this rule");?></strong>
                     <div class="hidden" for="help_for_log">
+                      <small class="formhelp">
                       <?=sprintf(gettext("Hint: the firewall has limited local log space. Don't turn on logging for everything. If you want to do a lot of logging, consider using a %sremote syslog server%s."),'<a href="ui/syslog/">','</a>') ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -682,7 +705,9 @@ include("head.inc");
                   <td>
                     <input name="natport" type="text" value="<?=$pconfig['natport'];?>" />
                     <div class="hidden" for="help_for_natport">
+                      <small class="formhelp">
                       <?=gettext("Enter the source port for the outbound NAT mapping.");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -719,12 +744,14 @@ include("head.inc");
                       </option>
                     </select>
                     <div class="hidden" for="help_for_poolopts">
+                      <small class="formhelp">
                       <?=gettext("Only Round Robin types work with Host Aliases. Any type can be used with a Subnet.");?><br />
                       * <?=gettext("Round Robin: Loops through the translation addresses.");?><br />
                       * <?=gettext("Random: Selects an address from the translation address pool at random.");?><br />
                       * <?=gettext("Source Hash: Uses a hash of the source address to determine the translation address, ensuring that the redirection address is always the same for a given source.");?><br />
                       * <?=gettext("Bitmask: Applies the subnet mask and keeps the last portion identical; 10.0.1.50 -&gt; x.x.x.50.");?><br />
                       * <?=gettext("Sticky Address: The Sticky Address option can be used with the Random and Round Robin pool types to ensure that a particular source address is always mapped to the same translation address.");?><br />
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -733,7 +760,9 @@ include("head.inc");
                     <td>
                       <input name="tag" type="text" value="<?=$pconfig['tag'];?>" />
                       <div class="hidden" for="help_for_tag">
+                        <small class="formhelp">
                         <?= gettext("You can mark a packet matching this rule and use this mark to match on other NAT/filter rules.") ?>
+                        </small>
                       </div>
                     </td>
                 </tr>
@@ -742,7 +771,9 @@ include("head.inc");
                     <td>
                       <input name="tagged" type="text" value="<?=$pconfig['tagged'];?>" />
                       <div class="hidden" for="help_for_tagged">
+                        <small class="formhelp">
                         <?=gettext("You can match packet on a mark placed before on another rule.")?>
+                        </small>
                       </div>
                     </td>
                 </tr>
@@ -751,7 +782,9 @@ include("head.inc");
                   <td>
                     <input type="checkbox" value="yes" name="nosync" <?=!empty($pconfig['nosync']) ? "checked=\"checked\"" :"";?> />
                     <div class="hidden" for="help_for_nosync">
+                      <small class="formhelp">
                       <?=gettext("Hint: This prevents the rule on Master from automatically syncing to other CARP members. This does NOT prevent the rule from being overwritten on Slave.");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -760,7 +793,9 @@ include("head.inc");
                   <td>
                     <input name="descr" type="text" class="formfld unknown" id="descr" size="40" value="<?=$pconfig['descr'];?>" />
                     <div class="hidden" for="help_for_descr">
+                      <small class="formhelp">
                       <?=gettext("You may enter a description here " ."for your reference (not parsed)."); ?>
+                      </small>
                     </div>
                 </tr>
 <?php

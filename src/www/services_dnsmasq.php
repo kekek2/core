@@ -232,7 +232,7 @@ $( document ).ready(function() {
         <div class="content-box">
           <form method="post" name="iform" id="iform">
             <div class="table-responsive">
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <tr>
                   <td valign="top"><strong><?=gettext("General DNS Forwarder Options");?></strong></td>
                   <td align="right">
@@ -253,9 +253,11 @@ $( document ).ready(function() {
                     <input name="regdhcp" type="checkbox" id="regdhcp" value="yes" <?=!empty($pconfig['regdhcp']) ? "checked=\"checked\"" : "";?> />
                     <strong><?=gettext("Register DHCP leases in DNS forwarder");?></strong>
                     <div class="hidden" for="help_for_regdhcp">
+                      <small class="formhelp">
                       <?= gettext("If this option is set, then machines that specify " .
                         "their hostname when requesting a DHCP lease will be registered " .
                         "in the DNS forwarder, so that their name can be resolved.") ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -264,10 +266,12 @@ $( document ).ready(function() {
                   <td>
                     <input name="regdhcpdomain" type="text" id="regdhcpdomain" value="<?= $pconfig['regdhcpdomain'] ?>"/>
                     <div class="hidden" for="help_for_regdhcpdomain">
+                      <small class="formhelp">
                       <?= gettext("The domain name to use for DHCP hostname registration. " .
                         "If empty, the default system domain is used. Note that all DHCP " .
                         "leases will be assigned to the same domain. If this is undesired, " .
                         "static DHCP lease registration is able to provide coherent mappings.") ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -277,10 +281,12 @@ $( document ).ready(function() {
                     <input name="regdhcpstatic" type="checkbox" id="regdhcpstatic" value="yes" <?=!empty($pconfig['regdhcpstatic']) ? "checked=\"checked\"" : "";?> />
                     <strong><?=gettext("Register DHCP static mappings in DNS forwarder");?></strong>
                     <div class="hidden" for="help_for_regdhcpstatic">
+                      <small class="formhelp">
                       <?= sprintf(gettext("If this option is set, then DHCP static mappings will ".
                           "be registered in the DNS forwarder, so that their name can be ".
                           "resolved. You should also set the domain in %s".
                           "System: General setup%s to the proper value."),'<a href="system_general.php">','</a>');?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -290,24 +296,28 @@ $( document ).ready(function() {
                     <input name="dhcpfirst" type="checkbox" id="dhcpfirst" value="yes" <?=!empty($pconfig['dhcpfirst']) ? "checked=\"checked\"" : "";?> />
                     <strong><?=gettext("Resolve DHCP mappings first");?></strong>
                     <div class="hidden" for="help_for_dhcpfirst">
+                      <small class="formhelp">
                       <?= sprintf(gettext("If this option is set, then DHCP mappings will ".
                           "be resolved before the manual list of names below. This only ".
                           "affects the name given for a reverse lookup (PTR)."));?>
+                      </small>
                     </div>
                   </td>
                 </tr>
                 <tr>
                   <td><a id="help_for_strict_order" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("DNS Query Forwarding");?></td>
                   <td>
-                    <table class="table table-striped table-condensed">
+                    <table class="table table-clean-form table-condensed">
                       <tr>
                         <td>
                           <input name="strict_order" type="checkbox" id="strict_order" value="yes" <?=!empty($pconfig['strict_order']) ? "checked=\"checked\"" : "";?> />
                           <strong><?=gettext("Query DNS servers sequentially");?></strong>
                           <div class="hidden" for="help_for_strict_order">
+                            <small class="formhelp">
                             <?= gettext("If this option is set, the DNS Forwarder (dnsmasq) will ".
                               "query the DNS servers sequentially in the order specified (System: " .
                               "General Setup: DNS Servers), rather than all at once in parallel.") ?>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -316,10 +326,12 @@ $( document ).ready(function() {
                           <input name="domain_needed" type="checkbox" id="domain_needed" value="yes" <?=!empty($pconfig['domain_needed']) ? "checked=\"checked\"" : "";?> />
                           <strong><?=gettext("Require domain");?></strong>
                           <div class="hidden" for="help_for_strict_order">
+                            <small class="formhelp">
                             <?= gettext('If this option is set, the DNS Forwarder (dnsmasq) will '.
                               'not forward A or AAAA queries for plain names, without dots or ' .
                               'domain parts, to upstream name servers. If the name is not known ' .
                               'from /etc/hosts or DHCP then a "not found" answer is returned.') ?>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -328,6 +340,7 @@ $( document ).ready(function() {
                           <input name="no_private_reverse" type="checkbox" id="no_private_reverse" value="yes" <?=!empty($pconfig['no_private_reverse']) ? "checked=\"checked\"" : "";?> />
                           <strong><?=gettext("Do not forward private reverse lookups");?></strong>
                           <div class="hidden" for="help_for_strict_order">
+                            <small class="formhelp">
                             <?= gettext('If this option is set, the DNS Forwarder (dnsmasq) will '.
                               'not forward reverse DNS lookups (PTR) for private addresses ' .
                               '(RFC 1918) to upstream name servers. Any entries in the Domain ' .
@@ -335,6 +348,7 @@ $( document ).ready(function() {
                               'to a specific server are still forwarded. If the IP to name is ' .
                               'not known from /etc/hosts, DHCP or a specific domain override ' .
                               'then a "not found" answer is immediately returned.') ?>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -346,7 +360,9 @@ $( document ).ready(function() {
                   <td>
                     <input name="port" type="text" id="port" size="6" <?=!empty($pconfig['port']) ? "value=\"{$pconfig['port']}\"" : "";?> />
                     <div class="hidden" for="help_for_port">
+                      <small class="formhelp">
                       <?=gettext("The port used for responding to DNS queries. It should normally be left blank unless another service needs to bind to TCP/UDP port 53.");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -366,15 +382,19 @@ $( document ).ready(function() {
                       endforeach; ?>
                     </select>
                     <div class="hidden" for="help_for_interfaces">
+                      <small class="formhelp">
                       <?=gettext("Interface IPs used by the DNS Forwarder for responding to queries from clients. If an interface has both IPv4 and IPv6 IPs, both are used. Queries to other interface IPs not selected below are discarded. The default behavior is to respond to queries on every available IPv4 and IPv6 address.");?>
+                      </small>
                     </div>
                     <br/>
                     <input name="strictbind" type="checkbox" id="strictbind" value="yes" <?= !empty($pconfig['strictbind']) ? "checked=\"checked\"" : "";?> />
                     <strong><?=gettext("Strict Interface Binding");?></strong>
                     <div class="hidden" for="help_for_interfaces">
+                      <small class="formhelp">
                       <?= gettext("If this option is set, the DNS forwarder will only bind to the interfaces containing the IP addresses selected above, rather than binding to all interfaces and discarding queries to other addresses."); ?>
                       <br /><br />
                       <?= gettext("NOTE: This option does NOT work with IPv6. If set, dnsmasq will not bind to IPv6 addresses."); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -420,7 +440,7 @@ $( document ).ready(function() {
       <section class="col-xs-12">
         <div class="content-box content-box-main">
           <div class="table-responsive">
-            <table class="table table-striped">
+            <table class="table table-clean-form">
               <thead>
                 <tr>
                   <th colspan="5"><?=gettext("Host Overrides");?></th>
@@ -484,7 +504,7 @@ $( document ).ready(function() {
       <section class="col-xs-12">
         <div class="content-box content-box-main">
           <div class="table-responsive">
-            <table class="table table-striped">
+            <table class="table table-clean-form">
               <thead>
                 <tr>
                   <th colspan="4"><?=gettext("Domain Overrides");?></th>

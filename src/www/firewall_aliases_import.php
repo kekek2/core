@@ -213,7 +213,9 @@ include("head.inc");
                   <td width="78%">
                     <input name="name" type="text" class="form-control unknown" size="40" maxlength="31" value="<?=$pconfig['name'];?>" />
                     <div class="hidden" for="help_for_name">
+                      <small class="formhelp">
                       <?=gettext("The name of the alias may only consist of the characters \"a-z, A-Z and 0-9\"."); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -222,7 +224,9 @@ include("head.inc");
                   <td>
                     <input name="descr" type="text" value="<?=$pconfig['descr'];?>" />
                     <div class="hidden" for="help_for_description">
+                      <small class="formhelp">
                       <?=gettext("You may enter a description here for your reference (not parsed)"); ?>.
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -231,6 +235,7 @@ include("head.inc");
                   <td>
                     <textarea name="aliasimport" rows="15" cols="40"><?=$pconfig['aliasimport'];?></textarea>
                     <div class="hidden" for="help_for_alias">
+                      <small class="formhelp">
                       <?=gettext("Paste in the aliases to import separated by a carriage return. Common examples are lists of IPs, networks, blacklists, etc."); ?>
                       <br />
                       <?=gettext("The list may contain IP addresses, with or without CIDR prefix, IP ranges, blank lines (ignored) and an optional description after each IP. e.g.:"); ?>
@@ -242,6 +247,7 @@ include("head.inc");
                         <br/>10.20.0.0/16 Office network
                         <br/>10.40.1.10-10.40.1.19 Managed switches
                       </code>
+                      </small>
                     </div>
                   </td>
                 </tr>

@@ -488,7 +488,7 @@ $main_buttons = array(
         <form method="post" name="iform" id="iform">
           <input type="hidden" name="id" id="id" value="<?=isset($id) ? $id :"";?>"/>
           <input type="hidden" name="act" id="action" value="<?=$act;?>"/>
-          <table class="table table-striped opnsense_standard_table_form">
+          <table class="table table-clean-form opnsense_standard_table_form">
             <tr>
               <td width="22%"></td>
               <td  width="78%" align="right">
@@ -520,7 +520,7 @@ $main_buttons = array(
             </tr>
           </table>
           <!-- existing ca -->
-          <table id="existing" class="table table-striped opnsense_standard_table_form">
+          <table id="existing" class="table table-clean-form opnsense_standard_table_form">
             <thead>
               <tr>
                 <th colspan="2"><?=gettext("Existing Certificate Authority");?></th>
@@ -560,7 +560,7 @@ $main_buttons = array(
               </tbody>
             </table>
             <!-- internal ca -->
-            <table  id="internal" class="table table-striped opnsense_standard_table_form">
+            <table  id="internal" class="table table-clean-form opnsense_standard_table_form">
               <thead>
                 <tr>
                   <th colspan="2"><?=gettext("Internal Certificate Authority");?></th>
@@ -706,7 +706,7 @@ $main_buttons = array(
           <input type="hidden" name="id" id="id" value="<?=isset($id) ? $id :"";?>"/>
           <input type="hidden" name="act" id="action" value="<?=$act;?>"/>
         </form>
-        <table width="100%" border="0" cellpadding="0" cellspacing="0" summary="" class="table table-striped">
+        <table width="100%" border="0" cellpadding="0" cellspacing="0" summary="" class="table table-clean-form">
           <thead>
             <tr>
               <th><?=gettext("Name");?></th>

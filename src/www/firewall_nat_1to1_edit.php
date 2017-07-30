@@ -224,7 +224,7 @@ include("head.inc");
           <div class="content-box">
             <form method="post" name="iform" id="iform">
               <div class="table-responsive">
-                <table class="table table-striped opnsense_standard_table_form">
+                <table class="table table-clean-form opnsense_standard_table_form">
                   <tr>
                     <td valign="top"><?=gettext("Edit NAT 1:1 entry"); ?></td>
                     <td align="right">
@@ -238,7 +238,9 @@ include("head.inc");
                       <input name="disabled" type="checkbox" id="disabled" value="yes" <?= !empty($pconfig['disabled']) ? "checked=\"checked\"" : ""; ?> />
                       <div class="hidden" for="help_for_disabled">
                         <strong><?=gettext("Disable this rule"); ?></strong><br />
+                        <small class="formhelp">
                         <?=gettext("Set this option to disable this rule without removing it from the list."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -256,8 +258,10 @@ include("head.inc");
                         </select>
                       </div>
                       <div class="hidden" for="help_for_interface">
+                        <small class="formhelp">
                         <?=gettext("Choose which interface this rule applies to"); ?>.<br />
                         <?=gettext("Hint: in most cases, you'll want to use WAN here"); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -267,9 +271,11 @@ include("head.inc");
                       <input name="external" type="text" value="<?=$pconfig['external'];?>" />
                       <br />
                       <div class="hidden" for="help_for_external">
+                        <small class="formhelp">
                         <?=gettext("Enter the external (usually on a WAN) subnet's starting address for the 1:1 mapping.");?><br />
                         <?=gettext("The subnet mask from the internal address below will be applied to this IP address."); ?><br />
                         <?=gettext("Hint: this is generally an address owned by the router itself on the selected interface."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -278,7 +284,9 @@ include("head.inc");
                       <td>
                         <input name="srcnot" type="checkbox" id="srcnot" value="yes" <?= !empty($pconfig['srcnot']) ? "checked=\"checked\"" : "";?> />
                         <div class="hidden" for="help_for_src_invert">
+                          <small class="formhelp">
                           <?=gettext("Use this option to invert the sense of the match."); ?>
+                          </small>
                         </div>
                       </td>
                   </tr>
@@ -320,7 +328,9 @@ include("head.inc");
                         </tr>
                       </table>
                       <div class="hidden" for="help_for_src">
+                        <small class="formhelp">
                         <?=gettext("Enter the internal (LAN) subnet for the 1:1 mapping. The subnet size specified for the internal subnet will be applied to the external subnet."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -329,7 +339,9 @@ include("head.inc");
                     <td>
                       <input name="dstnot" type="checkbox" id="srcnot" value="yes" <?= !empty($pconfig['dstnot']) ? "checked=\"checked\"" : "";?> />
                       <div class="hidden" for="help_for_dst_invert">
+                        <small class="formhelp">
                         <?=gettext("Use this option to invert the sense of the match."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -371,8 +383,10 @@ include("head.inc");
                         </tr>
                       </table>
                       <div class="hidden" for="help_for_dst">
+                        <small class="formhelp">
                         <?=gettext("The 1:1 mapping will only be used for connections to or from the specified destination."); ?><br />
                         <?=gettext("Hint: this is usually 'any'."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -381,7 +395,9 @@ include("head.inc");
                     <td>
                       <input name="descr" type="text" class="formfld unknown" id="descr" size="40" value="<?=$pconfig['descr'];?>" />
                       <div class="hidden" for="help_for_descr">
+                        <small class="formhelp">
                         <?=gettext("You may enter a description here " ."for your reference (not parsed)."); ?>
+                        </small>
                       </div>
                   </tr>
                   <tr>

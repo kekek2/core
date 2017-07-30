@@ -76,7 +76,7 @@ include("head.inc"); ?>
               <h3><?=gettext("Resolve DNS hostname or IP");?></h3>
             </header>
             <div class="table-responsive">
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <tbody>
                   <tr>
                     <td><?=gettext("Hostname or IP");?></td>
@@ -89,7 +89,7 @@ include("head.inc"); ?>
                   <tr>
                     <td><?=gettext("Response");?></td>
                     <td>
-                      <table class="table table-striped table-condensed">
+                      <table class="table table-clean-form table-condensed">
                         <tr>
                           <th><?=gettext("Type");?></th>
                           <th><?=gettext("Address");?></th>
@@ -108,7 +108,7 @@ include("head.inc"); ?>
                   <tr>
                     <td><?=gettext("Resolution time per server");?></td>
                     <td colspan="2">
-                      <table class="table table-striped table-condensed">
+                      <table class="table table-clean-form table-condensed">
                         <tr>
                           <th><?=gettext("Server");?></th>
                           <th><?=gettext("Query time");?></th>

@@ -102,7 +102,7 @@ $main_buttons = array(
             <form  method="post" name="iform" id="iform">
               <input type="hidden" id="action" name="action" value="">
               <input type="hidden" id="id" name="id" value="">
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <thead>
                   <tr>
                     <th><?=gettext("Name");?></th>

@@ -96,7 +96,7 @@ include("head.inc");
                   </table>
                 </div>
                 <div class="interface_details collapse table-responsive"  id="<?= htmlspecialchars($ifname) ?>">
-                  <table class="table table-striped">
+                  <table class="table table-clean-form">
                   <tbody>
                     <tr>
                       <td width="22%"><?= gettext("Status") ?></td>
@@ -474,7 +474,7 @@ include("head.inc");
             endforeach; ?>
             <div class="tab-content content-box col-xs-12 __mb">
               <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-clean-form">
                   <tr>
                     <td>
                       <?= gettext("Using dial-on-demand will bring the connection up again if any packet ".

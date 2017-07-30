@@ -259,7 +259,7 @@ POSSIBILITY OF SUCH DAMAGE.
     {% endfor %}
     <div id="remote_acls" class="tab-pane fade">
 
-        <table class="table table-striped table-condensed table-responsive">
+        <table class="table table-clean-form table-condensed table-responsive">
             <colgroup>
                 <col class="col-md-3"/>
                 <col class="col-md-9"/>
@@ -291,7 +291,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     <div id="remoteACLchangeMessage" class="alert alert-info" style="display: none" role="alert">
                         {{ lang._('Note: after changing categories, please remember to download the ACL again to apply your new settings') }}
                     </div>
-                    <table id="grid-remote-blacklists" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogEditBlacklist">
+                    <table id="grid-remote-blacklists" class="table table-condensed table-hover table-clean-form table-responsive" data-editDialog="DialogEditBlacklist">
                         <thead>
                         <tr>
                             <th data-column-id="enabled" data-formatter="rowtoggle" data-sortable="false"  data-width="6em">{{ lang._('Enabled') }}</th>

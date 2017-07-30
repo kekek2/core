@@ -115,7 +115,7 @@ include("head.inc");
 ?>
               <div>
                 <div class="table-responsive">
-                  <table class="table table-striped opnsense_standard_table_form">
+                  <table class="table table-clean-form opnsense_standard_table_form">
                     <tr>
                       <td width="22%" valign="top"><strong><?=gettext("DHCP Relay configuration"); ?></strong></td>
                       <td width="78%" align="right">
