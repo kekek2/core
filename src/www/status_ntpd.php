@@ -153,7 +153,7 @@ include("head.inc");
           </header>
           <div class="content-box-main">
             <div class="table-responsive">
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <thead>
                   <tr>
                     <th><?=gettext("Status"); ?></th>
@@ -210,7 +210,7 @@ include("head.inc");
 <?php
               if (($gps_ok) && ($gps_lat) && ($gps_lon)):
               $gps_goo_lnk = 2; ?>
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <thead>
                   <tr>
                     <th><?=gettext("Clock Latitude"); ?></th>

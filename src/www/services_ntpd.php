@@ -187,7 +187,7 @@ include("head.inc");
         <div class="tab-content content-box col-xs-12">
           <form method="post" name="iform" id="iform" enctype="multipart/form-data" accept-charset="utf-8">
             <div class="table-responsive">
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <thead>
                   <tr>
                     <td width="22%">
@@ -237,7 +237,7 @@ include("head.inc");
                   <tr>
                     <td><a id="help_for_timeservers" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Time servers') ?></td>
                     <td>
-                      <table class="table table-striped table-condensed" id="timeservers_table">
+                      <table class="table table-clean-form table-condensed" id="timeservers_table">
                         <thead>
                           <tr>
                             <th></th>

@@ -185,7 +185,7 @@ legacy_html_escape_form_data($pconfig);
         <div class="content-box">
           <div class="table-responsive">
             <form method="post" name="iform" id="iform">
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <thead>
                   <tr>
                     <td width="22%"><strong><?=gettext("LAGG configuration");?></strong></td>
@@ -210,7 +210,9 @@ legacy_html_escape_form_data($pconfig);
                         endforeach;?>
                       </select>
                       <div class="hidden" for="help_for_members">
+                        <small class="formhelp">
                         <?=gettext("Choose the members that will be used for the link aggregation"); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -227,6 +229,7 @@ legacy_html_escape_form_data($pconfig);
                       endforeach;?>
                       </select>
                       <div class="hidden" for="help_for_proto">
+                        <small class="formhelp">
                         <ul>
                           <li><b><?=gettext("failover"); ?></b></li>
                                 <?=gettext("Sends and receives traffic only through the master port. " .
@@ -266,6 +269,7 @@ legacy_html_escape_form_data($pconfig);
                                    "traffic without disabling the lagg interface itself."); ?>
 
                         </ul>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -274,7 +278,9 @@ legacy_html_escape_form_data($pconfig);
                     <td>
                       <input name="descr" type="text" value="<?=$pconfig['descr'];?>" />
                       <div class="hidden" for="help_for_descr">
+                        <small class="formhelp">
                         <?=gettext("You may enter a description here for your reference (not parsed)."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -283,7 +289,9 @@ legacy_html_escape_form_data($pconfig);
                     <td>
                       <input name="lacp_fast_timeout" id="lacp_fast_timeout" type="checkbox" value="yes" <?=!empty($pconfig['lacp_fast_timeout']) ? "checked=\"checked\"" : "" ;?>/>
                       <div class="hidden" for="help_for_lacp_fast_timeout">
+                        <small class="formhelp">
                         <?=gettext("Enable lacp fast-timeout on the interface."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>

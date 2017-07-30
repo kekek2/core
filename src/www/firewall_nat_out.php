@@ -257,7 +257,7 @@ include("head.inc");
           <input type="hidden" id="action" name="act" value="" />
           <section class="col-xs-12">
             <div class="content-box">
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <thead>
                   <tr>
                     <th colspan="4"><?=gettext("Mode:"); ?></th>
@@ -328,7 +328,7 @@ include("head.inc");
 <?php if ($mode == 'advanced' || $mode == 'hybrid'): ?>
         <section class="col-xs-12">
           <div class="table-responsive content-box ">
-            <table class="table table-striped">
+            <table class="table table-clean-form">
               <thead>
                 <tr><th colspan="12"><?=gettext("Manual rules:"); ?></th></tr>
                 <tr>
@@ -555,7 +555,7 @@ include("head.inc");
 ?>
         <section class="col-xs-12">
           <div class="table-responsive content-box ">
-            <table class="table table-striped">
+            <table class="table table-clean-form">
               <thead>
                   <tr>
                     <th colspan="11"><?=gettext("Automatic rules:"); ?></th>

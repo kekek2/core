@@ -169,7 +169,7 @@ include("head.inc");
           <div class="content-box">
             <form method="post" name="iform" id="iform">
               <div class="table-responsive">
-                <table class="table table-striped opnsense_standard_table_form">
+                <table class="table table-clean-form opnsense_standard_table_form">
                   <tr>
                     <td width="22%"><strong><?=gettext("Edit DNS Resolver entry");?></strong></td>
                     <td width="78%" align="right">
@@ -182,8 +182,10 @@ include("head.inc");
                     <td>
                       <input name="host" type="text" value="<?=$pconfig['host'];?>" />
                       <div class="hidden" for="help_for_host">
+                        <small class="formhelp">
                         <?=gettext("Name of the host, without domain part"); ?>
                         <?=gettext("e.g."); ?> <em><?=gettext("myhost"); ?></em>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -192,8 +194,10 @@ include("head.inc");
                     <td>
                       <input name="domain" type="text" value="<?=$pconfig['domain'];?>" />
                       <div class="hidden" for="help_for_domain">
+                        <small class="formhelp">
                         <?=gettext("Domain of the host"); ?><br />
                         <?=gettext("e.g."); ?> <em><?=gettext("example.com"); ?></em>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -211,9 +215,11 @@ include("head.inc");
                         endforeach; ?>
                       </select>
                       <div class="hidden" for="help_for_rr">
+                        <small class="formhelp">
                         <?=gettext("Type of resource record"); ?>
                         <br />
                         <?=gettext("e.g."); ?> <em>A</em> <?=gettext("or"); ?> <em>AAAA</em> <?=gettext("for IPv4 or IPv6 addresses"); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -222,8 +228,10 @@ include("head.inc");
                     <td>
                       <input name="ip" type="text" id="ip" value="<?=$pconfig['ip'];?>" />
                       <div class="hidden" for="help_for_ip">
+                        <small class="formhelp">
                         <?=gettext("IP address of the host"); ?><br />
                         <?=gettext("e.g."); ?> <em>192.168.100.100</em> <?=gettext("or"); ?> <em>fd00:abcd::1</em>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -232,8 +240,10 @@ include("head.inc");
                     <td>
                       <input name="mxprio" type="text" id="mxprio" value="<?=$pconfig['mxprio'];?>" />
                       <div class="hidden" for="help_for_mxprio">
+                        <small class="formhelp">
                         <?=gettext("Priority of MX record"); ?><br />
                         <?=gettext("e.g."); ?> <em>10</em>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -242,8 +252,10 @@ include("head.inc");
                     <td>
                       <input name="mx" type="text" id="mx" size="6" value="<?=$pconfig['mx'];?>" />
                       <div class="hidden" for="help_for_mx">
+                        <small class="formhelp">
                         <?=gettext("Host name of MX host"); ?><br />
                         <?=gettext("e.g."); ?> <em>mail.example.com</em>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -252,7 +264,9 @@ include("head.inc");
                     <td>
                       <input name="descr" type="text" id="descr" value="<?=$pconfig['descr'];?>" />
                       <div class="hidden" for="help_for_descr">
+                        <small class="formhelp">
                         <?=gettext("You may enter a description here for your reference (not parsed).");?>
+                        </small>
                       </div>
                     </td>
                   </tr>

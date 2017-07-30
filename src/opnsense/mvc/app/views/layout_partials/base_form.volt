@@ -53,7 +53,7 @@ data_title      :   data-title to set on form
 {% endfor %}
 <form id="{{base_form_id}}" class="form-inline" data-title="{{data_title|default('')}}">
   <div class="table-responsive">
-    <table class="table table-striped table-condensed">
+    <table class="table table-clean-form table-condensed">
         <colgroup>
             <col class="col-md-3"/>
             <col class="col-md-4"/>
@@ -83,7 +83,7 @@ data_title      :   data-title to set on form
     </table>
   </div>
   <div class="table-responsive {{field['style']|default('')}}">
-    <table class="table table-striped table-condensed table-responsive">
+    <table class="table table-clean-form table-condensed table-responsive">
         <colgroup>
             <col class="col-md-3"/>
             <col class="col-md-4"/>

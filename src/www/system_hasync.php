@@ -106,7 +106,7 @@ include("head.inc");
         <section class="col-xs-12">
           <div class="tab-content content-box col-xs-12 __mb">
             <div class="table-responsive">
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <tr>
                   <td width="22%"><strong><?=gettext('State Synchronization') ?></strong></td>
                   <td  width="78%" align="right">
@@ -135,7 +135,9 @@ include("head.inc");
                   <td>
                     <input type="checkbox" name="disablepreempt" value="on" <?= !empty($pconfig['disablepreempt']) ? "checked=\"checked\"" : "";?> />
                     <div class="hidden" for="help_for_disablepreempt">
+                      <small class="formhelp">
                       <?=gettext("When this device is configured as CARP master it will try to switch to master when powering up, this option will keep this one slave if there already is a master on the network");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -184,12 +186,12 @@ include("head.inc");
           </div>
           <div class="tab-content content-box col-xs-12 __mb">
             <div class="table-responsive">
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <tr>
                   <th colspan="2" class="listtopic"><?=gettext('Configuration Synchronization Settings (XMLRPC Sync)') ?></th>
                 </tr>
                 <tr>
-                  <td><a id="help_for_synchronizetoip" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Synchronize Config to IP') ?></td>
+                  <td width="22%"><a id="help_for_synchronizetoip" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Synchronize Config to IP') ?></td>
                   <td>
                     <input name="synchronizetoip" type="text" value="<?=$pconfig['synchronizetoip']; ?>" />
                     <div class="hidden" for="help_for_synchronizetoip">
@@ -354,7 +356,9 @@ include("head.inc");
                   <td>
                     <input type="checkbox" name="synchronize<?=$syncid?>" value="on" <?=!empty($pconfig['synchronize'.$syncid]) ? "checked=\"checked\"" :"";?> />
                     <div class="hidden" for="help_for_synchronize<?=$syncid?>">
+                      <small class="formhelp">
                       <?=$synccnf['help'];?>
+                      </small>
                     </div>
                   </td>
                 </tr>

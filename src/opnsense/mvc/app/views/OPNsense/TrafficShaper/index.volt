@@ -139,7 +139,7 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="tab-content content-box tab-content">
     <div id="pipes" class="tab-pane fade in active">
         <!-- tab page "pipes" -->
-        <table id="grid-pipes" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogPipe">
+        <table id="grid-pipes" class="table table-condensed table-hover table-clean-form table-responsive" data-editDialog="DialogPipe">
             <thead>
             <tr>
                 <th data-column-id="origin" data-type="string" data-visible="false">{{ lang._('Origin') }}</th>
@@ -169,7 +169,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div id="queues" class="tab-pane fade in">
         <!-- tab page "queues" -->
-        <table id="grid-queues" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogQueue">
+        <table id="grid-queues" class="table table-condensed table-hover table-clean-form table-responsive" data-editDialog="DialogQueue">
             <thead>
             <tr>
                 <th data-column-id="origin" data-type="string" data-visible="false">{{ lang._('Origin') }}</th>
@@ -197,7 +197,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div id="rules" class="tab-pane fade in">
         <!-- tab page "rules" -->
-        <table id="grid-rules" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogRule">
+        <table id="grid-rules" class="table table-condensed table-hover table-clean-form table-responsive" data-editDialog="DialogRule">
             <thead>
             <tr>
                 <th data-column-id="sequence" data-type="number">{{ lang._('#') }}</th>

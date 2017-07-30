@@ -474,7 +474,7 @@ if (isset($input_errors) && count($input_errors) > 0) {
         <div class="tab-content content-box col-xs-12">
           <form method="post" name="iform" id="iform">
             <div class="table-responsive">
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <tr>
                   <td width="22%"><b><?=gettext("General information"); ?></b></td>
                   <td width="78%" align="right">
@@ -487,9 +487,11 @@ if (isset($input_errors) && count($input_errors) > 0) {
                   <td width="78%" class="vtable">
                     <input name="disabled" type="checkbox" id="disabled" value="yes" <?= !empty($pconfig['disabled']) ? "checked=\"checked\"" : "" ;?> />
                     <div class="hidden" for="help_for_disabled">
+                      <small class="formhelp">
                         <?=gettext("Disable this phase2 entry"); ?><br/>
                         <?=gettext("Set this option to disable this phase2 entry without " .
                                                   "removing it from the list"); ?>.
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -518,8 +520,10 @@ if (isset($input_errors) && count($input_errors) > 0) {
                   <td>
                     <input name="descr" type="text" id="descr" size="40" value="<?=$pconfig['descr'];?>" />
                     <div class="hidden" for="help_for_descr">
+                      <small class="formhelp">
                         <?=gettext("You may enter a description here " .
                                                     "for your reference (not parsed)"); ?>.
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -615,7 +619,9 @@ endif; ?>
                     </select>
                     <br />
                     <div class="hidden" for="help_for_proto">
+                      <small class="formhelp">
                         <?=gettext("ESP is encryption, AH is authentication only"); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -648,9 +654,11 @@ endif; ?>
                       endforeach; ?>
 
                       <div class="hidden" for="help_for_encalg">
+                        <small class="formhelp">
                           <?=gettext("Hint: use 3DES for best compatibility or if you have a hardware " .
                                                   "crypto accelerator card. Blowfish is usually the fastest in " .
                                                   "software encryption"); ?>.
+                        </small>
                       </div>
                   </td>
                 </tr>
@@ -709,7 +717,9 @@ endif; ?>
                   <td>
                     <input name="pinghost" type="text" class="formfld unknown" id="pinghost" size="28" value="<?=$pconfig['pinghost'];?>" />
                     <div class="hidden" for="help_for_pinghost">
+                      <small class="formhelp">
                         <?=gettext("IP address"); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>

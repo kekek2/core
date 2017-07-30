@@ -183,7 +183,7 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="tab-content content-box tab-content">
     <div id="zones" class="tab-pane fade in active">
         <!-- tab page "zones" -->
-        <table id="grid-zones" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogZone">
+        <table id="grid-zones" class="table table-condensed table-hover table-clean-form table-responsive" data-editDialog="DialogZone">
             <thead>
             <tr>
                 <th data-column-id="enabled" data-width="6em" data-type="string" data-formatter="rowtoggle">{{ lang._('Enabled') }}</th>
@@ -208,7 +208,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div id="template" class="tab-pane fade in">
         <div class="col-md-12">
-            <table id="grid-templates" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogTemplate">
+            <table id="grid-templates" class="table table-condensed table-hover table-clean-form table-responsive" data-editDialog="DialogTemplate">
                 <thead>
                 <tr>
                     <th data-column-id="fileid" data-type="string"  data-visible="false">{{ lang._('Fileid') }}</th>

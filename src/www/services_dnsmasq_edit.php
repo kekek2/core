@@ -181,7 +181,7 @@ include("head.inc");
         <div class="content-box">
           <form method="post" name="iform" id="iform">
             <div class="table-responsive">
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <tr>
                   <td width="22%"><strong><?=gettext("Edit DNS Forwarder entry");?></strong></td>
                   <td width="78%" align="right">
@@ -194,8 +194,10 @@ include("head.inc");
                   <td>
                     <input name="host" type="text" id="host" value="<?=$pconfig['host'];?>" />
                     <div class="hidden" for="help_for_host">
+                      <small class="formhelp">
                       <?=gettext("Name of the host, without"." domain part"); ?><br />
                       <?=gettext("e.g."); ?> <em><?=gettext("myhost"); ?></em>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -204,8 +206,10 @@ include("head.inc");
                   <td>
                     <input name="domain" type="text" id="domain" value="<?=$pconfig['domain'];?>" />
                     <div class="hidden" for="help_for_domain">
+                      <small class="formhelp">
                       <?=gettext("Domain of the host"); ?><br />
                       <?=gettext("e.g."); ?> <em><?=gettext("example.com"); ?></em>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -214,8 +218,10 @@ include("head.inc");
                   <td>
                     <input name="ip" type="text" id="ip" value="<?=$pconfig['ip'];?>" />
                     <div class="hidden" for="help_for_ip">
+                      <small class="formhelp">
                       <?=gettext("IP address of the host"); ?><br />
-                      <?=gettext("e.g."); ?> <em>192.168.100.100</em> <?=gettext("or"); ?> <em>fd00:abcd::1</em><
+                      <?=gettext("e.g."); ?> <em>192.168.100.100</em> <?=gettext("or"); ?> <em>fd00:abcd::1</em>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -224,14 +230,16 @@ include("head.inc");
                   <td>
                     <input name="descr" type="text" id="descr" value="<?=$pconfig['descr'];?>" />
                     <div class="hidden" for="help_for_descr">
+                      <small class="formhelp">
                       <?=gettext("You may enter a description here"." for your reference (not parsed).");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
                 <tr>
                   <td><a id="help_for_alias" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Aliases"); ?></td>
                   <td>
-                    <table class="table table-striped table-condensed" id="aliases_table">
+                    <table class="table table-clean-form table-condensed" id="aliases_table">
                       <thead>
                         <tr>
                           <th></th>
@@ -275,7 +283,9 @@ include("head.inc");
                       </tfoot>
                     </table>
                     <div class="hidden" for="help_for_alias">
+                      <small class="formhelp">
                       <?=gettext("Enter additional names for this host."); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>

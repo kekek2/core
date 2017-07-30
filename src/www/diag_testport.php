@@ -123,7 +123,7 @@ include("head.inc"); ?>
             <?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
             <form method="post" name="iform" id="iform">
               <div class="table-responsive">
-                <table class="table table-striped opnsense_standard_table_form">
+                <table class="table table-clean-form opnsense_standard_table_form">
                   <thead>
                     <tr>
                       <td width="22%"><strong><?=gettext("Test Port"); ?></strong></td>
@@ -147,7 +147,9 @@ include("head.inc"); ?>
                           </option>
                         </select>
                         <div class="hidden" for="help_for_ipprotocol">
+                          <small class="formhelp">
                           <?=gettext("If you force IPv4 or IPv6 and use a hostname that does not contain a result using that protocol, it will result in an error. For example if you force IPv4 and use a hostname that only returns an AAAA IPv6 IP address, it will not work."); ?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -168,7 +170,9 @@ include("head.inc"); ?>
                       <td>
                         <input name="srcport" type="text" value="<?=$pconfig['srcport'];?>" />
                         <div class="hidden" for="help_for_srcport">
+                          <small class="formhelp">
                           <?=gettext("This should typically be left blank."); ?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -177,7 +181,9 @@ include("head.inc"); ?>
                       <td>
                         <input name="showtext" type="checkbox" id="showtext" <?= !empty($pconfig['showtext']) ? "checked=\"checked\"" : "";?> />
                         <div class="hidden" for="help_for_showtext">
+                          <small class="formhelp">
                           <?=gettext("Shows the text given by the server when connecting to the port. Will take 10+ seconds to display if checked."); ?>
+                          </small>
                         </div>
                       </td>
                     </tr>

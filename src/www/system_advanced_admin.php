@@ -530,8 +530,10 @@ include("head.inc");
                         </option>
                     </select>
                     <div class="hidden" for="help_for_compression">
+                      <small class="formhelp">
                       <?=gettext("Enable compression of webgui pages and dynamic content.");?><br/>
                       <?=gettext("Transfer less data to the client for an additional cost in processing power.");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -539,7 +541,7 @@ include("head.inc");
                   <td><a id="help_for_nohttpreferercheck" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("HTTP_REFERER enforcement"); ?></td>
                   <td>
                     <input name="nohttpreferercheck" type="checkbox" value="yes" <?= empty($pconfig['nohttpreferercheck']) ? '' : 'checked="checked"' ?> />
-                    <?=gettext("Disable HTTP_REFERER enforcement check"); ?>
+                    <strong><?=gettext("Disable HTTP_REFERER enforcement check"); ?></strong>
                     <div class="hidden" for="help_for_nohttpreferercheck">
                       <small class="formhelp">
                       <?=sprintf(gettext("When this is unchecked, access to the web GUI " .
@@ -558,14 +560,14 @@ include("head.inc");
                   <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Secure Shell Server"); ?></td>
                   <td>
                     <input name="enablesshd" type="checkbox" value="yes" <?= empty($pconfig['enablesshd']) ? '' : 'checked="checked"' ?> />
-                    <?=gettext("Enable Secure Shell"); ?>
+                    <strong><?=gettext("Enable Secure Shell"); ?></strong>
                   </td>
                 </tr>
                 <tr>
                   <td><a id="help_for_sshdpermitrootlogin" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Root Login") ?></td>
                   <td>
                     <input name="sshdpermitrootlogin" type="checkbox" value="yes" <?= empty($pconfig['sshdpermitrootlogin']) ? '' : 'checked="checked"' ?> />
-                    <?=gettext("Permit root user login"); ?>
+                    <strong><?=gettext("Permit root user login"); ?></strong>
                     <div class="hidden" for="help_for_sshdpermitrootlogin">
                       <small class="formhelp">
                       <?= gettext(
@@ -580,7 +582,7 @@ include("head.inc");
                   <td><a id="help_for_passwordauth" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Authentication Method") ?></td>
                   <td>
                     <input name="passwordauth" type="checkbox" value="yes" <?= empty($pconfig['passwordauth']) ? '' : 'checked="checked"' ?> />
-                    <?=gettext("Permit password login"); ?>
+                    <strong><?=gettext("Permit password login"); ?></strong>
                     <div class="hidden" for="help_for_passwordauth">
                       <small class="formhelp">
                       <?=sprintf(gettext("When disabled, authorized keys need to be configured for each %sUser%s that has been granted secure shell access."),

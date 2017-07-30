@@ -299,7 +299,7 @@ SureGPS =    #Sure Electronics SKG16B
           <div class="tab-content content-box col-xs-12">
             <form method="post" name="iform" id="iform">
               <div class="table-responsive">
-                <table class="table table-striped opnsense_standard_table_form">
+                <table class="table table-clean-form opnsense_standard_table_form">
                   <thead>
                     <tr>
                       <td width="22%">
