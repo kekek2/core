@@ -2789,6 +2789,8 @@ include("head.inc");
                         <tr>
                           <th colspan="2"><?=gettext("Track IPv6 Interface"); ?></th>
                         </tr>
+                      </thead>
+                      <tbody>
                         <tr>
                           <td width="22%"><a id="help_for_track6-interface" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPv6 Interface"); ?></td>
                           <td width="78%">

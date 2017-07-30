@@ -105,7 +105,7 @@ include("head.inc"); ?>
           <div class="content-box-main">
             <form method="post" name="iform" id="iform">
               <div class="table-responsive">
-                <table class="table table-striped __nomb">
+                <table class="table table-clean-form __nomb">
                   <tbody>
                     <tr>
                       <td><?=gettext("Host"); ?></td>

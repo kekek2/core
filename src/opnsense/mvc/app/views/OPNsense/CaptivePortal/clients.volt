@@ -125,7 +125,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 </div>
             </div>
             <div>
-            <table id="grid-clients" class="table table-condensed table-hover table-striped table-responsive">
+            <table id="grid-clients" class="table table-condensed table-hover table-clean-form table-responsive">
                 <thead>
                 <tr>
                     <th data-column-id="sessionid" data-type="string" data-identifier="true" data-visible="false">{{ lang._('Session') }}</th>

@@ -5847,9 +5847,11 @@ select {
 .table-clean-form > tfoot > tr > td {
   border-top: none; }
 
-.table-clean-form > tbody > tr > td > a.showhelp > i.fa-info-circle {
+.table-clean-form > tbody > tr > td > a.showhelp > i.fa-info-circle,
+.table-clean-form > tbody > tr > td > div > a.showhelp > i.fa-info-circle {
   color: #777777; }
-.table-clean-form > tbody > tr > td > i.fa-info-circle.text-muted {
+.table-clean-form > tbody > tr > td > i.fa-info-circle.text-muted,
+.table-clean-form > tbody > tr > td > div > i.fa-info-circle.text-muted {
   color: #DDDDDD; }
 
 .table-clean-form thead > tr > td small.formhelp,

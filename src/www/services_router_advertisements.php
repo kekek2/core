@@ -230,7 +230,7 @@ include("head.inc");
             <?php print_content_box(gettext('No interfaces found with a static IPv6 address.')); ?>
             <?php else: ?>
               <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-clean-form">
                   <tr>
                     <td width="22%"><a id="help_for_ramode" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Router Advertisements");?></td>
                     <td width="78%">
@@ -252,9 +252,11 @@ include("head.inc");
                         </option>
                       </select>
                       <div class="hidden" for="help_for_ramode">
+                        <small class="formhelp">
                         <strong><?= sprintf(gettext("Select the Operating Mode for the Router Advertisement (RA) Daemon."))?></strong>
                         <?= sprintf(gettext("Use \"Router Only\" to only advertise this router, \"Unmanaged\" for Router Advertising with Stateless Autoconfig, \"Managed\" for assignment through (a) DHCPv6 Server, \"Assisted\" for DHCPv6 Server assignment combined with Stateless Autoconfig"));?>
                         <?= sprintf(gettext("It is not required to activate this DHCPv6 server when set to \"Managed\", this can be another host on the network")); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -314,7 +316,7 @@ include("head.inc");
                   <tr>
                     <td><a id="help_for_raroutes" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('Advertise Routes') ?></td>
                     <td>
-                      <table class="table table-striped table-condensed" id="maintable">
+                      <table class="table table-clean-form table-condensed" id="maintable">
                         <thead>
                           <tr>
                             <th></th>
@@ -369,7 +371,9 @@ include("head.inc");
                         </tbody>
                       </table>
                       <div class="hidden" for="help_for_raroutes">
+                        <small class="formhelp">
                         <?= gettext('Routes are specified in CIDR format. The prefix of a route definition should be network prefix; it can be used to advertise more specific routes to the hosts.') ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -379,7 +383,9 @@ include("head.inc");
                       <input name="radns1" type="text" value="<?=$pconfig['radns1'];?>" /><br />
                       <input name="radns2" type="text" value="<?=$pconfig['radns2'];?>" />
                       <div class="hidden" for="help_for_radns">
+                        <small class="formhelp">
                         <?=gettext("NOTE: leave blank to use the system default DNS servers - this interface's IP if DNS forwarder is enabled, otherwise the servers configured on the General page.");?>
+                        </small>
                       </div>
                       <br />
                       <input id="rasamednsasdhcp6" name="rasamednsasdhcp6" type="checkbox" value="yes" <?=!empty($pconfig['rasamednsasdhcp6']) ? "checked='checked'" : "";?> />
@@ -391,7 +397,9 @@ include("head.inc");
                     <td>
                       <input name="radomainsearchlist" type="text" id="radomainsearchlist" size="28" value="<?=$pconfig['radomainsearchlist'];?>" />
                       <div class="hidden" for="help_for_radomainsearchlist">
+                        <small class="formhelp">
                         <?=gettext("The RA server can optionally provide a domain search list. Use the semicolon character as separator");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -400,7 +408,9 @@ include("head.inc");
                     <td>
                       <input id="rasend" name="rasend" type="checkbox" value="yes" <?= !empty($pconfig['rasend']) ? 'checked="checked"' : '' ?>/>
                       <div class="hidden" for="help_for_rasend">
+                        <small class="formhelp">
                         <?= gettext('Enable the periodic sending of router advertisements and responding to router solicitations.') ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -409,7 +419,9 @@ include("head.inc");
                     <td>
                       <input name="ramininterval" type="text" id="ramininterval" size="28" value="<?=$pconfig['ramininterval'];?>" />
                       <div class="hidden" for="help_for_ramininterval">
+                        <small class="formhelp">
                         <?= gettext('The minimum time allowed between sending unsolicited multicast router advertisements from the interface, in seconds.') ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -418,7 +430,9 @@ include("head.inc");
                     <td>
                       <input name="ramaxinterval" type="text" id="ramaxinterval" size="28" value="<?=$pconfig['ramaxinterval'];?>" />
                       <div class="hidden" for="help_for_ramaxinterval">
+                        <small class="formhelp">
                         <?= gettext('The maximum time allowed between sending unsolicited multicast router advertisements from the interface, in seconds.') ?>
+                        </small>
                       </div>
                     </td>
                   </tr>

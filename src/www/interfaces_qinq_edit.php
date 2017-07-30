@@ -137,7 +137,7 @@ include("head.inc");
         <div class="content-box">
           <div class="table-responsive">
             <form method="post" name="iform" id="iform">
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <thead>
                   <tr>
                     <td width="22%"><strong><?=gettext("Interface QinQ Edit");?></strong></td>
@@ -172,7 +172,9 @@ include("head.inc");
                       endforeach;?>
                       </select>
                       <div class="hidden" for="help_for_if">
+                        <small class="formhelp">
                         <?=gettext("Only QinQ capable interfaces will be shown.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -181,7 +183,9 @@ include("head.inc");
                     <td>
                       <input name="tag" type="text" value="<?=$pconfig['tag'];?>" />
                       <div class="hidden" for="help_for_tag">
+                        <small class="formhelp">
                         <?=gettext("This is the first level VLAN tag. On top of this are stacked the member VLANs defined below.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -190,7 +194,9 @@ include("head.inc");
                     <td>
                       <input name="descr" type="text" value="<?=$pconfig['descr'];?>" />
                       <div class="hidden" for="help_for_descr">
+                        <small class="formhelp">
                         <?=gettext("You may enter a description here for your reference (not parsed).");?>
+                        </small>
                       </div>
                     </td>
                   </tr>

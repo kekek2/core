@@ -337,7 +337,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 </div>
             </div>
             <div  class="col-sm-12">
-                <table id="grid-vouchers" class="table table-condensed table-hover table-striped table-responsive">
+                <table id="grid-vouchers" class="table table-condensed table-hover table-clean-form table-responsive">
                     <thead>
                     <tr>
                         <th data-column-id="username" data-type="string" data-identifier="true">{{ lang._('Voucher') }}</th>
@@ -391,7 +391,7 @@ POSSIBILITY OF SUCH DAMAGE.
             </div>
             <div class="modal-body">
             <div id="generatevouchererror" class="alert alert-danger" role="alert" style="display: none"></div>
-                <table class="table table-striped table-condensed table-responsive">
+                <table class="table table-clean-form table-condensed table-responsive">
                     <thead>
                         <tr>
                             <td>{{ lang._('Validity') }}</td>

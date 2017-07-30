@@ -140,13 +140,15 @@ include("head.inc");
           <div class="content-box">
             <form method="post" name="iform" id="iform">
               <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-clean-form">
                   <tr>
                     <td><a id="help_for_ident" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Identifier"); ?></td>
                     <td>
                       <input name="ident" type="text" class="formfld unknown" id="ident" size="30" value="<?=$pconfig['ident'];?>" />
                       <div class="hidden" for="help_for_ident">
+                        <small class="formhelp">
                         <?=gettext("This can be either an IP address, fully qualified domain name or an email address."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>

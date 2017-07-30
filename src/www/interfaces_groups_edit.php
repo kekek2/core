@@ -147,7 +147,7 @@ legacy_html_escape_form_data($pconfig);
         <div class="content-box">
           <div class="table-responsive">
             <form method="post" name="iform" id="iform">
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <thead>
                   <tr>
                     <td width="22%"><strong><?=gettext("Interface Groups Edit");?></strong></td>
@@ -164,7 +164,9 @@ legacy_html_escape_form_data($pconfig);
                     <td>
                       <input type="text" name="ifname" value="<?=$pconfig['ifname'];?>" />
                       <div class="hidden" for="help_for_ifname">
+                        <small class="formhelp">
                         <?=gettext("No numbers or spaces are allowed. Only characters in a-zA-Z");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -173,8 +175,10 @@ legacy_html_escape_form_data($pconfig);
                     <td>
                       <input name="descr" type="text" value="<?=$pconfig['descr'];?>" />
                       <div class="hidden" for="help_for_descr">
+                        <small class="formhelp">
                         <?=gettext("You may enter a description here " .
                         "for your reference (not parsed)."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -195,8 +199,10 @@ legacy_html_escape_form_data($pconfig);
                         endforeach;?>
                         </select>
                       <div class="hidden" for="help_for_members">
+                        <small class="formhelp">
                       <strong><?= gettext('NOTE:') ?></strong>
                       <?= gettext('Rules for WAN type interfaces in groups do not contain the reply-to mechanism upon which Multi-WAN typically relies.') ?>
+                        </small>
                       </div>
                     </td>
                   </tr>

@@ -201,7 +201,7 @@ include("head.inc");
               if($act=="new" || $act=="edit"): ?>
               <input name="id" type="hidden" value="<?=$id;?>" />
               <input name="act" type="hidden" value="<?=$act;?>" />
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <tr>
                   <td width="22%"><strong><?=ucwords(sprintf(gettext("%s Access List"),$act));?></strong></td>
                   <td width="78%" align="right">
@@ -214,7 +214,9 @@ include("head.inc");
                   <td>
                     <input name="aclname" type="text" value="<?=$pconfig['aclname'];?>" />
                     <div class="hidden" for="help_for_aclname">
+                      <small class="formhelp">
                       <?=gettext("Provide an Access List name.");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -236,18 +238,20 @@ include("head.inc");
                       </option>
                     </select>
                     <div class="hidden" for="help_for_aclaction">
+                      <small class="formhelp">
                         <?=gettext("Choose what to do with DNS requests that match the criteria specified below.");?> <br />
                         <?=gettext("Deny: This action stops queries from hosts within the netblock defined below.")?> <br />
                         <?=gettext("Refuse: This action also stops queries from hosts within the netblock defined below, but sends a DNS rcode REFUSED error message back to the client.")?> <br />
                         <?=gettext("Allow: This action allows queries from hosts within the netblock defined below.")?> <br />
                         <?=gettext("Allow Snoop: This action allows recursive and nonrecursive access from hosts within the netblock defined below. Used for cache snooping and ideally should only be configured for your administrative host.")?> <br />
+                      </small>
                     </div>
                   </td>
                 </tr>
                 <tr>
                   <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Networks");?></td>
                   <td>
-                    <table class="table table-striped table-condensed" id="acl_networks_table">
+                    <table class="table table-clean-form table-condensed" id="acl_networks_table">
                       <thead>
                         <tr>
                           <th></th>
@@ -305,7 +309,9 @@ include("head.inc");
                   <td>
                     <input name="description" type="text" value="<?=$pconfig['description'];?>" />
                     <div class="hidden" for="help_for_description">
+                      <small class="formhelp">
                       <?=gettext("You may enter a description here for your reference.");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -322,7 +328,7 @@ include("head.inc");
 <?php
             else:?>
             <form method="post" name="iform" id="iform">
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <thead>
                   <tr>
                     <th colspan="4"><?=gettext("From General settings");?></th>
@@ -376,7 +382,7 @@ include("head.inc");
           </section>
           <section class="col-xs-12">
             <div class="tab-content content-box col-xs-12">
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <thead>
                   <tr>
                     <th><?=gettext("Access List Name"); ?></th>

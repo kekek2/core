@@ -564,7 +564,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div id="download_settings" class="tab-pane fade in">
       <!-- add installable rule files -->
-      <table class="table table-striped table-condensed table-responsive">
+      <table class="table table-clean-form table-condensed table-responsive">
           <tbody>
             <tr>
                 <td><div class="control-label">
@@ -589,7 +589,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     </tr>
                   </table>
                   <div style="max-height: 400px; width: 100%; margin: 0; overflow-y: auto;" id="grid-rule-files-container">
-                    <table id="grid-rule-files" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogRuleset">
+                    <table id="grid-rule-files" class="table table-condensed table-hover table-clean-form table-responsive" data-editDialog="DialogRuleset">
                         <thead>
                         <tr>
                             <th data-column-id="filename" data-type="string" data-visible="false" data-identifier="true">{{ lang._('Filename') }}</th>
@@ -647,7 +647,7 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
 
         <!-- tab page "installed rules" -->
-        <table id="grid-installedrules" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogRule">
+        <table id="grid-installedrules" class="table table-condensed table-hover table-clean-form table-responsive" data-editDialog="DialogRule">
             <thead>
             <tr>
                 <th data-column-id="sid" data-type="numeric" data-visible="true" data-identifier="true" data-width="6em">{{ lang._('sid') }}</th>
@@ -679,7 +679,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div id="userrules" class="tab-pane fade in">
         <!-- tab page "userrules" -->
-        <table id="grid-userrules" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogUserDefined">
+        <table id="grid-userrules" class="table table-condensed table-hover table-clean-form table-responsive" data-editDialog="DialogUserDefined">
             <thead>
                 <tr>
                     <th data-column-id="enabled" data-formatter="rowtoggle" data-sortable="false" data-width="10em">{{ lang._('Enabled') }}</th>
@@ -733,7 +733,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 </div>
             </div>
         </div>
-        <table id="grid-alerts" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogAlert">
+        <table id="grid-alerts" class="table table-condensed table-hover table-clean-form table-responsive" data-editDialog="DialogAlert">
             <thead>
             <tr>
                 <th data-column-id="timestamp" data-type="string" data-sortable="false">{{ lang._('Timestamp') }}</th>

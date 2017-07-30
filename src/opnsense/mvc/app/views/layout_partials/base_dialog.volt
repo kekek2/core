@@ -66,7 +66,7 @@ label           :   dialog label
             <div class="modal-body">
                 <form id="frm_{{base_dialog_id}}">
                   <div class="table-responsive">
-                    <table class="table table-striped table-condensed">
+                    <table class="table table-clean-form table-condensed">
                         <colgroup>
                             <col class="col-md-3"/>
                             <col class="col-md-{{ 12-3-msgzone_width|default(5) }}"/>
@@ -98,7 +98,7 @@ label           :   dialog label
     </table>
   </div>
   <div class="table-responsive {{field['style']|default('')}}">
-    <table class="table table-striped table-condensed">
+    <table class="table table-clean-form table-condensed">
         <colgroup>
             <col class="col-md-3"/>
             <col class="col-md-{{ 12-3-msgzone_width|default(5) }}"/>

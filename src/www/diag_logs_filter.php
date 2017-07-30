@@ -628,7 +628,7 @@ include("head.inc");
               if ($filterfieldsarray['interface'] == "All") $interface = "";
 ?>
               <div class="table-responsive" id="filterlogentries_show">
-                <table class="table table-striped">
+                <table class="table table-clean-form">
                   <thead>
                   <tr>
                     <th><?= gettext('Action') ?></th>
@@ -714,7 +714,7 @@ include("head.inc");
      <section class="col-xs-12">
       <div class="tab-content content-box col-xs-12">
         <div class="table-responsive">
-          <table class="table table-striped">
+          <table class="table table-clean-form">
 <?php
               $iflist = get_configured_interface_with_descr(false, true);
               if (isset($iflist[$interfacefilter])) {

@@ -131,7 +131,7 @@ $( document ).ready(function() {
         <div class="content-box-main col-xs-12">
           <form method="get" name="iform">
             <div class="table-responsive">
-              <table class="table table-striped">
+              <table class="table table-clean-form">
 <?php
                 $i = 0;
                 foreach ($servers as $server): ?>

@@ -110,7 +110,7 @@ if (isset($input_errors) && count($input_errors) > 0) {
           <div class="tab-content content-box col-xs-12">
               <form method="post" name="iform" id="iform">
                 <div class="table-responsive">
-                  <table class="table table-striped opnsense_standard_table_form">
+                  <table class="table table-clean-form opnsense_standard_table_form">
                     <tr>
                       <td ><strong><?=gettext("IPsec Advanced Settings"); ?></strong></td>
                       <td align="right">
@@ -124,8 +124,10 @@ if (isset($input_errors) && count($input_errors) > 0) {
                         <input name="noinstalllanspd" type="checkbox" id="noinstalllanspd" value="yes" <?=!empty($pconfig['noinstalllanspd']) ? "checked=\"checked\""  : "";?> />
                         <strong><?=gettext("Do not install LAN SPD"); ?></strong>
                         <div class="hidden" for="help_for_noinstalllanspd">
+                          <small class="formhelp">
                             <?=gettext("By default, if IPsec is enabled negating SPD are inserted to provide protection. " .
                                                   "This behaviour can be changed by enabling this setting which will prevent installing these SPDs."); ?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -142,9 +144,11 @@ if (isset($input_errors) && count($input_errors) > 0) {
                         <input name="preferoldsa_enable" type="checkbox" id="preferoldsa_enable" value="yes" <?= !empty($pconfig['preferoldsa_enable']) ? "checked=\"checked\"" : "";?> />
                         <strong><?=gettext("Prefer older IPsec SAs"); ?></strong>
                         <div class="hidden" for="help_for_preferoldsa_enable">
+                          <small class="formhelp">
                             <?=gettext("By default, if several SAs match, the newest one is " .
                                                   "preferred if it's at least 30 seconds old. Select this " .
                                                   "option to always prefer old SAs over new ones."); ?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -152,7 +156,10 @@ if (isset($input_errors) && count($input_errors) > 0) {
                       <td><a id="help_for_ipsec_debug" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPsec Debug"); ?></td>
                       <td>
                         <div class="hidden" for="help_for_ipsec_debug">
+                          <small class="formhelp">
                                       <strong><?=gettext("Start IPsec in debug mode based on sections selected"); ?></strong> <br/>
+
+                          </small>
                         </div>
 <?php                   foreach ($ipsec_loglevels as $lkey => $ldescr) :
 ?>
@@ -170,7 +177,9 @@ endforeach; ?>
 <?php
 endforeach; ?>
                         <div class="hidden" for="help_for_ipsec_debug">
+                          <small class="formhelp">
                         <?=gettext("Launch IPsec in debug mode so that more verbose logs will be generated to aid in troubleshooting."); ?>
+                          </small>
                         </div>
                       </td>
                     </tr>
