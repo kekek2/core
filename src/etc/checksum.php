@@ -12,7 +12,7 @@ require_once("notices.inc");
 use OPNsense\Core\Config;
 use OPNsense\Base\ControllerRoot;
 
-ControllerRoot::setLocale(ControllerRoot::getLangEncode());
+ControllerRoot::getTranslator();
 
 $descriptorspec = array(
     0 => array("pipe", "r"),
