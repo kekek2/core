@@ -1586,11 +1586,12 @@ EOD;
             }
         } elseif ($ppp['type'] == "pppoe") {
             $provider = isset($ppp['provider']) ? $ppp['provider'] : "";
-            $mpdconf_arr[] = "set pppoe service \"{$provider}\"";
-            $mpdconf_arr[] = "set pppoe iface {$port}";
+            $hostuniq = '';
             if (!empty($ppp['hostuniq'])) {
-                $mpdconf_arr[] = "set host-uniq \"{$ppp['hostuniq']}|\"";
+                $hostuniq = '0x' . strtolower(array_shift(unpack('H*', $ppp['hostuniq']))) . '|';
             }
+            $mpdconf_arr[] = "set pppoe service \"{$hostuniq}{$provider}\"";
+            $mpdconf_arr[] = "set pppoe iface {$port}";
         } elseif ($ppp['type'] == "pptp" || $ppp['type'] == "l2tp") {
             $mpdconf_arr[] = "set {$ppp['type']} self {$localips[$pid]}";
             $mpdconf_arr[] = "set {$ppp['type']} peer {$gateways[$pid]}";
@@ -3189,8 +3190,7 @@ function interface_dhcpv6_configure($interface = 'wan', $wancfg)
     unset($dhcp6cconf);
 
     $dhcp6cscript = "#!/bin/sh\n";
-    $dhcp6cscript .= "# This shell script launches /usr/local/etc/rc.newwanipv6 with a interface argument.\n";
-    $dhcp6cscript .= "/usr/local/etc/rc.newwanipv6 {$wanif} \n";
+    $dhcp6cscript .= "/usr/local/opnsense/service/configd_ctl.py interface newipv6 {$wanif}\n";
 
     if (!@file_put_contents("/var/etc/dhcp6c_{$interface}_script.sh", $dhcp6cscript)) {
         printf("Error: cannot open dhcp6c_{$interface}_script.sh in interface_dhcpv6_configure() for writing.\n");

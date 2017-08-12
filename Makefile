@@ -59,15 +59,16 @@ CORE_REPOSITORY?=	${TING_ABI}/libressl
 CORE_REPOSITORY?=	${FLAVOUR}
 .endif
 
-
 CORE_NAME?=		ting
-CORE_FAMILY?=		stable
-CORE_ORIGIN?=		${CORE_NAME}
-CORE_COMMENT?=		TING ${CORE_FAMILY} package
+CORE_FAMILY?=		release
+CORE_MESSAGE?=
+
 CORE_MAINTAINER?=	evbevz@gmail.com
 CORE_PACKAGESITE?=	https://update0.smart-soft.ru
-CORE_WWW?=			http://smart-soft.ru/
-CORE_MESSAGE?=
+CORE_ORIGIN?=		nonit/${CORE_NAME}
+CORE_COMMENT?=		TING ${CORE_FAMILY} package
+CORE_WWW?=		http://www.smart-soft.ru/
+
 # CORE_DEPENDS_armv6 is empty
 CORE_DEPENDS_amd64?=	beep bsdinstaller
 CORE_DEPENDS_i386?=	${CORE_DEPENDS_amd64}

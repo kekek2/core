@@ -214,7 +214,7 @@ POSSIBILITY OF SUCH DAMAGE.
     function upgrade_ui()
     {
         if ( $.upgrade_needs_reboot == "1" ) {
-            reboot_mgs = "{{ lang._('The firewall will reboot directly after this firmware update.') }}";
+            reboot_msg = "{{ lang._('The firewall will reboot directly after this firmware update.') }}";
             if ($.upgrade_action == 'maj') {
                 reboot_msg = "{{ lang._('The firewall will download all firmware sets and reboot multiple times for this upgrade. All operating system files and packages will be reinstalled as a consequence. This may take several minutes to complete.') }}";
             }
@@ -644,7 +644,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="row">
 <?php if (file_exists('/usr/local/opnsense/firmware-message')): ?>
         <div id="firmware-upgrade" style="display:none;"><?= @file_get_contents('/usr/local/opnsense/firmware-upgrade') ?></div>
-        <div id="firmware-message" style="display:none;"><?= @file_get_contents('/usr/local/opnsense/firmware-message') ?></div>
+        <div id="firmware-message" style="display:none;"><?= str_replace(PHP_EOL, ' ', @file_get_contents('/usr/local/opnsense/firmware-message')) ?></div>
         <div class="alert alert-warning" role="alert" style="min-height: 65px;">
             <button class='btn btn-primary pull-right' id="upgrade_maj" style="display:none;"><i id="upgrade_progress_maj" class=""></i> {{ lang._('Upgrade now') }}</button>
             <button class='btn pull-right' id="checkupdate_maj" style="margin-right: 8px;"><i id="checkupdate_progress_maj" class=""></i> {{ lang._('Check for upgrade') }}</button>
