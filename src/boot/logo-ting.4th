@@ -1,10 +1,8 @@
 \ Copyright (c) 2003 Scott Long <scottl@FreeBSD.org>
 \ Copyright (c) 2003 Aleksander Fafula <alex@fafula.com>
 \ Copyright (c) 2006-2015 Devin Teske <dteske@FreeBSD.org>
-<<<<<<< HEAD:src/boot/logo-ting.4th
-=======
-\ Copyright (c) 2016-2017 Deciso B.V.
->>>>>>> stable/17.7:src/boot/logo-hourglass.4th
+\ Copyright (c) 2016 Deciso B.V.
+\ Copyright (c) 2017 Smart-Soft Ltd.
 \ All rights reserved.
 \ 
 \ Redistribution and use in source and binary forms, with or without
