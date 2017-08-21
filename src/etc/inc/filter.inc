@@ -2,10 +2,10 @@
 
 /*
     Copyright (C) 2017 Deciso B.V.
-    Copyright (C) 2004-2007 Scott Ullrich
-    Copyright (C) 2005 Bill Marquette
-    Copyright (C) 2006 Peter Allgeyer
-    Copyright (C) 2008-2010  Ermal Luci
+    Copyright (C) 2004-2007 Scott Ullrich <sullrich@gmail.com>
+    Copyright (C) 2005 Bill Marquette <bill.marquette@gmail.com>
+    Copyright (C) 2006 Peter Allgeyer <allgeyer@web.de>
+    Copyright (C) 2008-2010 Ermal Luçi
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
     All rights reserved.
 
@@ -1529,7 +1529,7 @@ function filter_nat_rules_generate(&$FilterIflist)
 
             $tmp = explode('/', $srcaddr);
             $srcip = $tmp[0];
-            if (!empty($tmp[1]) && is_numeric($tmp[1])) {
+            if (!empty($tmp[1]) && is_numeric($tmp[1]) && strpos($target, '/') === false) {
                 $sn = $tmp[1];
                 $sn1 = "/{$sn}";
             }
@@ -1546,8 +1546,8 @@ function filter_nat_rules_generate(&$FilterIflist)
             } else {
                 $nat_if_list = array();
             }
-
-            $natrules .= "binat on {$natif} from {$srcaddr} to {$dstaddr} -> {$target}{$sn1}\n";
+            $nattype = empty($rule['type']) ? "binat" : $rule['type'];
+            $natrules .= "{$nattype} on {$natif} from {$srcaddr} to {$dstaddr} -> {$target}{$sn1}\n";
             if (!empty($nat_if_list)) {
                 $binat_if_list = implode(" ", $nat_if_list);
                 $binat_if_list = "{ {$binat_if_list} }";
@@ -1602,12 +1602,15 @@ function filter_nat_rules_generate(&$FilterIflist)
                 if (!$src) {
                     $src = $obent['source']['network'];
                 }
+                if (isset($obent['source']['not']) && !isset($obent['source']['any'])) {
+                    $src = "! $src";
+                }
                 $dst = alias_expand($obent['destination']['address']);
                 if (!$dst) {
                     $dst = $obent['destination']['address'];
                 }
                 if (isset($obent['destination']['not']) && !isset($obent['destination']['any'])) {
-                    $dst = "!" . $dst;
+                    $dst = "! $dst";
                 }
 
                 if (!$obent['interface'] || !isset($FilterIflist[$obent['interface']])) {

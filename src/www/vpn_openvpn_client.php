@@ -2,7 +2,7 @@
 
 /*
     Copyright (C) 2014-2016 Deciso B.V.
-    Copyright (C) 2008 Shrew Soft Inc.
+    Copyright (C) 2008 Shrew Soft Inc. <mgrooms@shrew.net>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -1099,7 +1099,6 @@ $( document ).ready(function() {
               <input name="id" type="hidden" value="<?=htmlspecialchars($id);?>" />
 <?php
               endif; ?>
-              <br/><br/>
             </td>
           </tr>
         </table>

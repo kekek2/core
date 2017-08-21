@@ -2,7 +2,7 @@
 
 /*
     Copyright (C) 2014-2017 Franco Fichtner <franco@opnsense.org>
-    Copyright (C) 2010 Ermal Luci
+    Copyright (C) 2010 Ermal Luçi
     Copyright (C) 2005-2006 Colin Smith <ethethlay@gmail.com>
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
     All rights reserved.
@@ -1570,11 +1570,14 @@ function get_dyndns_ip($int, $ipver = 4)
         curl_setopt($ip_ch, CURLOPT_CONNECTTIMEOUT, 5);
         curl_setopt($ip_ch, CURLOPT_TIMEOUT, 30);
         curl_setopt($ip_ch, CURLOPT_IPRESOLVE, $ipver == 6 ? CURL_IPRESOLVE_V6 : CURL_IPRESOLVE_V4);
-        $ip_result_page = curl_exec($ip_ch);
+        $ip_result = curl_exec($ip_ch);
+        if ($ip_result !== false) {
+            preg_match('=<body>Current IP Address: (.*)</body>=siU', $ip_result, $matches);
+            $ip_address = trim($matches[1]);
+        } else {
+            log_error('Aborted IP detection: ' . curl_error($ip_ch));
+        }
         curl_close($ip_ch);
-        $ip_result_decoded = urldecode($ip_result_page);
-        preg_match('=<body>Current IP Address: (.*)</body>=siU', $ip_result_decoded, $matches);
-        $ip_address = trim($matches[1]);
         if (($ipver == 6 && !is_ipaddrv6($ip_address)) || ($ipver != 6 && !is_ipaddrv4($ip_address))) {
             return 'down';
         }

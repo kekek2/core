@@ -2,7 +2,7 @@
 
 /*
     Copyright (C) 2014 Deciso B.V.
-    Copyright (C) 2004 Scott Ullrich
+    Copyright (C) 2004 Scott Ullrich <sullrich@gmail.com>
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
     All rights reserved.
 
@@ -46,6 +46,7 @@ if (!isset($config['nat']['outbound']['mode']))
 
 $a_out = &$config['nat']['outbound']['rule'];
 
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pconfig = $_POST;
     if (isset($pconfig['id']) && isset($a_out[$pconfig['id']])) {
@@ -66,11 +67,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $FilterIflist = filter_generate_optcfg_array();
             $tonathosts = filter_nat_rules_automatic_tonathosts($FilterIflist, true);
             $automatic_rules = filter_nat_rules_outbound_automatic($FilterIflist, '');
+            $allinterfaces = legacy_config_get_interfaces();
 
             foreach ($tonathosts as $tonathost) {
                 foreach ($automatic_rules as $natent) {
                     $natent['source']['network'] = $tonathost['subnet'];
-                    $natent['descr'] .= ' - ' . $tonathost['descr'] . ' -> ' . convert_real_interface_to_friendly_descr($natent['interface']);
+                    $natent['descr'] .= ' - ' . $tonathost['descr'] . ' -> ' . $allinterfaces[$natent['interface']]['descr'];
                     $natent['created'] = make_config_revision_entry();
 
                     /* Try to detect already auto created rules and avoid duplicate them */
@@ -374,6 +376,7 @@ include("head.inc");
                       <?=htmlspecialchars(convert_friendly_interface_to_friendly_descr($natent['interface'])); ?>
                     </td>
                     <td class="hidden-xs hidden-sm">
+                      <?= isset($natent['source']['not']) ? '!' : '' ?>
 <?php                 if (isset($natent['source']['network']) && is_alias($natent['source']['network'])): ?>
                         <span title="<?=htmlspecialchars(get_alias_description($natent['source']['network']));?>" data-toggle="tooltip">
                           <?=htmlspecialchars($natent['source']['network']);?>&nbsp;
@@ -407,7 +410,7 @@ include("head.inc");
                       endif;?>
                     </td>
                     <td class="hidden-xs hidden-sm">
-                      <?=isset($natent['destination']['not']) ? "!&nbsp;" :"";?>
+                      <?= isset($natent['destination']['not']) ? '!' : '' ?>
 <?php                 if (isset($natent['destination']['address']) && is_alias($natent['destination']['address'])): ?>
                         <span title="<?=htmlspecialchars(get_alias_description($natent['destination']['address']));?>" data-toggle="tooltip">
                           <?=htmlspecialchars($natent['destination']['address']);?>&nbsp;
@@ -587,6 +590,7 @@ include("head.inc");
                     <?= htmlspecialchars(convert_friendly_interface_to_friendly_descr($natent['interface'])); ?>
                   </td>
                   <td>
+                    <?= isset($natent['source']['not']) ? '!' : '' ?>
                     <?=$natent['source']['network'];?>
                   </td>
                   <td class="hidden-xs hidden-sm">
@@ -594,7 +598,7 @@ include("head.inc");
                     <?=empty($natent['sourceport']) ? "*" : $natent['sourceport'] ;?>
                   </td>
                   <td class="hidden-xs hidden-sm">
-                    <?=isset($natent['destination']['not']) ? "!&nbsp;" : "";?>
+                    <?= isset($natent['destination']['not']) ? '!' : '' ?>
                     <?=isset($natent['destination']['any']) ? "*" : $natent['destination']['address'] ;?>
                   </td>
                   <td class="hidden-xs hidden-sm">

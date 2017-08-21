@@ -4,7 +4,7 @@
     Copyright (C) 2014-2015 Deciso B.V.
     Copyright (C) 2005 Bill Marquette <bill.marquette@gmail.com>.
     Copyright (C) 2003-2005 Manuel Kasper <mk@neon1.net>.
-    Copyright (C) 2004-2005 Scott Ullrich <geekgod@pfsense.com>.
+    Copyright (C) 2004-2005 Scott Ullrich <sullrich@gmail.com>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -70,7 +70,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $configId = $id;
     }
     $pconfig = array();
-    $pconfig['vhid'] = find_last_used_vhid() + 1;
     $form_fields = array('mode', 'vhid', 'advskew', 'advbase', 'password', 'subnet', 'subnet_bits'
                         , 'descr' ,'type', 'interface' );
 
@@ -147,9 +146,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if ($pconfig['mode'] == 'carp') {
             /* verify against reusage of vhids */
             foreach($config['virtualip']['vip'] as $vipId => $vip) {
-              if(isset($vip['vhid']) &&  $vip['vhid'] == $pconfig['vhid'] && $vip['interface'] == $pconfig['interface'] && $vipId <> $id) {
-                  $input_errors[] = sprintf(gettext("VHID %s is already in use on interface %s. Pick a unique number on this interface."),$pconfig['vhid'], convert_friendly_interface_to_friendly_descr($pconfig['interface']));
-              }
+               if (isset($vip['vhid']) &&  $vip['vhid'] == $pconfig['vhid'] && $vip['interface'] == $pconfig['interface'] && $vipId <> $id) {
+                   $input_errors[] = sprintf(gettext("VHID %s is already in use on interface %s. Pick a unique number on this interface."),$pconfig['vhid'], convert_friendly_interface_to_friendly_descr($pconfig['interface']));
+               }
             }
             if (empty($pconfig['password'])) {
                 $input_errors[] = gettext("You must specify a CARP password that is shared between the two VHID members.");
@@ -160,6 +159,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
         } else if ($pconfig['mode'] != 'ipalias' && $pconfig['interface'] == "lo0") {
             $input_errors[] = gettext("For this type of vip localhost is not allowed.");
+        } elseif ($pconfig['mode'] == 'ipalias' && !empty($pconfig['vhid'])) {
+            $carpvip_found = false;
+            foreach($config['virtualip']['vip'] as $vipId => $vip) {
+                if ($vip['interface'] == $pconfig['interface'] && $vip['vhid'] == $pconfig['vhid'] && $vip['mode'] == 'carp') {
+                    $carpvip_found = true ;
+                }
+            }
+            if (!$carpvip_found) {
+                $input_errors[] = sprintf(gettext("VHID %s should be defined on interface %s."),$pconfig['vhid'], convert_friendly_interface_to_friendly_descr($pconfig['interface']));
+            }
         }
     }
 
@@ -247,10 +256,12 @@ $( document ).ready(function() {
         $("#advbase").attr('disabled', true);
         $("#noexpand").attr('disabled', true);
         $("#noexpandrow").addClass("hidden");
+        $("#vhid_none").attr('disabled', false);
 
         switch ($(this).val()) {
             case "ipalias":
               $("#type").prop("selectedIndex",0);
+              $("#vhid").attr('disabled', false);
               $("#subnet_bits").attr('disabled', false);
               $("#typenote").html("<?=gettext("Please provide a single IP address.");?>");
               break;
@@ -261,6 +272,10 @@ $( document ).ready(function() {
               $("#vhid").attr('disabled', false);
               $("#advskew").attr('disabled', false);
               $("#advbase").attr('disabled', false);
+              $("#vhid_none").attr('disabled', true);
+              if ($("#vhid").val() == null)  {
+                  $("#max_vhid").click();
+              }
               $("#typenote").html("<?=gettext("This must be the network's subnet mask. It does not specify a CIDR range.");?>");
               break;
             case "proxyarp":
@@ -280,6 +295,12 @@ $( document ).ready(function() {
         setTimeout(function(){
             $('.selectpicker').selectpicker('refresh');
           }, 100);
+    });
+
+    $("#max_vhid").click(function(event){
+        event.preventDefault();
+        $("#vhid").val($(this).data('vhid'));
+        $("#vhid").selectpicker('refresh');
     });
 
     // toggle initial mode change
@@ -409,12 +430,16 @@ $( document ).ready(function() {
                     <td><a id="help_for_vhid" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("VHID Group");?></td>
                     <td>
                       <select id='vhid' name='vhid' class="selectpicker" data-size="10" data-width="auto">
+                          <option value="" id="vhid_none"> </option>
                         <?php for ($i = 1; $i <= 255; $i++): ?>
                           <option value="<?=$i;?>" <?= $i == $pconfig['vhid'] ?  "selected=\"selected\"" : ""; ?>>
                             <?=$i;?>
                           </option>
                         <?php endfor; ?>
                       </select>
+                      <button data-vhid="<?=find_last_used_vhid() + 1;?>" id="max_vhid" class="btn btn-default btn-cs">
+                        <?=gettext("Unused");?>
+                      </button>
                       <div class="hidden" for="help_for_vhid">
                         <small class="formhelp">
                         <?=gettext("Enter the VHID group that the machines will share.");?>

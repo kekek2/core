@@ -2,7 +2,7 @@
 
 /*
     Copyright (C) 2014-2015 Deciso B.V.
-    Copyright (C) 2004 Scott Ullrich
+    Copyright (C) 2004 Scott Ullrich <sullrich@gmail.com>
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
     All rights reserved.
 
@@ -118,9 +118,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         } else {
             $pconfig['source'] = $a_out[$configId]['source']['network'];
         }
+        $pconfig['source_not'] = !empty($a_out[$configId]['source']['not']);
 
-        if (!is_numeric($pconfig['source_subnet']))
-          $pconfig['source_subnet'] = 32;
+        if (!is_numeric($pconfig['source_subnet'])) {
+              $pconfig['source_subnet'] = 32;
+        }
         address_to_pconfig($a_out[$configId]['destination'], $pconfig['destination'],
           $pconfig['destination_subnet'], $pconfig['destination_not'],
           $none, $none);
@@ -175,6 +177,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
     if (!empty($pconfig['source_subnet']) && !is_numericint($pconfig['source_subnet'])) {
         $input_errors[] = gettext("A valid source bit count must be specified.");
+    }
+    if ($pconfig['source'] == "any" && !empty($pconfig['source_not'])) {
+        $input_errors[] = gettext("Negating source address of \"any\" is invalid.");
     }
     if (!(in_array($pconfig['destination'], array("any","(self)")) || is_ipaddroralias($pconfig['destination']))) {
         $input_errors[] = gettext("A valid destination must be specified.");
@@ -300,6 +305,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         if (isset($pconfig['destination_not']) && $pconfig['destination'] != "any") {
             $natent['destination']['not'] = true;
+        }
+        if (isset($pconfig['source_not']) && $pconfig['source'] != "any") {
+            $natent['source']['not'] = true;
         }
 
         $natent['updated'] = make_config_revision_entry();
@@ -484,7 +492,16 @@ include("head.inc");
                   </td>
                 </tr>
                 <tr>
-                    <td><a id="help_for_source" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Source"); ?></td>
+                  <td> <a id="help_for_src_invert" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('Source invert') ?></td>
+                  <td>
+                    <input name="source_not" type="checkbox" value="yes" <?= !empty($pconfig['source_not']) ? 'checked="checked"' : '' ?> />
+                    <div class="hidden" for="help_for_src_invert">
+                      <?=gettext("Use this option to invert the sense of the match."); ?>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                    <td><a id="help_for_source" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('Source address') ?></td>
                     <td>
                       <table class="table table-condensed">
                         <tr>
@@ -524,7 +541,7 @@ include("head.inc");
                   </td>
                 </tr>
                 <tr>
-                  <td><a id="help_for_src_port" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Source port:");?></td>
+                  <td><a id="help_for_src_port" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('Source port') ?></td>
                   <td>
                     <table class="table table-condensed">
                       <tbody>
@@ -562,9 +579,9 @@ include("head.inc");
                   </td>
                 </tr>
                 <tr>
-                  <td> <a id="help_for_dst_invert" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Destination") . " / ".gettext("Invert");?> </td>
+                  <td> <a id="help_for_dst_invert" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('Destination invert') ?></td>
                   <td>
-                    <input name="destination_not" type="checkbox" value="yes" <?= !empty($pconfig['destination_not']) ? "checked=\"checked\"" : "";?> />
+                    <input name="destination_not" type="checkbox" value="yes" <?= !empty($pconfig['destination_not']) ? 'checked="checked"' : '' ?> />
                     <div class="hidden" for="help_for_dst_invert">
                       <small class="formhelp">
                       <?=gettext("Use this option to invert the sense of the match."); ?>
@@ -573,7 +590,7 @@ include("head.inc");
                   </td>
                 </tr>
                 <tr>
-                    <td><a id="help_for_destination" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Destination"); ?></td>
+                    <td><a id="help_for_destination" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('Destination address') ?></td>
                     <td>
                       <table class="table table-condensed">
                         <tr>
@@ -612,7 +629,7 @@ include("head.inc");
                   </td>
                 </tr>
                 <tr>
-                  <td><a id="help_for_dstport" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Destination port:");?></td>
+                  <td><a id="help_for_dstport" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('Destination port') ?></td>
                   <td>
                     <table class="table table-condensed">
                       <tbody>

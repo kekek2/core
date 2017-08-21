@@ -2,7 +2,7 @@
 
 /*
     Copyright (C) 2014 Deciso B.V.
-    Copyright (C) 2004 Scott Ullrich
+    Copyright (C) 2004 Scott Ullrich <sullrich@gmail.com>
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
     All rights reserved.
 
@@ -273,7 +273,7 @@ $( document ).ready(function() {
                         <?= $alias_values ?>
                       </td>
                       <td>
-                        <a href="firewall_aliases_edit.php?id=<?=$i;?>" title="<?=gettext("Edit alias"); ?>" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-pencil"></span></a>
+                        <a href="firewall_aliases_edit.php?id=<?=$i;?>" title="<?=gettext("Edit alias"); ?>" class="btn btn-default btn-xs"><span class="fa fa-pencil"></span></a>
                         <a id="del_<?=$i;?>" title="<?=gettext("delete alias"); ?>" class="act_delete btn btn-default btn-xs"><span class="fa fa-trash text-muted"></span></a>
                       </td>
                     </tr>

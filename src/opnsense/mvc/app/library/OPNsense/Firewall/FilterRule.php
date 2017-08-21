@@ -337,7 +337,7 @@ class FilterRule
                 }
                 if (!isset($tmp['quick'])) {
                     // all rules are quick by default except floating
-                    $tmp['quick'] = !isset($rule['floating']) ? true : false;
+                    $tmp['quick'] = !isset($tmp['floating']) ? true : false;
                 }
                 // restructure flags
                 if (isset($tmp['protocol']) && $tmp['protocol'] == "tcp") {
@@ -357,7 +357,7 @@ class FilterRule
                     }
                 }
                 // restructure state settings for easier output parsing
-                if (!empty($tmp['statetype']) && $tmp['type'] == 'pass' ) {
+                if (!empty($tmp['statetype']) && $tmp['type'] == 'pass') {
                     $tmp['state'] = array('type' => 'keep', 'options' => array());
                     switch ($tmp['statetype']) {
                         case 'none':
