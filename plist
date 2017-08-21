@@ -52,7 +52,6 @@
 /usr/local/etc/inc/rrd.inc
 /usr/local/etc/inc/services.inc
 /usr/local/etc/inc/system.inc
-/usr/local/etc/inc/upgrade_config.inc
 /usr/local/etc/inc/util.inc
 /usr/local/etc/inc/xmlparse.inc
 /usr/local/etc/inc/xmlrpc.inc
@@ -63,8 +62,9 @@
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20150402
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20160104
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20160630
+/usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20161210
 /usr/local/etc/pkg/fingerprints/OPNsense/trusted/opnsense-update.deciso.com.20160725
-/usr/local/etc/pkg/fingerprints/OPNsense/trusted/pkg.opnsense.org.20161210
+/usr/local/etc/pkg/fingerprints/OPNsense/trusted/opnsense-update.deciso.com.20170721
 /usr/local/etc/pkg/fingerprints/OPNsense/trusted/pkg.opnsense.org.20170625
 /usr/local/etc/rc
 /usr/local/etc/rc.backup_captiveportal
@@ -126,6 +126,7 @@
 /usr/local/etc/rc.restart_webgui
 /usr/local/etc/rc.shutdown
 /usr/local/etc/rc.sshd
+/usr/local/etc/rc.swapon
 /usr/local/etc/rc.syshook
 /usr/local/etc/rc.syshook.d/05-beep.stop
 /usr/local/etc/rc.syshook.d/05-update.early
@@ -366,6 +367,9 @@
 /usr/local/opnsense/mvc/app/controllers/OPNsense/Proxy/IndexController.php
 /usr/local/opnsense/mvc/app/controllers/OPNsense/Proxy/forms/dialogEditBlacklist.xml
 /usr/local/opnsense/mvc/app/controllers/OPNsense/Proxy/forms/main.xml
+/usr/local/opnsense/mvc/app/controllers/OPNsense/Routes/Api/RoutesController.php
+/usr/local/opnsense/mvc/app/controllers/OPNsense/Routes/IndexController.php
+/usr/local/opnsense/mvc/app/controllers/OPNsense/Routes/forms/dialogEditRoute.xml
 /usr/local/opnsense/mvc/app/controllers/OPNsense/TrafficShaper/Api/ServiceController.php
 /usr/local/opnsense/mvc/app/controllers/OPNsense/TrafficShaper/Api/SettingsController.php
 /usr/local/opnsense/mvc/app/controllers/OPNsense/TrafficShaper/IndexController.php
@@ -464,6 +468,8 @@
 /usr/local/opnsense/mvc/app/models/OPNsense/Proxy/Migrations/M1_0_0.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Proxy/Proxy.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Proxy/Proxy.xml
+/usr/local/opnsense/mvc/app/models/OPNsense/Routes/Route.php
+/usr/local/opnsense/mvc/app/models/OPNsense/Routes/Route.xml
 /usr/local/opnsense/mvc/app/models/OPNsense/TrafficShaper/ACL/ACL.xml
 /usr/local/opnsense/mvc/app/models/OPNsense/TrafficShaper/Menu/Menu.xml
 /usr/local/opnsense/mvc/app/models/OPNsense/TrafficShaper/Migrations/M1_0_0.php
@@ -485,6 +491,7 @@
 /usr/local/opnsense/mvc/app/views/OPNsense/Diagnostics/systemhealth.volt
 /usr/local/opnsense/mvc/app/views/OPNsense/IDS/index.volt
 /usr/local/opnsense/mvc/app/views/OPNsense/Proxy/index.volt
+/usr/local/opnsense/mvc/app/views/OPNsense/Routes/index.volt
 /usr/local/opnsense/mvc/app/views/OPNsense/TrafficShaper/index.volt
 /usr/local/opnsense/mvc/app/views/layout_partials/base_dialog.volt
 /usr/local/opnsense/mvc/app/views/layout_partials/base_dialog_processing.volt
@@ -599,6 +606,7 @@
 /usr/local/opnsense/scripts/proxy/generate_cert.php
 /usr/local/opnsense/scripts/proxy/setup.sh
 /usr/local/opnsense/scripts/remote_backup.php
+/usr/local/opnsense/scripts/routes/routes_wrapper
 /usr/local/opnsense/scripts/routes/show_routes.py
 /usr/local/opnsense/scripts/suricata/__init__.py
 /usr/local/opnsense/scripts/suricata/dropAlertLog.py
@@ -653,6 +661,7 @@
 /usr/local/opnsense/service/conf/actions.d/actions_systemhealth.conf
 /usr/local/opnsense/service/conf/actions.d/actions_template.conf
 /usr/local/opnsense/service/conf/actions.d/actions_unbound.conf
+/usr/local/opnsense/service/conf/actions.d/actions_webgui.conf
 /usr/local/opnsense/service/conf/actions_service.conf
 /usr/local/opnsense/service/conf/configd.conf
 /usr/local/opnsense/service/configd.py
@@ -743,7 +752,6 @@
 /usr/local/opnsense/www/css/jquery.bootgrid.css
 /usr/local/opnsense/www/css/jquery.tokenize.css
 /usr/local/opnsense/www/css/nv.d3.css
-/usr/local/opnsense/www/css/nv.d3.min.css
 /usr/local/opnsense/www/fonts/FontAwesome.otf
 /usr/local/opnsense/www/fonts/fontawesome-webfont.eot
 /usr/local/opnsense/www/fonts/fontawesome-webfont.svg
@@ -1041,7 +1049,6 @@
 /usr/local/www/services_unbound_overrides.php
 /usr/local/www/status_dhcp_leases.php
 /usr/local/www/status_dhcpv6_leases.php
-/usr/local/www/status_filter_reload.php
 /usr/local/www/status_gateway_groups.php
 /usr/local/www/status_gateways.php
 /usr/local/www/status_graph.php

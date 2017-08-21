@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright (C) 2004-2008 Scott Ullrich
+ * Copyright (C) 2004-2008 Scott Ullrich <sullrich@gmail.com>
  * Copyright (C) 2008-2009 Ermal Luçi
  * Copyright (C) 2005 Espen Johansen
  * Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
@@ -212,11 +212,25 @@ function interface_vlan_configure(&$vlan)
     // disable/enable hardware vlan tags, will be skipped when "Leave default" (option 2) is selected
     if (!isset($config['system']['disablevlanhwfilter']) || $config['system']['disablevlanhwfilter'] == 1) {
         foreach ($members as $member) {
+            // probe already selected options
+            $intf_details = legacy_interface_details($member);
+            $selected_opts = array();
+            if (!empty($intf_details['options'])) {
+                foreach ($intf_details['options'] as $opt) {
+                    if ($opt == 'vlan_hwtagging') {
+                        $selected_opts[] = 'vlanhwtag';
+                    } else {
+                        $selected_opts[] = str_replace('_', '', $opt);
+                    }
+                }
+            }
             // set one tag at a time to avoid driver issues
-            foreach (array('vlanmtu', 'vlanhwtag', 'vlanhwfilter', 'vlanhwcsum', 'vlanhwtso')  as $tag) {
+            foreach (array('vlanhwtag', 'vlanhwfilter', 'vlanhwtso')  as $tag) {
                 if (!isset($config['system']['disablevlanhwfilter'])) {
-                    legacy_interface_flags($member, $tag);
-                } else {
+                    if (!in_array($tag, $selected_opts)) {
+                        legacy_interface_flags($member, $tag);
+                    }
+                } elseif (in_array($tag, $selected_opts)) {
                     legacy_interface_flags($member, '-'.$tag);
                 }
             }
@@ -704,34 +718,47 @@ function interface_lagg_configure(&$lagg)
     if (!count($members)) {
         return -1;
     }
+    $interface_stats = legacy_interfaces_details();
 
-    if (file_exists("/var/run/booting") || !(empty($lagg['laggif']))) {
-        legacy_interface_destroy($lagg['laggif']);
-        legacy_interface_create($lagg['laggif']);
+    if (!empty($lagg['laggif'])) {
         $laggif = $lagg['laggif'];
+        if (empty($interface_stats[$laggif])) {
+            legacy_interface_create($lagg['laggif']);
+        } else {
+            // Already configured, detach child interfaces before attempting to configure.
+            // Prevents vlans to loose parent.
+            if (!empty($interface_stats[$laggif]['laggport'])) {
+                foreach ($interface_stats[$laggif]['laggport'] as $laggport) {
+                    mwexec("/sbin/ifconfig {$laggif} -laggport {$laggport}");
+                }
+            }
+        }
     } else {
         $laggif = legacy_interface_create('lagg');
     }
 
-    /* Calculate smaller mtu and enforce it */
+
+    // determine mtu value to use, either the provided one for the lagg or smallest of it's children
     $mtu = null;
-    foreach ($members as $member) {
-        $opts = legacy_interface_stats($member);
-        if (!empty($opts['mtu']) && ($mtu == null || $opts['mtu'] < $mtu)) {
-            $mtu = $opts['mtu'];
+    if (!empty($lagg['mtu'])) {
+        // mtu provided for lagg
+        $mtu = $lagg['mtu'];
+    } else {
+        // min() mtu of children
+        foreach ($members as $member) {
+            if (!empty($interface_stats[$member]['mtu']) && ($mtu == null || $interface_stats[$member]['mtu'] < $mtu)) {
+                $mtu = $interface_stats[$member]['mtu'];
+            }
         }
     }
 
-    $checklist = get_interface_list();
     foreach ($members as $member) {
-        if (!array_key_exists($member, $checklist)) {
-            continue;
+        if (!empty($interface_stats[$member])) {
+            legacy_interface_mtu($member, $mtu);
+            configure_interface_hardware($member);
+            interfaces_bring_up($member);
+            mwexec("/sbin/ifconfig {$laggif} laggport {$member}");
         }
-
-        legacy_interface_mtu($member, $mtu);
-        configure_interface_hardware($member);
-        interfaces_bring_up($member);
-        mwexec("/sbin/ifconfig {$laggif} laggport {$member}");
     }
 
     mwexec("/sbin/ifconfig {$laggif} laggproto " . escapeshellarg($lagg['proto']));
@@ -1081,7 +1108,7 @@ function interface_vip_bring_down($vip)
     }
 }
 
-function interface_bring_down($interface = "wan", $destroy = false, $ifacecfg = false)
+function interface_bring_down($interface = "wan", $ifacecfg = false)
 {
     global $config;
 
@@ -1179,7 +1206,7 @@ function interface_bring_down($interface = "wan", $destroy = false, $ifacecfg = 
     switch ($ipaddrv6) {
         case "slaac":
         case "dhcp6":
-            killbypid("/var/run/dhcp6c_{$realif}.pid", 'TERM', true);
+            killbypid("/var/run/dhcp6c_{$realif}.pid", 'KILL', true);
             @unlink("/var/etc/dhcp6c_{$interface}.conf");
             if (does_interface_exist($realifv6)) {
                 $ip6 = find_interface_ipv6($realifv6);
@@ -1261,12 +1288,6 @@ function interface_bring_down($interface = "wan", $destroy = false, $ifacecfg = 
     if (isset($ifcfg['wireless']) && is_array($ifcfg['wireless'])) {
         kill_hostapd($realif);
         mwexec(kill_wpasupplicant($realif));
-    }
-
-    if ($destroy == true) {
-        if (preg_match("/^[a-z0-9]+^tun|^ovpn|^gif|^gre|^lagg|^bridge|vlan|_stf$/i", $realif)) {
-            legacy_interface_destroy($realif);
-        }
     }
 
     return;
@@ -1579,7 +1600,11 @@ EOD;
             }
         } elseif ($ppp['type'] == "pppoe") {
             $provider = isset($ppp['provider']) ? $ppp['provider'] : "";
-            $mpdconf_arr[] = "set pppoe service \"{$provider}\"";
+            $hostuniq = '';
+            if (!empty($ppp['hostuniq'])) {
+                $hostuniq = '0x' . strtolower(array_shift(unpack('H*', $ppp['hostuniq']))) . '|';
+            }
+            $mpdconf_arr[] = "set pppoe service \"{$hostuniq}{$provider}\"";
             $mpdconf_arr[] = "set pppoe iface {$port}";
         } elseif ($ppp['type'] == "pptp" || $ppp['type'] == "l2tp") {
             $mpdconf_arr[] = "set {$ppp['type']} self {$localips[$pid]}";
@@ -1626,8 +1651,10 @@ EOD;
     }
 
     /* fire up mpd */
-    mwexec("/usr/local/sbin/mpd5 -b -k -d /var/etc -f mpd_{$interface}.conf -p /var/run/" .
-        escapeshellarg($ppp['type']) . "_{$interface}.pid -s ppp " . escapeshellarg($ppp['type']) . "client");
+    mwexecf(
+        '/usr/local/sbin/mpd5 -b -k -d /var/etc -f %s -p %s -s ppp %s',
+        array("mpd_{$interface}.conf", "/var/run/{$ppp['type']}_{$interface}.pid", "{$ppp['type']}client")
+    );
 
     /* wait for up to 10 seconds for the interface to appear (ppp(oe)) */
     $i = 0;
@@ -1806,7 +1833,8 @@ function interface_ipalias_configure(&$vip)
     if (is_ipaddrv6($vip['subnet'])) {
         $af = "inet6";
     }
-    mwexec("/sbin/ifconfig " . escapeshellarg($if) ." {$af} ". escapeshellarg($vip['subnet']) ."/" . escapeshellarg($vip['subnet_bits']) . " alias");
+    $vhid = !empty($vip['vhid']) ? "vhid " . escapeshellarg($vip['vhid']) : "";
+    mwexec("/sbin/ifconfig " . escapeshellarg($if) ." {$af} ". escapeshellarg($vip['subnet']) ."/" . escapeshellarg($vip['subnet_bits']) . " alias ". $vhid);
 }
 
 function interface_carp_configure(&$vip)
@@ -1925,7 +1953,7 @@ function interface_wireless_clone($realif, $wlcfg)
         }
 
         log_error(sprintf('Cloning new wireless interface %s', $realif));
-        exec("/sbin/ifconfig wlan create name {$realif} wlandev {$baseif} {$mode} bssid 2>&1", $out, $ret);
+        exec("/sbin/ifconfig wlan create wlandev {$baseif} {$mode} bssid name {$realif} 2>&1", $out, $ret);
         if ($ret <> 0) {
             log_error(sprintf('Failed to clone interface %s with error code %s, output %s', $baseif, $ret, $out[0]));
             return false;
@@ -2516,37 +2544,6 @@ function interface_virtual_create($interface)
     }
 }
 
-function interface_vlan_adapt_mtu($vlanifs, $mtu)
-{
-    global $config;
-
-    if (!is_array($vlanifs)) {
-        return;
-    }
-
-    /* All vlans need to use the same mtu value as their parent. */
-    foreach ($vlanifs as $vlan) {
-        $assignedport = convert_real_interface_to_friendly_interface_name($vlan['vlanif']);
-        if (!empty($assignedport)) {
-            if (!empty($config['interfaces'][$assignedport]['mtu'])) {
-                /*
-                 * XXX: This is really never going to happen just keep the code for safety and readbility.
-                 * It never happens since interface_vlan_mtu_configured finds the biggest mtu on vlans.
-                 * Also if it has a lower mtu configured just respect user choice.
-                 */
-                if (intval($config['interfaces'][$assignedport]['mtu']) > $mtu) {
-                    legacy_interface_mtu($vlan['vlanif'], $mtu);
-                }
-            } else {
-                if (legacy_interface_stats($vlan['vlanif'])['mtu'] != $mtu) {
-                    legacy_interface_mtu($vlan['vlanif'], $mtu);
-                }
-            }
-        } elseif (legacy_interface_stats($vlan['vlanif'])['mtu'] != $mtu) {
-            legacy_interface_mtu($vlan['vlanif'], $mtu);
-        }
-    }
-}
 
 function interface_configure($interface = 'wan', $reloadall = false, $linkupevent = false, $verbose = false)
 {
@@ -2700,34 +2697,27 @@ function interface_configure($interface = 'wan', $reloadall = false, $linkupeven
                 break;
         }
     }
+    $intf_stats = legacy_interface_stats();
     if (!empty($wancfg['mtu'])) {
         if (stristr($realif, "_vlan")) {
-            $assignedparent = convert_real_interface_to_friendly_interface_name($realhwif);
-            if (!empty($assignedparent) && !empty($config['interfaces'][$assignedparent]['mtu'])) {
-                $parentmtu = $config['interfaces'][$assignedparent]['mtu'];
-            } else {
-                $parentmtu = interface_vlan_mtu_configured($realhwif, $wancfg['mtu']);
+            // max mtu to parent
+            $mtu = $wancfg['mtu'] < $intf_stats[$realhwif]['mtu'] ? $wancfg['mtu'] : $intf_stats[$realhwif]['mtu'];
+            if ($mtu != $intf_stats[$realif]['mtu']) {
+                legacy_interface_mtu($realif, $mtu);
             }
-
-            if ($wancfg['mtu'] > $parentmtu) {
-                if (legacy_interface_stats($realhwif)['mtu'] != $wancfg['mtu']) {
-                    legacy_interface_mtu($realhwif, $wancfg['mtu']);
-                }
-
-                /* All vlans need to use the same mtu value as their parent. */
-                interface_vlan_adapt_mtu(link_interface_to_vlans($realhwif), $wancfg['mtu']);
-            } else {
-                legacy_interface_mtu($realif, $wancfg['mtu']);
-            }
-        } else {
-            if ($wancfg['mtu'] != legacy_interface_stats($realhwif)['mtu']) {
-                legacy_interface_mtu($realhwif, $wancfg['mtu']);
-            }
-
-            /* This case is needed when the parent of vlans is being configured */
-            interface_vlan_adapt_mtu(link_interface_to_vlans($realif), $wancfg['mtu']);
+        } elseif ($wancfg['mtu'] != $intf_stats['mtu']) {
+            legacy_interface_mtu($realhwif, $wancfg['mtu']);
         }
-        /* XXX: What about gre/gif/lagg/.. ? */
+    }
+
+    // in case this interface has vlan's configured, make sure none of them has an mtu set higher than it's parent
+    if (!empty($config['vlans']['vlan'])) {
+        $intf_stats = legacy_interface_stats();
+        foreach ($config['vlans']['vlan'] as $vlan) {
+            if ($realhwif == $vlan['if'] && $intf_stats[$realhwif]['mtu'] < $intf_stats[$vlan['vlanif']]['mtu']) {
+                legacy_interface_mtu($vlan['vlanif'], $intf_stats[$realhwif]['mtu']);
+            }
+        }
     }
 
     if (does_interface_exist($wancfg['if'])) {
@@ -3217,8 +3207,7 @@ function interface_dhcpv6_configure($interface = 'wan', $wancfg)
     unset($dhcp6cconf);
 
     $dhcp6cscript = "#!/bin/sh\n";
-    $dhcp6cscript .= "# This shell script launches /usr/local/etc/rc.newwanipv6 with a interface argument.\n";
-    $dhcp6cscript .= "/usr/local/etc/rc.newwanipv6 {$wanif} \n";
+    $dhcp6cscript .= "/usr/local/opnsense/service/configd_ctl.py interface newipv6 {$wanif}\n";
 
     if (!@file_put_contents("/var/etc/dhcp6c_{$interface}_script.sh", $dhcp6cscript)) {
         printf("Error: cannot open dhcp6c_{$interface}_script.sh in interface_dhcpv6_configure() for writing.\n");
@@ -3243,7 +3232,7 @@ function interface_dhcpv6_configure($interface = 'wan', $wancfg)
     $rtsoldscript .= "echo $2 > /tmp/{$wanif}_routerv6\n";
     $rtsoldscript .= "echo $2 > /tmp/{$wanif}_defaultgwv6\n";
     $rtsoldscript .= "if [ -f /var/run/dhcp6c_{$wanif}.pid ]; then\n";
-    $rtsoldscript .= "\t/bin/pkill -F /var/run/dhcp6c_{$wanif}.pid\n";
+    $rtsoldscript .= "\t/bin/pkill -KILL -F /var/run/dhcp6c_{$wanif}.pid\n";
     $rtsoldscript .= "\t/bin/sleep 1\n";
     $rtsoldscript .= "fi\n";
     $rtsoldscript .= "/usr/bin/logger -t rtsold \"Starting dhcp6 client for interface {$interface}({$wanif})\"\n";
@@ -3270,7 +3259,7 @@ function interface_dhcpv6_configure($interface = 'wan', $wancfg)
 
     if (isset($wancfg['dhcp6sendsolicit'])) {
         /* dhcp6c from previous run can still be around */
-        killbypid("/var/run/dhcp6c_{$wanif}.pid", 'TERM', true);
+        killbypid("/var/run/dhcp6c_{$wanif}.pid", 'KILL', true);
         /* command is already exec_safe() */
         mwexec($dhcp6ccommand);
     } else {
@@ -3821,17 +3810,6 @@ function convert_friendly_interface_to_friendly_descr($interface)
     return $ifdesc;
 }
 
-function convert_real_interface_to_friendly_descr($interface)
-{
-    $ifdesc = convert_real_interface_to_friendly_interface_name("{$interface}");
-
-    if (!empty($ifdesc)) {
-        return convert_friendly_interface_to_friendly_descr($ifdesc);
-    }
-
-    return $interface;
-}
-
 /*
  *  get_parent_interface($interface):
  *      --returns the (real or virtual) parent interface(s) array for a given interface friendly name (i.e. wan)
@@ -3947,7 +3925,7 @@ function get_real_interface($interface = "wan", $family = "all", $realv6iface = 
                 break;
             }
 
-            $cfg = &$config['interfaces'][$interface];
+            $cfg = &config_read_array('interfaces', $interface);
 
             if ($family == "inet6") {
                 if (isset($cfg['ipaddrv6'])) {
@@ -4074,31 +4052,6 @@ function link_interface_to_track6($int, $action = '')
             }
         }
         return $list;
-    }
-}
-
-function link_interface_to_vlans($int, $action = '')
-{
-    global $config;
-
-    if (empty($int)) {
-        return;
-    }
-
-    if (isset($config['vlans']['vlan'])) {
-        $ifaces = array();
-        foreach ($config['vlans']['vlan'] as $vlan) {
-            if ($int == $vlan['if']) {
-                if ($action == "update") {
-                    interfaces_bring_up($int);
-                } elseif ($action == "") {
-                    $ifaces[$vlan['tag']] = $vlan;
-                }
-            }
-        }
-        if (!empty($ifaces)) {
-            return $ifaces;
-        }
     }
 }
 
@@ -4427,7 +4380,7 @@ function interface_has_gateway($friendly)
     global $config;
 
     if (!empty($config['interfaces'][$friendly])) {
-        $ifname = &$config['interfaces'][$friendly];
+        $ifname = &config_read_array('interfaces', $friendly);
         switch ($ifname['ipaddr']) {
             case "dhcp":
             case "pppoe":
@@ -4460,7 +4413,7 @@ function interface_has_gatewayv6($friendly)
     global $config;
 
     if (!empty($config['interfaces'][$friendly])) {
-        $ifname = &$config['interfaces'][$friendly];
+        $ifname = &config_read_array('interfaces', $friendly);
         if (isset($ifname['ipaddrv6'])) {
             $ipaddrv6 = $ifname['ipaddrv6'];
         } else {
@@ -4504,9 +4457,7 @@ function is_interface_wireless($interface)
     $friendly = convert_real_interface_to_friendly_interface_name($interface);
     if (!isset($config['interfaces'][$friendly]['wireless'])) {
         if (match_wireless_interface($interface)) {
-            if (isset($config['interfaces'][$friendly])) {
-                $config['interfaces'][$friendly]['wireless'] = array();
-            }
+            config_read_array('interfaces', $friendly, 'wireless');
             return true;
         }
         return false;
@@ -4973,22 +4924,4 @@ function get_carp_interface_status($carpinterface)
         }
     }
     return;
-}
-
-function is_interface_mismatch()
-{
-    global $config;
-
-    if (isset($config['interfaces'])) {
-        foreach (legacy_config_get_interfaces(array("virtual" => false)) as $ifname => $ifcfg) {
-            if (preg_match("/^enc|^cua|^tun|^tap|^l2tp|^pptp|^ppp|^ovpn|^tinc|^gif|^gre|^lagg|^bridge|vlan|_wlan/i", $ifcfg['if'])) {
-                /* Do not check these interfaces */
-                continue;
-            } elseif (does_interface_exist($ifcfg['if']) == false) {
-                return true;
-            }
-        }
-    }
-
-    return false;
 }

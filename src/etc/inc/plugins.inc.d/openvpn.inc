@@ -474,11 +474,12 @@ function openvpn_add_custom(& $settings, & $conf)
     }
 }
 
-function openvpn_add_keyfile(&$data, &$conf, $mode_id, $directive, $opt = '')
+function openvpn_add_keyfile($data, &$conf, $mode_id, $directive, $opt = '')
 {
     $fpath = "/var/etc/openvpn/{$mode_id}.{$directive}";
     openvpn_create_dirs();
-    file_put_contents($fpath, base64_decode($data));
+    $data = str_replace("\r", "", base64_decode($data));
+    file_put_contents($fpath, str_replace("\n\n", "\n", $data));
     //chown($fpath, 'nobody');
     //chgrp($fpath, 'nobody');
     @chmod($fpath, 0600);
@@ -693,7 +694,7 @@ function openvpn_reconfigure($mode, $settings, $device_only = false)
                     if ($settings['strictusercn']) {
                         $strictusercn = "true";
                     }
-                    $conf .= "auth-user-pass-verify \"/usr/local/sbin/ovpn_auth_verify user '{$settings['authmode']}' {$strictusercn} {$mode_id}\" via-env\n";
+                    $conf .= "auth-user-pass-verify \"/usr/local/sbin/ovpn_auth_verify user '{$settings['authmode']}' '{$strictusercn}' '{$mode_id}'\" via-env\n";
                 }
                 break;
         }
@@ -1294,9 +1295,9 @@ function openvpn_get_server_status($server, $socket)
                 $conn['common_name'] = $list[1];
                 $conn['remote_host'] = $list[2];
                 $conn['virtual_addr'] = $list[3];
-                $conn['bytes_recv'] = $list[4];
-                $conn['bytes_sent'] = $list[5];
-                $conn['connect_time'] = $list[6];
+                $conn['bytes_recv'] = $list[5];
+                $conn['bytes_sent'] = $list[6];
+                $conn['connect_time'] = date('Y-m-d H:i:s', $list[8]);
                 $server['conns'][] = $conn;
             }
             /* parse routing table lines */
@@ -1382,8 +1383,8 @@ function openvpn_get_client_status($client, $socket)
                 $client['status']="up";
                 $list = explode(",", $line);
 
-                $client['connect_time']  = date("D M j G:i:s Y", $list[0]);
-                $client['virtual_addr']  = $list[3];
+                $client['connect_time'] = date('Y-m-d H:i:s', $list[0]);
+                $client['virtual_addr'] = $list[3];
                 $client['remote_host'] = $list[4];
             }
             if (strstr($line,"CONNECTING")) {
@@ -1392,13 +1393,13 @@ function openvpn_get_client_status($client, $socket)
             if (strstr($line,"ASSIGN_IP")) {
                 $client['status']="waiting";
                 $list = explode(",", $line);
-                $client['connect_time']  = date("D M j G:i:s Y", $list[0]);
-                $client['virtual_addr']  = $list[3];
+                $client['connect_time'] = date('Y-m-d H:i:s', $list[0]);
+                $client['virtual_addr'] = $list[3];
             }
             if (strstr($line,"RECONNECTING")) {
                 $client['status']="reconnecting";
                 $list = explode(",", $line);
-                $client['connect_time']  = date("D M j G:i:s Y", $list[0]);
+                $client['connect_time'] = date('Y-m-d H:i:s', $list[0]);
                 $client['status'] .= "; " . $list[2];
             }
             /* parse end of output line */

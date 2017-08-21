@@ -32,13 +32,7 @@ require_once("guiconfig.inc");
 require_once("interfaces.inc");
 require_once("services.inc");
 
-if (!isset($config['ppps'])) {
-    $config['ppps'] = array();
-}
-if (!isset($config['ppps']['ppp'])) {
-    $config['ppps']['ppp'] = array();
-}
-$a_ppps = &$config['ppps']['ppp'];
+$a_ppps = &config_read_array('ppps', 'ppp');
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -49,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
     // plain 1-on-1 copy
     $copy_fields = array('ptpid', 'type', 'username', 'idletimeout', 'uptime', 'descr', 'simpin', 'pin-wait',
-                        'apn', 'apnum', 'phone', 'connect-timeout', 'provider');
+                        'apn', 'apnum', 'phone', 'connect-timeout', 'provider', 'hostuniq');
     foreach ($copy_fields as $fieldname) {
         if (isset($a_ppps[$id][$fieldname])) {
             $pconfig[$fieldname] = $a_ppps[$id][$fieldname];
@@ -218,6 +212,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 } else {
                     $ppp['provider'] = !empty($pconfig['null_service']);
                 }
+                if (!empty($pconfig['hostuniq'])) {
+                    $ppp['hostuniq'] = $pconfig['hostuniq'];
+                }
                 break;
             case "pptp":
             case "l2tp":
@@ -271,7 +268,7 @@ include("head.inc");
     $(document).ready(function() {
         // change type
         $("#type").change(function(){
-          $('#ppp,#ppp_adv,#pppoe,#ppp_provider,#phone_num,#apn_').hide();
+          $('#ppp,#ppp_adv,#pppoe,#hostuniqopt,#ppp_provider,#phone_num,#apn_').hide();
           $('#ports > [data-type="serial"]').hide();
           $('#ports > [data-type="serial"]').prop('disabled', true);
           $('#ports > [data-type="interface"]').hide();
@@ -299,6 +296,7 @@ include("head.inc");
               break;
             case "pppoe":
               $('#pppoe').show();
+              $('#hostuniqopt').show();
               // fall through to show interface items
             default:
               $('#ports > [data-type="interface"]').show();
@@ -560,6 +558,15 @@ include("head.inc");
                             <small class="formhelp">
                             <?= gettext("Hint: this field can usually be left empty. Service name will not be configured if this field is empty. Check the \"Configure NULL\" box to configure a blank Service name."); ?>
                             </small>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr style="display:none" name="hostuniqopt" id="hostuniqopt">
+                        <td><a id="help_for_hostuniq" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Host-Uniq"); ?></td>
+                        <td>
+                          <input name="hostuniq" type="text" id="hostuniq" value="<?=$pconfig['hostuniq'];?>" />
+                          <div class="hidden" for="help_for_hostuniq">
+                            <?= gettext('This field can usually be left empty unless specified by the provider.') ?>
                           </div>
                         </td>
                       </tr>

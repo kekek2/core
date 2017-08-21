@@ -72,12 +72,19 @@ function legacy_interface_flags($ifs, $flag, $report_errors=true)
     }
 }
 
+function legacy_interface_rename($ifs, $name)
+{
+    $cmd = '/sbin/ifconfig ' . escapeshellarg($ifs) . ' name ' . escapeshellarg($name);
+
+    exec($cmd . ' 2>&1', $out, $ret);
+    if ($ret) {
+        log_error('The command `' . $cmd . '\' failed to execute');
+    }
+}
+
 function legacy_interface_create($ifs, $name = null)
 {
     $cmd = '/sbin/ifconfig ' . escapeshellarg($ifs) . ' create';
-    if (!empty($name)) {
-        $cmd .= ' name ' . escapeshellarg($name);
-    }
     $new = null;
 
     exec($cmd . ' 2>&1', $out, $ret);
@@ -88,6 +95,11 @@ function legacy_interface_create($ifs, $name = null)
 
     if (isset($out[0])) {
         $new = $out[0];
+    }
+
+    if (!empty($name)) {
+        legacy_interface_rename($new, $name);
+        $new = $name;
     }
 
     return ($new);
@@ -211,7 +223,7 @@ function legacy_interfaces_details($intf = null)
     $current_interface = null;
     foreach ($ifconfig_data as $line) {
         $line_parts = explode(' ', $line);
-        if (strpos(trim($line), 'flags=') !== false) {
+        if (strpos(trim($line), 'flags=') !== false && $line[0] != "\t") {
             $current_interface = explode(':', $line)[0];
             $result[$current_interface] = array();
             $result[$current_interface]["capabilities"] = array();
@@ -219,6 +231,9 @@ function legacy_interfaces_details($intf = null)
             $result[$current_interface]["macaddr"] = "00:00:00:00:00:00";
             $result[$current_interface]["ipv4"] = array();
             $result[$current_interface]["ipv6"] = array();
+            if (preg_match("/ mtu ([0-9]*).*$/", $line, $matches)) {
+                $result[$current_interface]["mtu"] = $matches[1];
+            }
         } elseif (empty($current_interface)) {
             // skip parsing, no interface found (yet)
             continue;
@@ -284,7 +299,7 @@ function legacy_interfaces_details($intf = null)
             if (empty($result[$current_interface]['laggport'])) {
                 $result[$current_interface]['laggport'] = array();
             }
-            $result[$current_interface]['laggport'][] = $matches[1];
+            $result[$current_interface]['laggport'][] = explode(' ', trim($matches[1]))[0];
         }
     }
 

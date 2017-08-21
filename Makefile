@@ -41,10 +41,10 @@ CORE_VERSION=	${CORE_COMMIT:C/-.*$//1}
 CORE_HASH=	${CORE_COMMIT:C/^.*-//1}
 .endif
 
-TING_ABI?=	1.1
-CORE_ABI?=	17.1
+TING_ABI?=	1.2
+CORE_ABI?=	17.7
 CORE_ARCH?=	${ARCH}
-CORE_OPENVPN?=	# empty for version 2.4
+CORE_OPENVPN?=	# empty
 CORE_PHP?=	70
 CORE_PY?=	27
 
@@ -261,7 +261,8 @@ upgrade-check: force
 upgrade: plist-check upgrade-check package
 	@${PKG} delete -fy ${CORE_NAME}
 	@${PKG} add ${PKGDIR}/*.txz
-	@${LOCALBASE}/etc/rc.restart_webgui
+	@echo -n "Restarting web GUI: "
+	@configctl webgui restart
 
 lint: plist-check
 	find ${.CURDIR}/src ${.CURDIR}/Scripts \
@@ -304,9 +305,14 @@ style: want-pear-PHP_CodeSniffer
 style-fix: want-pear-PHP_CodeSniffer
 	phpcbf --standard=ruleset.xml ${.CURDIR}/src/opnsense || true
 
+license:
+	@${.CURDIR}/Scripts/license > ${.CURDIR}/LICENSE
+
 test: want-phpunit6
 	@cd ${.CURDIR}/src/opnsense/mvc/tests && \
 	    phpunit --configuration PHPunit.xml
 
 clean: want-git
 	${GIT} reset --hard HEAD && ${GIT} clean -xdqf .
+
+.PHONY: license

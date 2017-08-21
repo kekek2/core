@@ -32,10 +32,7 @@ require_once("filter.inc");
 require_once("interfaces.inc");
 require_once("logs.inc");
 
-if (!isset($config['nat']['npt'])) {
-  $config['nat']['npt'] = array();
-}
-$a_npt = &$config['nat']['npt'];
+$a_npt = &config_read_array('nat', 'npt');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pconfig = $_POST;

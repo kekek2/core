@@ -152,6 +152,9 @@ remove_mfs_link()
 		rm -f "${MFS}/${NAME}"
 		mv "${ROOT}${MFS}/${NAME}" "${MFS}/"
 	fi
+
+	# ensure directory always exist
+	mkdir -p "${MFS}/${NAME}"
 }
 
 # pre-17.1 compat: use_mfs_tmpvar matches both patterns
@@ -198,12 +201,15 @@ mkdir -p /var/etc
 rm -f /var/db/*_ip /var/db/*_ipv6 /var/db/*_cacheip /var/db/*_cacheipv6
 rm -f /var/etc/nameserver_* /var/etc/searchdomain_*
 
-# work around the fact that shutdown(8) doesn't clean up this file
-rm -f /var/run/nologin
+# Clear all files in this directory to prevent stale state of
+# services.  At one point this also helped to prevent shutdown(8)
+# from dropping "nologin" into the directory, preventing login on
+# the next boot.
+rm -rf /var/run/*
 
 # set up and recover a crash dump before activating swap
 /usr/local/etc/rc.crashdump
-swapon -a
+/usr/local/etc/rc.swapon
 
 # write /var/run/dmesg.boot
 /etc/rc.d/dmesg onestart
@@ -246,6 +252,9 @@ rm /var/run/booting
 
 # Execute the normal syshook / plugin commands
 /usr/local/etc/rc.syshook start
+
+echo -n "Root file system: "
+mount | grep ' on / ' | awk '{ print $1 }'
 
 /usr/local/etc/rc.initial.banner
 /usr/local/etc/rc.livemode

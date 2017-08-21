@@ -2,7 +2,7 @@
 
 /*
     Copyright (C) 2014-2016 Deciso B.V.
-    Copyright (C) 2008 Shrew Soft Inc.
+    Copyright (C) 2008 Shrew Soft Inc. <mgrooms@shrew.net>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -32,11 +32,7 @@ require_once("plugins.inc.d/openvpn.inc");
 require_once("services.inc");
 require_once("interfaces.inc");
 
-if (!isset($config['openvpn']['openvpn-client'])) {
-    $config['openvpn']['openvpn-client'] = array();
-}
-
-$a_client = &$config['openvpn']['openvpn-client'];
+$a_client = &config_read_array('openvpn', 'openvpn-client');
 
 $vpnid = 0;
 $act = null;
@@ -1103,7 +1099,6 @@ $( document ).ready(function() {
               <input name="id" type="hidden" value="<?=htmlspecialchars($id);?>" />
 <?php
               endif; ?>
-              <br/><br/>
             </td>
           </tr>
         </table>

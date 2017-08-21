@@ -75,10 +75,7 @@ function is_posnumericint($arg) {
 }
 
 
-if (!isset($config['filter']['rule'])) {
-    $config['filter']['rule'] = array();
-}
-$a_filter = &$config['filter']['rule'];
+$a_filter = &config_read_array('filter', 'rule');
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -1320,7 +1317,7 @@ include("head.inc");
                       <td>
                           <table class="table table-condensed">
                               <tr>
-                                  <th><?= gettext('Main') ?></th>
+                                  <th><?= gettext('All packets') ?></th>
                                   <th><?= gettext('Low Delay/TCP ACK') ?></th>
                               </tr>
                               <tr>

@@ -2,10 +2,10 @@
 
 /*
     Copyright (C) 2017 Deciso B.V.
-    Copyright (C) 2004-2007 Scott Ullrich
-    Copyright (C) 2005 Bill Marquette
-    Copyright (C) 2006 Peter Allgeyer
-    Copyright (C) 2008-2010  Ermal Luci
+    Copyright (C) 2004-2007 Scott Ullrich <sullrich@gmail.com>
+    Copyright (C) 2005 Bill Marquette <bill.marquette@gmail.com>
+    Copyright (C) 2006 Peter Allgeyer <allgeyer@web.de>
+    Copyright (C) 2008-2010 Ermal Luçi
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
     All rights reserved.
 
@@ -143,7 +143,7 @@ function update_alias_names_upon_change($section, $field, $new_alias_name, $orig
     global $config;
     if (!empty($origname) && !empty($new_alias_name)) {
         // find section, return if not found
-        $sectionref = &$config;
+        $sectionref = &config_read_array();
         foreach ($section as $sectionname) {
             if (!empty($sectionref[$sectionname]) && is_array($sectionref[$sectionname])) {
                 $sectionref = &$sectionref[$sectionname];
@@ -392,13 +392,13 @@ function filter_configure_sync($verbose = false)
     }
     // init interfaces and gateways
     $fw->setInterfaceMapping($cnfint);
-    $fw->setGateways(return_gateways_array());
+    $fw->setGateways(return_gateways_array(false, true));
     $fw->setGatewayGroups(return_gateway_groups_array());
     filter_core_bootstrap($fw);
 
     plugins_firewall($fw);
+
     // register user rules
-    update_filter_reload_status(gettext("Generating filter rules"));
     foreach ($config['filter']['rule'] as $rule) {
         $sched = '';
         $descr = '';
@@ -438,7 +438,6 @@ function filter_configure_sync($verbose = false)
     }
 
     filter_pflog_start();
-    update_filter_reload_status(gettext("Initializing"), true);
 
     if ($verbose) {
         echo 'Configuring firewall.';
@@ -452,8 +451,6 @@ function filter_configure_sync($verbose = false)
         fixup_default_gateway($gateways_status, $gateways_arr);
     }
 
-    /* generate aliases */
-    update_filter_reload_status(gettext("Creating aliases"));
     $aliases = filter_generate_aliases($FilterIflist);
 
     if ($verbose) {
@@ -461,8 +458,6 @@ function filter_configure_sync($verbose = false)
         flush();
     }
 
-    /* generate nat rules */
-    update_filter_reload_status(gettext("Generating NAT rules"));
     $natrules = filter_nat_rules_generate($FilterIflist);
 
     if ($verbose) {
@@ -476,12 +471,10 @@ function filter_configure_sync($verbose = false)
     }
 
     /* enable pf if we need to, otherwise disable */
-    update_filter_reload_status(gettext("Loading filter rules"));
     if (!isset($config['system']['disablefilter'])) {
         mwexec("/sbin/pfctl -e", true);
     } else {
         mwexec("/sbin/pfctl -d", true);
-        update_filter_reload_status(gettext("Filter is disabled. Not loading rules."));
         if ($verbose) {
             echo "done.\n";
         }
@@ -540,28 +533,22 @@ function filter_configure_sync($verbose = false)
 
     $rules = "{$limitrules}\n";
     $rules .= "{$aliases} \n";
-    update_filter_reload_status(gettext("Setting up logging information"));
     $rules .= filter_setup_logging_interfaces($FilterIflist);
     $rules .= "\n";
     $rules .= "set skip on pfsync0\n";
     $rules .= "\n";
-    update_filter_reload_status(gettext("Setting up SCRUB information"));
     $rules .= filter_generate_scrubing($FilterIflist);
     $rules .= "\n";
-    update_filter_reload_status(gettext("Generating rules"));
     $rules .= $fw->anchorToText('nat,binat,rdr', 'head');
     $rules .= "{$natrules}\n";
     $rules .= $fw->anchorToText('nat,binat,rdr', 'tail');
     $rules .= $fw->anchorToText('fw', 'head');
     $rules .= filter_rules_legacy($FilterIflist);
     $rules .= $fw->outputFilterRules();
-    update_filter_reload_status(gettext("Creating IPsec rules..."));
     $rules .= filter_generate_ipsec_rules($FilterIflist);
     $rules .= $fw->anchorToText('fw', 'tail');
 
     unset($aliases, $natrules);
-
-    update_filter_reload_status(gettext("Executing packet filter reload"));
 
     // Copy rules.debug to rules.debug.old
     if (file_exists('/tmp/rules.debug')) {
@@ -581,7 +568,6 @@ function filter_configure_sync($verbose = false)
     unset($rules_loading, $rules_error);
     $_grbg = exec('/sbin/pfctl -o basic -f /tmp/rules.debug 2>&1', $rules_error, $rules_loading);
 
-    update_filter_reload_status(gettext("Cleanup schedule states"));
     foreach ($sched_kill_states as $label) {
         mwexecf('/sbin/pfctl -k label -k %s', $label);
     }
@@ -627,7 +613,6 @@ function filter_configure_sync($verbose = false)
         unset($rules_loading, $rules_error);
 
         file_notice('filter_load', sprintf(gettext('There were error(s) loading the rules: %s%s'), $saved_line_error, $config_line_error), 'Filter Reload', '');
-        update_filter_reload_status(sprintf(gettext('There were error(s) loading the rules: %s%s'), $saved_line_error, $config_line_error));
         unlock($filterlck);
         return;
     }
@@ -643,8 +628,6 @@ function filter_configure_sync($verbose = false)
     if (!is_bogonsv6_used()) {
         $_grbg = exec('/sbin/pfctl -t bogonsv6 -T kill 2>/dev/null');
     }
-
-    update_filter_reload_status(gettext("Reloading filterdns daemon"));
 
     // collect all filterdns entries
     $filterdns = null;
@@ -670,19 +653,14 @@ function filter_configure_sync($verbose = false)
         mwexec("/usr/local/sbin/filterdns -p /var/run/filterdns.pid -i {$resolve_interval} -c /var/etc/filterdns.conf -d 1");
     }
 
-    update_filter_reload_status(gettext("Flushing schedule state"));
-
     if ($verbose) {
         echo '.';
         flush();
     }
 
-    update_filter_reload_status(gettext("Processing down interface states"));
     if (!isset($config['system']['kill_states'])) {
         filter_delete_states_for_down_gateways();
     }
-
-    update_filter_reload_status(gettext("Done"));
 
     if ($verbose) {
         echo "done.\n";
@@ -1154,8 +1132,6 @@ function filter_generate_reflection_nat(&$FilterIflist, $rule, &$route_table, $n
     // Initialize natrules holder string
     $natrules = '';
 
-    update_filter_reload_status(sprintf(gettext("Creating reflection NAT rule for %s..."), $rule['descr']));
-
     /* TODO: Add this option to port forwards page. */
     if (isset($rule['staticnatport'])) {
         $static_port = " static-port";
@@ -1491,7 +1467,6 @@ function filter_nat_rules_generate(&$FilterIflist)
 
     $natrules = "no nat proto carp\n";
     $natrules .= "no rdr proto carp\n";
-    update_filter_reload_status(gettext("Creating 1:1 rules..."));
 
     $reflection_txt = "";
     $route_table = "";
@@ -1529,7 +1504,7 @@ function filter_nat_rules_generate(&$FilterIflist)
 
             $tmp = explode('/', $srcaddr);
             $srcip = $tmp[0];
-            if (!empty($tmp[1]) && is_numeric($tmp[1])) {
+            if (!empty($tmp[1]) && is_numeric($tmp[1]) && strpos($target, '/') === false) {
                 $sn = $tmp[1];
                 $sn1 = "/{$sn}";
             }
@@ -1546,8 +1521,8 @@ function filter_nat_rules_generate(&$FilterIflist)
             } else {
                 $nat_if_list = array();
             }
-
-            $natrules .= "binat on {$natif} from {$srcaddr} to {$dstaddr} -> {$target}{$sn1}\n";
+            $nattype = empty($rule['type']) ? "binat" : $rule['type'];
+            $natrules .= "{$nattype} on {$natif} from {$srcaddr} to {$dstaddr} -> {$target}{$sn1}\n";
             if (!empty($nat_if_list)) {
                 $binat_if_list = implode(" ", $nat_if_list);
                 $binat_if_list = "{ {$binat_if_list} }";
@@ -1597,17 +1572,19 @@ function filter_nat_rules_generate(&$FilterIflist)
                 if (isset($obent['disabled'])) {
                     continue;
                 }
-                update_filter_reload_status(sprintf(gettext("Creating advanced outbound rule %s"), $obent['descr']));
                 $src = alias_expand($obent['source']['network']);
                 if (!$src) {
                     $src = $obent['source']['network'];
+                }
+                if (isset($obent['source']['not']) && !isset($obent['source']['any'])) {
+                    $src = "! $src";
                 }
                 $dst = alias_expand($obent['destination']['address']);
                 if (!$dst) {
                     $dst = $obent['destination']['address'];
                 }
                 if (isset($obent['destination']['not']) && !isset($obent['destination']['any'])) {
-                    $dst = "!" . $dst;
+                    $dst = "! $dst";
                 }
 
                 if (!$obent['interface'] || !isset($FilterIflist[$obent['interface']])) {
@@ -1644,15 +1621,12 @@ function filter_nat_rules_generate(&$FilterIflist)
         $config['nat']['outbound']['mode'] == "hybrid") {
         $natrules .= "\n# Outbound NAT rules (automatic)\n";
         /* standard outbound rules (one for each interface) */
-        update_filter_reload_status(gettext("Creating outbound NAT rules"));
         $tonathosts_array = filter_nat_rules_automatic_tonathosts($FilterIflist);
         $tonathosts = implode(" ", $tonathosts_array);
         $numberofnathosts = count($tonathosts_array);
 
         $natrules .= "\n# Subnets to NAT \n";
         if ($numberofnathosts > 0) {
-            update_filter_reload_status(gettext('Creating automatic outbound rules'));
-
             if ($numberofnathosts > 4) {
                 $natrules .= "table <tonatsubnets> { {$tonathosts} }\n";
                 $macroortable = "<tonatsubnets>";
@@ -1701,8 +1675,6 @@ function filter_nat_rules_generate(&$FilterIflist)
     if (isset($config['nat']['rule'])) {
         $natrules .= "\n# NAT Inbound Redirects\n";
           foreach ($config['nat']['rule'] as $rule) {
-            update_filter_reload_status(sprintf(gettext("Creating NAT rule %s"), $rule['descr']));
-
             if (isset($rule['disabled'])) {
                 continue;
             }

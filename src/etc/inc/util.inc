@@ -696,7 +696,7 @@ function get_configured_carp_interface_list($carpinterface = '', $family = 'inet
     $iflist = array();
 
     if (isset($config['virtualip']['vip'])) {
-        $viparr = &$config['virtualip']['vip'];
+        $viparr = &config_read_array('virtualip', 'vip');
         foreach ($viparr as $vip) {
             switch ($vip['mode']) {
                 case "carp":
@@ -727,7 +727,7 @@ function get_configured_ip_aliases_list($returnfullentry = false)
     $alias_list = array();
 
     if (isset($config['virtualip']['vip'])) {
-        $viparr = &$config['virtualip']['vip'];
+        $viparr = &config_read_array('virtualip', 'vip');
         foreach ($viparr as $vip) {
             if ($vip['mode']=="ipalias") {
                 if ($returnfullentry) {
@@ -747,7 +747,7 @@ function get_configured_vips_list()
     global $config;
     $alias_list=array();
     if (isset($config['virtualip']['vip'])) {
-        $viparr = &$config['virtualip']['vip'];
+        $viparr = &config_read_array('virtualip', 'vip');
         foreach ($viparr as $vip) {
             if ($vip['mode'] == "carp") {
                 $alias_list[] = array("ipaddr" => $vip['subnet'], "if" => "{$vip['interface']}_vip{$vip['vhid']}");
@@ -1173,21 +1173,6 @@ function format_bytes($bytes)
     } else {
         return sprintf("%d bytes", $bytes);
     }
-}
-
-function update_filter_reload_status($text, $first = false)
-{
-    $filter_reload_status = '/var/run/filter_reload_status';
-
-    if ($first) {
-        @unlink($filter_reload_status);
-    }
-
-    @file_put_contents(
-      $filter_reload_status,
-      sprintf("%s: %s\n", microtime(true), $text),
-      FILE_APPEND
-    );
 }
 
 /****** util/return_dir_as_array

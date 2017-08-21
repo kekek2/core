@@ -2,7 +2,7 @@
 
 /*
     Copyright (C) 2014-2015 Deciso B.V.
-    Copyright (C) 2008 Shrew Soft Inc
+    Copyright (C) 2008 Shrew Soft Inc. <mgrooms@shrew.net>
     Copyright (C) 2003-2005 Manuel Kasper <mk@neon1.net>
     Copyright (C) 2014 Ermal Luçi
     All rights reserved.
@@ -43,10 +43,13 @@ require_once("interfaces.inc");
 function ipsec_ikeid_used($ikeid) {
     global $config;
 
-    foreach ($config['ipsec']['phase1'] as $ph1ent)
-        if( $ikeid == $ph1ent['ikeid'] ) {
-            return true;
+    if (!empty($config['ipsec']['phase1'])) {
+        foreach ($config['ipsec']['phase1'] as $ph1ent) {
+            if( $ikeid == $ph1ent['ikeid'] ) {
+                return true;
+            }
         }
+    }
     return false;
 }
 
@@ -57,19 +60,6 @@ function ipsec_ikeid_next() {
     }
 
     return $ikeid;
-}
-
-
-if (!isset($config['ipsec']) || !is_array($config['ipsec'])) {
-    $config['ipsec'] = array();
-}
-
-if (!isset($config['ipsec']['phase1'])) {
-    $config['ipsec']['phase1'] = array();
-}
-
-if (!isset($config['ipsec']['phase2'])) {
-    $config['ipsec']['phase2'] = array();
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -154,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
     }
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $a_phase1 = &$config['ipsec']['phase1'];
+    $a_phase1 = &config_read_array('ipsec', 'phase1');
     if (isset($_POST['p1index']) && is_numericint($_POST['p1index'])) {
         $p1index = $_POST['p1index'];
     }
@@ -232,7 +222,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
     }
 
-    if ((!empty($pconfig['remote-gateway']) && is_ipaddr($pconfig['remote-gateway']) && !isset($pconfig['disabled']) )) {
+    if (!empty($pconfig['remote-gateway']) && is_ipaddr($pconfig['remote-gateway']) && !isset($pconfig['disabled']) &&
+        (empty($pconfig['iketype']) || $pconfig['iketype'] == "ikev1")) {
         $t = 0;
         foreach ($a_phase1 as $ph1tmp) {
             if ($p1index <> $t) {
@@ -244,7 +235,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
     }
 
-    if (count($config['ipsec']['phase2'])) {
+    if (!empty($config['ipsec']['phase2'])) {
         foreach ($config['ipsec']['phase2'] as $phase2) {
             if ($phase2['ikeid'] == $pconfig['ikeid']) {
                 if (($pconfig['protocol'] == "inet") && ($phase2['mode'] == "tunnel6")) {
