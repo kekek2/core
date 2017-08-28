@@ -2055,7 +2055,7 @@ th {
 .table-condensed > tbody > tr > td,
 .table-condensed > tfoot > tr > th,
 .table-condensed > tfoot > tr > td {
-  padding: 5px; }
+  padding: 5px !important; }
 
 .table-bordered {
   border: 1px solid #eee; }
