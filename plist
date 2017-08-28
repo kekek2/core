@@ -52,7 +52,6 @@
 /usr/local/etc/inc/rrd.inc
 /usr/local/etc/inc/services.inc
 /usr/local/etc/inc/system.inc
-/usr/local/etc/inc/upgrade_config.inc
 /usr/local/etc/inc/util.inc
 /usr/local/etc/inc/xmlparse.inc
 /usr/local/etc/inc/xmlrpc.inc
@@ -65,6 +64,7 @@
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20160630
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20161210
 /usr/local/etc/pkg/fingerprints/OPNsense/trusted/opnsense-update.deciso.com.20160725
+/usr/local/etc/pkg/fingerprints/OPNsense/trusted/opnsense-update.deciso.com.20170721
 /usr/local/etc/pkg/fingerprints/OPNsense/trusted/pkg.opnsense.org.20170625
 /usr/local/etc/rc
 /usr/local/etc/rc.backup_captiveportal
@@ -745,7 +745,6 @@
 /usr/local/opnsense/www/css/jquery.bootgrid.css
 /usr/local/opnsense/www/css/jquery.tokenize.css
 /usr/local/opnsense/www/css/nv.d3.css
-/usr/local/opnsense/www/css/nv.d3.min.css
 /usr/local/opnsense/www/fonts/FontAwesome.otf
 /usr/local/opnsense/www/fonts/fontawesome-webfont.eot
 /usr/local/opnsense/www/fonts/fontawesome-webfont.svg
@@ -1043,7 +1042,6 @@
 /usr/local/www/services_unbound_overrides.php
 /usr/local/www/status_dhcp_leases.php
 /usr/local/www/status_dhcpv6_leases.php
-/usr/local/www/status_filter_reload.php
 /usr/local/www/status_gateway_groups.php
 /usr/local/www/status_gateways.php
 /usr/local/www/status_graph.php

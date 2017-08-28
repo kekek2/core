@@ -33,11 +33,8 @@ require_once("filter.inc");
 require_once("logs.inc");
 require_once("system.inc");
 
-if (!isset($config['filter']['rule'])) {
-    $config['filter']['rule'] = array();
-}
+$a_filter = &config_read_array('filter', 'rule');
 
-$a_filter = &$config['filter']['rule'];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_GET['if'])) {
         $current_if = htmlspecialchars($_GET['if']);
@@ -53,20 +50,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         system_cron_configure();
         filter_configure();
         clear_subsystem_dirty('filter');
-        $savemsg = sprintf(
-            gettext(
-                'The settings have been applied and the rules are now reloading ' .
-                'in the background. You can monitor the reload progress %shere%s.'
-            ),
-            '<a href="status_filter_reload.php">',
-            '</a>'
-        );
+        $savemsg = gettext('The settings have been applied and the rules are now reloading in the background.');
     } elseif (isset($pconfig['act']) && $pconfig['act'] == 'del' && isset($id)) {
         // delete single item
         if (!empty($a_filter[$id]['associated-rule-id'])) {
             // unlink nat entry
             if (isset($config['nat']['rule'])) {
-                $a_nat = &$config['nat']['rule'];
+                $a_nat = &config_read_array('nat', 'rule');
                 foreach ($a_nat as &$natent) {
                     if ($natent['associated-rule-id'] == $a_filter[$id]['associated-rule-id']) {
                         $natent['associated-rule-id'] = '';
@@ -86,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach ($pconfig['rule'] as $rulei) {
             // unlink nat entry
             if (isset($config['nat']['rule'])) {
-                $a_nat = &$config['nat']['rule'];
+                $a_nat = &config_read_array('nat', 'rule');
                 foreach ($a_nat as &$natent) {
                     if ($natent['associated-rule-id'] == $a_filter[$rulei]['associated-rule-id']) {
                         $natent['associated-rule-id'] = '';
