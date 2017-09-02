@@ -43,6 +43,8 @@ echo "%%TING_ABI%%" > /usr/local/opnsense/version/ting.abi
 
 if /usr/local/etc/rc.d/configd status > /dev/null; then
 	/usr/local/etc/rc.d/configd restart
+	configctl template reload OPNsense/Syslog
+	/usr/local/etc/rc.d/syslog-ng restart
 fi
 
 # ensure fingerprints revoked dir exists
