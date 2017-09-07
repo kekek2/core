@@ -243,28 +243,24 @@ class SettingsController extends ApiMutableModelControllerBase
         return $result;
     }
 
-    public function encode($node, $list)
+    public static function encode($domains)
     {
-        if (!isset($node['forward']['acl']))
-            return $node;
         $IDN = new \idna_convert();
-        $new_list = [];
-        foreach (explode(",", $node['forward']['acl'][$list]) as $site)
-            $new_list[] = $IDN->encode($site);
-        $node['forward']['acl'][$list] = implode(",", $new_list);
-        return $node;
+        $result = [];
+        foreach (explode(",", $domains) as $domain)
+            if ($domain != "")
+                $result[] = ($domain[0] == "." ? "." : "") . $IDN->encode($domain);
+        return implode(",", $result);
     }
-    
-    public function decode($node, $list)
+
+    public static function decode($domains)
     {
         $IDN = new \idna_convert();
-        foreach ($node['forward']['acl'][$list] as $site => $selected)
-        {
-            unset($node['forward']['acl'][$list][$site]);
-            $cyr = $IDN->decode($site);
-            $node['forward']['acl'][$list][$cyr] = ['value' => $cyr, 'selected' => $selected['selected']];
-        }
-        return $node;
+        $result = [];
+        foreach (explode(",", $domains) as $domain)
+            if ($domain != "")
+                $result[] = $IDN->decode($domain);
+        return implode(",", $result);
     }
 
     public function getAction()
@@ -272,7 +268,10 @@ class SettingsController extends ApiMutableModelControllerBase
         // define list of configurable settings
         $result = array();
         if ($this->request->isGet()) {
-            $result[static::$internalModelName] = $this->decode($this->decode($this->getModelNodes(), 'whiteList'), 'blackList');
+            $mdlProxy = $this->getModel();
+            $mdlProxy->forward->acl->whiteList = self::decode($mdlProxy->forward->acl->whiteList);
+            $mdlProxy->forward->acl->blackList = self::decode($mdlProxy->forward->acl->blackList);
+            $result[static::$internalModelName] = $mdlProxy->getNodes();
         }
         return $result;
     }
@@ -284,7 +283,12 @@ class SettingsController extends ApiMutableModelControllerBase
         if ($this->request->isPost()) {
             // load model and update with provided data
             $mdl = $this->getModel();
-            $mdl->setNodes($this->encode($this->encode($this->request->getPost(static::$internalModelName), 'whiteList'), 'blackList'));
+            $post = $this->request->getPost(static::$internalModelName);
+            if (isset($post['forward']['acl']['whiteList']))
+                $post['forward']['acl']['whiteList'] = self::encode($post['forward']['acl']['whiteList']);
+            if (isset($post['forward']['acl']['blackList']))
+                $post['forward']['acl']['blackList'] = self::encode($post['forward']['acl']['blackList']);
+            $mdl->setNodes($post);
             $result = $this->validate();
             if (empty($result['result'])) {
                 $errorMessage = $this->setActionHook();
