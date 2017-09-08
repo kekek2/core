@@ -271,7 +271,7 @@ class SettingsController extends ApiMutableModelControllerBase
             $mdlProxy = $this->getModel();
             $mdlProxy->forward->acl->whiteList = self::decode($mdlProxy->forward->acl->whiteList);
             $mdlProxy->forward->acl->blackList = self::decode($mdlProxy->forward->acl->blackList);
-            $mdlProxy->forward->icap->whiteList = self::decode($mdlProxy->forward->icap->whiteList);
+            $mdlProxy->forward->icap->exclude = self::decode($mdlProxy->forward->icap->exclude);
             $result[static::$internalModelName] = $mdlProxy->getNodes();
         }
         return $result;
@@ -289,8 +289,8 @@ class SettingsController extends ApiMutableModelControllerBase
                 $post['forward']['acl']['whiteList'] = self::encode($post['forward']['acl']['whiteList']);
             if (isset($post['forward']['acl']['blackList']))
                 $post['forward']['acl']['blackList'] = self::encode($post['forward']['acl']['blackList']);
-            if (isset($post['forward']['icap']['whiteList']))
-                $post['forward']['icap']['whiteList'] = self::encode($post['forward']['icap']['whiteList']);
+            if (isset($post['forward']['icap']['exclude']))
+                $post['forward']['icap']['exclude'] = self::encode($post['forward']['icap']['exclude']);
             $mdl->setNodes($post);
             $result = $this->validate();
             if (empty($result['result'])) {
