@@ -32,6 +32,32 @@ function getCurrentMacAddress() {
     return false;
 }
 
+function getCrtInfo($crt_info)
+{
+    $CurrentMacAddress = getCurrentMacAddress();
+    $ret = "";
+    if (isset($crt_info['subject']['UNDEF'])) {
+        if (isset($crt_info['subject']['UNDEF'][2]) && $crt_info['subject']['UNDEF'][2] != "" )
+            $ret .= "<td>" . $crt_info['subject']['UNDEF'][2] . "</td>\n                    ";
+
+        if (!isset($crt_info['subject']['UNDEF'][0]))
+            $ret .= "<td>" . gettext("Can not validate certificate") . "</td>";
+        elseif ($crt_info['subject']['UNDEF'][0] != $CurrentMacAddress)
+            $ret .= "<td>" . gettext("License is not valid for this device") . "</td>";
+        else
+            $ret .= "<td></td>";
+
+    } elseif (isset($crt_info['subject']['tingModule'])) {
+        $ret .= $crt_info['subject']['tingModule'];
+
+        if ($crt_info['subject']['tingAddress'] != $CurrentMacAddress)
+            $ret .= "<td>" . gettext("License is not valid for this device") . "</td>";
+        else
+            $ret .= "<td></td>";
+    }
+    return $ret . "\n";
+}
+
 if (file_exists($installed_crt_path) && file_exists($installed_key_path)) {
     $installed_crt_info = openssl_x509_parse(file_get_contents($installed_crt_path));
 }
@@ -174,32 +200,13 @@ if ($installed_crt_info) {
                   <td width="22%"><?=gettext('Expires at')?></td>
                   <td><?php echo strftime("%Y-%m-%d", $installed_crt_info['validTo_time_t']); ?></td>
                   <td>CORE</td>
+                  <?php echo getCrtInfo($installed_crt_info);?>
                 </tr>
                 <?php foreach ($installed_crt_modules_info as $module_info) { ?>
                   <tr>
                     <td></td>
                     <td><?php echo strftime("%Y-%m-%d", $module_info['validTo_time_t']); ?></td>
-                    <td>
-                        <?php
-
-                        if (isset($module_info['subject']['UNDEF'])) {
-                            if (isset($module_info['subject']['UNDEF'][2]))
-                                echo $module_info['subject']['UNDEF'][2];
-
-                            if (!isset($module_info['subject']['UNDEF'][0]))
-                                echo " " . gettext("Can not validate certificate");
-                            elseif ($module_info['subject']['UNDEF'][0] != getCurrentMacAddress())
-                                echo " " . gettext("License is not valid for this device");
-
-                        } elseif (isset($module_info['subject']['tingModule'])) {
-                            echo $module_info['subject']['tingModule'];
-
-                            if ($module_info['subject']['tingAddress'] != getCurrentMacAddress())
-                                echo " " . gettext("License is not valid for this device");
-                        }
-
-                        ?>
-                    </td>
+                    <?php echo getCrtInfo($module_info); ?>
                   </tr>
                 <?php } ?>
               <?php } ?>
