@@ -82,7 +82,7 @@ if [ "${1}" == "start" ]; then
 		fi
 
 		pre_run_var="${name}_opnsense_bootup_run"
-		pre_run_var="`echo ${pre_run_var}` | /usr/bin/sed 's/-/_/g'"
+		pre_run_var="`echo ${pre_run_var} | /usr/bin/sed 's/-/_/g'`"
 		eval "pre_run_cmd=\$${pre_run_var}"
 		${pre_run_cmd}
 	done
