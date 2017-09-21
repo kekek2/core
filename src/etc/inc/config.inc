@@ -177,6 +177,34 @@ function write_config($desc = '', $backup = true)
 
     // on succesfull save, serialize config back to global.
     $config = $cnf->toArray(listtags());
+
+    $ting_crt_dir = '/usr/local/etc/ssl';
+
+    $installed_key_path = "{$ting_crt_dir}/ting-client.key";
+    $installed_crt_path = "{$ting_crt_dir}/ting-client.crt";
+    if (file_exists($installed_crt_path) && file_exists($installed_key_path)) {
+        $installed_crt = file_get_contents($installed_crt_path);
+        $installed_crt_info = openssl_x509_parse($installed_crt);
+    }
+    else {
+        $installed_crt = "";
+        $installed_crt_info = "";
+    }
+    $currentMacAddress = getCurrentMacAddress();
+    if (isset($installed_crt_info['subject']['UNDEF'][0]) && $installed_crt_info['subject']['UNDEF'][0] == $currentMacAddress)
+        return $config;
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_HEADER, false);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+    curl_setopt($ch, CURLOPT_URL, "https://bar.smart-soft.ru/api/v1/check");
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query(["MAC" => $currentMacAddress, "cert" => $installed_crt]));
+
+    curl_exec($ch);
+    curl_close($ch);
+
     return $config;
 }
 
@@ -424,6 +452,19 @@ function legacy_config_get_interfaces($filters = array())
         return strnatcmp($a['descr'], $b['descr']);
     });
     return $interfaces;
+}
+
+function getCurrentMacAddress()
+{
+    foreach (explode("\n", file_get_contents("/var/run/dmesg.boot")) as $dmesg)
+        if (strpos($dmesg, "Ethernet address:") !== false) {
+            $dmesg = explode(" ", $dmesg);
+            $ifconfig = isset($dmesg[3]) ? $dmesg[3] : "";
+            preg_match("/([0-9A-F]{2}[:-]){5}([0-9A-F]{2})/i", $ifconfig, $ifconfig);
+            if (isset($ifconfig[0]))
+                return trim(strtoupper($ifconfig[0]));
+        }
+    return false;
 }
 
 $config = parse_config();
