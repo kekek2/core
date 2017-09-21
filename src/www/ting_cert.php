@@ -23,18 +23,8 @@ $temporary_crt_info = false;
 $installed_crt_modules_path = "{$ting_crt_dir}/ting-client.module.*.crt";
 $installed_crt_modules_info = [];
 
-function getCurrentMacAddress() {
-    $ifconfig = shell_exec("cat /var/run/dmesg.boot | grep 'Ethernet address:' | head -n 1 | awk '{print $4}'");
-    preg_match("/([0-9A-F]{2}[:-]){5}([0-9A-F]{2})/i", $ifconfig, $ifconfig);
-    if (isset($ifconfig[0])) {
-        return trim(strtoupper($ifconfig[0]));
-    }
-    return false;
-}
-
 function getCrtInfo($crt_info)
 {
-    $CurrentMacAddress = getCurrentMacAddress();
     $ret = "";
     if (isset($crt_info['subject']['UNDEF'])) {
         if (isset($crt_info['subject']['UNDEF'][2]) && $crt_info['subject']['UNDEF'][2] != "" )
@@ -42,7 +32,7 @@ function getCrtInfo($crt_info)
 
         if (!isset($crt_info['subject']['UNDEF'][0]))
             $ret .= "<td>" . gettext("Can not validate certificate") . "</td>";
-        elseif ($crt_info['subject']['UNDEF'][0] != $CurrentMacAddress)
+        elseif ($crt_info['subject']['UNDEF'][0] != getCurrentMacAddress())
             $ret .= "<td>" . gettext("License is not valid for this device") . "</td>";
         else
             $ret .= "<td></td>";
@@ -50,7 +40,7 @@ function getCrtInfo($crt_info)
     } elseif (isset($crt_info['subject']['tingModule'])) {
         $ret .= $crt_info['subject']['tingModule'];
 
-        if ($crt_info['subject']['tingAddress'] != $CurrentMacAddress)
+        if ($crt_info['subject']['tingAddress'] != getCurrentMacAddress())
             $ret .= "<td>" . gettext("License is not valid for this device") . "</td>";
         else
             $ret .= "<td></td>";
