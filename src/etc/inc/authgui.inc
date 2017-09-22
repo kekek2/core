@@ -281,6 +281,20 @@ function session_auth(&$Login_Error)
     return true;
 }
 
+function getCurrentMacAddress()
+{
+    foreach ([stream_get_contents(popen("dmesg", "r")), file_get_contents("/var/run/dmesg.boot")] as $stream)
+        foreach (explode("\n", $stream) as $dmesg)
+            if (strpos($dmesg, "Ethernet address:") !== false) {
+                $dmesg = explode(" ", $dmesg);
+                $ifconfig = isset($dmesg[3]) ? $dmesg[3] : "";
+                preg_match("/([0-9A-F]{2}[:-]){5}([0-9A-F]{2})/i", $ifconfig, $ifconfig);
+                if (isset($ifconfig[0]))
+                    return trim(strtoupper($ifconfig[0]));
+            }
+    return false;
+}
+
 $Login_Error = '';
 
 /* Authenticate user - exit if failed */

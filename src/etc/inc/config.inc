@@ -427,20 +427,6 @@ function legacy_config_get_interfaces($filters = array())
     return $interfaces;
 }
 
-function getCurrentMacAddress()
-{
-    foreach ([stream_get_contents(popen("dmesg", "r")), file_get_contents("/var/run/dmesg.boot")] as $stream)
-        foreach (explode("\n", $stream) as $dmesg)
-            if (strpos($dmesg, "Ethernet address:") !== false) {
-                $dmesg = explode(" ", $dmesg);
-                $ifconfig = isset($dmesg[3]) ? $dmesg[3] : "";
-                preg_match("/([0-9A-F]{2}[:-]){5}([0-9A-F]{2})/i", $ifconfig, $ifconfig);
-                if (isset($ifconfig[0]))
-                    return trim(strtoupper($ifconfig[0]));
-            }
-    return false;
-}
-
 $config = parse_config();
 
 /* set timezone */
