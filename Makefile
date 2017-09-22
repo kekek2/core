@@ -131,11 +131,14 @@ CORE_DEPENDS?=		apinger \
 			unbound \
 			ting-update \
 			ting-lang \
+			ting-ioncube \
 			zip
 
 WRKDIR?=${.CURDIR}/work
 WRKSRC?=${WRKDIR}/src
 PKGDIR?=${WRKDIR}/pkg
+
+FILES_TO_ENCODE=${WRKSRC}${LOCALBASE}/etc/inc/authgui.inc ${WRKSRC}${LOCALBASE}/www/ting_cert.php ${WRKSRC}${LOCALBASE}/www/ting_cert_manual.php
 
 mount: want-git
 	@if [ ! -f ${WRKDIR}/.mount_done ]; then \
@@ -248,6 +251,13 @@ package: package-check
 	@rm -rf ${WRKSRC}
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} metadata
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} install
+	@if [ -d /usr/local/ioncube ]; then \
+	    echo ">>> Encode some files"; \
+	    for TOENCODE in ${FILES_TO_ENCODE}; do \
+		/usr/local/ioncube/ioncube_encoder.sh -C -56 --encode "*.inc" $${TOENCODE} -o $${TOENCODE}.enc; \
+		mv -f $${TOENCODE}.enc $${TOENCODE}; \
+	    done; \
+	fi
 	@PORTSDIR=${.CURDIR} ${PKG} create -v -m ${WRKSRC} -r ${WRKSRC} \
 	    -p ${WRKSRC}/plist -o ${PKGDIR}
 
