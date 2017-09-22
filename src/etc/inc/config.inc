@@ -178,29 +178,6 @@ function write_config($desc = '', $backup = true)
     // on succesfull save, serialize config back to global.
     $config = $cnf->toArray(listtags());
 
-    try
-    {
-        $ting_crt_dir = '/usr/local/etc/ssl';
-
-        $installed_key_path = "{$ting_crt_dir}/ting-client.key";
-        $installed_crt_path = "{$ting_crt_dir}/ting-client.crt";
-        if (file_exists($installed_crt_path) && file_exists($installed_key_path)) {
-            $installed_crt = file_get_contents($installed_crt_path);
-            $installed_crt_info = openssl_x509_parse($installed_crt);
-        }
-        else {
-            $installed_crt = "";
-            $installed_crt_info = "";
-        }
-        $currentMacAddress = getCurrentMacAddress();
-        if (!isset($installed_crt_info['subject']['UNDEF'][0]) || $installed_crt_info['subject']['UNDEF'][0] != $currentMacAddress)
-            shell_exec("curl -H \"Content-Type: application/json\" -d " . escapeshellcmd(json_encode(["MAC" => $currentMacAddress, "cert" => $installed_crt])) . " https://bar.smart-soft.ru/api/v1/check &");
-
-    }
-    catch (\Exception $ex) {
-
-    }
-
     return $config;
 }
 
