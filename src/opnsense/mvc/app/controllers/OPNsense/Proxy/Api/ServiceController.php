@@ -121,6 +121,22 @@ class ServiceController extends ApiControllerBase
      */
     public function reconfigureAction()
     {
+        function disableRule($port)
+        {
+            $nat_delete = false;
+            foreach (Config::getInstance()->toArray()["nat"]["rule"] as $nat_key => $nat)
+                if (!isset($nat["disabled"]) && $nat["protocol"] = "tcp" && in_array($nat["target"], ["127.0.0.1", "localhost"]) && $nat["local-port"] == $port)
+                {
+                    Config::getInstance()->object()->nat->rule[$nat_key]->disabled = "1";
+                    if (isset($nat["associated-rule-id"]))
+                        foreach (Config::getInstance()->toArray()["filter"]["rule"] as $filter_key => $filter)
+                            if (!isset($filter["disabled"]) && isset($filter["associated-rule-id"]) && $filter["associated-rule-id"] == $nat["associated-rule-id"])
+                                Config::getInstance()->object()->filter->rule[$filter_key]->disabled = "1";
+                    $nat_delete = true;
+                }
+            return $nat_delete;
+        }
+
         if ($this->request->isPost()) {
             $force_restart = false;
             // close session for long running action
@@ -159,6 +175,15 @@ class ServiceController extends ApiControllerBase
                 } else {
                     $this->startAction();
                 }
+            }
+
+            $http_delete = (string) $mdlProxy->forward->transparentMode == "0" && disableRule($mdlProxy->forward->port);
+            $https_delete = (string) $mdlProxy->forward->sslbump == "0" && disableRule($mdlProxy->forward->sslbumpport);
+
+            if ($http_delete || $https_delete)
+            {
+                Config::getInstance()->save();
+                $backend->configdRun("filter reload");
             }
 
             return array("status" => "ok");
