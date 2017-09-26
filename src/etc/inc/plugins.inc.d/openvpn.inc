@@ -97,8 +97,8 @@ function openvpn_interfaces()
                     if (!empty($settings['tunnel_network'])) {
                         list($ip, $mask) = explode('/', $settings['tunnel_network']);
                         $oic['subnet'] = $mask;
-                        $mask = __gen_subnet_mask($mask);
-                        list($ip1, $ip2) = __get_interface_ip($ip, $mask);
+                        $mask = gen_subnet_mask($mask);
+                        list($ip1, $ip2) = openvpn_get_interface_ip($ip, $mask);
                         $oic['ipaddr'] = $ip1;
                     }
                     $interfaces['openvpn'] = $oic;
