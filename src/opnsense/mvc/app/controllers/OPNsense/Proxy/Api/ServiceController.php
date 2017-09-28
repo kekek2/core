@@ -125,7 +125,7 @@ class ServiceController extends ApiControllerBase
         {
             $nat_delete = false;
             foreach (Config::getInstance()->toArray()["nat"]["rule"] as $nat_key => $nat)
-                if (!isset($nat["disabled"]) && $nat["protocol"] = "tcp" && in_array($nat["target"], ["127.0.0.1", "localhost"]) && $nat["local-port"] == $port)
+                if (!isset($nat["disabled"]) && isset($nat["target"]) && isset($nat["local-port"]) && $nat["protocol"] = "tcp" && in_array($nat["target"], ["127.0.0.1", "localhost"]) && $nat["local-port"] == $port)
                 {
                     Config::getInstance()->object()->nat->rule[$nat_key]->disabled = "1";
                     if (isset($nat["associated-rule-id"]))
