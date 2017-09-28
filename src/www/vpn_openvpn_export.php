@@ -300,7 +300,7 @@ function openvpn_client_export_config($srvid, $usrid, $crtid, $useaddr, $verifys
     if (is_array($server_cert) && ($server_cert['crt'])) {
         $purpose = cert_get_purpose($server_cert['crt'], true);
         if ($purpose['server'] == 'Yes') {
-            $conf .= "ns-cert-type server{$nl}";
+            $conf .= "remote-cert-tls server{$nl}";
         }
     }
 
@@ -754,7 +754,7 @@ function openvpn_client_export_find_port_forwards($targetip, $targetport, $targe
 {
     global $config;
 
-    $FilterIflist = filter_generate_optcfg_array();
+    $FilterIflist = legacy_config_get_interfaces(array("enable" => true));
     $destinations = array();
 
     if (!isset($config['nat']['rule'])) {

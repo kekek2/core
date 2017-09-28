@@ -1206,7 +1206,7 @@ function interface_bring_down($interface = "wan", $ifacecfg = false)
     switch ($ipaddrv6) {
         case "slaac":
         case "dhcp6":
-            killbypid("/var/run/dhcp6c_{$realif}.pid", 'KILL', true);
+            killbypid("/var/run/dhcp6c_{$realif}.pid", 'TERM', true);
             @unlink("/var/etc/dhcp6c_{$interface}.conf");
             if (does_interface_exist($realifv6)) {
                 $ip6 = find_interface_ipv6($realifv6);
@@ -3229,16 +3229,16 @@ function interface_dhcpv6_configure($interface = 'wan', $wancfg)
 
     $rtsoldscript = "#!/bin/sh\n";
     $rtsoldscript .= "# this file was auto-generated, do not edit\n";
-    $rtsoldscript .= "echo $2 > /tmp/{$wanif}_routerv6\n";
-    $rtsoldscript .= "echo $2 > /tmp/{$wanif}_defaultgwv6\n";
-    if (!isset($wancfg['dhcp6sendsolicit'])) {
-        $rtsoldscript .= "if [ -f /var/run/dhcp6c_{$wanif}.pid ]; then\n";
-        $rtsoldscript .= "\t/bin/pkill -KILL -F /var/run/dhcp6c_{$wanif}.pid\n";
-        $rtsoldscript .= "\t/bin/sleep 1\n";
-        $rtsoldscript .= "fi\n";
-        $rtsoldscript .= "/usr/bin/logger -t rtsold \"Starting dhcp6 client for interface {$interface}({$wanif})\"\n";
-        $rtsoldscript .= "$dhcp6ccommand\n";
-    }
+    $rtsoldscript .= "if [ -n \"\${2}\" ]; then\n";
+    $rtsoldscript .= "\techo \${2} > /tmp/{$wanif}_routerv6\n";
+    $rtsoldscript .= "\techo \${2} > /tmp/{$wanif}_defaultgwv6\n";
+    $rtsoldscript .= "fi\n";
+    $rtsoldscript .= "if [ -f /var/run/dhcp6c_{$wanif}.pid ]; then\n";
+    $rtsoldscript .= "\t/bin/pkill -F /var/run/dhcp6c_{$wanif}.pid\n";
+    $rtsoldscript .= "\t/bin/sleep 1\n";
+    $rtsoldscript .= "fi\n";
+    $rtsoldscript .= "/usr/bin/logger -t rtsold \"Starting dhcp6 client for interface {$interface}({$wanif})\"\n";
+    $rtsoldscript .= "$dhcp6ccommand\n";
 
     if (!@file_put_contents("/var/etc/rtsold_{$wanif}_script.sh", $rtsoldscript)) {
         printf("Error: cannot open rtsold_{$wanif}_script.sh in interface_dhcpv6_configure() for writing.\n");
@@ -3272,10 +3272,7 @@ function interface_dhcpv6_configure($interface = 'wan', $wancfg)
     );
 
     if (isset($wancfg['dhcp6sendsolicit'])) {
-        /* dhcp6c from previous run can still be around */
-        killbypid("/var/run/dhcp6c_{$wanif}.pid", 'KILL', true);
-        /* command is already exec_safe() */
-        mwexec($dhcp6ccommand);
+        mwexec("/var/etc/rtsold_{$wanif}_script.sh");
     }
 
     return 0;

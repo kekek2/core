@@ -47,7 +47,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['timezone'] = 'Etc/UTC';
     $pconfig['prefer_ipv4'] = isset($config['system']['prefer_ipv4']);
     $pconfig['hostname'] = $config['system']['hostname'];
+    $pconfig['dnsallowoverride'] = isset($config['system']['dnsallowoverride']);
+    $pconfig['dnslocalhost'] = isset($config['system']['dnslocalhost']);
     $pconfig['domain'] = $config['system']['domain'];
+    $pconfig['hostname'] = $config['system']['hostname'];
+    $pconfig['prefer_ipv4'] = isset($config['system']['prefer_ipv4']);
+    $pconfig['timezone'] = $config['system']['timezone'];
+    $pconfig['timezone'] = 'Etc/UTC';
+    if (isset($config['system']['language'])) {
+        $pconfig['language'] = $config['system']['language'];
+    }
 
     for ($dnscounter = 1; $dnscounter < 9; $dnscounter++) {
         $dnsname = "dns{$dnscounter}";
@@ -56,14 +65,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $dnsgwname= "dns{$dnscounter}gw";
         $pconfig[$dnsgwname] = !empty($config['system'][$dnsgwname]) ? $config['system'][$dnsgwname] : 'none';
     }
-
-    $pconfig['dnsallowoverride'] = isset($config['system']['dnsallowoverride']);
-    $pconfig['timezone'] = $config['system']['timezone'];
-    $pconfig['theme'] = $no_change_config['theme'];
-    if (isset($config['system']['language'])) {
-        $pconfig['language'] = $config['system']['language'];
-    }
-    $pconfig['dnslocalhost'] = isset($config['system']['dnslocalhost']);
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $input_errors = array();
     $pconfig = $_POST;
@@ -103,15 +104,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
       }
     }
-    /* XXX cranky low-level call, please refactor */
-    $direct_networks_list = explode(' ', filter_get_direct_networks_list(filter_generate_optcfg_array()));
+    /* collect direct attached networks and static routes */
+    $direct_networks_list = array();
+    foreach (legacy_interfaces_details() as $ifname => $ifcnf) {
+        foreach ($ifcnf['ipv4'] as $addr) {
+            $direct_networks_list[] = gen_subnet($addr['ipaddr'], $addr['subnetbits']) . "/{$addr['subnetbits']}";
+        }
+        foreach ($ifcnf['ipv6'] as $addr) {
+            $direct_networks_list[] = gen_subnetv6($addr['ipaddr'], $addr['subnetbits']) . "/{$addr['subnetbits']}";
+        }
+    }
+    foreach (get_staticroutes() as $netent) {
+        $direct_networks_list[] = $netent['network'];
+    }
+
     for ($dnscounter = 1; $dnscounter < 9; $dnscounter++) {
         $dnsitem = "dns{$dnscounter}";
         $dnsgwitem = "dns{$dnscounter}gw";
         if (!empty($pconfig[$dnsgwitem])) {
-            if(interface_has_gateway($pconfig[$dnsgwitem])) {
-                foreach($direct_networks_list as $direct_network) {
-                    if(ip_in_subnet($_POST[$dnsitem], $direct_network)) {
+            if (interface_has_gateway($pconfig[$dnsgwitem])) {
+                foreach ($direct_networks_list as $direct_network) {
+                    if (ip_in_subnet($_POST[$dnsitem], $direct_network)) {
                         $input_errors[] = sprintf(gettext("You can not assign a gateway to DNS '%s' server which is on a directly connected network."),$pconfig[$dnsitem]);
                     }
                 }
@@ -120,11 +133,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     if (count($input_errors) == 0) {
-	
-	$restart_syslog = $config['system']['hostname'] != $pconfig['hostname'] || $config['system']['timezone'] != $pconfig['timezone'];
-	
+    
+        $restart_syslog = $config['system']['hostname'] != $pconfig['hostname'] || $config['system']['timezone'] != $pconfig['timezone'];
+    
         $config['system']['hostname'] = $pconfig['hostname'];
         $config['system']['domain'] = $pconfig['domain'];
+        $config['system']['language'] = $pconfig['language'];
         $config['system']['timezone'] = $pconfig['timezone'];
         $config['theme'] = $no_change_config['theme'];
 
@@ -258,7 +272,7 @@ include("head.inc");
           <table class="table table-clean-form opnsense_standard_table_form">
             <tr>
               <td width="22%"><strong><?=gettext("System");?></strong></td>
-              <td  width="78%" align="right">
+              <td width="78%" align="right">
                 <small><?=gettext("full help"); ?> </small>
                 <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
               </td>
@@ -316,7 +330,7 @@ include("head.inc");
                 <select name="language" class="selectpicker" data-size="10" data-style="btn-default" data-width="auto">
 <?php
                   foreach (get_locale_list() as $lcode => $ldesc):?>
-                  <option value="<?=$lcode;?>" <?=$lcode == $pconfig['language'] ? "selected=\"selected\"" : "";?>>
+                  <option value="<?=$lcode;?>" <?= $lcode == $pconfig['language'] ? 'selected="selected"' : '' ?>>
                     <?=$ldesc;?>
                   </option>
 <?php
