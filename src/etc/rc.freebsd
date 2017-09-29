@@ -76,11 +76,6 @@ if [ "${1}" == "start" ]; then
 			continue
 		fi
 
-		# do nothing if service is syslog-ng and already running
-		if [ "$rc_filename" == "/usr/local/etc/rc.d/syslog-ng" ]; then
-		    $rc_filename status > /dev/null  && continue
-		fi
-
 		pre_run_var="${name}_opnsense_bootup_run"
 		eval "pre_run_cmd=\$${pre_run_var}"
 		${pre_run_cmd}
@@ -94,6 +89,11 @@ for rc_filename in ${rc_filenames}; do
 	if ! rc_enabled ${rc_filename} ${name}; then
 		continue
 	fi
+
+	# do nothing if service is syslog-ng and already running
+    if [ "$rc_filename" == "/usr/local/etc/rc.d/syslog-ng" ]; then
+    	$rc_filename status > /dev/null  && continue
+    fi
 
 	${rc_filename} ${1}
 done
