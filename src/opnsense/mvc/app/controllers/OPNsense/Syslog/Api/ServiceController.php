@@ -156,25 +156,27 @@ class ServiceController extends ApiControllerBase
             if(!file_exists($filename))
                 return array("status" => "ok", "data" => array(array('time' => gettext("No data found"), 'filter' => "", 'message' => "")), 'filters' => '');
 
+            $dump_filter = "";
+            $filters = preg_split('/\s+/', trim(preg_quote($filter,'/')));
+            foreach ($filters as $key => $pattern) {
+                if(trim($pattern) == '')
+                    continue;
+                if ($key > 0)
+                    $dump_filter .= "&&";
+                $dump_filter .= "/$pattern/";
+            }
+
             $logdata = array();
             $formatted = array();
             if($filename != '') {
                 $backend = new Backend();
-                $logdatastr = $backend->configdRun("syslog dumplog {$filename}");
+                $logdatastr = $backend->configdRun("syslog filterlog {$filename} {$numentries} {$dump_filter}");
                 $logdata = explode("\n", $logdatastr);
-            }
-
-            $filters = preg_split('/\s+/', trim(preg_quote($filter,'/')));
-            foreach ($filters as $pattern) {
-                if(trim($pattern) == '')
-                    continue;
-                $logdata = preg_grep("/$pattern/", $logdata);
             }
 
             if($reverse)
                 $logdata = array_reverse($logdata);
 
-            $counter = 1;
             foreach ($logdata as $logent) {
                 if(trim($logent) == '')
                     continue;
@@ -188,9 +190,6 @@ class ServiceController extends ApiControllerBase
                     $entry_date_time = "";
                 }
                 $formatted[] = array('time' => utf8_encode($entry_date_time), 'filter' => $filter, 'message' => utf8_encode($entry_text));
-
-                if(++$counter > $numentries)
-                    break; 
             }
 
             if(count($formatted) == 0)
