@@ -170,7 +170,7 @@ class ServiceController extends ApiControllerBase
             $formatted = array();
             if($filename != '') {
                 $backend = new Backend();
-                $logdatastr = $backend->configdRun("syslog filterlog {$filename} {$numentries} {$dump_filter}");
+                $logdatastr = $backend->configdRun("syslog dumplog {$filename} {$numentries} {$dump_filter}");
                 $logdata = explode("\n", $logdatastr);
             }
 

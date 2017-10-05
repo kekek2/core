@@ -2,19 +2,22 @@
 
 MASK=$1
 NUMBER=$2
+FILTER=$3
 
 [ "${MASK}" = "" ] && echo "No target" && exit 0;
 
 [ ! -f ${MASK} ] && echo "No logfile" && exit 0;
+
+[ "${FILTER}" = "" ] && FILTER="//"
 
 dump_logs()
 {
     for FILE in $( ls -r ${MASK}* ); do
         GZ=`file ${FILE} | grep -c gzip`
         if [ "${GZ}" = "1" ]; then
-	        zcat ${FILE}
+	        zcat ${FILE} | awk "${FILTER}"
         else
-	        cat ${FILE}
+	        cat ${FILE} | awk "${FILTER}"
         fi
     done;
 }
@@ -22,5 +25,5 @@ dump_logs()
 if [ "${NUMBER}" = "" -o "${NUMBER}" = "0" ]; then
     dump_logs
 else
-    dump_logs | tail -c ${NUMBER}
+    dump_logs | tail -n ${NUMBER}
 fi
