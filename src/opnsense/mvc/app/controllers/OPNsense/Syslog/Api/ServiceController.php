@@ -149,7 +149,7 @@ class ServiceController extends ApiControllerBase
 
             $mdl = new Syslog();
             $filename = $mdl->getLogFileName($logname);
-            $reverse = ($mdl->Reverse->__toString() == '1');
+            $reverse = $mdl->Reverse->__toString();
             $numentries = intval($mdl->NumEntries->__toString());
             $hostname = Config::getInstance()->toArray()['system']['hostname'];
 
@@ -170,12 +170,9 @@ class ServiceController extends ApiControllerBase
             $formatted = array();
             if($filename != '') {
                 $backend = new Backend();
-                $logdatastr = $backend->configdRun("syslog dumplog {$filename} {$numentries} {$dump_filter}");
+                $logdatastr = $backend->configdRun("syslog dumplog {$filename} {$numentries} {$reverse} {$dump_filter}");
                 $logdata = explode("\n", $logdatastr);
             }
-
-            if($reverse)
-                $logdata = array_reverse($logdata);
 
             foreach ($logdata as $logent) {
                 if(trim($logent) == '')

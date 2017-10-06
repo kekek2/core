@@ -2,11 +2,18 @@
 
 MASK=$1
 NUMBER=$2
-FILTER=$3
+REVERSE=$3
+FILTER=$4
 
 [ "${MASK}" = "" ] && echo "No target" && exit 0;
 
 [ ! -f ${MASK} ] && echo "No logfile" && exit 0;
+
+if [ "${REVERSE}" = "" -o "${REVERSE}" = "0" ]; then
+    GET="head"
+else
+    GET="tail -r"
+fi
 
 [ "${FILTER}" = "" ] && FILTER="//"
 
@@ -25,5 +32,5 @@ dump_logs()
 if [ "${NUMBER}" = "" -o "${NUMBER}" = "0" ]; then
     dump_logs
 else
-    dump_logs | tail -n ${NUMBER}
+    dump_logs | ${GET} -n ${NUMBER}
 fi
