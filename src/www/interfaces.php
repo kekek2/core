@@ -1718,11 +1718,9 @@ include("head.inc");
                             <div class="hidden" for="help_for_blockbogons">
                               <small class="formhelp">
                               <?=gettext("When set, this option blocks traffic from IP addresses that are reserved " .
-                              "(but not RFC 1918) or not yet assigned by IANA."); ?>&nbsp;&nbsp;
+                              "(but not RFC 1918) or not yet assigned by IANA."); ?>
                               <?=gettext("Bogons are prefixes that should never appear in the Internet routing table, " .
                               "and obviously should not appear as the source address in any packets you receive."); ?>
-                              <br /><br />
-                              <?=gettext("Note: The update frequency can be changed under System->Advanced Firewall/NAT settings.")?>
                               </small>
                             </div>
                           </td>
