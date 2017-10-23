@@ -2771,7 +2771,6 @@ include("head.inc");
                                 </option>
 <?php
                               endfor;?>
-                              ?>
                             </select>
                             <div class="hidden" for="help_for_prefix-6rd-v4plen">
                               <small class="formhelp">
@@ -3065,15 +3064,15 @@ include("head.inc");
                           <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Mode"); ?></td>
                           <td>
                             <select name="mode" class="selectpicker" data-style="btn-default" id="mode">
+<?php
+                              if (interfaces_test_wireless_capability(get_real_interface($pconfig['if']), 'hostap')): ?>
+                              <option <?=$pconfig['mode'] == 'hostap' ? "selected=\"selected\"" : "";?> value="hostap"><?=gettext("Access Point"); ?></option>
+<?php
+                              endif; ?>
                               <option <?=$pconfig['mode'] == 'bss' ? "selected=\"selected\"" : "";?> value="bss"><?=gettext("Infrastructure (BSS)"); ?></option>
 <?php
                               if (interfaces_test_wireless_capability(get_real_interface($pconfig['if']), 'adhoc')): ?>
                               <option <?=$pconfig['mode'] == 'adhoc' ? "selected=\"selected\"" : "";?> value="adhoc"><?=gettext("Ad-hoc (IBSS)"); ?></option>
-<?php
-                              endif; ?>
-<?php
-                              if (interfaces_test_wireless_capability(get_real_interface($pconfig['if']), 'hostap')): ?>
-                              <option <?=$pconfig['mode'] == 'hostap' ? "selected=\"selected\"" : "";?> value="hostap"><?=gettext("Access Point"); ?></option>
 <?php
                               endif; ?>
                             </select>
