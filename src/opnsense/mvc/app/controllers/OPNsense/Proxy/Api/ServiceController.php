@@ -124,16 +124,18 @@ class ServiceController extends ApiControllerBase
         function disableRule($port)
         {
             $nat_delete = false;
-            foreach (Config::getInstance()->toArray()["nat"]["rule"] as $nat_key => $nat)
-                if (!isset($nat["disabled"]) && isset($nat["target"]) && isset($nat["local-port"]) && $nat["protocol"] = "tcp" && in_array($nat["target"], ["127.0.0.1", "localhost"]) && $nat["local-port"] == $port)
-                {
-                    Config::getInstance()->object()->nat->rule[$nat_key]->disabled = "1";
-                    if (isset($nat["associated-rule-id"]))
-                        foreach (Config::getInstance()->toArray()["filter"]["rule"] as $filter_key => $filter)
-                            if (!isset($filter["disabled"]) && isset($filter["associated-rule-id"]) && $filter["associated-rule-id"] == $nat["associated-rule-id"])
-                                Config::getInstance()->object()->filter->rule[$filter_key]->disabled = "1";
-                    $nat_delete = true;
-                }
+            $config = Config::getInstance()->toArray();
+            if (isset($config["nat"]["rule"]))
+                foreach ($config["nat"]["rule"] as $nat_key => $nat)
+                    if (!isset($nat["disabled"]) && isset($nat["target"]) && isset($nat["local-port"]) && $nat["protocol"] = "tcp" && in_array($nat["target"], ["127.0.0.1", "localhost"]) && $nat["local-port"] == $port)
+                    {
+                        Config::getInstance()->object()->nat->rule[$nat_key]->disabled = "1";
+                        if (isset($nat["associated-rule-id"]))
+                            foreach (Config::getInstance()->toArray()["filter"]["rule"] as $filter_key => $filter)
+                                if (!isset($filter["disabled"]) && isset($filter["associated-rule-id"]) && $filter["associated-rule-id"] == $nat["associated-rule-id"])
+                                    Config::getInstance()->object()->filter->rule[$filter_key]->disabled = "1";
+                        $nat_delete = true;
+                    }
             return $nat_delete;
         }
 
