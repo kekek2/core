@@ -85,6 +85,7 @@ CORE_DEPENDS?=		apinger \
 			ifinfo \
 			flock \
 			flowd \
+			hostapd \
 			isc-dhcp43-client \
 			isc-dhcp43-relay \
 			isc-dhcp43-server \
@@ -133,6 +134,7 @@ CORE_DEPENDS?=		apinger \
 			ting-update \
 			ting-lang \
 			ting-ioncube \
+			wpa_supplicant \
 			zip
 
 WRKDIR?=${.CURDIR}/work

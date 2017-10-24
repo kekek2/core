@@ -1718,11 +1718,9 @@ include("head.inc");
                             <div class="hidden" for="help_for_blockbogons">
                               <small class="formhelp">
                               <?=gettext("When set, this option blocks traffic from IP addresses that are reserved " .
-                              "(but not RFC 1918) or not yet assigned by IANA."); ?>&nbsp;&nbsp;
+                              "(but not RFC 1918) or not yet assigned by IANA."); ?>
                               <?=gettext("Bogons are prefixes that should never appear in the Internet routing table, " .
                               "and obviously should not appear as the source address in any packets you receive."); ?>
-                              <br /><br />
-                              <?=gettext("Note: The update frequency can be changed under System->Advanced Firewall/NAT settings.")?>
                               </small>
                             </div>
                           </td>
@@ -2773,7 +2771,6 @@ include("head.inc");
                                 </option>
 <?php
                               endfor;?>
-                              ?>
                             </select>
                             <div class="hidden" for="help_for_prefix-6rd-v4plen">
                               <small class="formhelp">
@@ -3067,15 +3064,15 @@ include("head.inc");
                           <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Mode"); ?></td>
                           <td>
                             <select name="mode" class="selectpicker" data-style="btn-default" id="mode">
+<?php
+                              if (interfaces_test_wireless_capability(get_real_interface($pconfig['if']), 'hostap')): ?>
+                              <option <?=$pconfig['mode'] == 'hostap' ? "selected=\"selected\"" : "";?> value="hostap"><?=gettext("Access Point"); ?></option>
+<?php
+                              endif; ?>
                               <option <?=$pconfig['mode'] == 'bss' ? "selected=\"selected\"" : "";?> value="bss"><?=gettext("Infrastructure (BSS)"); ?></option>
 <?php
                               if (interfaces_test_wireless_capability(get_real_interface($pconfig['if']), 'adhoc')): ?>
                               <option <?=$pconfig['mode'] == 'adhoc' ? "selected=\"selected\"" : "";?> value="adhoc"><?=gettext("Ad-hoc (IBSS)"); ?></option>
-<?php
-                              endif; ?>
-<?php
-                              if (interfaces_test_wireless_capability(get_real_interface($pconfig['if']), 'hostap')): ?>
-                              <option <?=$pconfig['mode'] == 'hostap' ? "selected=\"selected\"" : "";?> value="hostap"><?=gettext("Access Point"); ?></option>
 <?php
                               endif; ?>
                             </select>

@@ -47,6 +47,12 @@ function stdBootgridUI(obj, sourceUrl, options) {
                     "<button type=\"button\" class=\"btn btn-xs btn-default command-copy\" data-row-id=\"" + row.uuid + "\"><span class=\"fa fa-clone\"></span></button>" +
                     "<button type=\"button\" class=\"btn btn-xs btn-default command-delete\" data-row-id=\"" + row.uuid + "\"><span class=\"fa fa-trash-o\"></span></button>";
             },
+            "commandsWithInfo": function(column, row) {
+                return "<button type=\"button\" class=\"btn btn-xs btn-default command-info\" data-row-id=\"" + row.uuid + "\"><span class=\"fa fa-info-circle\"></span></button> " +
+                    "<button type=\"button\" class=\"btn btn-xs btn-default command-edit\" data-row-id=\"" + row.uuid + "\"><span class=\"fa fa-pencil\"></span></button>" +
+                    "<button type=\"button\" class=\"btn btn-xs btn-default command-copy\" data-row-id=\"" + row.uuid + "\"><span class=\"fa fa-clone\"></span></button>" +
+                    "<button type=\"button\" class=\"btn btn-xs btn-default command-delete\" data-row-id=\"" + row.uuid + "\"><span class=\"fa fa-trash-o\"></span></button>";
+            },
             "rowtoggle": function (column, row) {
                 if (parseInt(row[column.id], 2) == 1) {
                     return "<span style=\"cursor: pointer;\" class=\"fa fa-check-square-o command-toggle\" data-value=\"1\" data-row-id=\"" + row.uuid + "\"></span>";
@@ -76,13 +82,17 @@ function stdBootgridUI(obj, sourceUrl, options) {
     {
         // scale footer on resize
         $(this).find("tfoot td:first-child").attr('colspan',$(this).find("th").length - 1);
-        $(this).find('tr[data-row-id]').each(function(){
-            if ($(this).find('[class*="command-toggle"]').first().data("value") == "0") {
-                $(this).addClass("text-muted");
-            }
-            if ($(this).find('[class*="command-boolean"]').first().data("value") == "0") {
-                $(this).addClass("text-muted");
-            }
+        // invert colors if needed (check if there is a disabled field instead of an enabled field
+        var inverted = $(this).find("thead th[data-column-id=disabled]").length > 0;
+        $(this).find('tr[data-row-id]').each(function(index, entry){
+            ['[class*="command-toggle"]', '[class*="command-boolean"]'].forEach(function (selector) {
+                var selected_element = $(entry).find(selector).first();
+                if (selected_element.length > 0) {
+                    if ((selected_element.data("value") == "0") != inverted ) {
+                        $(entry).addClass("text-muted");
+                    }
+                }
+            });
         });
 
     })
@@ -116,6 +126,7 @@ function std_bootgrid_reload(gridId) {
  *  set     : url to set data action (POST) will be suffixed by uuid
  *  add     : url to create a new data record (POST)
  *  del     : url to del item action (POST) will be suffixed by uuid
+ *  info    : url to get data action that will be displayed informationally suffixed by the uuid
  *
  * @param params
  * @returns {*}
@@ -135,6 +146,25 @@ $.fn.UIBootgrid = function (params) {
 
                 // link edit and delete event buttons
                 grid.on("loaded.rs.jquery.bootgrid", function(){
+
+                    // info item
+                    grid.find(".command-info").on("click", function(e) {
+                        if(gridParams['info'] != undefined) {
+                            var uuid=$(this).data("row-id");
+                            ajaxGet(url=gridParams['info'] + uuid,
+                                sendData={}, callback=function(data, status) {
+                                    if(status == 'success') {
+                                        var title = data['title'] || "Information";
+                                        var message = data['message'] || "A Message";
+                                        var close = data['close'] || "Close";
+                                        stdDialogInform(title, message, close, undefined, "info");
+                                    }
+                                });
+                        } else {
+                            console.log("[grid] action info missing");
+                        }
+                    }).end();
+
                     // edit item
                     grid.find(".command-edit").on("click", function(e)
                     {

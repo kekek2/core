@@ -41,8 +41,8 @@ echo "%%CORE_NAME%%" > /usr/local/opnsense/version/opnsense.name
 echo "%%CORE_ABI%%" > /usr/local/opnsense/version/opnsense.abi
 echo "%%TING_ABI%%" > /usr/local/opnsense/version/ting.abi
 
+/usr/local/etc/rc.d/configd start
 if /usr/local/etc/rc.d/configd status > /dev/null; then
-	/usr/local/etc/rc.d/configd restart
 	configctl template reload OPNsense/Syslog
 	/usr/local/etc/rc.d/syslog-ng restart
 fi
