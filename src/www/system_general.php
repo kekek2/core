@@ -337,11 +337,9 @@ include("head.inc");
                   endforeach;?>
                 </select>
                 <div class="hidden" for="help_for_language">
-                  <strong>
                   <small class="formhelp">
                     <?= gettext('Choose a language for the web GUI.') ?>
                   </small>
-                  </strong>
                 </div>
               </td>
             </tr>
@@ -354,9 +352,11 @@ include("head.inc");
                 <input name="prefer_ipv4" type="checkbox" id="prefer_ipv4" value="yes" <?= !empty($pconfig['prefer_ipv4']) ? "checked=\"checked\"" : "";?> />
                 <strong><?=gettext("Prefer to use IPv4 even if IPv6 is available"); ?></strong>
                 <div class="hidden" for="help_for_prefer_ipv4">
+                  <small class="formhelp">
                   <?=gettext("By default, if a hostname resolves IPv6 and IPv4 addresses ".
                                       "IPv6 will be used, if you check this option, IPv4 will be " .
                                       "used instead of IPv6."); ?>
+                  </small>
                 </div>
               </td>
             </tr>
