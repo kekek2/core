@@ -571,7 +571,9 @@ $( document ).ready(function() {
                   <td>
                     <input name="disabled" type="checkbox" id="disabled" value="yes" <?= !empty($pconfig['disabled']) ? "checked=\"checked\"" : ""; ?> />
                     <div class="hidden" for="help_for_disabled">
+                      <small class="formhelp">
                       <?=gettext("Set this option to disable this gateway without removing it from the list.");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
