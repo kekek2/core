@@ -225,7 +225,7 @@ include("head.inc");
           <form method="post" name="iform" id="iform">
             <table class="table table-clean-form opnsense_standard_table_form">
               <tr>
-                <td width="22%"><strong><?= gettext('Cryptographic Hardware Acceleration') ?></strong></td>
+                <td width="22%"><div style="position:absolute;"><strong><?= gettext('Cryptographic Hardware Acceleration') ?></strong></div></td>
                 <td width="78%" align="right">
                   <small><?=gettext("full help"); ?> </small>
                   <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
@@ -264,7 +264,9 @@ include("head.inc");
                 <td><a id="help_for_cryptodev_enable" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Use /dev/crypto");?> </td>
                 <td>
                   <input name="cryptodev_enable" type="checkbox" id="cryptodev_enable" value="yes" <?= !empty($pconfig['cryptodev_enable']) ? "checked=\"checked\"" : "";?> />
+                  <strong>
                   <?=gettext("Enable old userland device for cryptographic acceleration"); ?>
+                  </strong>
                   <div class="hidden" for="help_for_cryptodev_enable">
                     <small class="formhelp">
                     <?=gettext("Old hardware accelerators like 'safe', 'hifn' or 'ubsec' may only provide userland acceleration to e.g. " .
@@ -498,7 +500,7 @@ include("head.inc");
                 <td><a id="help_for_use_mfs_tmp" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('/tmp RAM disk'); ?></td>
                 <td>
                   <input name="use_mfs_tmp" type="checkbox" id="use_mfs_tmp" value="yes" <?=!empty($pconfig['use_mfs_tmp']) ? 'checked="checked"' : '';?>/>
-                  <?=gettext('Use memory file system for /tmp'); ?>
+                  <strong><?=gettext('Use memory file system for /tmp'); ?></strong>
                   <div class="hidden" for="help_for_use_mfs_tmp">
                     <small class="formhelp">
                     <?= gettext('Set this if you wish to use /tmp as a RAM disk (memory file system disk) rather than using the hard disk.') ?>
