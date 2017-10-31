@@ -734,10 +734,10 @@ $( document ).ready(function() {
                         </thead>
                         <tbody>
                             <tr>
-                              <td>
+                              <td style="padding-left: 0px !important;">
                                 <input name="latencylow" type="text" value="<?=$pconfig['latencylow'];?>" />
                               </td>
-                              <td>
+                              <td style="padding-left: 0px !important;">
                                 <input name="latencyhigh" type="text" value="<?=$pconfig['latencyhigh'];?>" />
                               </td>
                             </tr>
@@ -762,10 +762,10 @@ $( document ).ready(function() {
                         </thead>
                         <tbody>
                             <tr>
-                              <td>
+                              <td style="padding-left: 0px !important;">
                                 <input name="losslow" type="text" value="<?=$pconfig['losslow'];?>" />
                               </td>
-                              <td>
+                              <td style="padding-left: 0px !important;">
                                 <input name="losshigh" type="text" value="<?=$pconfig['losshigh'];?>" />
                               </td>
                             </tr>
