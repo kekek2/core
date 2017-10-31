@@ -331,10 +331,10 @@ include("head.inc");
                     <th colspan="4"><?=gettext("From General settings");?></th>
                   </tr>
                   <tr>
-                    <th><?=gettext("Access List Name"); ?></th>
-                    <th><?=gettext("Action"); ?></th>
-                    <th><?=gettext("Network"); ?></th>
-                    <th><a href="services_unbound.php" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-pencil"></span></a></th>
+                    <th width="30%"><?=gettext("Access List Name"); ?></th>
+                    <th width="20%"><?=gettext("Action"); ?></th>
+                    <th width="40%"><?=gettext("Network"); ?></th>
+                    <th width="10%"><a href="services_unbound.php" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-pencil"></span></a></th>
                   </tr>
                 </thead>
                 <body>
@@ -382,10 +382,10 @@ include("head.inc");
               <table class="table table-clean-form">
                 <thead>
                   <tr>
-                    <th><?=gettext("Access List Name"); ?></th>
-                    <th><?=gettext("Action"); ?></th>
-                    <th><?=gettext("Description"); ?></th>
-                    <th></th>
+                    <th width="30%"><?=gettext("Access List Name"); ?></th>
+                    <th width="20%"><?=gettext("Action"); ?></th>
+                    <th width="40%"><?=gettext("Description"); ?></th>
+                    <th width="10%"></th>
                   </tr>
                 </thead>
 <?php
