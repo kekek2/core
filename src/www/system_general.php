@@ -449,36 +449,6 @@ include("head.inc");
               </td>
             </tr>
             <tr>
-              <th colspan="2" valign="top" class="listtopic"><?=gettext("Networking"); ?></th>
-            </tr>
-            <tr>
-              <td><a id="help_for_prefer_ipv4" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Prefer IPv4 over IPv6"); ?></td>
-              <td>
-                <input name="prefer_ipv4" type="checkbox" id="prefer_ipv4" value="yes" <?= !empty($pconfig['prefer_ipv4']) ? "checked=\"checked\"" : "";?> />
-                <?=gettext("Prefer to use IPv4 even if IPv6 is available"); ?>
-                <div class="hidden" for="help_for_prefer_ipv4">
-                  <small class="formhelp">
-                  <?=gettext("By default, if a hostname resolves IPv6 and IPv4 addresses ".
-                                      "IPv6 will be used, if you check this option, IPv4 will be " .
-                                      "used instead of IPv6."); ?>
-                  </small>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td><a id="help_for_gw_switch_default" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Gateway switching");?> </td>
-              <td>
-                <input name="gw_switch_default" type="checkbox" id="gw_switch_default" value="yes" <?= !empty($pconfig['gw_switch_default']) ? "checked=\"checked\"" : "";?> />
-                <?=gettext("Allow default gateway switching"); ?>
-                <div class="hidden" for="help_for_gw_switch_default">
-                  <small class="formhelp">
-                  <?=gettext("If the link where the default gateway resides fails " .
-                                      "switch the default gateway to another available one."); ?>
-                  </small>
-                </div>
-              </td>
-            </tr>
-            <tr>
               <td></td>
               <td>
                 <input name="Submit" type="submit" class="btn btn-primary" value="<?=gettext("Save");?>" />
