@@ -397,7 +397,9 @@ include("head.inc");
                       endforeach;?>
                       </select>
                       <div class="hidden" for="help_for_sslciphers">
+                        <small class="formhelp">
                         <?=gettext("Limit SSL cipher selection in case the system defaults are undesired. Note that restrictive use may lead to an inaccessible web GUI.");?>
+                        </small>
                       </div>
                   </td>
                 </tr>
@@ -479,7 +481,7 @@ include("head.inc");
                   <td><a id="help_for_nodnsrebindcheck" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("DNS Rebind Check"); ?></td>
                   <td>
                     <input name="nodnsrebindcheck" type="checkbox" value="yes" <?= empty($pconfig['nodnsrebindcheck']) ? '' : 'checked="checked"';?>/>
-                    <?=gettext("Disable DNS Rebinding Checks"); ?>
+                    <strong><?=gettext("Disable DNS Rebinding Checks"); ?></strong>
                     <div class="hidden" for="help_for_nodnsrebindcheck">
                       <small class="formhelp">
                       <?= sprintf(gettext("When this is unchecked, your system is protected against %sDNS Rebinding attacks%s. " .
@@ -654,22 +656,6 @@ include("head.inc");
                   </td>
                 </tr>
                 <tr>
-                  <td><a id="help_for_serialspeed" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Serial Speed")?></td>
-                  <td>
-                    <select name="serialspeed" id="serialspeed" class="formselect selectpicker">
-                      <option value="115200" <?=$pconfig['serialspeed'] == "115200" ? 'selected="selected"' : '' ?>>115200</option>
-                      <option value="57600" <?=$pconfig['serialspeed'] == "57600" ? 'selected="selected"' : '' ?>>57600</option>
-                      <option value="38400" <?=$pconfig['serialspeed'] == "38400" ? 'selected="selected"' : '' ?>>38400</option>
-                      <option value="19200" <?=$pconfig['serialspeed'] == "19200" ? 'selected="selected"' : '' ?>>19200</option>
-                      <option value="14400" <?=$pconfig['serialspeed'] == "14400" ? 'selected="selected"' : '' ?>>14400</option>
-                      <option value="9600" <?=$pconfig['serialspeed'] == "9600" ? 'selected="selected"' : '' ?>>9600</option>
-                    </select>
-                    <div class="hidden" for="help_for_serialspeed">
-                      <?=gettext("Allows selection of different speeds for the serial console port."); ?>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
                   <td><i class="fa fa-info-circle text-muted"></i></a> <?= gettext("Console menu") ?></td>
                   <td width="78%">
                     <input name="disableconsolemenu" type="checkbox" value="yes" <?= empty($pconfig['disableconsolemenu']) ? '' : 'checked="checked"' ?>  />
@@ -682,7 +668,9 @@ include("head.inc");
                     <input name="disableintegratedauth" type="checkbox" value="yes" <?= empty($pconfig['disableintegratedauth']) ? '' : 'checked="checked"' ?>  />
                     <strong><?=gettext("Disable integrated authentication"); ?></strong>
                     <div class="hidden" for="help_for_disableintegratedauth">
+                        <small class="formhelp">
                         <?=gettext("Disable OPNsense integrated authentication module for console access, falling back to normal unix authentication.");?>
+                        </small>
                     </div>
                   </td>
                 </tr>
