@@ -116,13 +116,21 @@ class ServiceController extends ApiControllerBase
             $this->sessionClose();
 
             $filter = new Filter();
-            $filter->add('logfilename', function($value){ return preg_replace("/[^0-9,a-z,A-Z,_]/", "", $value);});
+            $filter->add('logfilename', function($value){ return preg_replace("/[^0-9,a-z,A-Z,_,\-]/", "", $value);});
 
             $name = $this->request->getPost('logname');
             $name = $filter->sanitize($name, 'logfilename');
 
             $mdl = new Syslog();
             $fullname = $mdl->getLogFileName($name);
+
+            if(empty($fullname)) {
+                return array("status" => "failed", "message" => gettext("Not found"));
+            }
+
+            if(!$mdl->canClearLog($name)) {
+                return array("status" => "failed", "message" => gettext("Can not clear log"));
+            }
 
             $backend = new Backend();
             $backend->configdRun("syslog clearlog {$fullname}");
@@ -178,14 +186,24 @@ class ServiceController extends ApiControllerBase
                 if(trim($logent) == '')
                     continue;
 
-                $logent = preg_split("/\s+/", $logent, 6);
-                $entry_date_time = join(" ", array_slice($logent, 0, 3));
-                $entry_text = isset($logent[3]) ? (($logent[3] == $hostname) ? "" : $logent[3] . " ") : "";
-                $entry_text .= (isset($logent[4]) ?  $logent[4] : '') . (isset($logent[5]) ? " " . $logent[5] : '');
+                // extract timestamp
+                $datetime_pattern = $mdl->getDateTimePattern($logname);
+                $match = array();
+                $match_result = preg_match($datetime_pattern, $logent, $match);
+                $entry_date_time = '';
+                if($match_result == 1 && isset($match[1])) {
+                    $entry_date_time = $match[1];
+                }
                 if (!date_create($entry_date_time)) {
-                    $entry_text = "$entry_date_time $entry_text";
                     $entry_date_time = "";
                 }
+                $entry_text = trim(substr($logent, strlen($entry_date_time)));
+
+                // cut off hostname
+                if(strpos($entry_text, $hostname) === 0) {
+                    $entry_text = trim(substr($entry_text, strlen($hostname)));
+                }
+
                 $formatted[] = array('time' => utf8_encode($entry_date_time), 'filter' => $filter, 'message' => utf8_encode($entry_text));
             }
 
@@ -206,7 +224,7 @@ class ServiceController extends ApiControllerBase
     public function downloadAction()
     {
         $filter = new Filter();
-        $filter->add('logfilename', function($value){ return preg_replace("/[^0-9,a-z,A-Z,_]/", "", $value);});
+        $filter->add('logfilename', function($value){ return preg_replace("/[^0-9,a-z,A-Z,_,\-]/", "", $value);});
 
         $name = $this->request->get('logname');
         $name = $filter->sanitize($name, 'logfilename');
