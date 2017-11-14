@@ -840,6 +840,13 @@ function filter_generate_aliases(&$FilterIflist)
             }
             switch ($aliased['type']) {
                 case "host":
+                    if (!empty($expanded_aliases[$aliased['name']]['addresses'])) {
+                        $addresses = array();
+                        foreach ($expanded_aliases[$aliased['name']]['addresses'] as $address) {
+                            $addresses[] = idn_to_ascii($address);
+                        }
+                        $addrlist = implode(' ', $addresses);
+                    }
                 case "network":
                 case "url":
                     if (empty($addrlist)) {
