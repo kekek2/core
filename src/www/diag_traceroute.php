@@ -88,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if (is_resource($process)) {
              $cmd_output = stream_get_contents($pipes[2]);
              $cmd_output .= stream_get_contents($pipes[1]);
-             $cmd_output = str_replace($host, $host_utf, $cmd_output);
+             $cmd_output = str_replace($host, $host_utf8, $cmd_output);
         }
     }
 }
