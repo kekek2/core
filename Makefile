@@ -97,6 +97,7 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			openssh-portable \
 			openvpn${CORE_OPENVPN} \
 			pam_opnsense \
+			pecl-http \
 			pecl-radius \
 			pftop \
 			phalcon \
