@@ -95,6 +95,7 @@ CORE_DEPENDS?=		apinger \
 			openssh-portable \
 			openvpn${CORE_OPENVPN} \
 			pam_opnsense \
+			pecl-http \
 			pecl-radius \
 			pftop \
 			phalcon \
