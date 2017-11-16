@@ -36,7 +36,7 @@ require_once("services.inc");
 
 /* expects $logfile to point to the system path */
 
-require_once 'diag_logs_common.inc';
+require_once 'diag_logs_squid.inc';
 
 $filtertext = '';
 $nentries = 50;
