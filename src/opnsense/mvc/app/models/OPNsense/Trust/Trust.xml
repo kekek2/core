@@ -1,0 +1,118 @@
+<model>
+    <mount>//OPNsense/Trust</mount>
+    <version>1.0.0</version>
+    <description>Trust/certificate manage</description>
+    <items>
+        <cas>
+            <ca type="ArrayField">
+                <refid type="TextField">
+                    <Required>Y</Required>
+                    <mask>/[0-9a-fA-F]+/</mask>
+                </refid>
+                <descr type="TextField">
+                    <Required>Y</Required>
+                    <mask>/^([\t\n\v\f\r 0-9a-zA-Z.,_\x{00A0}-\x{FFFF}]){1,255}$/u</mask>
+                </descr>
+                <crt type="TextField">
+                    <Required>Y</Required>
+                    <mask>/[0-9a-zA-Z=]+/</mask>
+                </crt>
+                <prv type="TextField">
+                    <Required>Y</Required>
+                    <mask>/[0-9a-zA-Z=]+/</mask>
+                </prv>
+                <serial type="IntegerField">
+                    <Required>Y</Required>
+                    <MinimumValue>0</MinimumValue>
+                </serial>
+            </ca>
+        </cas>
+        <certs>
+            <cert type="ArrayField">
+                <refid type="TextField">
+                    <Required>Y</Required>
+                    <mask>/[0-9a-fA-F]+/</mask>
+                </refid>
+                <caref type="TextField">
+                    <mask>/[0-9a-fA-F]+/</mask>
+                </caref>
+                <descr type="TextField">
+                    <Required>Y</Required>
+                    <mask>/^([\t\n\v\f\r 0-9a-zA-Z.,_\x{00A0}-\x{FFFF}]){1,255}$/u</mask>
+                </descr>
+                <crt type="TextField">
+                    <Required>Y</Required>
+                    <mask>/[0-9a-zA-Z=]+/</mask>
+                </crt>
+                <prv type="TextField">
+                    <Required>Y</Required>
+                    <mask>/[0-9a-zA-Z=]+/</mask>
+                </prv>
+            </cert>
+        </certs>
+        <crls>
+            <crl type="ArrayField">
+                <refid type="TextField">
+                    <Required>Y</Required>
+                    <mask>/[0-9a-fA-F]+/</mask>
+                </refid>
+                <caref type="TextField">
+                    <Required>Y</Required>
+                    <mask>/[0-9a-fA-F]+/</mask>
+                </caref>
+                <descr type="TextField">
+                    <Required>Y</Required>
+                    <mask>/^([\t\n\v\f\r 0-9a-zA-Z.,_\x{00A0}-\x{FFFF}]){1,255}$/u</mask>
+                </descr>
+                <crlmethod type="OptionField">
+                    <Required>Y</Required>
+                    <OptionValues>
+                        <existing>existing</existing>
+                        <internal>internal</internal>
+                    </OptionValues>
+                </crlmethod>
+                <certs>
+                    <cert type="ArrayField">
+                        <refid type="TextField">
+                            <Required>Y</Required>
+                            <mask>/[0-9a-fA-F]+/</mask>
+                        </refid>
+                        <caref type="TextField">
+                            <Required>Y</Required>
+                            <mask>/[0-9a-fA-F]+/</mask>
+                        </caref>
+                        <descr type="TextField">
+                            <Required>Y</Required>
+                            <mask>/^([\t\n\v\f\r 0-9a-zA-Z.,_\x{00A0}-\x{FFFF}]){1,255}$/u</mask>
+                        </descr>
+                        <crt type="TextField">
+                            <Required>Y</Required>
+                            <mask>/[0-9a-zA-Z=]+/</mask>
+                        </crt>
+                        <prv type="TextField">
+                            <Required>Y</Required>
+                            <mask>/[0-9a-zA-Z=]+/</mask>
+                        </prv>
+                        <reason type="IntegerField">
+                            <Required>Y</Required>
+                            <MinimumValue>0</MinimumValue>
+                        </reason>
+                        <revoke_time type="IntegerField">
+                            <Required>Y</Required>
+                            <MinimumValue>0</MinimumValue>
+                        </revoke_time>
+                    </cert>
+                </certs>
+                <serial type="IntegerField">
+                    <Required>Y</Required>
+                    <MinimumValue>0</MinimumValue>
+                </serial>
+                <lifitime type="IntegerField">
+                    <Required>Y</Required>
+                    <default>9999</default>
+                    <MinimumValue>0</MinimumValue>
+                </lifitime>
+            </crl>
+        </crls>
+    </items>
+</model>
