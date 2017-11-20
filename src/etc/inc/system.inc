@@ -715,7 +715,7 @@ function system_syslogd_start($verbose = false)
     catch(Exception $e){}
 
     /* hook for newsyslog.conf, syslog.conf, syslog.extra regeneration */
-    configd_run('template reload OPNsense.Syslog');
+    configd_run('template reload OPNsense/Syslog');
     configd_run("syslog start");
 
     if ($verbose) {
