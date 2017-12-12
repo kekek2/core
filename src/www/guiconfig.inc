@@ -34,6 +34,7 @@ require_once("config.inc");
 
 /* CSRF BEGIN: CHECK MUST BE EXECUTED FIRST; NO EXCEPTIONS */
 require_once('csrf.inc');
+header('X-Frame-Options: SAMEORIGIN');
 /* CSRF END: THANK YOU FOR YOUR COOPERATION */
 
 function get_current_theme()
@@ -54,22 +55,6 @@ function html_safe($text)
     /* gettext() embedded in JavaScript can cause syntax errors */
     return htmlspecialchars($text, ENT_QUOTES | ENT_HTML401);
 }
-
-header("X-Frame-Options: SAMEORIGIN");
-
-/* set language */
-$lang = 'en_US';
-if (!empty($config['system']['language'])) {
-    $lang = $config['system']['language'];
-}
-
-$lang_encoding = $lang . '.UTF-8';
-$textdomain = 'OPNsense';
-
-putenv('LANG=' . $lang_encoding);
-textdomain($textdomain);
-bindtextdomain($textdomain, '/usr/local/share/locale');
-bind_textdomain_codeset($textdomain, $lang_encoding);
 
 require_once("authgui.inc");
 

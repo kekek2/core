@@ -25,10 +25,30 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
 #}
+<style>
+    .tooltip-inner {
+        min-width: 250px;
+    }
+
+    .ids-alert-info > tbody > tr > td {
+        padding-top: 2px !important;
+        padding-bottom: : 2px !important;
+    }
+    .ids-alert-info > tbody > tr > td:first-child {
+        width: 150px;
+    }
+    @media (min-width: 768px) {
+        .modal-dialog {
+            width: 90%;
+            max-width:1200px;
+        }
+    }
+</style>
 
 <script type="text/javascript">
 
     $( document ).ready(function() {
+        var interface_descriptions = {};
         //
         var data_get_map = {'frm_GeneralSettings':"/api/ids/settings/get"};
 
@@ -308,7 +328,7 @@ POSSIBILITY OF SUCH DAMAGE.
                  * grid query alerts
                  */
                 $('#grid-alerts').bootgrid('destroy'); // always destroy previous grid, so data is always fresh
-                $("#grid-alerts").UIBootgrid(
+                var grid_alerts = $("#grid-alerts").UIBootgrid(
                         {   search:'/api/ids/service/queryAlerts',
                             get:'/api/ids/service/getAlertInfo/',
                             options:{
@@ -320,11 +340,144 @@ POSSIBILITY OF SUCH DAMAGE.
                                 requestHandler:addAlertQryFilters,
                                 formatters:{
                                     info: function (column, row) {
-                                        return "<button type=\"button\" class=\"btn btn-xs btn-default command-edit\" data-row-id=\"" + row.filepos + "/" + row.fileid + "\"><span class=\"fa fa-pencil\"></span></button> ";
+                                        return "<button type=\"button\" class=\"btn btn-xs btn-default command-alertinfo\" data-row-id=\"" + row.filepos + "/" + row.fileid + "\"><span class=\"fa fa-pencil\"></span></button> ";
                                     }
                                 },
+                                converters: {
+                                    // convert interface to name
+                                    interface: {
+                                        from: function (value) { return value; },
+                                        to: function (value) {
+                                          if (value == null || value == undefined) {
+                                              return "";
+                                          }
+                                          return interface_descriptions[value.replace(/\+$/, '')];
+                                        }
+                                    }
+                                }
                             }
                         });
+                // tooltip wide fields in alert grid
+                grid_alerts.on("loaded.rs.jquery.bootgrid", function(){
+                    $("#grid-alerts > tbody > tr > td").each(function(){
+                        if ($(this).outerWidth() < $(this)[0].scrollWidth) {
+                            var grid_td = $("<span/>");
+                            grid_td.html($(this).html());
+                            grid_td.tooltip({title: $(this).text()});
+                            $(this).html(grid_td);
+                        }
+                    });
+                });
+                // hook in alert details on alertinfo command
+                grid_alerts.on("loaded.rs.jquery.bootgrid", function(){
+                    grid_alerts.find(".command-alertinfo").on("click", function(e) {
+                        var uuid=$(this).data("row-id");
+                        ajaxGet(url='/api/ids/service/getAlertInfo/' + uuid,
+                            sendData={}, callback=function(data, status) {
+                                if (status == 'success') {
+                                    ajaxGet(url="/api/ids/settings/getRuleInfo/"+data['alert_sid'],sendData={}, callback=function(rule_data, rule_status) {
+                                        var tbl = $('<table class="table table-condensed table-hover ids-alert-info"/>');
+                                        var tbl_tbody = $("<tbody/>");
+                                        var alert_fields = {};
+                                        alert_fields['timestamp'] = "{{ lang._('Timestamp') }}";
+                                        alert_fields['alert'] = "{{ lang._('Alert') }}";
+                                        alert_fields['alert_sid'] = "{{ lang._('Alert sid') }}";
+                                        alert_fields['src_ip'] = "{{ lang._('Source IP') }}";
+                                        alert_fields['dest_ip'] = "{{ lang._('Destination IP') }}";
+                                        alert_fields['src_port'] = "{{ lang._('Source port') }}";
+                                        alert_fields['dest_port'] = "{{ lang._('Destination port') }}";
+                                        alert_fields['in_iface'] = "{{ lang._('Interface') }}";
+                                        alert_fields['http.hostname'] = "{{ lang._('http hostname') }}";
+                                        alert_fields['http.url'] = "{{ lang._('http url') }}";
+                                        alert_fields['http.http_user_agent'] = "{{ lang._('http user_agent') }}";
+                                        alert_fields['http.http_content_type'] = "{{ lang._('http content_type') }}";
+                                        alert_fields['tls.subject'] = "{{ lang._('tls subject') }}";
+                                        alert_fields['tls.issuerdn'] = "{{ lang._('tls issuer') }}";
+                                        alert_fields['tls.session_resumed'] = "{{ lang._('tls session resumed') }}";
+                                        alert_fields['tls.fingerprint'] = "{{ lang._('tls fingerprint') }}";
+                                        alert_fields['tls.serial'] = "{{ lang._('tls serial') }}";
+                                        alert_fields['tls.version'] = "{{ lang._('tls version') }}";
+                                        alert_fields['tls.notbefore'] = "{{ lang._('tls notbefore') }}";
+                                        alert_fields['tls.notafter'] = "{{ lang._('tls notafter') }}";
+
+                                        $.each( alert_fields, function( fieldname, fielddesc ) {
+                                            var data_ptr = data;
+                                            $.each(fieldname.split('.'),function(indx, keypart){
+                                                if (data_ptr != undefined) {
+                                                    data_ptr = data_ptr[keypart];
+                                                }
+                                            });
+
+                                            if (data_ptr != undefined) {
+                                                var row = $("<tr/>");
+                                                row.append($("<td/>").text(fielddesc));
+                                                if (fieldname == 'in_iface' && interface_descriptions[data_ptr.replace(/\+$/, '')] != undefined) {
+                                                    row.append($("<td/>").text(interface_descriptions[data_ptr.replace(/\+$/, '')]));
+                                                } else {
+                                                    row.append($("<td/>").text(data_ptr));
+                                                }
+                                                tbl_tbody.append(row);
+                                            }
+                                        });
+
+                                        if (rule_data.action != undefined) {
+                                            var alert_select = $('<select class="selectpicker"/>');
+                                            var alert_enabled = $('<input type="checkbox"/>');
+                                            if (rule_data.enabled == '1') {
+                                                alert_enabled.prop('checked', true);
+                                            }
+                                            $.each(rule_data.action, function(key, value){
+                                                var opt = $('<option/>').attr("value", key).text(value.value)
+                                                if (value.selected == 1) {
+                                                    opt.attr('selected', 'selected');
+                                                }
+                                                alert_select.append(opt);
+                                            });
+                                            tbl_tbody.append(
+                                              $("<tr/>").append(
+                                                $("<td/>").text("{{ lang._('Configured action') }}"),
+                                                $("<td id='alert_sid_action'/>").append(
+                                                  alert_enabled, $("<span/>").html("&nbsp; <strong>{{ lang._('Enabled')}}</strong>"), alert_select
+                                                )
+                                              )
+                                            );
+                                            alert_select.change(function(){
+                                                var rule_params = {'action': alert_select.val()};
+                                                if (alert_enabled.is(':checked')) {
+                                                    rule_params['enabled'] = 1;
+                                                } else {
+                                                    rule_params['enabled'] = 0;
+                                                }
+                                                ajaxCall(url="/api/ids/settings/setRule/"+data['alert_sid'], sendData=rule_params, callback=function() {
+                                                    $("#alert_sid_action > small").remove();
+                                                    $("#alert_sid_action").append($('<small/>').html("{{ lang._('Changes will be active after apply (rules tab)') }}"));
+                                                });
+                                            });
+                                            alert_enabled.change(function(){
+                                                alert_select.change();
+                                            });
+                                        }
+                                        if (data['payload_printable'] != undefined && data['payload_printable'] != null) {
+                                            tbl_tbody.append(
+                                              $("<tr/>").append(
+                                                $("<td colspan=2/>").append(
+                                                  $("<strong/>").text("{{ lang._('Payload') }}")
+                                                )
+                                              )
+                                            );
+
+                                            var row = $("<tr/>");
+                                            row.append( $("<td colspan=2/>").append($("<pre/>").html($("<code/>").text(data['payload_printable']))));
+                                            tbl_tbody.append(row);
+                                        }
+
+                                        tbl.append(tbl_tbody);
+                                        stdDialogInform("{{ lang._('Alert info') }}", tbl, "{{ lang._('Close') }}", undefined, "info");
+                                  });
+                                }
+                            });
+                    }).end();
+              });
             } else if (e.target.id == 'userrules_tab') {
                 $('#grid-userrules').bootgrid('destroy'); // always destroy previous grid, so data is always fresh
                 $("#grid-userrules").UIBootgrid({
@@ -461,43 +614,13 @@ POSSIBILITY OF SUCH DAMAGE.
         });
 
         /**
-         * Change sid to action selector after DialogAlert show
-         */
-        $( "#DialogAlert" ).on('shown.bs.modal', function (e) {
-            // replace "sid" for sid + action
-            $("#alert_sid").show();
-            $("#alert_sid_action").remove();
-            var sid = $("#alert_sid").html();
-            ajaxGet(url="/api/ids/settings/getRuleInfo/"+sid,sendData={}, callback=function(data, status) {
-                if (status == "success") {
-                    $("#alert_sid").hide();
-                    var alert_select = $('<select class="selectpicker"/>');
-                    $.each(data['action'], function(key, value){
-                        var opt = $('<option/>').attr("value", key).text(value.value)
-                        if (value.selected == 1) {
-                            opt.attr('selected', 'selected');
-                        }
-                        alert_select.append(opt);
-                    });
-                    $("#alert_sid").parent().append($('<div id="alert_sid_action"/>'));
-                    $("#alert_sid_action").append($('<table style="width:200px;"/>')
-                        .append($('<tr/>')
-                            .append($('<td/>').html(sid))
-                            .append($('<td/>').append(alert_select))
-                    ));
-                    alert_select.change(function(){
-                        ajaxCall(url="/api/ids/settings/setRule/"+sid, sendData={action:$(this).val()}, callback=function(data,status) {
-                            $("#alert_sid_action > small").remove();
-                            $("#alert_sid_action").append($('<small/>').html("{{ lang._('Changes will be active after apply (rules tab)') }}"));
-                        });
-                    });
-                }
-            });
-        });
-
-        /**
          * Initialize
          */
+        // fetch interface mappings on load
+        ajaxGet(url='/api/diagnostics/interface/getInterfaceNames', {}, callback=function(data, status) {
+            interface_descriptions = data;
+        });
+
         updateStatus();
 
         // update history on tab state and implement navigation
@@ -733,16 +856,19 @@ POSSIBILITY OF SUCH DAMAGE.
                 </div>
             </div>
         </div>
-        <table id="grid-alerts" class="table table-condensed table-hover table-clean-form table-responsive" data-editDialog="DialogAlert">
+        <table id="grid-alerts" class="table table-condensed table-hover table-clean-form table-responsive">
             <thead>
-            <tr>
-                <th data-column-id="timestamp" data-type="string" data-sortable="false">{{ lang._('Timestamp') }}</th>
-                <th data-column-id="alert_action" data-type="string" data-sortable="false">{{ lang._('Action') }}</th>
-                <th data-column-id="src_ip" data-type="string" data-sortable="false" data-width="10em">{{ lang._('Source') }}</th>
-                <th data-column-id="dest_ip" data-type="string" data-sortable="false" data-width="10em">{{ lang._('Destination') }}</th>
-                <th data-column-id="alert" data-type="string" data-sortable="false" >{{ lang._('Alert') }}</th>
-                <th data-column-id="info" data-formatter="info" data-sortable="false" data-width="4em">{{ lang._('Info') }}</th>
-            </tr>
+              <tr>
+                  <th data-column-id="timestamp" data-type="string" data-sortable="false">{{ lang._('Timestamp') }}</th>
+                  <th data-column-id="alert_action" data-type="string" data-sortable="false" data-width="70px">{{ lang._('Action') }}</th>
+                  <th data-column-id="in_iface" data-type="interface" data-sortable="false" data-width="100px">{{ lang._('Interface') }}</th>
+                  <th data-column-id="src_ip" data-type="string" data-sortable="false" data-width="150px">{{ lang._('Source') }}</th>
+                  <th data-column-id="src_port" data-type="string" data-sortable="false" data-width="70px">{{ lang._('Port') }}</th>
+                  <th data-column-id="dest_ip" data-type="string" data-sortable="false" data-width="150px">{{ lang._('Destination') }}</th>
+                  <th data-column-id="dest_port" data-type="string" data-sortable="false" data-width="70px">{{ lang._('Port') }}</th>
+                  <th data-column-id="alert" data-type="string" data-sortable="false" >{{ lang._('Alert') }}</th>
+                  <th data-column-id="info" data-formatter="info" data-sortable="false" data-width="4em">{{ lang._('Info') }}</th>
+              </tr>
             </thead>
             <tbody>
             </tbody>
@@ -753,6 +879,5 @@ POSSIBILITY OF SUCH DAMAGE.
 {{ partial("layout_partials/base_dialog_processing") }}
 
 {{ partial("layout_partials/base_dialog",['fields':formDialogRule,'id':'DialogRule','label':lang._('Rule details'),'hasSaveBtn':'true','msgzone_width':1])}}
-{{ partial("layout_partials/base_dialog",['fields':formDialogAlert,'id':'DialogAlert','label':lang._('Alert details'),'hasSaveBtn':'false','msgzone_width':1])}}
 {{ partial("layout_partials/base_dialog",['fields':formDialogRuleset,'id':'DialogRuleset','label':lang._('Ruleset details'),'hasSaveBtn':'true','msgzone_width':1])}}
 {{ partial("layout_partials/base_dialog",['fields':formDialogUserDefined,'id':'DialogUserDefined','label':lang._('Rule details'),'hasSaveBtn':'true'])}}

@@ -136,8 +136,6 @@ function services_radvd_configure($blacklist = array())
             continue;
         }
 
-        $ifcfgsnv6 = get_interface_subnetv6($dhcpv6if);
-        $subnetv6 = gen_subnetv6($ifcfgipv6, $ifcfgsnv6);
         $radvdifs[$realif] = 1;
 
         $radvdconf .= "# Generated for DHCPv6 Server $dhcpv6if\n";
@@ -159,34 +157,61 @@ function services_radvd_configure($blacklist = array())
                 $radvdconf .= "\tAdvDefaultPreference medium;\n";
                 break;
         }
+
         switch($dhcpv6ifconf['ramode']) {
             case "managed":
             case "assist":
                 $radvdconf .= "\tAdvManagedFlag on;\n";
                 $radvdconf .= "\tAdvOtherConfigFlag on;\n";
                 break;
-        }
-        $radvdconf .= "\tprefix {$subnetv6}/{$ifcfgsnv6} {\n";
-        $radvdconf .= "\t\tDeprecatePrefix ". (!empty($dhcpv6ifconf['rainterface']) ? "off" : "on").";\n";
-        switch($dhcpv6ifconf['ramode']) {
-            case "managed":
-                $radvdconf .= "\t\tAdvOnLink on;\n";
-                $radvdconf .= "\t\tAdvAutonomous off;\n";
-                $radvdconf .= "\t\tAdvRouterAddr on;\n";
+            case "stateless":
+                $radvdconf .= "\tAdvManagedFlag off;\n";
+                $radvdconf .= "\tAdvOtherConfigFlag on;\n";
                 break;
-            case "router":
-                $radvdconf .= "\t\tAdvOnLink off;\n";
-                $radvdconf .= "\t\tAdvAutonomous off;\n";
-                $radvdconf .= "\t\tAdvRouterAddr on;\n";
-                break;
-            case "assist":
-            case "unmanaged":
-                $radvdconf .= "\t\tAdvOnLink on;\n";
-                $radvdconf .= "\t\tAdvAutonomous on;\n";
-                $radvdconf .= "\t\tAdvRouterAddr on;\n";
+            default:
                 break;
         }
-        $radvdconf .= "\t};\n";
+
+        $stanzas = array();
+        $ifcfgsnv6 = get_interface_subnetv6($dhcpv6if);
+        $subnetv6 = gen_subnetv6($ifcfgipv6, $ifcfgsnv6);
+        $stanzas[] = "{$subnetv6}/{$ifcfgsnv6}";
+
+        $viparr = &config_read_array('virtualip', 'vip');
+        foreach ($viparr as $vip) {
+            if ($vip['interface'] == $dhcpv6if && is_ipaddrv6($vip['subnet'])) {
+                $ifcfgsnv6 = $vip['subnet_bits'];
+                $subnetv6 = gen_subnetv6($vip['subnet'], $ifcfgsnv6);
+                $stanzas[] = "{$subnetv6}/{$ifcfgsnv6}";
+            }
+        }
+
+        foreach ($stanzas as $stanza) {
+            $radvdconf .= "\tprefix {$stanza} {\n";
+            $radvdconf .= "\t\tDeprecatePrefix ". (!empty($dhcpv6ifconf['rainterface']) ? "off" : "on").";\n";
+            switch($dhcpv6ifconf['ramode']) {
+                case "managed":
+                    $radvdconf .= "\t\tAdvOnLink on;\n";
+                    $radvdconf .= "\t\tAdvAutonomous off;\n";
+                    $radvdconf .= "\t\tAdvRouterAddr on;\n";
+                    break;
+                case "router":
+                    $radvdconf .= "\t\tAdvOnLink off;\n";
+                    $radvdconf .= "\t\tAdvAutonomous off;\n";
+                    $radvdconf .= "\t\tAdvRouterAddr on;\n";
+                    break;
+                case "assist":
+                case "unmanaged":
+                case "stateless":
+                    $radvdconf .= "\t\tAdvOnLink on;\n";
+                    $radvdconf .= "\t\tAdvAutonomous on;\n";
+                    $radvdconf .= "\t\tAdvRouterAddr on;\n";
+                    break;
+                default:
+                    break;
+            }
+            $radvdconf .= "\t};\n";
+        }
 
         if (!empty($dhcpv6ifconf['rainterface'])) {
             $radvdconf .= "\troute ::/0 {\n";
@@ -1158,17 +1183,19 @@ EOD;
 
         if (is_ipaddrv6($ifcfgipv6)) {
             $dhcpdv6conf .= "\nsubnet6 {$subnetv6}/{$ifcfgsnv6}";
-        } else {
+        } elseif (!empty($dhcpv6ifconf['range']['from'])) {
             $subnet6 = gen_subnetv6($dhcpv6ifconf['range']['from'], "64");
             $dhcpdv6conf .= "\nsubnet6 {$subnet6}/64";
         }
         $dhcpdv6conf .= " {\n";
 
-        $dhcpdv6conf .= <<<EOD
+        if (!empty($dhcpv6ifconf['range']['from'])) {
+            $dhcpdv6conf .= <<<EOD
   range6 {$dhcpv6ifconf['range']['from']} {$dhcpv6ifconf['range']['to']};
 $dnscfgv6
 
 EOD;
+        }
 
         if (!empty($dhcpv6ifconf['prefixrange']['from']) && is_ipaddrv6($dhcpv6ifconf['prefixrange']['from']) && is_ipaddrv6($dhcpv6ifconf['prefixrange']['to'])) {
             $dhcpdv6conf .= "  prefix6 {$dhcpv6ifconf['prefixrange']['from']} {$dhcpv6ifconf['prefixrange']['to']}/{$dhcpv6ifconf['prefixrange']['prefixlength']};\n";
@@ -1267,21 +1294,19 @@ EOD;
             }
         }
 
-        if (isset($config['dhcpdv6'][$dhcpv6if]['ramode']) && $config['dhcpdv6'][$dhcpv6if]['ramode'] <> "unmanaged") {
-            if (preg_match("/poes/si", $dhcpv6if)) {
-                /* magic here */
-                $dhcpdv6ifs = array_merge($dhcpdv6ifs, get_pppoes_child_interfaces($dhcpv6if));
-            } else {
-                $realif = get_real_interface($dhcpv6if, "inet6");
-                if (stristr("$realif", "bridge")) {
-                    $mac = get_interface_mac($realif);
-                    $v6address = generate_ipv6_from_mac($mac);
-                    /* Create link local address for bridges */
-                    mwexec("/sbin/ifconfig {$realif} inet6 {$v6address}");
-                }
-                $realif = escapeshellcmd($realif);
-                $dhcpdv6ifs[] = $realif;
+        if (preg_match("/poes/si", $dhcpv6if)) {
+            /* magic here */
+            $dhcpdv6ifs = array_merge($dhcpdv6ifs, get_pppoes_child_interfaces($dhcpv6if));
+        } else {
+            $realif = get_real_interface($dhcpv6if, "inet6");
+            if (stristr("$realif", "bridge")) {
+                $mac = get_interface_mac($realif);
+                $v6address = generate_ipv6_from_mac($mac);
+                /* create link local address for bridges */
+                mwexec("/sbin/ifconfig {$realif} inet6 {$v6address}");
             }
+            $realif = escapeshellcmd($realif);
+            $dhcpdv6ifs[] = $realif;
         }
     }
 

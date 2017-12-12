@@ -45,7 +45,7 @@ TING_ABI?=	1.2
 CORE_ABI?=	17.7
 CORE_ARCH?=	${ARCH}
 CORE_OPENVPN?=	# empty
-CORE_PHP?=	70
+CORE_PHP?=	71
 CORE_PY?=	27
 
 _FLAVOUR!=	if [ -f ${OPENSSL} ]; then ${OPENSSL} version; fi
@@ -69,10 +69,11 @@ CORE_ORIGIN?=		nonit/${CORE_NAME}
 CORE_COMMENT?=		TING ${CORE_FAMILY} package
 CORE_WWW?=		http://www.smart-soft.ru/
 
-# CORE_DEPENDS_armv6 is empty
 CORE_DEPENDS_amd64?=	beep bsdinstaller
 CORE_DEPENDS_i386?=	${CORE_DEPENDS_amd64}
-CORE_DEPENDS?=		apinger \
+
+CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
+			apinger \
 			ca_root_nss \
 			choparp \
 			cpustats \
@@ -180,7 +181,7 @@ manifest: want-git
 	@echo "prefix: ${LOCALBASE}"
 	@echo "vital: true"
 	@echo "deps: {"
-	@for CORE_DEPEND in ${CORE_DEPENDS_${CORE_ARCH}} ${CORE_DEPENDS}; do \
+	@for CORE_DEPEND in ${CORE_DEPENDS}; do \
 		if ! ${PKG} query '  %n: { version: "%v", origin: "%o" }' \
 		    $${CORE_DEPEND}; then \
 			echo ">>> Missing dependency: $${CORE_DEPEND}" >&2; \
@@ -193,7 +194,7 @@ name: force
 	@echo ${CORE_NAME}
 
 depends: force
-	@echo ${CORE_DEPENDS_${CORE_ARCH}} ${CORE_DEPENDS}
+	@echo ${CORE_DEPENDS}
 
 PKG_SCRIPTS=	+PRE_INSTALL +POST_INSTALL \
 		+PRE_UPGRADE +POST_UPGRADE \
@@ -254,6 +255,9 @@ package-check: force
 
 package: package-check
 	@rm -rf ${WRKSRC}
+.for CORE_DEPEND in ${CORE_DEPENDS}
+	@if ! ${PKG} info ${CORE_DEPEND} > /dev/null; then ${PKG} install -yA ${CORE_DEPEND}; fi
+.endfor
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} metadata
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} install
 	@if [ -d /usr/local/ioncube ]; then \
@@ -322,6 +326,11 @@ style-fix: want-pear-PHP_CodeSniffer
 
 license:
 	@${.CURDIR}/Scripts/license > ${.CURDIR}/LICENSE
+
+dhparam:
+.for BITS in 1024 2048 4096
+	openssl dhparam -out ${.CURDIR}/src/etc/dh-parameters.${BITS} ${BITS}
+.endfor
 
 test: want-phpunit6
 	@cd ${.CURDIR}/src/opnsense/mvc/tests && \
