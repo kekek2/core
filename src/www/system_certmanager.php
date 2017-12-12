@@ -430,7 +430,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                         'emailAddress' => $pconfig['dn_email'],
                         'commonName' => $pconfig['dn_commonname']);
                     if (count($altnames)) {
-                        $altnames_tmp = "";
+                        $altnames_tmp = array();
                         foreach ($altnames as $altname) {
                             $altnames_tmp[] = "{$altname['type']}:{$altname['value']}";
                         }
@@ -465,7 +465,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                         $dn['organizationalUnitName'] = $pconfig['csr_dn_organizationalunit'];
                     }
                     if (count($altnames)) {
-                        $altnames_tmp = "";
+                        $altnames_tmp = array();
                         foreach ($altnames as $altname) {
                             $altnames_tmp[] = "{$altname['type']}:{$altname['value']}";
                         }
@@ -504,6 +504,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 }
 
 legacy_html_escape_form_data($pconfig);
+legacy_html_escape_form_data($a_ca);
+legacy_html_escape_form_data($a_cert);
+
 include("head.inc");
 
 if (empty($act)) {
@@ -566,7 +569,7 @@ if (empty($act)) {
                   BootstrapDialog.show({
                               title: '<?=gettext("Certificate");?>',
                               type:BootstrapDialog.TYPE_INFO,
-                              message: data,
+                              message: $("<div/>").text(data).html(),
                               cssClass: 'monospace-dialog',
                           });
                 }
@@ -643,6 +646,7 @@ $( document ).ready(function() {
           continue;
       }
       $subject = cert_get_subject_array($ca['crt']);
+      legacy_html_escape_form_data($subject);
       $subject_items = array('C'=>'', 'ST' => '', 'L' => '', 'O' => '', 'emailAddress' => '', 'CN' => '');
       foreach ($subject as $subject_item) {
           $subject_items[$subject_item['a']] = $subject_item['v'];

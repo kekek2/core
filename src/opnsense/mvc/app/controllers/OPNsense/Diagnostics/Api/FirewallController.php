@@ -29,12 +29,11 @@
 namespace OPNsense\Diagnostics\Api;
 
 use \OPNsense\Base\ApiControllerBase;
-use \OPNsense\Core\Config;
 use \OPNsense\Core\Backend;
 
 /**
  * Class FirewallController
- * @package OPNsense\SystemHealth
+ * @package OPNsense\Diagnostics\Api
  */
 class FirewallController extends ApiControllerBase
 {
@@ -46,6 +45,7 @@ class FirewallController extends ApiControllerBase
     public function logAction()
     {
         if ($this->request->isGet()) {
+            $this->sessionClose(); // long running action, close session
             $digest = empty($this->request->get('digest')) ? "" : $this->request->get('digest');
             $limit = empty($this->request->get('limit')) ? 1000 : $this->request->get('limit');
             $backend = new Backend();

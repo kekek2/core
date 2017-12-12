@@ -44,7 +44,7 @@ class FirmwareController extends ApiControllerBase
      * @param integer $bytes bytes to convert
      * @return string
      */
-    private function format_bytes($bytes)
+    protected function format_bytes($bytes)
     {
         if ($bytes >= (1024 * 1024 * 1024)) {
             return sprintf("%d GB", $bytes / (1024 * 1024 * 1024));
@@ -320,6 +320,7 @@ class FirmwareController extends ApiControllerBase
      */
     public function upgradeAction()
     {
+        $this->sessionClose(); // long running action, close session
         $backend = new Backend();
         $response = array();
         if ($this->request->hasPost('upgrade')) {
@@ -346,6 +347,7 @@ class FirmwareController extends ApiControllerBase
      */
     public function auditAction()
     {
+        $this->sessionClose(); // long running action, close session
         $backend = new Backend();
         $response = array();
 
@@ -367,6 +369,7 @@ class FirmwareController extends ApiControllerBase
      */
     public function reinstallAction($pkg_name)
     {
+        $this->sessionClose(); // long running action, close session
         $backend = new Backend();
         $response = array();
 
@@ -395,6 +398,7 @@ class FirmwareController extends ApiControllerBase
      */
     public function installAction($pkg_name)
     {
+        $this->sessionClose(); // long running action, close session
         $backend = new Backend();
         $response = array();
 
@@ -423,6 +427,7 @@ class FirmwareController extends ApiControllerBase
      */
     public function removeAction($pkg_name)
     {
+        $this->sessionClose(); // long running action, close session
         $backend = new Backend();
         $response = array();
 
@@ -451,6 +456,7 @@ class FirmwareController extends ApiControllerBase
      */
     public function lockAction($pkg_name)
     {
+        $this->sessionClose(); // long running action, close session
         $backend = new Backend();
         $response = array();
 
@@ -482,6 +488,7 @@ class FirmwareController extends ApiControllerBase
      */
     public function unlockAction($pkg_name)
     {
+        $this->sessionClose(); // long running action, close session
         $backend = new Backend();
         $response = array();
 
@@ -510,6 +517,7 @@ class FirmwareController extends ApiControllerBase
      */
     public function runningAction()
     {
+        $this->sessionClose(); // long running action, close session
         $backend = new Backend();
 
         $result = array(
@@ -524,6 +532,7 @@ class FirmwareController extends ApiControllerBase
      */
     public function upgradestatusAction()
     {
+        $this->sessionClose(); // long running action, close session
         $backend = new Backend();
         $result = array('status' => 'running');
         $cmd_result = trim($backend->configdRun('firmware status'));
@@ -673,6 +682,8 @@ class FirmwareController extends ApiControllerBase
      */
     public function getFirmwareOptionsAction()
     {
+        $this->sessionClose(); // long running action, close session
+
         // todo: we might want to move these into configuration files later
         $mirrors = array();
         $mirrors['https://update0.smart-soft.ru/'] = 'Mirror #1 (RU)';
@@ -684,7 +695,16 @@ class FirmwareController extends ApiControllerBase
         $flavours[''] = '(default)';
         $flavours['latest'] = 'OpenSSL';
 
-        return array("mirrors"=>$mirrors, "flavours" => $flavours, 'has_subscription' => $has_subscription);
+        $families = array();
+        $families[''] = gettext('Production');
+        $families['devel'] = gettext('Development');
+
+        return array(
+            'has_subscription' => $has_subscription,
+            'flavours' => $flavours,
+            'families' => $families,
+            'mirrors' => $mirrors,
+        );
     }
 
     /**
@@ -693,15 +713,23 @@ class FirmwareController extends ApiControllerBase
      */
     public function getFirmwareConfigAction()
     {
+        $config = Config::getInstance()->object();
         $result = array();
-        $result['mirror'] = '';
-        $result['flavour'] = '';
 
-        if (!empty(Config::getInstance()->object()->system->firmware->mirror)) {
-            $result['mirror'] = (string)Config::getInstance()->object()->system->firmware->mirror;
+        $result['flavour'] = '';
+        $result['family'] = '';
+        $result['mirror'] = '';
+
+        if (!empty($config->system->firmware->flavour)) {
+            $result['flavour'] = (string)$config->system->firmware->flavour;
         }
-        if (!empty(Config::getInstance()->object()->system->firmware->flavour)) {
-            $result['flavour'] = (string)Config::getInstance()->object()->system->firmware->flavour;
+
+        if (!empty($config->system->firmware->family)) {
+            $result['family'] = (string)$config->system->firmware->family;
+        }
+
+        if (!empty($config->system->firmware->mirror)) {
+            $result['mirror'] = (string)$config->system->firmware->mirror;
         }
 
         return $result;
@@ -716,31 +744,40 @@ class FirmwareController extends ApiControllerBase
         $response = array("status" => "failure");
 
         if ($this->request->isPost()) {
+            $config = Config::getInstance()->object();
+
             $response['status'] = 'ok';
+
             $selectedMirror = filter_var($this->request->getPost("mirror", null, ""), FILTER_SANITIZE_URL);
             $selectedFlavour = filter_var($this->request->getPost("flavour", null, ""), FILTER_SANITIZE_URL);
+            $selectedFamily = filter_var($this->request->getPost("family", null, ""), FILTER_SANITIZE_URL);
             $selSubscription = filter_var($this->request->getPost("subscription", null, ""), FILTER_SANITIZE_URL);
 
             // config data without model, prepare xml structure and write data
-            if (!isset(Config::getInstance()->object()->system->firmware)) {
-                Config::getInstance()->object()->system->addChild('firmware');
+            if (!isset($config->system->firmware)) {
+                $config->system->addChild('firmware');
             }
 
-            if (!isset(Config::getInstance()->object()->system->firmware->mirror)) {
-                Config::getInstance()->object()->system->firmware->addChild('mirror');
+            if (!isset($config->system->firmware->mirror)) {
+                $config->system->firmware->addChild('mirror');
             }
 
             if (empty($selSubscription)) {
-                Config::getInstance()->object()->system->firmware->mirror = $selectedMirror;
+                $config->system->firmware->mirror = $selectedMirror;
             } else {
                 // prepend subscription
-                Config::getInstance()->object()->system->firmware->mirror = $selectedMirror . '/' . $selSubscription;
+                $config->system->firmware->mirror = $selectedMirror . '/' . $selSubscription;
             }
 
-            if (!isset(Config::getInstance()->object()->system->firmware->flavour)) {
-                Config::getInstance()->object()->system->firmware->addChild('flavour');
+            if (!isset($config->system->firmware->flavour)) {
+                $config->system->firmware->addChild('flavour');
             }
-            Config::getInstance()->object()->system->firmware->flavour = $selectedFlavour;
+            $config->system->firmware->flavour = $selectedFlavour;
+
+            if (!isset($config->system->firmware->family)) {
+                $config->system->firmware->addChild('family');
+            }
+            $config->system->firmware->family = $selectedFamily;
 
             Config::getInstance()->save();
 

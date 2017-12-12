@@ -103,19 +103,44 @@ class MenuSystem
                 }
             }
         }
-        // add interfaces to "Interfaces" menu tab... kind of a hack, may need some improvement.
-        $ifarr = array();
+
         $config = Config::getInstance()->object();
+
+        // collect interfaces for dynamic (interface) menu tabs...
+        $iftargets = array("if" => array(), "wl" => array(), "fw" => array(), "dhcp4" => array(), "dhcp6" => array());
         if ($config->interfaces->count() > 0) {
             foreach ($config->interfaces->children() as $key => $node) {
+                // Interfaces tab
                 if (empty($node->virtual)) {
-                    $ifarr[$key] = !empty($node->descr) ? (string)$node->descr : strtoupper($key);
+                    $iftargets['if'][$key] = !empty($node->descr) ? (string)$node->descr : strtoupper($key);
+                }
+                // Wireless status tab
+                if (!empty($node->wireless)) {
+                    $iftargets['wl'][$key] = !empty($node->descr) ? (string)$node->descr : strtoupper($key);
+                }
+                // "Firewall: Rules" menu tab...
+                if (isset($node->enable)) {
+                    $iftargets['fw'][$key] = !empty($node->descr) ? (string)$node->descr : strtoupper($key);
+                }
+                // "Services: DHCPv[46]" menu tab:
+                if (empty($node->virtual) && isset($node->enable)) {
+                    if (!empty(filter_var($node->ipaddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4))) {
+                        $iftargets['dhcp4'][$key] = !empty($node->descr) ? (string)$node->descr : strtoupper($key);
+                    }
+                    if (!empty(filter_var($node->ipaddrv6, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6))) {
+                        $iftargets['dhcp6'][$key] = !empty($node->descr) ? (string)$node->descr : strtoupper($key);
+                    }
                 }
             }
         }
-        natcasesort($ifarr);
+
+        foreach (array_keys($iftargets) as $tab) {
+            natcasesort($iftargets[$tab]);
+        }
+
+        // add interfaces to "Interfaces" menu tab...
         $ordid = 0;
-        foreach ($ifarr as $key => $descr) {
+        foreach ($iftargets['if'] as $key => $descr) {
             $this->appendItem('Interfaces', $key, array(
                 'url' => '/interfaces.php?if='. $key,
                 'visiblename' => '[' . $descr . ']',
@@ -123,7 +148,79 @@ class MenuSystem
                 'order' => $ordid++,
             ));
         }
-        unset($ifarr);
+
+        $ordid = 100;
+        foreach ($iftargets['wl'] as $key => $descr) {
+            $this->appendItem('Interfaces.Wireless', $key, array(
+                'visiblename' => sprintf(gettext('%s Status'), $descr),
+                'url' => '/status_wireless.php?if='. $key,
+                'order' => $ordid++,
+            ));
+        }
+
+        // add interfaces to "Firewall: Rules" menu tab...
+        $iftargets['fw'] = array_merge(array('FloatingRules' => gettext('Floating')), $iftargets['fw']);
+        $ordid = 0;
+        foreach ($iftargets['fw'] as $key => $descr) {
+            $this->appendItem('Firewall.Rules', $key, array(
+                'url' => '/firewall_rules.php?if='. $key,
+                'visiblename' => $descr,
+                'order' => $ordid++,
+            ));
+            if ($key == 'FloatingRules') {
+                $this->appendItem('Firewall.Rules.' . $key, 'Top' . $key, array(
+                    'url' => '/firewall_rules.php',
+                    'visibility' => 'hidden',
+                ));
+            }
+            $this->appendItem('Firewall.Rules.' . $key, 'Add' . $key, array(
+                'url' => '/firewall_rules_edit.php?if='. $key,
+                'visibility' => 'hidden',
+            ));
+            $this->appendItem('Firewall.Rules.' . $key, 'Edit' . $key, array(
+                'url' => '/firewall_rules_edit.php?if=' . $key . '&*',
+                'visibility' => 'hidden',
+            ));
+        }
+
+        // add interfaces to "Services: DHCPv[46]" menu tab:
+        $ordid = 0;
+        foreach ($iftargets['dhcp4'] as $key => $descr) {
+            $this->appendItem('Services.DHCPv4', $key, array(
+                'url' => '/services_dhcp.php?if='. $key,
+                'visiblename' => "[$descr]",
+                'order' => $ordid++,
+            ));
+            $this->appendItem('Services.DHCPv4.' . $key, 'Add' . $key, array(
+                'url' => '/services_dhcp_edit.php?if='. $key,
+                'visibility' => 'hidden',
+            ));
+            $this->appendItem('Services.DHCP4.' . $key, 'Edit' . $key, array(
+                'url' => '/services_dhcp_edit.php?if='. $key . '&*',
+                'visibility' => 'hidden',
+            ));
+        }
+        $ordid = 0;
+        foreach ($iftargets['dhcp6'] as $key => $descr) {
+            $this->appendItem('Services.DHCPv6', $key, array(
+                'url' => '/services_dhcpv6.php?if='. $key,
+                'visiblename' => "[$descr]",
+                'order' => $ordid++,
+            ));
+            $this->appendItem('Services.DHCPv6.' . $key, 'Add' . $key, array(
+                'url' => '/services_dhcpv6_edit.php?if='. $key,
+                'visibility' => 'hidden',
+            ));
+            $this->appendItem('Services.DHCPv6.' . $key, 'Edit' . $key, array(
+                'url' => '/services_dhcpv6_edit.php?if='. $key . '&*',
+                'visibility' => 'hidden',
+            ));
+            $this->appendItem('Services.RouterAdv', $key, array(
+                'url' => '/services_router_advertisements.php?if='. $key,
+                'visiblename' => "[$descr]",
+                'order' => $ordid++,
+            ));
+        }
     }
 
     /**
@@ -152,6 +249,11 @@ class MenuSystem
             $next = null;
             foreach ($nodes as $node) {
                 if ($node->Selected) {
+                    /* ignore client-side anchor in breadcrumb */
+                    if (!empty($node->Url) && strpos($node->Url, '#') !== false) {
+                        $next = null;
+                        break;
+                    }
                     $breadcrumbs[] = array('name' => $node->VisibleName);
                     /* only go as far as the first reachable URL */
                     $next = empty($node->Url) ? $node->Children : null;

@@ -98,10 +98,8 @@ $pagetitle .= html_safe(sprintf(' | %s.%s', $config['system']['hostname'], $conf
     <link  href="/ui/css/bootstrap-datepicker3.min.css" rel="stylesheet">
 
     <!-- JQuery -->
-    <script type="text/javascript" src="/ui/js/jquery-1.12.4.min.js"></script>
-
-    <!-- Ticker used for notices-->
-    <script type="text/javascript" src="/javascript/ticker.js"></script>
+    <script type="text/javascript" src="/ui/js/jquery-3.2.1.min.js"></script>
+    <script type="text/javascript" src="/ui/js/jquery-migrate-3.0.1.min.js"></script>
 
     <!-- datepicker -->
     <script src="/ui/js/bootstrap-datepicker.min.js"></script>
@@ -153,14 +151,27 @@ $pagetitle .= html_safe(sprintf(' | %s.%s', $config['system']['hostname'], $conf
         $('[id*="show_all_help"]').toggleClass("fa-toggle-on fa-toggle-off");
         $('[id*="show_all_help"]').toggleClass("text-success text-danger");
         if ($('[id*="show_all_help"]').hasClass("fa-toggle-on")) {
+          if (window.sessionStorage) {
+            sessionStorage.setItem('all_help_preset', 1);
+          }
           $('[for*="help_for"]').addClass("show");
           $('[for*="help_for"]').removeClass("hidden");
         } else {
+          if (window.sessionStorage) {
+            sessionStorage.setItem('all_help_preset', 0);
+          }
           $('[for*="help_for"]').addClass("hidden");
           $('[for*="help_for"]').removeClass("show");
         }
         event.preventDefault();
       });
+      if (window.sessionStorage && sessionStorage.getItem('all_help_preset') == 1) {
+          // show all help messages when preset was stored
+          $('[id*="show_all_help"]').toggleClass("fa-toggle-on fa-toggle-off");
+          $('[id*="show_all_help"]').toggleClass("text-success text-danger");
+          $('[for*="help_for"]').addClass("show");
+          $('[for*="help_for"]').removeClass("hidden");
+      }
 
       // hide submenu items
       $('#mainmenu .list-group-item').click(function(){
@@ -171,6 +182,48 @@ $pagetitle .= html_safe(sprintf(' | %s.%s', $config['system']['hostname'], $conf
                 }
             });
         }
+      });
+      // Side menu navigation for long item lists, when top level items tend to scroll above visible the area
+      // they will clip on top of the menu system. Scroll out will move them back into their normal positions.
+      $("#navigation").scroll(function(){
+          var collapsed_menu_item = $("#mainmenu .collapse.in").first();
+          if (collapsed_menu_item.position().top < 5) {
+              var top_pos = parseInt($("header").height());
+              $("#mainmenu .collapse.in").each(function(){
+                  var menuref = $('a[href="#'+$(this).attr('id')+'"]');
+                  if (!menuref.hasClass('mainmenu_clipped_on_top')) {
+                      menuref.addClass('mainmenu_clipped_on_top');
+                      menuref.data('__original_style__', {
+                        'z-index': menuref.css('z-index'),
+                        'width': menuref.css('width'),
+                        'position': menuref.css('position'),
+                        'background': menuref.css('background'),
+                        'top': menuref.css('top')
+                      });
+                  }
+                  menuref.css('z-index', 10);
+                  menuref.css('top', top_pos);
+                  menuref.css('width', collapsed_menu_item.outerWidth() + 'px');
+                  menuref.css('position', 'fixed');
+                  menuref.css('background', '#fff');
+                  top_pos += menuref.outerHeight();
+              });
+          } else {
+              // scroll-back, move menu items back in normal location
+              $(".mainmenu_clipped_on_top").each(function(){
+                  var menuref = $(this);
+                  $.each(menuref.data('__original_style__'), function(key, value){
+                      menuref.css(key, value);
+                  });
+                  $(this).removeClass('mainmenu_clipped_on_top');
+              });
+          }
+      });
+      // Side menu navigation, always force selected item in center when the menu contains more items then fits the view area
+      $(".list-group-item.active").each(function(){
+          var navbar_center = ($( window ).height() - $(".collapse.navbar-collapse").height())/2;
+          var x = $(this).offset().top - navbar_center;
+          $('html,aside').scrollTop(x);
       });
 
       // hook in live menu search

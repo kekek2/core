@@ -138,15 +138,17 @@ function mapDataToFormUI(data_get_map) {
  */
 function updateServiceStatusUI(status) {
 
-    var status_html = '<span class="glyphicon glyphicon-play btn ';
+    var status_html = '<span class="label label-opnsense label-opnsense-sm ';
 
     if (status == "running") {
-        status_html += 'btn-success' ;
+        status_html += 'label-success';
     } else if (status == "stopped") {
-        status_html += 'btn-danger' ;
+        status_html += 'label-danger';
+    } else {
+        status_html += 'hidden';
     }
 
-    status_html += '"></span>';
+    status_html += '"><i class="fa fa-play fa-fw"/></span>';
 
     $('#service_status_container').html(status_html);
 }
@@ -226,6 +228,7 @@ function addMultiSelectClearUI() {
     });
 }
 
+
 /**
  * setup form help buttons
  */
@@ -241,31 +244,57 @@ function initFormHelpUI() {
         $('[id*="show_all_help"]').toggleClass("fa-toggle-on fa-toggle-off");
         $('[id*="show_all_help"]').toggleClass("text-success text-danger");
         if ($('[id*="show_all_help"]').hasClass("fa-toggle-on")) {
+            if (window.sessionStorage) {
+                sessionStorage.setItem('all_help_preset', 1);
+            }
             $('[for*="help_for"]').addClass("show");
             $('[for*="help_for"]').removeClass("hidden");
         } else {
             $('[for*="help_for"]').addClass("hidden");
             $('[for*="help_for"]').removeClass("show");
+            if (window.sessionStorage) {
+                sessionStorage.setItem('all_help_preset', 0);
+            }
         }
         event.preventDefault();
     });
+    if (window.sessionStorage && sessionStorage.getItem('all_help_preset') == 1) {
+        // show all help messages when preset was stored
+        $('[id*="show_all_help"]').toggleClass("fa-toggle-on fa-toggle-off");
+        $('[id*="show_all_help"]').toggleClass("text-success text-danger");
+        $('[for*="help_for"]').addClass("show");
+        $('[for*="help_for"]').removeClass("hidden");
+    }
 }
 
 /**
  * handle advanced show/hide
  */
 function initFormAdvancedUI() {
-    $('[data-advanced*="true"]').hide(function(){
-        $('[data-advanced*="true"]').after("<tr data-advanced='hidden_row'></tr>"); // the table row is added to keep correct table striping
-    });
+    if (window.sessionStorage && sessionStorage.getItem('show_advanced_preset') == 1) {
+        // show advanced options when preset was stored
+        $('[id*="show_advanced"]').toggleClass("fa-toggle-on fa-toggle-off");
+        $('[id*="show_advanced"]').toggleClass("text-success text-danger");
+    } else {
+        $('[data-advanced*="true"]').hide(function(){
+            $('[data-advanced*="true"]').after("<tr data-advanced='hidden_row'></tr>"); // the table row is added to keep correct table striping
+        });
+    }
+
     $('[id*="show_advanced"]').click(function() {
         $('[id*="show_advanced"]').toggleClass("fa-toggle-on fa-toggle-off");
         $('[id*="show_advanced"]').toggleClass("text-success text-danger");
         if ($('[id*="show_advanced"]').hasClass("fa-toggle-on")) {
             $('[data-advanced*="true"]').show();
             $('[data-advanced*="hidden_row"]').remove(); // the table row is deleted to keep correct table striping
+            if (window.sessionStorage) {
+                sessionStorage.setItem('show_advanced_preset', 1);
+            }
         } else {
             $('[data-advanced*="true"]').after("<tr data-advanced='hidden_row'></tr>").hide(); // the table row is added to keep correct table striping
+            if (window.sessionStorage) {
+                sessionStorage.setItem('show_advanced_preset', 0);
+            }
         }
     });
 }

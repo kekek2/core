@@ -36,6 +36,7 @@ require_once("services.inc");
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = array();
+    $pconfig['webguiinterfaces'] = !empty($config['system']['webgui']['interfaces']) ? explode(',', $config['system']['webgui']['interfaces']) : array();
     $pconfig['webguiproto'] = $config['system']['webgui']['protocol'];
     $pconfig['webguiport'] = $config['system']['webgui']['port'];
     $pconfig['ssl-certref'] = $config['system']['webgui']['ssl-certref'];
@@ -60,6 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['secondaryconsole'] = $config['system']['secondaryconsole'];
     $pconfig['enablesshd'] = $config['system']['ssh']['enabled'];
     $pconfig['sshport'] = $config['system']['ssh']['port'];
+    $pconfig['sshinterfaces'] = !empty($config['system']['ssh']['interfaces']) ? explode(',', $config['system']['ssh']['interfaces']) : array();
     $pconfig['passwordauth'] = isset($config['system']['ssh']['passwordauth']);
     $pconfig['sshdpermitrootlogin'] = isset($config['system']['ssh']['permitrootlogin']);
     $pconfig['quietlogin'] = isset($config['system']['webgui']['quietlogin']);
@@ -89,37 +91,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
     }
 
-    if (count($input_errors) ==0) {
+    if (count($input_errors) == 0) {
         // flag web ui for restart
-        if (!empty($pconfig['ssl-ciphers'])) {
-            $newciphers = implode(':', $pconfig['ssl-ciphers']);
-        } else {
-            $newciphers = '';
-        }
-        if ($config['system']['webgui']['protocol'] != $pconfig['webguiproto'] ||
+        $newinterfaces = !empty($pconfig['webguiinterfaces']) ? implode(',', $pconfig['webguiinterfaces']) : '';
+        $newciphers = !empty($pconfig['ssl-ciphers']) ? implode(':', $pconfig['ssl-ciphers']) : '';
+
+        $restart_webgui = $config['system']['webgui']['protocol'] != $pconfig['webguiproto'] ||
             $config['system']['webgui']['port'] != $pconfig['webguiport'] ||
             $config['system']['webgui']['ssl-certref'] != $pconfig['ssl-certref'] ||
             $config['system']['webgui']['compression'] != $pconfig['compression'] ||
             $config['system']['webgui']['ssl-ciphers'] != $newciphers ||
-            ($pconfig['disablehttpredirect'] == "yes") != !empty($config['system']['webgui']['disablehttpredirect'])
-            ) {
-            $restart_webgui = true;
+            $config['system']['webgui']['interfaces'] != $newinterfaces ||
+            ($pconfig['disablehttpredirect'] == "yes") != !empty($config['system']['webgui']['disablehttpredirect']);
 
-            session_unset();
-            if (ini_get("session.use_cookies")) {
-                $params = session_get_cookie_params();
-                setcookie(session_name(), '', time() - 42000, $params["path"], $params["domain"], $params["secure"], $params["httponly"]);
-            }
-            session_destroy();
-
-        } else {
-            $restart_webgui = false;
+        session_unset();
+        if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 42000, $params["path"], $params["domain"], $params["secure"], $params["httponly"]);
         }
+        session_destroy();
+
 
         $config['system']['webgui']['protocol'] = $pconfig['webguiproto'];
         $config['system']['webgui']['port'] = $pconfig['webguiport'];
         $config['system']['webgui']['ssl-certref'] = $pconfig['ssl-certref'];
         $config['system']['webgui']['ssl-ciphers'] = $newciphers;
+        $config['system']['webgui']['interfaces'] = $newinterfaces;
         $config['system']['webgui']['compression'] = $pconfig['compression'];
 
         if ($pconfig['disablehttpredirect'] == "yes") {
@@ -207,6 +204,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         /* always store setting to prevent installer auto-start */
         $config['system']['ssh']['noauto'] = 1;
 
+        $config['system']['ssh']['interfaces'] = !empty($pconfig['sshinterfaces']) ? implode(',', $pconfig['sshinterfaces']) : null;
+
         if (!empty($pconfig['enablesshd'])) {
             $config['system']['ssh']['enabled'] = 'enabled';
         } elseif (isset($config['system']['ssh']['enabled'])) {
@@ -279,6 +278,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 
 $a_cert = isset($config['cert']) ? $config['cert'] : array();
+$interfaces = get_configured_interface_with_descr();
 
 $certs_available = false;
 if (count($a_cert)) {
@@ -300,8 +300,10 @@ include("head.inc");
   $(document).ready(function() {
       $(".proto").change(function(){
          if ($("#https_proto").prop('checked')) {
+             $("#webguiport").attr('placeholder', '443');
              $(".ssl_opts").show();
          } else {
+             $("#webguiport").attr('placeholder', '80');
              $(".ssl_opts").hide();
          }
       });
@@ -406,7 +408,7 @@ include("head.inc");
                 <tr>
                   <td><a id="help_for_webguiport" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("TCP port"); ?></td>
                   <td>
-                    <input name="webguiport" type="text" value="<?=$pconfig['webguiport'];?>" />
+                    <input name="webguiport" id="webguiport" type="text" value="<?=$pconfig['webguiport'];?>" placeholder="<?= $pconfig['webguiproto'] == 'https' ? '443' : '80' ?>" />
                     <div class="hidden" for="help_for_webguiport">
                       <small class="formhelp">
                       <?=gettext("Enter a custom port number for the web GUI " .
@@ -416,8 +418,8 @@ include("head.inc");
                     </div>
                   </td>
                 </tr>
-                <tr>
-                  <td><a id="help_for_disablehttpredirect" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("WebGUI redirect"); ?></td>
+                <tr class="ssl_opts">
+                  <td><a id="help_for_disablehttpredirect" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('HTTP Redirect'); ?></td>
                   <td width="78%">
                     <input name="disablehttpredirect" type="checkbox" value="yes" <?= empty($pconfig['disablehttpredirect']) ? '' : 'checked="checked"';?> />
                     <strong><?= gettext('Disable web GUI redirect rule') ?></strong>
@@ -530,6 +532,21 @@ include("head.inc");
                   </td>
                 </tr>
                 <tr>
+                  <td><a id="help_for_webguiinterfaces" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Listen Interfaces') ?></td>
+                    <td>
+                    <select name="webguiinterfaces[]" multiple="multiple" class="selectpicker" title="<?= html_safe(gettext('All (recommended)')) ?>">
+<?php
+                    foreach ($interfaces as $iface => $ifacename): ?>
+                        <option value="<?= html_safe($iface) ?>" <?= !empty($pconfig['webguiinterfaces']) && in_array($iface, $pconfig['webguiinterfaces']) ? 'selected="selected"' : '' ?>><?= html_safe($ifacename) ?></option>
+<?php
+                    endforeach;?>
+                    </select>
+                    <div class="hidden" for="help_for_webguiinterfaces">
+                      <?= gettext('Only accept connections from the selected interfaces. Leave empty to listen globally. Use with care.') ?>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
                   <td><a id="help_for_nohttpreferercheck" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("HTTP_REFERER enforcement"); ?></td>
                   <td>
                     <input name="nohttpreferercheck" type="checkbox" value="yes" <?= empty($pconfig['nohttpreferercheck']) ? '' : 'checked="checked"' ?> />
@@ -586,11 +603,26 @@ include("head.inc");
                 <tr>
                   <td><a id="help_for_sshport" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("SSH port"); ?></td>
                   <td width="78%">
-                    <input name="sshport" type="text" value="<?=$pconfig['sshport'];?>"/>
+                    <input name="sshport" type="text" value="<?=$pconfig['sshport'];?>" placeholder="22" />
                     <div class="hidden" for="help_for_sshport">
                       <small class="formhelp">
                       <?=gettext("Leave this blank for the default of 22."); ?>
                       </small>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td><a id="help_for_sshinterfaces" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Listen Interfaces') ?></td>
+                    <td>
+                    <select name="sshinterfaces[]" multiple="multiple" class="selectpicker" title="<?= html_safe(gettext('All (recommended)')) ?>">
+<?php
+                    foreach ($interfaces as $iface => $ifacename): ?>
+                        <option value="<?= html_safe($iface) ?>" <?= !empty($pconfig['sshinterfaces']) && in_array($iface, $pconfig['sshinterfaces']) ? 'selected="selected"' : '' ?>><?= html_safe($ifacename) ?></option>
+<?php
+                    endforeach;?>
+                    </select>
+                    <div class="hidden" for="help_for_sshinterfaces">
+                      <?= gettext('Only accept connections from the selected interfaces. Leave empty to listen globally. Use with care.') ?>
                     </div>
                   </td>
                 </tr>

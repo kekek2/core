@@ -78,6 +78,92 @@ function filter_core_antilockout_ports()
     return $lockout_ports;
 }
 
+
+/**
+ *   fetch a remote list of ports, eventually we might be better of dropping this functionality because of the
+ *   disadvantages it has (network dependency on filter load).
+ */
+function filter_core_get_url_port_alias($name)
+{
+    global $config;
+    $alias_content = "";
+    $urltable_prefix = "/var/db/aliastables/";
+    $urltable_filename = $urltable_prefix . $name . ".txt";
+    if (!file_exists($urltable_prefix)) {
+        mkdir($urltable_prefix);
+    }
+    if (!empty($config['aliases']['alias'])) {
+        foreach ($config['aliases']['alias'] as $alias) {
+            if ($alias['name'] == $name) {
+                 $urls = array();
+                 if (!empty($alias["url"])) {
+                     $urls = array($alias["url"]);
+                 } elseif (!empty($alias["aliasurl"][0])) {
+                     $urls = $alias["aliasurl"];
+                 }
+                 if (file_exists($urltable_filename) && filesize($urltable_filename)) {
+                     $alias_content = file_get_contents($urltable_filename);
+                 } else {
+                     $arrContextOptions = array();
+                     if (!isset($config['system']['checkaliasesurlcert'])) {
+                         $arrContextOptions['ssl'] = array("verify_peer"=>false,"verify_peer_name"=>false);
+                     }
+                     foreach ($urls as $url) {
+                        if (is_URL($url)) {
+                            $content = @file_get_contents($url, false, stream_context_create($arrContextOptions));
+                            foreach (preg_split('/[\n\r]+/', $content, -1, PREG_SPLIT_NO_EMPTY) as $line) {
+                                if ((string)((int)$line) === $line && $line >= 1 && $line <= 65535) {
+                                    $alias_content .= $line. "\n";
+                                }
+                            }
+                         }
+                     }
+                     if (!empty($alias_content)) {
+                         file_put_contents($urltable_filename, $alias_content);
+                     }
+                 }
+                 break;
+            }
+        }
+    }
+    return preg_replace("/\n/", " ", $alias_content);
+}
+
+/**
+ * recursively collect port alias(es) contents
+ * @param $aliasname string alias name or null to fetch all aliases
+ * @param $aliases aliases already parsed (prevent deadlock)
+ * @return array containing ports
+ */
+function filter_core_get_port_alias($aliasname, $aliases=array())
+{
+    global $config;
+
+    $response = array();
+    $aliases[] = $aliasname;
+    if (isset($config['aliases']['alias'])) {
+        foreach ($config['aliases']['alias'] as $aliased) {
+            if ($aliasname == $aliased['name'] && $aliased['type'] == 'port') {
+                foreach (explode(" ", $aliased['address']) as $address) {
+                    if (is_alias($address)) {
+                        if (!in_array($address, $aliases)) {
+                            foreach (filter_core_get_port_alias($address, $aliases) as $port) {
+                                if (!in_array($port, $response)) {
+                                    $response[] = $port;
+                                }
+                            }
+                        }
+                    } elseif ((is_port($address) || is_portrange($address)) && !in_array($address, $response)) {
+                        $response[] = $address ;
+                    }
+                }
+            }
+        }
+    }
+    return $response;
+}
+
+
 /**
  *  core system rules
  */
@@ -137,7 +223,7 @@ function filter_core_rules_system($fw, $defaults)
     // CARP defaults
     $carp_disabled = empty($config['hasync']) && empty($config['virtualip']['vip']);
     $fw->registerFilterRule(1,
-      array('protocol' => 'carp', 'from' => '(self)', 'direction' => 'in', 'disabled' => $carp_disabled),
+      array('protocol' => 'carp', 'from' => '(self)', 'direction' => 'in', 'disabled' => !$carp_disabled),
       $defaults['block']
     );
     $fw->registerFilterRule(1,array('protocol' => 'carp'),$defaults['pass']);

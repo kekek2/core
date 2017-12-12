@@ -3,6 +3,7 @@
         <Dashboard order="0" url="/index.php" cssClass="fa fa-dashboard fa-fw">
             <Args url="/index.php*" visibility="hidden"/>
             <Root url="/" visibility="hidden"/>
+            <RootArgs url="/?*" visibility="hidden"/>
         </Dashboard>
         <License order="1" url="/license.php" cssClass="fa fa-balance-scale fa-fw"/>
         <Certificate order="2" url="/ting_cert.php" cssClass="fa fa-certificate fa-fw"/>
@@ -99,9 +100,6 @@
                 <Edit url="/interfaces_wireless_edit.php*" visibility="hidden"/>
             </Devices>
             <Log VisibleName="Log File" url="/ui/syslog/logview/showlog/wireless"/>
-            <Status url="/status_wireless.php">
-                <Status url="/status_wireless.php*" visibility="hidden"/>
-            </Status>
         </Wireless>
         <PPP order="940" VisibleName="Point-to-Point" cssClass="fa fa-tty fa-fw">
             <Devices url="/interfaces_ppps.php">
@@ -144,11 +142,7 @@
             </View>
             <Import order="200" url="/firewall_aliases_import.php"/>
         </Aliases>
-        <Rules order="20" url="/firewall_rules.php" cssClass="fa fa-check fa-fw">
-            <RulesEdit url="/firewall_rules_edit.php*" visibility="hidden"/>
-            <Floating url="/firewall_rules.php?if=FloatingRules" visibility="hidden"/>
-            <Interface url="/firewall_rules.php?if=*" visibility="hidden"/>
-        </Rules>
+        <Rules order="20" cssClass="fa fa-check fa-fw" />
         <NAT order="30" cssClass="fa fa-exchange fa-fw">
             <PortForward order="100" VisibleName="Port Forward" url="/firewall_nat.php">
               <Edit url="/firewall_nat_edit.php*" visibility="hidden"/>
@@ -198,38 +192,28 @@
             <StatesSummary order="90" VisibleName="States Summary" url="/diag_states_summary.php"/>
         </Diagnostics>
         <LogFiles order="400" VisibleName="Log Files" cssClass="fa fa-eye fa-fw">
-            <Normal VisibleName="Normal View" order="100" url="/diag_logs_filter.php"/>
-            <Dynamic VisibleName="Dynamic View" order="200" url="/diag_logs_filter_dynamic.php"/>
+            <Live VisibleName="Live View" order="100" url="/ui/diagnostics/firewall/log"/>
+            <Normal VisibleName="Static View" order="200" url="/diag_logs_filter.php"/>
             <Summary VisibleName="Summary View" order="300" url="/diag_logs_filter_summary.php"/>
             <Plain VisibleName="Plain View" order="400" url="/ui/syslog/logview/showlog/filter"/>
         </LogFiles>
     </Firewall>
     <Services order="60" cssClass="fa fa-cog">
-        <DHCP cssClass="fa fa-bullseye fa-fw">
-            <Server order="100" url="/services_dhcp.php">
-                <Tab url="/services_dhcp.php?if=*" visibility="hidden"/>
-                <Edit url="/services_dhcp_edit.php?*" visibility="hidden"/>
-            </Server>
+        <DHCPv4 cssClass="fa fa-bullseye fa-fw">
             <Relay order="200" url="/services_dhcp_relay.php"/>
             <Leases order="300" url="/status_dhcp_leases.php">
                 <Details url="/status_dhcp_leases.php?*" visibility="hidden"/>
             </Leases>
             <LogFile VisibleName="Log File" order="400" url="/diag_logs_dhcp.php"/>
-        </DHCP>
+        </DHCPv4>
         <DHCPv6 cssClass="fa fa-bullseye fa-fw">
-            <Advertisements order="100" url="/services_router_advertisements.php">
-                <Interface url="/services_router_advertisements.php?*" visibility="hidden"/>
-            </Advertisements>
-            <Server order="200" url="/services_dhcpv6.php">
-                <Interface url="/services_dhcpv6.php?*" visibility="hidden"/>
-                <Edit url="/services_dhcpv6_edit.php?*" visibility="hidden"/>
-            </Server>
             <Relay order="300" url="/services_dhcpv6_relay.php"/>
             <Leases order="400" url="/status_dhcpv6_leases.php">
                 <Details url="/status_dhcpv6_leases.php?*" visibility="hidden"/>
             </Leases>
         </DHCPv6>
         <OpenDNS VisibleName="OpenDNS" url="/services_opendns.php" cssClass="fa fa-tags fa-fw"/>
+        <RouterAdv VisibleName="Router Advertisements" cssClass="fa fa-bullseye fa-fw" />
         <Diagnostics order="900" cssClass="fa fa-medkit fa-fw" url="/status_services.php">
           <All url="/status_services.php?*" visibility="hidden"/>
         </Diagnostics>

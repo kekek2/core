@@ -180,12 +180,10 @@ POSSIBILITY OF SUCH DAMAGE.
                                 draggable: true
                             });
                         } else {
-                            // request service status after successful save and update status box (wait a few seconds before update)
-                            setTimeout(function(){
-                                ajaxCall(url="/api/proxy/service/status", sendData={}, callback=function(data,status) {
-                                    updateServiceStatusUI(data['status']);
-                                });
-                            },3000);
+                            // request service status after successful save and update status box
+                            ajaxCall(url="/api/proxy/service/status", sendData={}, callback=function(data,status) {
+                                updateServiceStatusUI(data['status']);
+                            });
                         }
                     });
                 });
@@ -218,13 +216,15 @@ POSSIBILITY OF SUCH DAMAGE.
             {% endfor %}
 
         <li role="presentation" class="dropdown {% if mainForm['activetab']|default("") == active_subtab %}active{% endif %}">
-            <a data-toggle="dropdown" href="#" class="dropdown-toggle pull-right visible-lg-inline-block visible-md-inline-block visible-xs-inline-block visible-sm-inline-block" role="button" style="border-left: 1px dashed lightgray;">
+            <a data-toggle="dropdown" href="#" class="dropdown-toggle pull-right visible-lg-inline-block visible-md-inline-block visible-xs-inline-block visible-sm-inline-block" role="button">
                 <b><span class="caret"></span></b>
             </a>
-            <a data-toggle="tab" href="#subtab_{{tab['subtabs'][0][0]}}" class="visible-lg-inline-block visible-md-inline-block visible-xs-inline-block visible-sm-inline-block" style="border-right:0px;"><b>{{tab[1]}}</b></a>
+            <a data-toggle="tab" onclick="$('#subtab_item_{{tab['subtabs'][0][0]}}').click();" class="visible-lg-inline-block visible-md-inline-block visible-xs-inline-block visible-sm-inline-block" style="border-right:0px;"><b>{{tab[1]}}</b></a>
             <ul class="dropdown-menu" role="menu">
                 {% for subtab in tab['subtabs']|default({})%}
-                <li class="{% if mainForm['activetab']|default("") == subtab[0] %}active{% endif %}"><a data-toggle="tab" href="#subtab_{{subtab[0]}}"><i class="fa fa-check-square"></i> {{subtab[1]}}</a></li>
+                <li class="{% if mainForm['activetab']|default("") == subtab[0] %}active{% endif %}">
+                    <a data-toggle="tab" id="subtab_item_{{subtab[0]}}" href="#subtab_{{subtab[0]}}">{{subtab[1]}}</a>
+                </li>
                 {% endfor %}
             </ul>
         </li>
@@ -327,4 +327,4 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
 </div>
 
-{{ partial("layout_partials/base_dialog",['fields':formDialogEditBlacklist,'id':'DialogEditBlacklist','label':lang._('Edit Blacklist')])}}
+{{ partial("layout_partials/base_dialog",['fields':formDialogEditBlacklist,'id':'DialogEditBlacklist','label':lang._('Edit blacklist')])}}

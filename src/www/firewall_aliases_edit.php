@@ -165,6 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $pconfig['host_url'] = array();
     }
     $pconfig['detail'] = !empty($pconfig['detail']) ? explode("||", $pconfig['detail']) : array();
+    $pconfig['proto'] = !empty($pconfig['proto']) ? explode(',', $pconfig['proto']) : array("IPv4");
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pconfig = $_POST;
     if (isset($_POST['id']) && is_numericint($_POST['id']) && isset($a_aliases[$_POST['id']])) {
@@ -302,7 +303,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
             // proto is only for geoip selection
             if ($pconfig['type'] == 'geoip') {
-                $confItem['proto'] = $pconfig['proto'];
+                $confItem['proto'] = !empty($pconfig['proto']) ? implode(',', $pconfig['proto']) : array("IPv4");
             }
 
             /*   Check to see if alias name needs to be
@@ -350,10 +351,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             // post save actions
             mark_subsystem_dirty('aliases');
             firewall_syslog($alias_action, $a_aliases, $confItem);
-            if (strpos($pconfig['type'],'url') !== false || $pconfig['type'] == 'geoip') {
-                // update URL Table Aliases
-                configd_run('filter refresh_url_alias', true);
-            }
 
             header(url_safe('Location: /firewall_aliases.php'));
             exit;
@@ -435,6 +432,7 @@ include("head.inc");
         $("#addNew").removeClass('hidden');
         $('.act-removerow').removeClass('hidden');
       }
+      $("#detailTable").removeClass('hidden');
       $("#proto").addClass("hidden");
       $(".geoip_table").addClass("hidden");
       $(".not_geoip_table").removeClass("hidden");
@@ -468,6 +466,9 @@ include("head.inc");
               $(".not_geoip_table").addClass("hidden");
               $(".host_url").attr("disabled", "disabled");
               $(".geoip_item").removeAttr("disabled");
+              break;
+          case 'external':
+              $("#detailTable").addClass('hidden');
               break;
       }
       $(".fld_detail").typeahead("destroy");
@@ -535,12 +536,13 @@ include("head.inc");
                       <option value="urltable" <?=$pconfig['type'] == "urltable" ? "selected=\"selected\"" : ""; ?>><?=gettext("URL Table (IPs)"); ?></option>
                       <option value="urltable_ports" <?=$pconfig['type'] == "urltable_ports" ? "selected=\"selected\"" : ""; ?>><?=gettext("URL Table (Ports)"); ?></option>
                       <option value="geoip" <?=$pconfig['type'] == "geoip" ? "selected=\"selected\"" : ""; ?>><?=gettext("GeoIP"); ?></option>
+                      <option value="external" <?=$pconfig['type'] == "external" ? "selected=\"selected\"" : ""; ?>><?=gettext("External (advanced)"); ?></option>
                     </select>
                     <div id="proto" class="hidden">
                       <small><?=gettext("Protocol");?></small><br/>
-                      <select name="proto">
-                        <option value="IPv4" <?=$pconfig['proto'] == "IPv4" ? "selected=\"selected\"" : ""; ?>><?=gettext("IPv4");?></option>
-                        <option value="IPv6" <?=$pconfig['proto'] == "IPv6" ? "selected=\"selected\"" : ""; ?>><?=gettext("IPv6");?></option>
+                      <select name="proto[]" multiple="multiple" class="selectpicker">
+                        <option value="IPv4" <?= in_array("IPv4", $pconfig['proto']) ? "selected=\"selected\"" : ""; ?>><?=gettext("IPv4");?></option>
+                        <option value="IPv6" <?= in_array("IPv6", $pconfig['proto']) ? "selected=\"selected\"" : ""; ?>><?=gettext("IPv6");?></option>
                       </select>
                     </div>
                     <div class="hidden" for="help_for_type">
@@ -570,6 +572,14 @@ include("head.inc");
                       </span>
                       <small>
                         <?=gettext("Enter an URL containing a large number of IPs, ports or subnets. After saving the lists will be downloaded and scheduled for automatic updates when a frequency is provided.");?>
+                        <br/>
+                      </small>
+                      <span class="text-info">
+                        <?=gettext("External (advanced)")?><br/>
+                      </span>
+                      <small>
+                        <?=gettext("Managed externally, the contents of this alias type could be managed by other scripts or services. ".
+                                  "OPNsense only makes sure the alias exists and leaves the contents alone");?>
                       </small>
                     </div>
                   </td>

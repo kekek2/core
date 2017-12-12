@@ -52,7 +52,7 @@
             <pattern>index.php*</pattern>
             <pattern>*.widget.php*</pattern>
             <pattern>widgets/api/get.php*</pattern>
-            <pattern>diag_logs_filter_dynamic.php*</pattern>
+            <pattern>api/diagnostics/dns/reverse_lookup*</pattern>
         </patterns>
     </page-dashboard-all>
     <page-dashboard-widgets>
@@ -309,9 +309,12 @@
         </patterns>
     </page-diagnostics-logs-firewall-plain>
     <page-diagnostics-logs-firewall-dynamic>
-        <name>Diagnostics: Logs: Firewall: Dynamic View</name>
+        <name>Diagnostics: Logs: Firewall: Live View</name>
         <patterns>
-            <pattern>diag_logs_filter_dynamic.php*</pattern>
+            <pattern>ui/diagnostics/firewall/log*</pattern>
+            <pattern>api/diagnostics/firewall/log*</pattern>
+            <pattern>api/diagnostics/interface/getInterfaceNames*</pattern>
+            <pattern>api/diagnostics/dns/reverse_lookup*</pattern>
         </patterns>
     </page-diagnostics-logs-firewall-dynamic>
     <page-diagnostics-logs-firewall-summary>
@@ -680,13 +683,6 @@
             <pattern>system_crlmanager.php*</pattern>
         </patterns>
     </page-system-crlmanager>
-    <page-system-firmware-autoupdate>
-        <name>System: Firmware</name>
-        <patterns>
-            <pattern>ui/core/firmware/*</pattern>
-            <pattern>api/core/firmware/*</pattern>
-        </patterns>
-    </page-system-firmware-autoupdate>
     <page-system-firmware-manualupdate>
         <name>System: Firmware</name>
         <patterns>

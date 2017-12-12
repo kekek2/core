@@ -632,6 +632,24 @@ function ipsec_convert_to_modp($index)
         case '18':
             $convertion = "modp8192";
             break;
+        case '19':
+            $convertion = "ecp256";
+            break;
+        case '20':
+            $convertion = "ecp384";
+            break;
+        case '21':
+            $convertion = "ecp521";
+            break;
+        case '22':
+            $convertion = "modp1024s160";
+            break;
+        case '23':
+            $convertion = "modp2048s224";
+            break;
+        case '24':
+            $convertion = "modp2048s256";
+            break;
     }
 
     return $convertion;
@@ -863,7 +881,7 @@ function ipsec_configure_do($verbose = false, $interface = '')
                         $family = "inet";
                     }
                     if (is_ipaddr($srcip)) {
-                        $ipsecpinghosts[] = "{$srcip}|{$dstip}|3|||||{$family}|\n";
+                        $ipsecpinghosts .= "{$srcip}|{$dstip}|3|||||{$family}|\n";
                     }
                 }
             }

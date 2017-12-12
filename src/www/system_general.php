@@ -44,19 +44,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $pconfig['theme'] = $no_change_config['theme'];
     $pconfig['language'] = null;
-    $pconfig['timezone'] = 'Etc/UTC';
-    $pconfig['prefer_ipv4'] = isset($config['system']['prefer_ipv4']);
-    $pconfig['hostname'] = $config['system']['hostname'];
     $pconfig['dnsallowoverride'] = isset($config['system']['dnsallowoverride']);
     $pconfig['dnslocalhost'] = isset($config['system']['dnslocalhost']);
     $pconfig['domain'] = $config['system']['domain'];
     $pconfig['hostname'] = $config['system']['hostname'];
     $pconfig['prefer_ipv4'] = isset($config['system']['prefer_ipv4']);
-    $pconfig['timezone'] = $config['system']['timezone'];
-    $pconfig['timezone'] = 'Etc/UTC';
     if (isset($config['system']['language'])) {
         $pconfig['language'] = $config['system']['language'];
     }
+    $pconfig['timezone'] = empty($config['system']['timezone']) ? 'Etc/UTC' : $config['system']['timezone'] ;
 
     for ($dnscounter = 1; $dnscounter < 9; $dnscounter++) {
         $dnsname = "dns{$dnscounter}";

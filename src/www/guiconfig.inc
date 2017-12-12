@@ -34,6 +34,7 @@ require_once("config.inc");
 
 /* CSRF BEGIN: CHECK MUST BE EXECUTED FIRST; NO EXCEPTIONS */
 require_once('csrf.inc');
+header('X-Frame-Options: SAMEORIGIN');
 /* CSRF END: THANK YOU FOR YOUR COOPERATION */
 
 function get_current_theme()
@@ -55,38 +56,7 @@ function html_safe($text)
     return htmlspecialchars($text, ENT_QUOTES | ENT_HTML401);
 }
 
-header("X-Frame-Options: SAMEORIGIN");
-
-$lang = 'en_US';
-if (!empty($config['system']['language'])) {
-    $lang = $config['system']['language'];
-}
-
-$lang_encoding = $lang . '.UTF-8';
-$textdomain = 'OPNsense';
-
-putenv('LANG=' . $lang_encoding);
-textdomain($textdomain);
-bindtextdomain($textdomain, '/usr/local/share/locale');
-bind_textdomain_codeset($textdomain, $lang_encoding);
-
 require_once("authgui.inc");
-
-if (!empty($_SESSION['Username']) && array_key_exists($_SESSION['Username'], $userindex)) {
-    $old_lang = $lang;
-    $lang = $config['system']['user'][$userindex[$_SESSION['Username']]]['language'];
-
-    /* a bit silly to redo this now but ok... */
-    if (!empty($lang) && $lang != $old_lang) {
-        $lang_encoding = $lang . '.UTF-8';
-        $textdomain = 'OPNsense';
-
-        putenv('LANG=' . $lang_encoding);
-        textdomain($textdomain);
-        bindtextdomain($textdomain, '/usr/local/share/locale');
-        bind_textdomain_codeset($textdomain, $lang_encoding);
-    }
-}
 
 /* Reserved table names to avoid colision */
 $reserved_table_names = array(
@@ -443,78 +413,6 @@ function is_specialnet($net)
         }
     }
     return false;
-}
-
-
-
-/****f* guiconfig/display_top_tabs
- * NAME
- *   display_top_tabs - display tabs with rounded edges
- * INPUTS
- *   $text      - array of tabs
- * RESULT
- *   null
- ******/
-function display_top_tabs(& $tab_array, $no_drop_down = false)
-{
-    global $config;
-
-    $tab_array_char_limit = 92;
-
-    /*  does the user have access to this tab?
-     *  master user has access to everything.
-     *  if the user does not have access, simply
-     *  unset the tab item.
-     */
-    foreach ($tab_array as $tab_id => $ta){
-        if (!isAllowedPage($ta[2])) {
-            unset ($tab_array[$tab_id]);
-        }
-    }
-
-    $tabcharcount = 0;
-    foreach ($tab_array as $ta) {
-        $tabcharcount = $tabcharcount + strlen($ta[0]);
-    }
-
-    if ($no_drop_down == true) {
-        $tabcharcount = 0;
-        unset($tab_array_char_limit);
-    }
-
-    // If the character count of the tab names is > 670
-    // then show a select item dropdown menubox.
-    if ($tabcharcount > $tab_array_char_limit) {
-        echo "<h2>".gettext("Currently viewing: ")."</h2>";
-        echo "<select class=\"selectpicker\" name=\"TabSelect\" onchange=\"tabs_will_go(this)\" data-live-search=\"true\" data-style=\"btn-default\">\n";
-        foreach ($tab_array as $ta) {
-            if ($ta[1]=="true") {
-                $selected = " selected=\"selected\"";
-            } else {
-                $selected = "";
-            }
-            echo "<option class=\"top_tab\" value=\"{$ta[2]}\"{$selected}>{$ta['0']}</option>\n";
-        }
-        echo "</select>\n<p>&nbsp;</p>";
-        echo "<script type=\"text/javascript\">";
-        echo "\n//<![CDATA[\n";
-        echo " function tabs_will_go(obj){ document.location = obj.value; }\n";
-        echo "//]]>\n";
-        echo "</script>";
-    }  else {
-        echo "<!-- Tabbed bar code-->\n";
-        echo "<ul class=\"nav nav-tabs nav-justified\" role=\"tablist\">\n";
-        $tabscounter = 0;
-        foreach ($tab_array as $ta) {
-            if ($ta[1] == true) {
-                echo "  <li class=\"active\"><a class=\"top_tab\" href=\"{$ta[2]}\" role=\"tab\">{$ta[0]}</a></li>\n";
-            } else {
-                echo "  <li><a class=\"top_tab\" href=\"{$ta[2]}\" role=\"tab\">{$ta[0]}</a></li>\n";
-            }
-            $tabscounter++;
-        }
-        echo "</ul>\n";
-    }
 }
 
 $timezone = $config['system']['timezone'];

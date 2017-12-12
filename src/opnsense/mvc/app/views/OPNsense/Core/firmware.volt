@@ -70,13 +70,13 @@ POSSIBILITY OF SUCH DAMAGE.
                 // show upgrade list
                 $('#update_status').hide();
                 $('#updatelist').show();
-                $('#updatelist').empty();
+                $('#updatelist > tbody').empty();
                 $('#updatetab > a').tab('show');
-                $("#updatelist").html("<tr><th>{{ lang._('Package Name') }}</th>" +
+                $("#updatelist > thead").html("<tr><th>{{ lang._('Package Name') }}</th>" +
                 "<th>{{ lang._('Current Version') }}</th><th>{{ lang._('New Version') }}</th>" +
                 "<th>{{ lang._('Required Action') }}</th></tr>");
                 $.each(data['all_packages'], function (index, row) {
-                    $('#updatelist').append('<tr><td>'+row['name']+'</td>' +
+                    $('#updatelist > tbody').append('<tr><td>'+row['name']+'</td>' +
                     '<td>'+row['old']+'</td><td>'+row['new']+'</td><td>' +
                     row['reason'] + '</td></tr>');
 
@@ -121,7 +121,7 @@ POSSIBILITY OF SUCH DAMAGE.
         $("#upgrade_progress" + maj_suffix).addClass("fa fa-spinner fa-pulse");
 
         ajaxCall('/api/core/firmware/upgrade',{upgrade:$.upgrade_action},function() {
-            $('#updatelist').empty();
+            $('#updatelist > tbody, thead').empty();
             setTimeout(trackStatus, 500);
         });
     }
@@ -139,7 +139,7 @@ POSSIBILITY OF SUCH DAMAGE.
         $("#audit_progress").addClass("fa fa-spinner fa-pulse");
 
         ajaxCall('/api/core/firmware/audit', {}, function () {
-            $('#updatelist').empty();
+            $('#updatelist > tbody, thead').empty();
             setTimeout(trackStatus, 500);
         });
     }
@@ -207,7 +207,7 @@ POSSIBILITY OF SUCH DAMAGE.
         $.upgrade_action = 'action';
 
         ajaxCall('/api/core/firmware/'+pkg_act+'/'+pkg_name,{},function() {
-            $('#updatelist').empty();
+            $('#updatelist > tbody, thead').empty();
             setTimeout(trackStatus, 500);
         });
     }
@@ -316,16 +316,9 @@ POSSIBILITY OF SUCH DAMAGE.
      */
     function packagesInfo(changelog_display) {
         ajaxGet('/api/core/firmware/info', {}, function (data, status) {
-            $('#packageslist').empty();
-            $('#pluginlist').empty();
+            $('#packageslist > tbody').empty();
+            $('#pluginlist > tbody').empty();
             var installed = {};
-
-            $("#packageslist").html("<tr><th>{{ lang._('Name') }}</th>" +
-            "<th>{{ lang._('Version') }}</th><th>{{ lang._('Size') }}</th>" +
-            "<th>{{ lang._('License') }}</th><th>{{ lang._('Comment') }}</th><th></th></tr>");
-            $("#pluginlist").html("<tr><th>{{ lang._('Name') }}</th>" +
-            "<th>{{ lang._('Version') }}</th><th>{{ lang._('Size') }}</th>" +
-            "<th>{{ lang._('Comment') }}</th><th></th></tr>");
 
             var local_count = 0;
             var plugin_count = 0;
@@ -341,7 +334,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 } else {
                     return 1;
                 }
-                $('#packageslist').append(
+                $('#packageslist > tbody').append(
                     '<tr>' +
                     '<td>' + row['name'] + '</td>' +
                     '<td>' + row['version'] + '</td>' +
@@ -367,7 +360,7 @@ POSSIBILITY OF SUCH DAMAGE.
             });
 
             if (local_count == 0) {
-                $('#packageslist').append(
+                $('#packageslist > tbody').append(
                     '<tr><td colspan=5>{{ lang._('No packages were found on your system. Please call for help.') }}</td></tr>'
                 );
             }
@@ -388,7 +381,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     // this state overwrites installed on purpose
                     status_text = ' ({{ lang._('orphaned') }})';
                 }
-                $('#pluginlist').append(
+                $('#pluginlist > tbody').append(
                     '<tr>' + '<td>' + bold_on + row['name'] + status_text + bold_off + '</td>' +
                     '<td>' + bold_on + row['version'] + bold_off + '</td>' +
                     '<td>' + bold_on + row['flatsize'] + bold_off + '</td>' +
@@ -410,15 +403,14 @@ POSSIBILITY OF SUCH DAMAGE.
             });
 
             if (plugin_count == 0) {
-                $('#pluginlist').append(
+                $('#pluginlist > tbody').append(
                     '<tr><td colspan=5>{{ lang._('Check for updates to view available plugins.') }}</td></tr>'
                 );
             }
 
             if (changelog_display) {
-                $('#updatelist').empty();
-
-                $("#updatelist").html("<tr><th>{{ lang._('Version') }}</th>" +
+                $("#updatelist > tbody").empty();
+                $("#updatelist > thead").html("<tr><th>{{ lang._('Version') }}</th>" +
                 "<th>{{ lang._('Date') }}</th><th></th></tr>");
 
                 installed_version = data['product_version'].replace(/[_-].*/, '');
@@ -436,7 +428,7 @@ POSSIBILITY OF SUCH DAMAGE.
                         bold_off = '</b>';
                     }
 
-                    $('#updatelist').append(
+                    $('#updatelist > tbody').append(
                         '<tr' + (changelog_count > changelog_max ? ' class="changelog-hidden" style="display: none;" ' : '' ) +
                         '><td>' + bold_on + row['version'] + status_text + bold_off + '</td><td>' + bold_on + row['date'] + bold_off + '</td>' +
                         '<td><button class="btn btn-default btn-xs act_changelog" data-version="' + row['version'] + '" ' +
@@ -446,13 +438,13 @@ POSSIBILITY OF SUCH DAMAGE.
                 });
 
                 if (!data['changelog'].length) {
-                    $('#updatelist').append(
+                    $('#updatelist > tbody').append(
                         '<tr><td colspan=3>{{ lang._('Check for updates to view changelog history.') }}</td></tr>'
                     );
                 }
 
                 if (changelog_count > changelog_max) {
-                    $('#updatelist').append(
+                    $('#updatelist > tbody').append(
                         '<tr class= "changelog-full"><td colspan=3><a id="changelog-act" href="#">{{ lang._('Click to view full changelog history.') }}</a></td></tr>'
                     );
                     $("#changelog-act").click(function(event) {
@@ -611,6 +603,20 @@ POSSIBILITY OF SUCH DAMAGE.
                 );
                 $("#firmware_flavour").selectpicker('refresh');
                 $("#firmware_flavour").change();
+
+                $.each(firmwareoptions.families, function(key, value) {
+                    var selected = false;
+                    if (key == firmwareconfig['family']) {
+                        selected = true;
+                    }
+                    $("#firmware_family").append($("<option/>")
+                            .attr("value",key)
+                            .text(value)
+                            .prop('selected', selected)
+                    );
+                });
+                $("#firmware_family").selectpicker('refresh');
+                $("#firmware_family").change();
             });
         });
 
@@ -641,6 +647,7 @@ POSSIBILITY OF SUCH DAMAGE.
             var confopt = {};
             confopt.mirror = $("#firmware_mirror_value").val();
             confopt.flavour = $("#firmware_flavour_value").val();
+            confopt.family = $("#firmware_family").val();
             if ($("#firmware_mirror option:selected").data("has_subscription") == true) {
                 confopt.subscription = $("#firmware_mirror_subscription").val();
             } else {
@@ -693,56 +700,72 @@ POSSIBILITY OF SUCH DAMAGE.
             <div class="tab-content content-box tab-content">
                 <div id="updates" class="tab-pane fade in active">
                     <textarea name="output" id="update_status" class="form-control" rows="25" wrap="hard" readonly style="max-width:100%; font-family: monospace; display: none;"></textarea>
-                    <table class="table table-striped table-condensed table-responsive" id="updatelist"></table>
+                    <table class="table table-striped table-condensed table-responsive" id="updatelist">
+                        <thead>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
                 </div>
                 <div id="plugins" class="tab-pane fade in">
                     <table class="table table-striped table-condensed table-responsive" id="pluginlist">
+                      <thead>
+                        <tr>
+                          <th>{{ lang._('Name') }}</th>
+                          <th>{{ lang._('Version') }}</th>
+                          <th>{{ lang._('Size') }}</th>
+                          <th>{{ lang._('Comment') }}</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                      </tbody>
                     </table>
                 </div>
                 <div id="packages" class="tab-pane fade in">
-                    <table class="table table-striped table-condensed table-responsive" id="packageslist"></table>
+                    <table class="table table-striped table-condensed table-responsive" id="packageslist">
+                        <thead>
+                          <tr>
+                              <th>{{ lang._('Name') }}</th>
+                              <th>{{ lang._('Version') }}</th>
+                              <th>{{ lang._('Size') }}</th>
+                              <th>{{ lang._('License') }}</th>
+                              <th>{{ lang._('Comment') }}</th>
+                              <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
                 </div>
                 <div id="settings" class="tab-pane fade in">
                     <table class="table table-striped table-responsive">
                         <tbody>
-                        <tr>
-                            <td style="width: 150px;"><a id="help_for_mirror" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> {{ lang._('Firmware Mirror') }}</td>
-                            <td>
-                                <select class="selectpicker" id="firmware_mirror">
-                                </select>
-                                <div style="display:none;" id="firmware_mirror_other">
-                                    <input type="text" id="firmware_mirror_value">
-                                </div>
-                                <div class="hidden" for="help_for_mirror">
-                                    <strong>
-                                        {{ lang._("Select an alternate firmware mirror.") }}
-                                    </strong>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="width: 150px;"><a id="help_for_mirror_subscription" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> {{ lang._('Subscription') }}</td>
-                            <td>
-                                <input type="text" id="firmware_mirror_subscription">
-                                <div class="hidden" for="help_for_mirror_subscription">
-                                    <strong>
-                                        {{ lang._("Provide subscription key.") }}
-                                    </strong>
-                                </div>
-                            </td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td></td>
-                            <td>
-                                <button class="btn btn-primary" id="change_mirror" type="button"><i id="change_mirror_progress" class=""></i> {{ lang._('Save') }}</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td colspan="3">
-                                {{ lang._('In order to apply these settings a firmware update must be performed after save, which can include a reboot of the system.') }}
-                            </td>
-                        </tr>
+                            <tr>
+                                <td style="width: 150px;"><a id="help_for_mirror" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> {{ lang._('Firmware Mirror') }}</td>
+                                <td>
+                                    <select class="selectpicker" id="firmware_mirror">
+                                    </select>
+                                    <div style="display:none;" id="firmware_mirror_other">
+                                        <input type="text" id="firmware_mirror_value">
+                                    </div>
+                                    <div class="hidden" for="help_for_mirror">
+                                        {{ lang._('Select an alternate firmware mirror.') }}
+                                    </div>
+                                </td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td>
+                                    <button class="btn btn-primary" id="change_mirror" type="button">{{ lang._('Save') }} <i id="change_mirror_progress"></i></button>
+                                </td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3">
+                                    {{ lang._('In order to apply these settings a firmware update must be performed after save, which can include a reboot of the system.') }}
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>

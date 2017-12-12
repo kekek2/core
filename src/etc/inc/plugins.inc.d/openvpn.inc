@@ -572,6 +572,7 @@ function openvpn_reconfigure($mode, $settings, $device_only = false)
             }
             break;
     }
+
     $conf .= "dev-node /dev/{$tunname}\n";
     $conf .= "writepid /var/run/openvpn_{$mode_id}.pid\n";
     $conf .= "#user nobody\n";
@@ -585,16 +586,17 @@ function openvpn_reconfigure($mode, $settings, $device_only = false)
     $conf .= "proto {$proto}\n";
     $conf .= "cipher {$cipher}\n";
     $conf .= "auth {$digest}\n";
-    $conf .= "up /usr/local/sbin/ovpn-linkup\n";
-    $conf .= "down /usr/local/sbin/ovpn-linkdown\n";
-    if (file_exists("/usr/local/sbin/openvpn.attributes.sh")) {
-        switch($settings['mode']) {
-            case 'server_user':
-            case 'server_tls_user':
-                $conf .= "client-connect /usr/local/sbin/openvpn.attributes.sh\n";
-                $conf .= "client-disconnect /usr/local/sbin/openvpn.attributes.sh\n";
-                break;
-        }
+    $conf .= "up /usr/local/etc/inc/plugins.inc.d/openvpn/ovpn-linkup\n";
+    $conf .= "down /usr/local/etc/inc/plugins.inc.d/openvpn/ovpn-linkdown\n";
+
+    switch($settings['mode']) {
+        case 'server_user':
+        case 'server_tls_user':
+            $conf .= "client-connect /usr/local/etc/inc/plugins.inc.d/openvpn/attributes.sh\n";
+            $conf .= "client-disconnect /usr/local/etc/inc/plugins.inc.d/openvpn/attributes.sh\n";
+            break;
+        default:
+            break;
     }
 
     if (!empty($iface_ip)) {
@@ -694,7 +696,7 @@ function openvpn_reconfigure($mode, $settings, $device_only = false)
                     if ($settings['strictusercn']) {
                         $strictusercn = "true";
                     }
-                    $conf .= "auth-user-pass-verify \"/usr/local/sbin/ovpn_auth_verify user '{$settings['authmode']}' '{$strictusercn}' '{$mode_id}'\" via-env\n";
+                    $conf .= "auth-user-pass-verify \"/usr/local/etc/inc/plugins.inc.d/openvpn/ovpn_auth_verify user '{$settings['authmode']}' '{$strictusercn}' '{$mode_id}'\" via-env\n";
                 }
                 break;
         }
@@ -708,7 +710,7 @@ function openvpn_reconfigure($mode, $settings, $device_only = false)
                 $cert = lookup_cert($settings['certref']);
                 /* XXX: Seems not used at all! */
                 $servercn = urlencode(cert_get_cn($cert['crt']));
-                $conf .= "tls-verify \"/usr/local/sbin/ovpn_auth_verify tls '{$servercn}' {$settings['cert_depth']}\"\n";
+                $conf .= "tls-verify \"/usr/local/etc/inc/plugins.inc.d/openvpn/ovpn_auth_verify tls '{$servercn}' {$settings['cert_depth']}\"\n";
             }
         }
 
@@ -826,12 +828,11 @@ function openvpn_reconfigure($mode, $settings, $device_only = false)
         }
     }
 
-    // Add a remote network route if set, and only for p2p modes.
-    if ((substr($settings['mode'], 0, 3) == "p2p") && (openvpn_validate_cidr($settings['remote_network'], "", true, "ipv4") === false)) {
+    // Add remote network route if set
+    if (openvpn_validate_cidr($settings['remote_network'], "", true, "ipv4") === false) {
         $conf .= openvpn_gen_routes($settings['remote_network'], "ipv4", false);
     }
-    // Add a remote network route if set, and only for p2p modes.
-    if ((substr($settings['mode'], 0, 3) == "p2p") && (openvpn_validate_cidr($settings['remote_networkv6'], "", true, "ipv6") === false)) {
+    if (openvpn_validate_cidr($settings['remote_networkv6'], "", true, "ipv6") === false) {
         $conf .= openvpn_gen_routes($settings['remote_networkv6'], "ipv6", false);
     }
 

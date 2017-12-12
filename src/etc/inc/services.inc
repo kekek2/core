@@ -136,8 +136,6 @@ function services_radvd_configure($blacklist = array())
             continue;
         }
 
-        $ifcfgsnv6 = get_interface_subnetv6($dhcpv6if);
-        $subnetv6 = gen_subnetv6($ifcfgipv6, $ifcfgsnv6);
         $radvdifs[$realif] = 1;
 
         $radvdconf .= "# Generated for DHCPv6 Server $dhcpv6if\n";
@@ -159,34 +157,61 @@ function services_radvd_configure($blacklist = array())
                 $radvdconf .= "\tAdvDefaultPreference medium;\n";
                 break;
         }
+
         switch($dhcpv6ifconf['ramode']) {
             case "managed":
             case "assist":
                 $radvdconf .= "\tAdvManagedFlag on;\n";
                 $radvdconf .= "\tAdvOtherConfigFlag on;\n";
                 break;
-        }
-        $radvdconf .= "\tprefix {$subnetv6}/{$ifcfgsnv6} {\n";
-        $radvdconf .= "\t\tDeprecatePrefix ". (!empty($dhcpv6ifconf['rainterface']) ? "off" : "on").";\n";
-        switch($dhcpv6ifconf['ramode']) {
-            case "managed":
-                $radvdconf .= "\t\tAdvOnLink on;\n";
-                $radvdconf .= "\t\tAdvAutonomous off;\n";
-                $radvdconf .= "\t\tAdvRouterAddr on;\n";
+            case "stateless":
+                $radvdconf .= "\tAdvManagedFlag off;\n";
+                $radvdconf .= "\tAdvOtherConfigFlag on;\n";
                 break;
-            case "router":
-                $radvdconf .= "\t\tAdvOnLink off;\n";
-                $radvdconf .= "\t\tAdvAutonomous off;\n";
-                $radvdconf .= "\t\tAdvRouterAddr on;\n";
-                break;
-            case "assist":
-            case "unmanaged":
-                $radvdconf .= "\t\tAdvOnLink on;\n";
-                $radvdconf .= "\t\tAdvAutonomous on;\n";
-                $radvdconf .= "\t\tAdvRouterAddr on;\n";
+            default:
                 break;
         }
-        $radvdconf .= "\t};\n";
+
+        $stanzas = array();
+        $ifcfgsnv6 = get_interface_subnetv6($dhcpv6if);
+        $subnetv6 = gen_subnetv6($ifcfgipv6, $ifcfgsnv6);
+        $stanzas[] = "{$subnetv6}/{$ifcfgsnv6}";
+
+        $viparr = &config_read_array('virtualip', 'vip');
+        foreach ($viparr as $vip) {
+            if ($vip['interface'] == $dhcpv6if && is_ipaddrv6($vip['subnet'])) {
+                $ifcfgsnv6 = $vip['subnet_bits'];
+                $subnetv6 = gen_subnetv6($vip['subnet'], $ifcfgsnv6);
+                $stanzas[] = "{$subnetv6}/{$ifcfgsnv6}";
+            }
+        }
+
+        foreach ($stanzas as $stanza) {
+            $radvdconf .= "\tprefix {$stanza} {\n";
+            $radvdconf .= "\t\tDeprecatePrefix ". (!empty($dhcpv6ifconf['rainterface']) ? "off" : "on").";\n";
+            switch($dhcpv6ifconf['ramode']) {
+                case "managed":
+                    $radvdconf .= "\t\tAdvOnLink on;\n";
+                    $radvdconf .= "\t\tAdvAutonomous off;\n";
+                    $radvdconf .= "\t\tAdvRouterAddr on;\n";
+                    break;
+                case "router":
+                    $radvdconf .= "\t\tAdvOnLink off;\n";
+                    $radvdconf .= "\t\tAdvAutonomous off;\n";
+                    $radvdconf .= "\t\tAdvRouterAddr on;\n";
+                    break;
+                case "assist":
+                case "unmanaged":
+                case "stateless":
+                    $radvdconf .= "\t\tAdvOnLink on;\n";
+                    $radvdconf .= "\t\tAdvAutonomous on;\n";
+                    $radvdconf .= "\t\tAdvRouterAddr on;\n";
+                    break;
+                default:
+                    break;
+            }
+            $radvdconf .= "\t};\n";
+        }
 
         if (!empty($dhcpv6ifconf['rainterface'])) {
             $radvdconf .= "\troute ::/0 {\n";
@@ -1158,17 +1183,19 @@ EOD;
 
         if (is_ipaddrv6($ifcfgipv6)) {
             $dhcpdv6conf .= "\nsubnet6 {$subnetv6}/{$ifcfgsnv6}";
-        } else {
+        } elseif (!empty($dhcpv6ifconf['range']['from'])) {
             $subnet6 = gen_subnetv6($dhcpv6ifconf['range']['from'], "64");
             $dhcpdv6conf .= "\nsubnet6 {$subnet6}/64";
         }
         $dhcpdv6conf .= " {\n";
 
-        $dhcpdv6conf .= <<<EOD
+        if (!empty($dhcpv6ifconf['range']['from'])) {
+            $dhcpdv6conf .= <<<EOD
   range6 {$dhcpv6ifconf['range']['from']} {$dhcpv6ifconf['range']['to']};
 $dnscfgv6
 
 EOD;
+        }
 
         if (!empty($dhcpv6ifconf['prefixrange']['from']) && is_ipaddrv6($dhcpv6ifconf['prefixrange']['from']) && is_ipaddrv6($dhcpv6ifconf['prefixrange']['to'])) {
             $dhcpdv6conf .= "  prefix6 {$dhcpv6ifconf['prefixrange']['from']} {$dhcpv6ifconf['prefixrange']['to']}/{$dhcpv6ifconf['prefixrange']['prefixlength']};\n";
@@ -1267,21 +1294,19 @@ EOD;
             }
         }
 
-        if (isset($config['dhcpdv6'][$dhcpv6if]['ramode']) && $config['dhcpdv6'][$dhcpv6if]['ramode'] <> "unmanaged") {
-            if (preg_match("/poes/si", $dhcpv6if)) {
-                /* magic here */
-                $dhcpdv6ifs = array_merge($dhcpdv6ifs, get_pppoes_child_interfaces($dhcpv6if));
-            } else {
-                $realif = get_real_interface($dhcpv6if, "inet6");
-                if (stristr("$realif", "bridge")) {
-                    $mac = get_interface_mac($realif);
-                    $v6address = generate_ipv6_from_mac($mac);
-                    /* Create link local address for bridges */
-                    mwexec("/sbin/ifconfig {$realif} inet6 {$v6address}");
-                }
-                $realif = escapeshellcmd($realif);
-                $dhcpdv6ifs[] = $realif;
+        if (preg_match("/poes/si", $dhcpv6if)) {
+            /* magic here */
+            $dhcpdv6ifs = array_merge($dhcpdv6ifs, get_pppoes_child_interfaces($dhcpv6if));
+        } else {
+            $realif = get_real_interface($dhcpv6if, "inet6");
+            if (stristr("$realif", "bridge")) {
+                $mac = get_interface_mac($realif);
+                $v6address = generate_ipv6_from_mac($mac);
+                /* create link local address for bridges */
+                mwexec("/sbin/ifconfig {$realif} inet6 {$v6address}");
             }
+            $realif = escapeshellcmd($realif);
+            $dhcpdv6ifs[] = $realif;
         }
     }
 
@@ -1752,26 +1777,25 @@ function get_service_status($service)
 }
 
 
-function get_service_status_icon($service, $withtext = true, $smallicon = false)
+function get_service_status_icon($service, $xs = false)
 {
-    $output = "";
+    $output = '';
+
     if (get_service_status($service)) {
-        $statustext = gettext("Running");
-        $output .= '<span class="btn btn-success glyphicon glyphicon-play" title="'.sprintf(gettext('%s Service is'),$service['name']).' '.$statustext.'" data-toggle="tooltip"></span>' . PHP_EOL;
+        $output .= '<span class="label label-opnsense label-opnsense-%s label-success"><i class="fa fa-play fa-fw"></i></span>' . PHP_EOL;
     } else {
-        $statustext = gettext("Stopped") ;
-        $output .= '<span class="btn btn-danger glyphicon glyphicon-stop" title="'.sprintf(gettext('%s Service is'),$service['name']).' '.$statustext.'" data-toggle="tooltip"></span>' . PHP_EOL;
+        $output .= '<span class="label label-opnsense label-opnsense-%s label-danger"><i class="fa fa-stop fa-fw"></i></span>' . PHP_EOL;
     }
-    return $output;
+
+    return sprintf($output, $xs ? 'xs' : 'sm');
 }
 
-function get_service_control_links($service, $addname = false)
+function get_service_control_links($service, $xs = false)
 {
     $service_id = isset($service['id']) ? $service['id'] : '';
-    $service_title = $addname ? $service['name'] . ' ' : '';
 
     $template  = '<span data-service_id="%s" data-service_action="%s" data-service="%s" ';
-    $template .= 'data-toggle="tooltip" title="%s" class="btn btn-default %s %s"></span>' . PHP_EOL;
+    $template .= 'class="btn btn-%s btn-default %s"><i class="%s"></i></span>' . PHP_EOL;
 
     $output = '';
 
@@ -1781,9 +1805,9 @@ function get_service_control_links($service, $addname = false)
             $service_id,
             'restart',
             $service['name'],
-            sprintf(gettext('Restart %sService'), $service_title),
+            $xs ? 'xs' : 'sm',
             'srv_status_act',
-            'glyphicon glyphicon-refresh'
+            'fa fa-refresh fa-fw'
         );
         if (empty($service['nocheck'])) {
             $output .= sprintf(
@@ -1791,9 +1815,9 @@ function get_service_control_links($service, $addname = false)
                 $service_id,
                 'stop',
                 $service['name'],
-                sprintf(gettext('Stop %sService'), $service_title),
+                $xs ? 'xs' : 'sm',
                 'srv_status_act',
-                'glyphicon glyphicon-stop'
+                'fa fa-stop fa-fw'
             );
         }
     } else {
@@ -1802,9 +1826,9 @@ function get_service_control_links($service, $addname = false)
             $service_id,
             'start',
             $service['name'],
-            sprintf(gettext('Start %sService'), $service_title),
+            $xs ? 'xs' : 'sm',
             'srv_status_act',
-            'glyphicon glyphicon-play'
+            'fa fa-play fa-fw'
         );
     }
 

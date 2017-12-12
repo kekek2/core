@@ -45,7 +45,7 @@ TING_ABI?=	1.2
 CORE_ABI?=	17.7
 CORE_ARCH?=	${ARCH}
 CORE_OPENVPN?=	# empty
-CORE_PHP?=	70
+CORE_PHP?=	71
 CORE_PY?=	27
 
 _FLAVOUR!=	if [ -f ${OPENSSL} ]; then ${OPENSSL} version; fi
@@ -120,6 +120,8 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			php${CORE_PHP}-xml \
 			php${CORE_PHP}-zlib \
 			py${CORE_PY}-Jinja2 \
+			py${CORE_PY}-dnspython \
+			py${CORE_PY}-ipaddress \
 			py${CORE_PY}-netaddr \
 			py${CORE_PY}-requests \
 			py${CORE_PY}-sqlite3 \
@@ -327,6 +329,11 @@ style-fix: want-pear-PHP_CodeSniffer
 
 license:
 	@${.CURDIR}/Scripts/license > ${.CURDIR}/LICENSE
+
+dhparam:
+.for BITS in 1024 2048 4096
+	openssl dhparam -out ${.CURDIR}/src/etc/dh-parameters.${BITS} ${BITS}
+.endfor
 
 test: want-phpunit6
 	@cd ${.CURDIR}/src/opnsense/mvc/tests && \

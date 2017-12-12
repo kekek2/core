@@ -80,8 +80,10 @@ class ApiControllerBase extends ControllerRoot
      */
     public function APIErrorHandler($errno, $errstr, $errfile, $errline, $errcontext)
     {
-        $msg = "Error at $errfile:$errline - $errstr (errno=$errno)";
-        throw new \Exception($msg);
+        if ($errno & error_reporting()) {
+            $msg = "Error at $errfile:$errline - $errstr (errno=$errno)";
+            throw new \Exception($msg);
+        }
     }
 
     /**
@@ -91,7 +93,6 @@ class ApiControllerBase extends ControllerRoot
     {
         // disable view processing
         set_error_handler(array($this, 'APIErrorHandler'));
-        self::getTranslator();
     }
 
     /**
