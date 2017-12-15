@@ -263,7 +263,7 @@ package: package-check
 	@if [ -d /usr/local/ioncube ]; then \
 	    echo ">>> Encode some files"; \
 	    for TOENCODE in ${FILES_TO_ENCODE}; do \
-		/usr/local/ioncube/ioncube_encoder.sh -C -56 --encode "*.inc" $${TOENCODE} -o $${TOENCODE}.enc; \
+		/usr/local/ioncube/ioncube_encoder.sh -C -71 --encode "*.inc" $${TOENCODE} -o $${TOENCODE}.enc; \
 		mv -f $${TOENCODE}.enc $${TOENCODE}; \
 	    done; \
 	fi
