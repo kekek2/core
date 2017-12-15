@@ -3,6 +3,7 @@
         <Dashboard order="0" url="/index.php" cssClass="fa fa-dashboard fa-fw">
             <Args url="/index.php*" visibility="hidden"/>
             <Root url="/" visibility="hidden"/>
+            <RootArgs url="/?*" visibility="hidden"/>
         </Dashboard>
         <License order="1" url="/license.php" cssClass="fa fa-balance-scale fa-fw"/>
         <Certificate order="2" url="/ting_cert.php" cssClass="fa fa-certificate fa-fw"/>

@@ -60,13 +60,13 @@ CORE_REPOSITORY?=	${FLAVOUR}
 .endif
 
 CORE_NAME?=		ting
-CORE_FAMILY?=		release
+CORE_TYPE?=		release
 CORE_MESSAGE?=
 
 CORE_MAINTAINER?=	evbevz@gmail.com
 CORE_PACKAGESITE?=	https://update0.smart-soft.ru
 CORE_ORIGIN?=		nonit/${CORE_NAME}
-CORE_COMMENT?=		TING ${CORE_FAMILY} package
+CORE_COMMENT?=		TING ${CORE_TYPE} package
 CORE_WWW?=		http://www.smart-soft.ru/
 
 CORE_DEPENDS_amd64?=	beep bsdinstaller

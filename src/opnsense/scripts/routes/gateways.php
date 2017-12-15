@@ -2,9 +2,7 @@
 <?php
 
 /*
- * Copyright (C) 2004 Scott Ullrich <sullrich@gmail.com>
- * Copyright (C) 2004 Fred Mol <fredmol@xs4all.nl>.
- * Copyright (C) 2015-2017 Franco Fichtner <franco@opnsense.org>
+ * Copyright (c) 2017 Fabian Franz
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,9 +27,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-require_once('config.inc');
-require_once('util.inc');
-require_once('interfaces.inc');
-require_once('plugins.inc.d/openssh.inc');
+require_once 'config.inc';
+require_once 'util.inc';
+require_once 'interfaces.inc';
 
-openssh_configure_do(true);
+$gateways = return_gateways_array(true, true, true);
+
+$ret = array();
+
+foreach ($gateways as $gateway) {
+    $ret[$gateway['name']] = "{$gateway['name']} - {$gateway['gateway']}";
+}
+
+echo json_encode($ret) . PHP_EOL;
