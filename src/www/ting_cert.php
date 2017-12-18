@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
 
-            $company = ($code == '200' && preg_match('/^\w{0,48}$/', $body)) ? '' : $body;
+            $company = ($code == '200' && preg_match('/^\w{0,48}$/', $body)) ? $body : " ";
             $company = preg_replace('/[^\w\d- ]/', '', $company);
 
             $pkey = openssl_get_privatekey("file://{$installed_key_path}");
