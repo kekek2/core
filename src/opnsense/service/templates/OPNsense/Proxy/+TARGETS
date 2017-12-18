@@ -8,3 +8,4 @@ pre-auth.conf:/usr/local/etc/squid/pre-auth/dummy.conf
 auth.conf:/usr/local/etc/squid/auth/dummy.conf
 post-auth.conf:/usr/local/etc/squid/post-auth/dummy.conf
 local_voucher.conf:/usr/local/etc/squid/post-auth/local_voucher.conf
+snmp.conf:/usr/local/etc/squid/pre-auth/40-snmp.conf
