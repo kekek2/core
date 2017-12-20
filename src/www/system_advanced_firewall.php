@@ -391,7 +391,9 @@ include("head.inc");
                     <input name="gw_switch_default" type="checkbox" id="gw_switch_default" value="yes" <?= !empty($pconfig['gw_switch_default']) ? 'checked="checked"' : '' ?> />
                     <strong><?=gettext("Allow default gateway switching"); ?></strong><br />
                     <div class="hidden" for="help_for_gw_switch_default">
+                      <small class="formhelp">
                       <?= gettext('If the link where the default gateway resides fails switch the default gateway to another available one. This feature has been deprecated.') ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -430,22 +432,26 @@ include("head.inc");
                     <input name="pf_share_forward" type="checkbox" id="pf_share_forward" value="yes" <?= !empty($pconfig['pf_share_forward']) ? 'checked="checked"' : '' ?>/>
                     <strong><?=gettext('Use shared forwarding between packet filter, traffic shaper and captive portal'); ?></strong><br />
                     <div class="hidden" for="help_for_pf_share_forward">
+                      <small class="formhelp">
                       <?= gettext('Using policy routing in the packet filter rules causes packets to skip ' .
                                   'processing for the traffic shaper and captive portal tasks. ' .
                                   'Using this option enables the sharing of such forwarding decisions ' .
                                   'between all components to accomodate complex setups. Use with care.') ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
                 <tr>
-                  <td><a id="help_pf_disable_force_gw" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Disable force gateway');?> </td>
+                  <td><a id="help_for_pf_disable_force_gw" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Disable force gateway');?> </td>
                   <td>
                     <input name="pf_disable_force_gw" type="checkbox" id="pf_disable_force_gw" value="yes" <?= !empty($pconfig['pf_disable_force_gw']) ? 'checked="checked"' : '' ?>/>
                     <strong><?=gettext('Disable automatic rules which force local services to use the assigned interface gateway.'); ?></strong><br />
-                    <div class="hidden" for="help_pf_disable_force_gw">
+                    <div class="hidden" for="help_for_pf_disable_force_gw">
+                      <small class="formhelp">
                       <?= gettext('Outgoing packets from this firewall on an interface which has a gateway ' .
                                   'will normally use the specified gateway for that interface. ' .
                                   'When this option is set, the default routing rules apply (automatic rules will be disabled).') ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -524,6 +530,7 @@ include("head.inc");
                       </option>
                     </select>
                     <div class="hidden" for="help_for_rulesetoptimization">
+                      <small class="formhelp">
                       <?=gettext("Select the type of rules optimization to use");?>
                       <table class="table table-condensed">
                         <tr>
@@ -540,6 +547,7 @@ include("head.inc");
                         </tr>
                       </table>
                       <hr/>
+                      </small>
                     </div>
                   </td>
                 </tr>

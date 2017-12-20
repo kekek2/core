@@ -748,9 +748,6 @@ POSSIBILITY OF SUCH DAMAGE.
                                     <div style="display:none;" id="firmware_mirror_other">
                                         <input type="text" id="firmware_mirror_value">
                                     </div>
-                                    <div class="hidden" for="help_for_mirror">
-                                        {{ lang._('Select an alternate firmware mirror.') }}
-                                    </div>
                                 </td>
                                 <td></td>
                             </tr>

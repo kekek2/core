@@ -297,7 +297,9 @@ legacy_html_escape_form_data($pconfig);
                     <td>
                       <input name="mtu" id="mtu" type="text" value="<?=$pconfig['mtu'];?>" />
                       <div class="hidden" for="help_for_mtu">
+                        <small class="formhelp">
                         <?= gettext("If you leave this field blank, the smallest mtu of this laggs children will be used.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>

@@ -622,7 +622,9 @@ include("head.inc");
                     endforeach;?>
                     </select>
                     <div class="hidden" for="help_for_sshinterfaces">
+                      <small class="formhelp">
                       <?= gettext('Only accept connections from the selected interfaces. Leave empty to listen globally. Use with care.') ?>
+                      </small>
                     </div>
                   </td>
                 </tr>

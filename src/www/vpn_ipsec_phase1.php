@@ -577,9 +577,9 @@ include("head.inc");
                     <td width="22%" valign="top"><a id="help_for_disabled" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Disabled"); ?></td>
                     <td>
                       <input name="disabled" type="checkbox" id="disabled" value="yes" <?=!empty($pconfig['disabled'])?"checked=\"checked\"":"";?> />
+                      <strong><?=gettext("Disable this phase1 entry"); ?></strong><br />
                       <div class="hidden" for="help_for_disabled">
                         <small class="formhelp">
-                        <strong><?=gettext("Disable this phase1 entry"); ?></strong><br />
                         <?=gettext("Set this option to disable this phase1 without " .
                                                 "removing it from the list."); ?>
                         </small>

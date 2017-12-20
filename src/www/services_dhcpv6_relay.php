@@ -148,7 +148,9 @@ include("head.inc");
                         endforeach;?>
                         </select>
                         <div class="hidden" for="help_for_interface">
+                          <small class="formhelp">
                           <?=gettext("Interfaces without an IPv6 address will not be shown."); ?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -157,7 +159,9 @@ include("head.inc");
                       <td>
                         <input name="agentoption" type="checkbox" value="yes" <?=!empty($pconfig['agentoption']) ? "checked=\"checked\"" : ""; ?> />
                         <div class="hidden" for="help_for_agentoption">
+                          <small class="formhelp">
                           <?= gettext('If this is checked, the DHCPv6 relay will append the circuit ID (interface number) and the agent ID to the DHCPv6 request.') ?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -166,7 +170,9 @@ include("head.inc");
                       <td>
                         <input name="server" type="text" value="<?=!empty($pconfig['server']) ? htmlspecialchars($pconfig['server']):"";?>" />
                         <div class="hidden" for="help_for_server">
+                          <small class="formhelp">
                           <?=gettext("This is the IPv6 address of the server to which DHCPv6 requests are relayed. You can enter multiple server IPv6 addresses, separated by commas. ");?>
+                          </small>
                         </div>
                       </td>
                     </tr>

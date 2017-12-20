@@ -379,7 +379,9 @@ include("head.inc");
                   <td width="78%">
                     <textarea name="crltext" id="crltext" cols="65" rows="7" class="formfld_crl"><?=$pconfig['crltext'];?></textarea>
                     <div class="hidden" for="help_for_crltext">
+                      <small class="formhelp">
                       <?=gettext("Paste a Certificate Revocation List in X.509 CRL format here.");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -398,7 +400,9 @@ include("head.inc");
                   <td width="78%">
                     <input name="lifetime" type="text" id="lifetime" size="5" value="<?=$pconfig['lifetime'];?>"/>
                     <div class="hidden" for="help_for_lifetime">
+                      <small class="formhelp">
                       <?=gettext("Default: 9999");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -407,7 +411,9 @@ include("head.inc");
                   <td>
                     <input name="serial" type="text" id="serial" size="5" value="<?=$pconfig['serial'];?>"/>
                     <div class="hidden" for="help_for_serial">
+                      <small class="formhelp">
                       <?=gettext("Default: 0");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -446,7 +452,9 @@ include("head.inc");
                 <td>
                   <textarea name="crltext" id="crltext" cols="65" rows="7" class="formfld_crl"><?=$thiscrl['text'];?></textarea>
                   <div class="hidden" for="help_for_crltext">
+                    <small class="formhelp">
                     <?=gettext("Paste a Certificate Revocation List in X.509 CRL format here.");?>
+                    </small>
                   </div>
                 </td>
               </tr>

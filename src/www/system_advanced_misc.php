@@ -384,7 +384,9 @@ include("head.inc");
                     endfor; ?>
                   </select>
                   <div class="hidden" for="help_for_captiveportalbackup">
+                    <small class="formhelp">
                     <?=gettext("This will periodically backup the captive portal session data so it can be restored automatically on the next boot.");?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -469,7 +471,9 @@ include("head.inc");
                     </option>
                   </select>
                   <div class="hidden" for="help_for_powerd_normal_mode">
+                    <small class="formhelp">
                     <?=gettext("If the powerd utility can not determine the power state it uses \"normal\" for control."); ?>
+                    </small>
                   </div>
                 </td>
               </tr>

@@ -294,9 +294,11 @@ include("head.inc");
                           </option>
                       </select>
                       <div class="hidden" for="help_for_type">
+                        <small class="formhelp">
                         <?=gettext("Select BINAT (default) or NAT here, when nets are equally sized binat is usually the best option.".
                                    "Using NAT we can also map unequal sized networks.");?><br />
                         <?=gettext("A BINAT rule specifies a bidirectional mapping between an external and internal network and can be used from both ends, nat only applies in one direction.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>

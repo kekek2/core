@@ -815,8 +815,10 @@ function removeRow(el) {
                         <td><a id="help_for_description" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description");?></td>
                         <td>
                           <input name="descr" type="text" id="descr" value="<?=$pconfig['descr'];?>" /><br />
-                          <div class="hidden" for="help_for_name">
+                          <div class="hidden" for="help_for_description">
+                            <small class="formhelp">
                             <?=gettext("You may enter a description here for your reference (not parsed).");?>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -916,8 +918,9 @@ function removeRow(el) {
                             } //end for loop
 ?>
                           <div class="hidden" for="help_for_month">
-                            <br />
+                            <small class="formhelp">
                             <?=gettext("Click individual date to select that date only. Click the appropriate weekday Header to select all occurrences of that weekday.");?>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -969,8 +972,9 @@ function removeRow(el) {
                             </tr>
                           </table>
                           <div class="hidden" for="help_for_time">
-                            <br />
+                          <small class="formhelp">
                           <?=gettext("Select the time range for the day(s) selected on the Month(s) above. A full day is 0:00-23:59.")?>
+                          </small>
                           </div>
                         </td>
                       </tr>
@@ -979,7 +983,9 @@ function removeRow(el) {
                         <td>
                           <input name="timerangedescr" type="text" id="timerangedescr"/>
                           <div class="hidden" for="help_for_timerange_desc">
+                            <small class="formhelp">
                             <?=gettext("You may enter a description here for your reference (not parsed).")?>
+                            </small>
                           </div>
                         </td>
                       </tr>

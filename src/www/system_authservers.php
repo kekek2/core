@@ -615,7 +615,9 @@ endif; ?>
                   <td>
                     <input name="ldap_attr_user" type="text" id="ldap_attr_user" size="20" value="<?=$pconfig['ldap_attr_user'];?>"/>
                     <div class="hidden" for="help_for_ldap_attr_user">
+                      <small class="formhelp">
                       <?= gettext('Typically "cn" (OpenLDAP, Novell eDirectory), "sAMAccountName" (Microsoft AD)') ?>
+                      </small>
                     </div>
                   </td>
                 </tr>

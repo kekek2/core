@@ -172,7 +172,9 @@ include("head.inc");
                   <td>
                     <input name="descr" type="text" value="<?=$pconfig['descr'];?>" />
                     <div class="hidden" for="help_for_descr">
+                      <small class="formhelp">
                       <?=gettext("You may enter a description here for your reference (not parsed).");?>
+                      </small>
                     </div>
                   </div>
                 </tr>

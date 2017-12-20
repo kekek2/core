@@ -247,9 +247,11 @@ $( document ).ready(function() {
                       <td>
                         <input id="scrub_interface_disable" name="scrub_interface_disable" type="checkbox" value="yes" <?=!empty($pconfig['scrub_interface_disable']) ? "checked=\"checked\"" : "";?> />
                         <div class="hidden" for="help_for_scrub_interface_disable">
+                          <small class="formhelp">
                           <?=gettext("Disable all default interface scrubing rules,".
                                      " mss clamping will also be disabled when you check this.".
                                      " Detailed settings specified below will still be used.");?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -258,10 +260,12 @@ $( document ).ready(function() {
                       <td>
                         <input name="scrubnodf" type="checkbox" value="yes" <?=!empty($pconfig['scrubnodf']) ? "checked=\"checked\"" : ""; ?>/>
                         <div class="hidden" for="help_for_scrubnodf">
+                          <small class="formhelp">
                           <?=gettext("This allows for communications with hosts that generate fragmented " .
                                               "packets with the don't fragment (DF) bit set. Linux NFS is known to " .
                                               "do this. This will cause the filter to not drop such packets but " .
                                               "instead clear the don't fragment bit.");?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -270,10 +274,12 @@ $( document ).ready(function() {
                       <td>
                         <input name="scrubrnid" type="checkbox" value="yes" <?= !empty($pconfig['scrubrnid']) ? "checked=\"checked\"" : "";?> />
                         <div class="hidden" for="help_for_scrubrnid">
+                          <small class="formhelp">
                           <?=gettext("Replaces the IP identification field of packets with random values to " .
                                               "compensate for operating systems that use predictable values. " .
                                               "This option only applies to packets that are not fragmented after the " .
                                               "optional packet reassembly.");?>
+                          </small>
                         </div>
                       </td>
                     </tr>
