@@ -6,6 +6,7 @@ const LICENSE_API_URL = 'https://bar.smart-soft.ru/api/v' . LICENSE_API_VER;
 require_once("guiconfig.inc");
 
 include("head.inc");
+use SmartSoft\Core\Tools;
 
 $openssl_config_path = '/usr/local/etc/ssl/opnsense.cnf';
 $openssl_config_args = [
@@ -32,7 +33,7 @@ function getCrtInfo($crt_info)
 
         if (!isset($crt_info['subject']['UNDEF'][0]))
             $ret .= "<td>" . gettext("Can not validate certificate") . "</td>";
-        elseif ($crt_info['subject']['UNDEF'][0] != getCurrentMacAddress())
+        elseif ($crt_info['subject']['UNDEF'][0] != Tools::getCurrentMacAddress())
             $ret .= "<td>" . gettext("License is not valid for this device") . "</td>";
         else
             $ret .= "<td></td>";
@@ -40,7 +41,7 @@ function getCrtInfo($crt_info)
     } elseif (isset($crt_info['subject']['tingModule'])) {
         $ret .= $crt_info['subject']['tingModule'];
 
-        if ($crt_info['subject']['tingAddress'] != getCurrentMacAddress())
+        if ($crt_info['subject']['tingAddress'] != Tools::getCurrentMacAddress())
             $ret .= "<td>" . gettext("License is not valid for this device") . "</td>";
         else
             $ret .= "<td></td>";
@@ -94,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'C'  => 'RU',
                 'ST' => ' ',
                 'O'  => $company,
-                'tingAddress' => getCurrentMacAddress(),
+                'tingAddress' => Tools::getCurrentMacAddress(),
                 'tingLicense' => $licenseKey,
                 'tingModule'  => $module,
             ];
