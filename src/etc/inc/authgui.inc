@@ -31,6 +31,7 @@
 */
 
 require_once("auth.inc");
+use SmartSoft\Core\Tools;
 
 // provided via legacy_bindings.inc
 global $priv_list;
@@ -303,20 +304,6 @@ function session_auth(&$Login_Error)
     return true;
 }
 
-function getCurrentMacAddress()
-{
-    foreach ([stream_get_contents(popen("dmesg", "r")), file_get_contents("/var/run/dmesg.boot")] as $stream)
-        foreach (explode("\n", $stream) as $dmesg)
-            if (strpos($dmesg, "Ethernet address:") !== false) {
-                $dmesg = explode(" ", $dmesg);
-                $ifconfig = isset($dmesg[3]) ? $dmesg[3] : "";
-                preg_match("/([0-9A-F]{2}[:-]){5}([0-9A-F]{2})/i", $ifconfig, $ifconfig);
-                if (isset($ifconfig[0]))
-                    return trim(strtoupper($ifconfig[0]));
-            }
-    return false;
-}
-
 /* XXX spagehtti code :( */
 $Login_Error = false;
 
@@ -338,7 +325,7 @@ if (!session_auth($Login_Error)) {
             $installed_crt = "";
             $installed_crt_info = "";
         }
-        $currentMacAddress = getCurrentMacAddress();
+        $currentMacAddress = Tools::getCurrentMacAddress();
         if (!isset($installed_crt_info['subject']['UNDEF'][0]) || $installed_crt_info['subject']['UNDEF'][0] != $currentMacAddress)
             shell_exec("curl -H \"Content-Type: application/json\" -d " . escapeshellcmd(json_encode(["MAC" => $currentMacAddress, "cert" => $installed_crt])) . " https://bar.smart-soft.ru/api/v1/check &");
 
