@@ -27,4 +27,28 @@ class Tools
             'locale' => $locale,
         ));
     }
+
+    public static function getCurrentMacAddress()
+    {
+        $interfaces = [];
+        $output = [];
+        if (!exec("/sbin/ifconfig -l", $output)) {
+            return false;
+        }
+        foreach ($output as $line) {
+            $interfaces = array_merge($interfaces, explode(" ", $line));
+        }
+        asort($interfaces);
+        foreach ($interfaces as $iface) {
+            $ifname = preg_replace("/(\w+)(\d+)/", "$1.$2", trim($iface));
+            $output = [];
+            if (!exec("/sbin/sysctl -n dev.{$ifname}.orig_mac_addr", $output)) {
+                continue;
+            }
+            foreach ($output as $line) {
+                return strtoupper($line);
+            }
+        }
+        return false;
+    }
 }
