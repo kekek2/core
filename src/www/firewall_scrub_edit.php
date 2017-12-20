@@ -303,9 +303,11 @@ include("head.inc");
                     <td width="22%"><a id="help_for_disabled" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Disabled"); ?></td>
                     <td width="78%">
                       <input name="disabled" type="checkbox" id="disabled" value="yes" <?= !empty($pconfig['disabled']) ? "checked=\"checked\"" : ""; ?> />
+                      <strong><?=gettext("Disable this rule"); ?></strong><br />
                       <div class="hidden" for="help_for_disabled">
-                        <strong><?=gettext("Disable this rule"); ?></strong><br />
+                        <small class="formhelp">
                         <?=gettext("Set this option to disable this rule without removing it from the list."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -328,7 +330,9 @@ include("head.inc");
                     endforeach; ?>
                         </select>
                         <div class="hidden" for="help_for_interface">
+                          <small class="formhelp">
                           <?=gettext("Choose on which interface packets must come in to match this rule.");?>
+                          </small>
                         </div>
                     </td>
                   </tr>
@@ -361,7 +365,9 @@ include("head.inc");
                       endforeach; ?>
                       </select>
                       <div class="hidden" for="help_for_protocol">
+                        <small class="formhelp">
                         <?=gettext("Choose which IP protocol this rule should match.");?> <br />
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -370,7 +376,9 @@ include("head.inc");
                     <td>
                       <input name="srcnot" type="checkbox" value="yes" <?= !empty($pconfig['srcnot']) ? "checked=\"checked\"" : "";?> />
                       <div class="hidden" for="help_for_src_invert">
+                        <small class="formhelp">
                         <?=gettext("Use this option to invert the sense of the match."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -460,8 +468,10 @@ include("head.inc");
                       </table>
                       </div>
                       <div class="hidden" for="help_for_srcport">
+                        <small class="formhelp">
                         <?=gettext("Specify the port or port range for the destination of the packet for this mapping."); ?><br/>
                         <?=gettext("To specify a range, use from:to (example 81:85).");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -470,7 +480,9 @@ include("head.inc");
                     <td>
                       <input name="dstnot" type="checkbox" value="yes" <?= !empty($pconfig['dstnot']) ? "checked=\"checked\"" : "";?> />
                       <div class="hidden" for="help_for_dst_invert">
+                        <small class="formhelp">
                         <?=gettext("Use this option to invert the sense of the match."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -553,8 +565,10 @@ include("head.inc");
                         </tbody>
                       </table>
                       <div class="hidden" for="help_for_dstport">
+                        <small class="formhelp">
                         <?=gettext("Specify the port or port range for the destination of the packet for this mapping."); ?><br/>
                         <?=gettext("To specify a range, use from:to (example 81:85).");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -563,7 +577,9 @@ include("head.inc");
                     <td>
                       <input name="descr" type="text" class="formfld unknown" id="descr" size="40" value="<?=$pconfig['descr'];?>" />
                       <div class="hidden" for="help_for_descr">
+                        <small class="formhelp">
                         <?=gettext("You may enter a description here for your reference (not parsed)."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -583,7 +599,9 @@ include("head.inc");
                       <td width="78%">
                           <input name="max-mss" type="text" value="<?=$pconfig['max-mss'];?>" />
                           <div class="hidden" for="help_for_maxmss">
+                            <small class="formhelp">
                             <?=gettext("Enforces a maximum MSS for matching TCP packets."); ?>
+                            </small>
                           </div>
                       </td>
                   </tr>
@@ -606,7 +624,9 @@ include("head.inc");
                       <td width="78%">
                           <input name="min-ttl" type="text" value="<?=$pconfig['min-ttl'];?>" />
                           <div class="hidden" for="help_for_minttl">
+                            <small class="formhelp">
                             <?=gettext("Enforces a minimum TTL for matching IP packets."); ?>
+                            </small>
                           </div>
                       </td>
                   </tr>
@@ -615,7 +635,9 @@ include("head.inc");
                       <td width="78%">
                           <input name="no-df" type="checkbox" value="1" <?= !empty($pconfig['no-df']) ? "checked=\"checked\"" : ""; ?> />
                           <div class="hidden" for="help_for_nodf">
+                            <small class="formhelp">
                             <?=gettext("Clears the dont-fragment bit from a matching IP packet."); ?>
+                            </small>
                           </div>
                       </td>
                   </tr>
@@ -624,9 +646,11 @@ include("head.inc");
                       <td width="78%">
                           <input name="random-id" type="checkbox" value="1" <?= !empty($pconfig['random-id']) ? "checked=\"checked\"" : ""; ?> />
                           <div class="hidden" for="help_for_randomid">
+                            <small class="formhelp">
                             <?=gettext("Replaces the IP identification field with random values to compensate for ".
                                        "predictable values generated by many hosts. This option only applies to packets ".
                                        "that are not fragmented after the optional fragment reassembly."); ?>
+                            </small>
                           </div>
                       </td>
                   </tr>

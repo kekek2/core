@@ -179,20 +179,17 @@ if (isset($input_errors) && count($input_errors) > 0) {
 <?php                   endforeach; ?>
                         </select>
                         <div class="hidden" for="help_for_passthrough_networks">
+                          <small class="formhelp">
                             <?=gettext("This exempts traffic for one or more subnets from getting processed by the IPsec stack in the kernel. ".
                                         "When sending all traffic to the remote location, you probably want to add your lan network(s) here"); ?>
+                          </small>
                         </div>
                       </td>
                     </tr>
                     <tr>
                       <td><a id="help_for_ipsec_debug" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPsec Debug"); ?></td>
                       <td>
-                        <div class="hidden" for="help_for_ipsec_debug">
-                          <small class="formhelp">
-                                      <strong><?=gettext("Start IPsec in debug mode based on sections selected"); ?></strong> <br/>
-
-                          </small>
-                        </div>
+                        <strong><?=gettext("Start IPsec in debug mode based on sections selected"); ?></strong> <br/>
 <?php                   foreach ($ipsec_loglevels as $lkey => $ldescr) :
 ?>
                         <?=$ldescr?>
@@ -210,7 +207,7 @@ endforeach; ?>
 endforeach; ?>
                         <div class="hidden" for="help_for_ipsec_debug">
                           <small class="formhelp">
-                        <?=gettext("Launch IPsec in debug mode so that more verbose logs will be generated to aid in troubleshooting."); ?>
+                          <?=gettext("Launch IPsec in debug mode so that more verbose logs will be generated to aid in troubleshooting."); ?>
                           </small>
                         </div>
                       </td>

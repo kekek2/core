@@ -189,16 +189,15 @@ include("head.inc");
                       <span class="text-info">
                         <?=gettext("Networks")?><br/>
                       </span>
-                      <small>
+                      <small class="formhelp">
                         <?=gettext("Networks are specified in CIDR format. Select the CIDR mask that pertains to each entry. /32 specifies a single IPv4 host, /128 specifies a single IPv6 host, /24 specifies 255.255.255.0, /64 specifies a normal IPv6 network, etc. Hostnames (FQDNs) may also be specified, using a /32 mask for IPv4 or /128 for IPv6.");?>
-                        <br/>
                       </small>
+                      <br/>
                       <span class="text-info">
                         <?=gettext("Hosts")?><br/>
                       </span>
-                      <small>
+                      <small class="formhelp">
                         <?=gettext("Enter as many hosts as you would like. Hosts must be specified by their IP address or fully qualified domain name (FQDN). FQDN hostnames are periodically re-resolved and updated. If multiple IPs are returned by a DNS query, all are used.");?>
-                        <br/>
                       </small>
                     </div>
                   </td>

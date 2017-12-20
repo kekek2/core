@@ -547,28 +547,28 @@ include("head.inc");
                       <span class="text-info">
                         <?=gettext("Networks")?><br/>
                       </span>
-                      <small>
+                      <small class="formhelp">
                         <?=gettext("Networks are specified in CIDR format. Select the CIDR suffix that pertains to each entry. /32 specifies a single IPv4 host, /128 specifies a single IPv6 host, /24 in IPv4 corresponds to 255.255.255.0, /64 specifies commonly used IPv6 network, etc. Hostnames (FQDNs) may also be specified, using /32 for IPv4 and /128 for IPv6.");?>
-                        <br/>
                       </small>
+                      <br/>
                       <span class="text-info">
                         <?=gettext("Hosts")?><br/>
                       </span>
-                      <small>
+                      <small class="formhelp">
                         <?=gettext("Enter as many hosts as you would like. Hosts must be specified by their IP address or fully qualified domain name (FQDN). FQDN hostnames are periodically re-resolved and updated. If multiple IPs are returned by a DNS query, all are used.");?>
-                        <br/>
                       </small>
+                      <br/>
                       <span class="text-info">
                         <?=gettext("Ports")?><br/>
                       </span>
-                      <small>
+                      <small class="formhelp">
                         <?=gettext("Enter as many ports as you wish. Port ranges can be expressed by separating with a colon.");?>
-                        <br/>
                       </small>
+                      <br/>
                       <span class="text-info">
                         <?=gettext("URLs")?><br/>
                       </span>
-                      <small>
+                      <small class="formhelp">
                         <?=gettext("Enter an URL containing a large number of IPs, ports or subnets. After saving the lists will be downloaded and scheduled for automatic updates when a frequency is provided.");?>
                       </small>
                     </div>
@@ -583,7 +583,9 @@ include("head.inc");
                     <?php endif; ?>
                     <input name="name" type="text" id="name" class="form-control unknown" size="40" maxlength="31" value="<?=$pconfig['name'];?>" />
                     <div class="hidden" for="help_for_name">
+                      <small class="formhelp">
                       <?=gettext("The name of the alias may only consist of the characters \"a-z, A-Z, 0-9 and _\"."); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -592,7 +594,9 @@ include("head.inc");
                   <td>
                     <input name="descr" type="text" class="form-control unknown" id="descr" size="40" value="<?=$pconfig['descr'];?>" />
                     <div class="hidden" for="help_for_description">
+                      <small class="formhelp">
                       <?=gettext("You may enter a description here for your reference (not parsed)."); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>

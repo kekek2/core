@@ -612,7 +612,9 @@ $( document ).ready(function() {
                     <td>
                       <input name="email" type="text" value="<?= $pconfig['email'] ?>" />
                       <div class="hidden" for="help_for_email">
+                        <small class="formhelp">
                         <?= gettext('User\'s e-mail address, for your own information only') ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -621,7 +623,9 @@ $( document ).ready(function() {
                     <td>
                       <textarea name="comment" id="comment" class="form-control" cols="65" rows="3"><?= $pconfig['comment'] ?></textarea>
                       <div class="hidden" for="help_for_comment">
+                        <small class="formhelp">
                         <?= gettext('User comment, for your own information only') ?>
+                        </small>
                       </div>
                     </td>
                   </tr>

@@ -275,7 +275,9 @@ include("head.inc");
                       endfor; ?>
                       </select>
                       <div class="hidden" for="help_for_network">
+                        <small class="formhelp">
                         <?=gettext("Destination network for this static route"); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -292,8 +294,10 @@ include("head.inc");
                       endforeach;?>
                       </select>
                       <div class="hidden" for="help_for_gateway">
+                        <small class="formhelp">
                           <?=gettext("Choose which gateway this route applies to or");?>
                           <a href="/system_gateways_edit.php"><?=gettext("add a new one.");?></a>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -301,9 +305,11 @@ include("head.inc");
                     <td><a id="help_for_disabled" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Disabled");?></td>
                     <td width="78%" class="vtable">
                       <input name="disabled" type="checkbox" value="yes" <?= !empty($pconfig['disabled']) ? "checked=\"checked\"" : "";?>/>
+                      <strong><?=gettext("Disable this static route");?></strong><br/>
                       <div class="hidden" for="help_for_disabled">
-                        <strong><?=gettext("Disable this static route");?></strong><br/>
+                        <small class="formhelp">
                         <?=gettext("Set this option to disable this static route without removing it from the list.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -312,7 +318,9 @@ include("head.inc");
                     <td>
                       <input name="descr" type="text" value="<?=$pconfig['descr'];?>" />
                       <div for="help_for_descr" class="hidden">
+                        <small class="formhelp">
                         <?=gettext("You may enter a description here for your reference (not parsed)."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>

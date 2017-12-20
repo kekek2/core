@@ -747,7 +747,9 @@ $( document ).ready(function() {
                   <td width="78%">
                     <textarea name="cert" id="cert" cols="65" rows="7"><?=$pconfig['cert'];?></textarea>
                     <div class="hidden" for="help_for_cert">
+                      <small class="formhelp">
                       <?=gettext("Paste a certificate in X.509 PEM format here.");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -756,7 +758,9 @@ $( document ).ready(function() {
                   <td>
                     <textarea name="key" id="key" cols="65" rows="7" class="formfld_cert"><?=$pconfig['key'];?></textarea>
                     <div class="hidden" for="help_for_key">
+                      <small class="formhelp">
                       <?=gettext("Paste a private key in X.509 PEM format here.");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -797,7 +801,9 @@ $( document ).ready(function() {
                         <option value="v3_ca" <?=$pconfig['cert_type'] == 'v3_ca' ? "selected=\"selected\"" : "";?>> <?=gettext("Certificate Authority");?> </option>
                     </select>
                     <div class="hidden" for="help_for_digest_cert_type">
+                      <small class="formhelp">
                       <?=gettext("Choose the type of certificate to generate here, the type defines it's constraints");?>
+                      </small>
                     </div>
                 </td>
               </tr>
@@ -826,7 +832,9 @@ $( document ).ready(function() {
                   endforeach; ?>
                   </select>
                   <div class="hidden" for="help_for_digest_alg">
+                    <small class="formhelp">
                     <?= gettext("NOTE: It is recommended to use an algorithm stronger than SHA1 when possible.") ?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -858,9 +866,11 @@ $( document ).ready(function() {
                 <td>
                   <input name="dn_state" id="dn_state" type="text" size="40" value="<?=$pconfig['dn_state'];?>"/>
                   <div class="hidden" for="help_for_digest_dn_state">
+                    <small class="formhelp">
                     <em><?=gettext("ex:");?></em>
                     &nbsp;
                     <?=gettext("Sachsen");?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -869,9 +879,11 @@ $( document ).ready(function() {
                 <td>
                   <input name="dn_city" id="dn_city" type="text" size="40" value="<?=$pconfig['dn_city'];?>"/>
                   <div class="hidden" for="help_for_digest_dn_city">
+                    <small class="formhelp">
                     <em><?=gettext("ex:");?></em>
                     &nbsp;
                     <?=gettext("Leipzig");?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -880,9 +892,11 @@ $( document ).ready(function() {
                 <td>
                   <input name="dn_organization" id="dn_organization" type="text" size="40" value="<?=$pconfig['dn_organization'];?>"/>
                   <div class="hidden" for="help_for_digest_dn_organization">
+                    <small class="formhelp">
                     <em><?=gettext("ex:");?></em>
                     &nbsp;
                     <?=gettext("My Company Inc");?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -891,9 +905,11 @@ $( document ).ready(function() {
                 <td>
                   <input name="dn_email" id="dn_email" type="text" size="25" value="<?=$pconfig['dn_email'];?>"/>
                   <div class="hidden" for="help_for_digest_dn_email">
+                    <small class="formhelp">
                     <em><?=gettext("ex:");?></em>
                     &nbsp;
                     <?=gettext("admin@mycompany.com");?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -902,9 +918,11 @@ $( document ).ready(function() {
                 <td>
                   <input name="dn_commonname" id="dn_commonname" type="text" size="25" value="<?=$pconfig['dn_commonname'];?>"/>
                   <div class="hidden" for="help_for_digest_dn_commonname">
+                    <small class="formhelp">
                     <em><?=gettext("ex:");?></em>
                     &nbsp;
                     <?=gettext("internal-ca");?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -1010,7 +1028,9 @@ $( document ).ready(function() {
                   endforeach; ?>
                   </select>
                   <div class="hidden" for="help_for_csr_digest_alg">
+                    <small class="formhelp">
                     <?= gettext("NOTE: It is recommended to use an algorithm stronger than SHA1 when possible.") ?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -1036,9 +1056,11 @@ $( document ).ready(function() {
                 <td>
                   <input name="csr_dn_state" type="text" size="40" value="<?=$pconfig['csr_dn_state'];?>"/>
                   <div class="hidden" for="help_for_digest_csr_dn_state">
+                    <small class="formhelp">
                     <em><?=gettext("ex:");?></em>
                     &nbsp;
                     <?=gettext("Sachsen");?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -1047,9 +1069,11 @@ $( document ).ready(function() {
                 <td>
                   <input name="csr_dn_city" type="text" size="40" value="<?=$pconfig['csr_dn_city'];?>"/>
                   <div class="hidden" for="help_for_digest_csr_dn_city">
+                    <small class="formhelp">
                     <em><?=gettext("ex:");?></em>
                     &nbsp;
                     <?=gettext("Leipzig");?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -1058,9 +1082,11 @@ $( document ).ready(function() {
                 <td>
                   <input name="csr_dn_organization" type="text" size="40" value="<?=$pconfig['csr_dn_organization'];?>"/>
                   <div class="hidden" for="help_for_digest_csr_dn_organization">
+                    <small class="formhelp">
                     <em><?=gettext("ex:");?></em>
                     &nbsp;
                     <?=gettext("My Company Inc");?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -1069,9 +1095,11 @@ $( document ).ready(function() {
                 <td>
                   <input name="csr_dn_organizationalunit" type="text" size="40" value="<?=$pconfig['csr_dn_organizationalunit'];?>"/>
                   <div class="hidden" for="help_for_digest_csr_dn_organizationalunit">
+                    <small class="formhelp">
                     <em><?=gettext("ex:");?></em>
                     &nbsp;
                     <?=gettext("IT department");?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -1080,9 +1108,11 @@ $( document ).ready(function() {
                 <td>
                   <input name="csr_dn_email" type="text" size="25" value="<?=$pconfig['csr_dn_email'];?>"/>
                   <div class="hidden" for="help_for_digest_csr_dn_email">
+                    <small class="formhelp">
                     <em><?=gettext("ex:");?></em>
                     &nbsp;
                     <?=gettext("admin@mycompany.com");?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -1091,9 +1121,11 @@ $( document ).ready(function() {
                 <td>
                   <input name="csr_dn_commonname" type="text" size="25" value="<?=$pconfig['csr_dn_commonname'];?>"/>
                   <div class="hidden" for="help_for_digest_csr_dn_commonname">
+                    <small class="formhelp">
                     <em><?=gettext("ex:");?></em>
                     &nbsp;
                     <?=gettext("internal-ca");?>
+                    </small>
                   </div>
                 </td>
               </tr>

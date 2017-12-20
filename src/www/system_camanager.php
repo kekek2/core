@@ -520,7 +520,9 @@ $main_buttons = array(
                 <td width="78%">
                   <textarea name="cert" cols="65" rows="7" id="cert"><?=isset($pconfig['cert']) ? $pconfig['cert'] : "";?></textarea>
                   <div class="hidden" for="help_for_cert">
+                    <small class="formhelp">
                     <?=gettext("Paste a certificate in X.509 PEM format here.");?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -532,7 +534,9 @@ $main_buttons = array(
                 <td width="78%">
                   <textarea name="key" id="key" cols="65" rows="7"><?= isset($pconfig['key']) ? $pconfig['key'] : "";?></textarea>
                   <div class="hidden" for="help_for_key">
+                    <small class="formhelp">
                     <?=gettext("Paste the private key for the above certificate here. This is optional in most cases, but required if you need to generate a Certificate Revocation List (CRL).");?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -541,7 +545,9 @@ $main_buttons = array(
                 <td>
                   <input name="serial" type="text" id="serial" size="20" value="<?=$pconfig['serial'];?>"/>
                   <div class="hidden" for="help_for_serial">
+                    <small class="formhelp">
                     <?=gettext("Enter a decimal number to be used as the serial number for the next certificate to be created using this CA.");?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -593,7 +599,9 @@ $main_buttons = array(
                     endforeach; ?>
                     </select>
                     <div class="hidden" for="help_for_digest_alg">
+                      <small class="formhelp">
                       <?= gettext("NOTE: It is recommended to use an algorithm stronger than SHA1 when possible.") ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -625,9 +633,11 @@ $main_buttons = array(
                   <td>
                     <input name="dn_state" type="text" size="40" value="<?=$pconfig['dn_state'];?>"/>
                     <div class="hidden" for="help_for_digest_dn_state">
+                      <small class="formhelp">
                       <em><?=gettext("ex:");?></em>
                       &nbsp;
                       <?=gettext("Sachsen");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -636,9 +646,11 @@ $main_buttons = array(
                   <td>
                     <input name="dn_city" type="text" size="40" value="<?=$pconfig['dn_city'];?>"/>
                     <div class="hidden" for="help_for_digest_dn_city">
+                      <small class="formhelp">
                       <em><?=gettext("ex:");?></em>
                       &nbsp;
                       <?=gettext("Leipzig");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -647,9 +659,11 @@ $main_buttons = array(
                   <td>
                     <input name="dn_organization" type="text" size="40" value="<?=$pconfig['dn_organization'];?>"/>
                     <div class="hidden" for="help_for_digest_dn_organization">
+                      <small class="formhelp">
                       <em><?=gettext("ex:");?></em>
                       &nbsp;
                       <?=gettext("My Company Inc");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -658,9 +672,11 @@ $main_buttons = array(
                   <td>
                     <input name="dn_email" type="text" size="25" value="<?=$pconfig['dn_email'];?>"/>
                     <div class="hidden" for="help_for_digest_dn_email">
+                      <small class="formhelp">
                       <em><?=gettext("ex:");?></em>
                       &nbsp;
                       <?=gettext("admin@mycompany.com");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -669,9 +685,11 @@ $main_buttons = array(
                   <td>
                     <input name="dn_commonname" type="text" size="25" value="<?=$pconfig['dn_commonname'];?>"/>
                     <div class="hidden" for="help_for_digest_dn_commonname">
+                      <small class="formhelp">
                       <em><?=gettext("ex:");?></em>
                       &nbsp;
                       <?=gettext("internal-ca");?>
+                      </small>
                     </div>
                   </td>
                 </tr>

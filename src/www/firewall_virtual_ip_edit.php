@@ -394,7 +394,9 @@ $( document ).ready(function() {
                           </tr>
                         </table>
                         <div class="hidden" for="help_for_address">
+                            <small class="formhelp">
                             <i id="typenote"></i>
+                            </small>
                         </div>
                       </td>
                   </tr>

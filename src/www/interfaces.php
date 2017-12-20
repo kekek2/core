@@ -2014,9 +2014,11 @@ include("head.inc");
                           <td>
                             <input name="dhcphostname" type="text" id="dhcphostname" value="<?=$pconfig['dhcphostname'];?>" />
                             <div class="hidden" for="help_for_dhcphostname">
+                              <small class="formhelp">
                               <?=gettext("The value in this field is sent as the DHCP client identifier " .
                               "and hostname when requesting a DHCP lease. Some ISPs may require " .
                               "this (for client identification)."); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2258,7 +2260,9 @@ include("head.inc");
                           <td>
                             <input name="pppoe_hostuniq" type="text" id="pppoe_hostuniq" value="<?=$pconfig['pppoe_hostuniq'];?>" />
                             <div class="hidden" for="help_for_pppoe_hostuniq">
+                              <small class="formhelp">
                               <?= gettext('This field can usually be left empty unless specified by the provider.') ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2576,7 +2580,9 @@ include("head.inc");
                           <td>
                             <input name="dhcp6sendsolicit" type="checkbox" id="dhcp6sendsolicit" value="yes" <?= !empty($pconfig['dhcp6sendsolicit']) ? 'checked="checked"' : '' ?>/>
                             <div class="hidden" for="help_for_dhcp6sendsolicit">
+                              <small class="formhelp">
                               <?= gettext('In case the ISP requires a SOLICIT message for authentication, select this option to prevent indefinite waiting for a router advertisement.') ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2585,7 +2591,9 @@ include("head.inc");
                           <td>
                             <input name="dhcp6usev4iface" type="checkbox" id="dhcp6usev4iface" value="yes" <?=!empty($pconfig['dhcp6usev4iface']) ? "checked=\"checked\"" : ""; ?> />
                             <div class="hidden" for="help_for_dhcp6usev4iface">
+                              <small class="formhelp">
                               <?=gettext("Request a IPv6 prefix/information through the IPv4 connectivity link"); ?>
+                              </small>
                             </div>
                           </td>
                         </tr>
@@ -2594,7 +2602,9 @@ include("head.inc");
                             <td>
                               <input name="adv_dhcp6_debug" type="checkbox" id="adv_dhcp6_debug" value="yes" <?=!empty($pconfig['adv_dhcp6_debug']) ? "checked=\"checked\"" : ""; ?> />
                               <div class="hidden" for="help_for_dhcp6_debug">
+                                <small class="formhelp">
                                 <?=gettext("Enable debug mode for DHCPv6 client"); ?>
+                                </small>
                               </div>
                             </td>
                         </tr>
@@ -3040,6 +3050,7 @@ include("head.inc");
                             <div class="hidden" for="help_for_regdomain">
                               <small class="formhelp">
                               <?=gettext("Note: Any country setting other than \"Default\" will override the regulatory domain setting"); ?>.
+                              </small>
                             </div>
                             <br /><br />
                             <?=gettext("Location"); ?><br />

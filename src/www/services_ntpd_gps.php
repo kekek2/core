@@ -326,10 +326,12 @@ SureGPS =    #Sure Electronics SKG16B
                           <option value="Custom"<?=$pconfig['type'] == 'Custom' ? " selected=\"selected\"" : ""; ?>><?=gettext('Custom') ?></option>
                         </select>
                         <div class="hidden" for="help_for_gps">
+                          <small class="formhelp">
                           <?=gettext("This option allows you to select a predefined configuration.");?>
                           <br />
                           <strong><?=gettext("Note: ");?></strong><?=gettext("Select Generic if your GPS is not listed."); ?><br />
                           <strong><?=gettext("Note: ");?></strong><?=gettext("The predefined configurations assume your GPS has already been set to NMEA mode."); ?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -351,7 +353,9 @@ SureGPS =    #Sure Electronics SKG16B
                           endforeach; ?>
                         </select>
                         <div class="hidden" for="help_for_gpsport">
+                          <small class="formhelp">
                           <?=gettext("All serial ports are listed, be sure to pick the port with the GPS attached."); ?>
+                          </small>
                         </div>
                         <br/>
                         <?=gettext("Serial port baud rate."); ?><br />
@@ -364,7 +368,9 @@ SureGPS =    #Sure Electronics SKG16B
                           <option value="80" <?=$pconfig['speed'] === '80' ? " selected=\"selected\"" : "";?>>115200</option>
                         </select>
                         <div class="hidden" for="help_for_gpsport">
+                          <small class="formhelp">
                           <?=gettext("Note: A higher baud rate is generally only helpful if the GPS is sending too many sentences. It is recommended to configure the GPS to send only one sentence at a baud rate of 4800 or 9600."); ?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -383,7 +389,9 @@ SureGPS =    #Sure Electronics SKG16B
                           <option value="8" <?=intval($pconfig['nmea']) & 8 ? " selected=\"selected\"" : "";?>><?=gettext("ZDA or ZDG");?></option>
                         </select>
                         <div class="hidden" for="help_for_nmea">
+                          <small class="formhelp">
                           <?=gettext("By default NTP will listen for all supported NMEA sentences. Here one or more sentences to listen for may be specified."); ?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -392,7 +400,9 @@ SureGPS =    #Sure Electronics SKG16B
                       <td>
                         <input name="fudge1" type="text" id="gpsfudge1" min="-1" max="1" size="20" value="<?=$pconfig['fudge1'];?>" />
                         <div class="hidden" for="help_for_fudge1">
+                          <small class="formhelp">
                           <?= gettext("Fudge time 1 is used to specify the GPS PPS signal offset (default: 0.0).") ?>
+                          </small>
                         </div>
                     </tr>
                     <tr>
@@ -400,7 +410,9 @@ SureGPS =    #Sure Electronics SKG16B
                       <td>
                         <input name="fudge2" type="text" id="gpsfudge2" min="-1" max="1" size="20" value="<?=$pconfig['fudge2'];?>" />
                         <div class="hidden" for="help_for_fudge2">
+                          <small class="formhelp">
                           <?= gettext("Fudge time 2 is used to specify the GPS time offset (default: 0.0).") ?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -409,8 +421,10 @@ SureGPS =    #Sure Electronics SKG16B
                       <td>
                         <input name="stratum" type="text" id="gpsstratum"  value="<?=$pconfig['stratum'];?>" />
                         <div class="hidden" for="help_for_stratum">
+                          <small class="formhelp">
                           <?=gettext("(0-16)");?><br />
                           <?=gettext("This may be used to change the GPS Clock stratum (default: 0). This may be useful if, for some reason, you want ntpd to prefer a different clock"); ?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -488,8 +502,10 @@ SureGPS =    #Sure Electronics SKG16B
                       <td>
                         <input name="refid" type="text" id="gpsrefid" value="<?=$pconfig['refid'];?>" />
                         <div class="hidden" for="help_for_refid">
+                          <small class="formhelp">
                           <?=gettext("(1 to 4 characters)");?><br />
                           <?=gettext("This may be used to change the GPS Clock ID (default: GPS).") ?>
+                          </small>
                         </div>
                       </td>
                     </tr>

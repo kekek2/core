@@ -792,7 +792,9 @@ $( document ).ready(function() {
             <td>
               <input type="text" name="reneg-sec" value="<?=$pconfig['reneg-sec'];?>">
               <div class="hidden" for="help_for_reneg-sec">
+                <small class="helpform">
                 <?= gettext('Renegotiate data channel key after n seconds (default=3600). Set to 0 to disable.') ?>
+                </small>
               </div>
             </td>
            </tr>
