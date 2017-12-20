@@ -147,7 +147,10 @@ WRKDIR?=${.CURDIR}/work
 WRKSRC?=${WRKDIR}/src
 PKGDIR?=${WRKDIR}/pkg
 
-FILES_TO_ENCODE=${WRKSRC}${LOCALBASE}/etc/inc/authgui.inc ${WRKSRC}${LOCALBASE}/www/ting_cert.php ${WRKSRC}${LOCALBASE}/www/ting_cert_manual.php
+FILES_TO_ENCODE=${WRKSRC}${LOCALBASE}/etc/inc/authgui.inc \
+		${WRKSRC}${LOCALBASE}/www/ting_cert.php \
+		${WRKSRC}${LOCALBASE}/www/ting_cert_manual.php \
+		${WRKSRC}${LOCALBASE}/opnsense/mvc/app/library/SmartSoft/Core/Tools.php
 
 mount: want-git
 	@if [ ! -f ${WRKDIR}/.mount_done ]; then \
