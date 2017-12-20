@@ -5826,6 +5826,10 @@ select {
 
 /* TING FLAVORED */
 
+#ting-search .input-group-addon {
+  background: #2b2b2b;
+}
+
 .table-clean-form {
   border-top: 1px solid #f6f6f6; }
 .table-clean-form > thead > tr > th,
