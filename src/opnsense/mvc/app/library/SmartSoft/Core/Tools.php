@@ -3,6 +3,7 @@
 namespace SmartSoft\Core;
 
 use OPNsense\Core\Config;
+use OPNsense\Core\Backend;
 use OPNsense\Base\ViewTranslator;
 
 class Tools
@@ -26,5 +27,20 @@ class Tools
             'defaultDomain' => 'OPNsense',
             'locale' => $locale,
         ));
+    }
+
+    public static function getCurrentMacAddress()
+    {
+        $backend = new Backend();
+
+        $interfaces = explode(" ", $backend->configdRun("system interfaces_list"));
+        asort($interfaces);
+        foreach ($interfaces as $iface) {
+            $ifname = preg_replace("/(\w+)(\d+)/", "$1.$2", trim($iface));
+            if ($mac = trim($backend->configdRun("system get_sysctl dev.{$ifname}.orig_mac_addr"))) {
+                return strtoupper($mac);
+            }
+        }
+        return false;
     }
 }
