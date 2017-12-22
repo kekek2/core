@@ -50,7 +50,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['usevirtualterminal'] = isset($config['system']['usevirtualterminal']);
     $pconfig['disableintegratedauth'] = !empty($config['system']['disableintegratedauth']);
     $pconfig['sudo_allow_wheel'] = $config['system']['sudo_allow_wheel'];
-    $pconfig['noantilockout'] = isset($config['system']['webgui']['noantilockout']);
     $pconfig['nodnsrebindcheck'] = isset($config['system']['webgui']['nodnsrebindcheck']);
     $pconfig['nohttpreferercheck'] = isset($config['system']['webgui']['nohttpreferercheck']);
     $pconfig['loginautocomplete'] = isset($config['system']['webgui']['loginautocomplete']);
@@ -156,12 +155,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $config['system']['sudo_allow_wheel'] = $pconfig['sudo_allow_wheel'];
         } elseif (isset($config['system']['sudo_allow_wheel'])) {
             unset($config['system']['sudo_allow_wheel']);
-        }
-
-        if ($pconfig['noantilockout'] == "yes") {
-            $config['system']['webgui']['noantilockout'] = true;
-        } elseif (isset($config['system']['webgui']['noantilockout'])) {
-            unset($config['system']['webgui']['noantilockout']);
         }
 
         if (is_numeric($pconfig['serialspeed'])) {
@@ -436,7 +429,7 @@ include("head.inc");
                   </td>
                 </tr>
                 <tr>
-                  <td><a id="help_for_loginautocomplete" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("WebGUI Login Autocomplete"); ?></td>
+                  <td><a id="help_for_loginautocomplete" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Login Autocomplete"); ?></td>
                   <td>
                     <input name="loginautocomplete" type="checkbox" value="yes" <?= empty($pconfig['loginautocomplete']) ? '' : 'checked="checked"' ?> />
                     <strong><?= gettext('Enable web GUI login autocomplete') ?></strong>
@@ -450,33 +443,13 @@ include("head.inc");
                   </td>
                 </tr>
                 <tr>
-                  <td><a id="help_for_quietlogin" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("WebGUI login messages") ?></td>
+                  <td><a id="help_for_quietlogin" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Login Messages") ?></td>
                   <td>
                     <input name="quietlogin" type="checkbox" value="yes" <?= empty($pconfig['quietlogin']) ? '' : 'checked="checked"' ?>/>
                     <strong><?= gettext('Disable logging of web GUI successful logins') ?></strong>
                     <div class="hidden" for="help_for_quietlogin">
                       <small class="formhelp">
-                          <?=gettext("When this is checked, successful logins to the web GUI " .
-                                          "will not be logged.");?>
-                      </small>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td><a id="help_for_noantilockout" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Anti-lockout"); ?></td>
-                  <td>
-                    <input name="noantilockout" type="checkbox" value="yes" <?= empty($pconfig['noantilockout']) ? '' : 'checked="checked"' ?>/>
-                    <strong><?= gettext('Disable web GUI anti-lockout rule') ?></strong>
-                    <div class="hidden" for="help_for_noantilockout">
-                      <small class="formhelp">
-                      <?= sprintf(gettext("When this is unchecked, access to the web GUI " .
-                                  "on the %s interface is always permitted, regardless of the user-defined firewall " .
-                                  "rule set. Check this box to disable this automatically added rule, so access " .
-                                  "to the web GUI is controlled by the user-defined firewall rules " .
-                                  "(ensure you have a firewall rule in place that allows you in, or you will " .
-                                  "lock yourself out!)"), count($config['interfaces']) == 1 && !empty($config['interfaces']['wan']['if']) ?
-                                  gettext('WAN') : gettext('LAN')) ?>
-                      <em><?= gettext('Hint: the "Set interface(s) IP address" option in the console menu resets this setting as well.'); ?></em>
+                      <?=gettext("When this is checked, successful logins to the web GUI will not be logged.");?>
                       </small>
                     </div>
                   </td>
@@ -509,7 +482,7 @@ include("head.inc");
                   </td>
                 </tr>
                 <tr>
-                  <td><a id="help_for_compression" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("WebGui Compression")?></td>
+                  <td><a id="help_for_compression" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("HTTP Compression")?></td>
                   <td width="78%">
                     <select name="compression" class="formselect selectpicker">
                         <option value="" <?=empty($pconfig['compression'])? 'selected="selected"' : '';?>>
@@ -527,7 +500,7 @@ include("head.inc");
                     </select>
                     <div class="hidden" for="help_for_compression">
                       <small class="formhelp">
-                      <?=gettext("Enable compression of webgui pages and dynamic content.");?><br/>
+                      <?=gettext("Enable compression of HTTP pages and dynamic content.");?><br/>
                       <?=gettext("Transfer less data to the client for an additional cost in processing power.");?>
                       </small>
                     </div>

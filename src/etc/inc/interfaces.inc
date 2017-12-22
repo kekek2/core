@@ -1651,8 +1651,10 @@ EOD;
     }
 
     /* fire up mpd */
-    mwexec("/usr/local/sbin/mpd5 -b -k -d /var/etc -f mpd_{$interface}.conf -p /var/run/" .
-        escapeshellarg($ppp['type']) . "_{$interface}.pid -s ppp " . escapeshellarg($ppp['type']) . "client");
+    mwexecf(
+        '/usr/local/sbin/mpd5 -b -k -d /var/etc -f %s -p %s -s ppp %s',
+        array("mpd_{$interface}.conf", "/var/run/{$ppp['type']}_{$interface}.pid", "{$ppp['type']}client")
+    );
 
     /* wait for up to 10 seconds for the interface to appear (ppp(oe)) */
     $i = 0;
@@ -2499,27 +2501,6 @@ function kill_dhclient_process($interface)
     }
 
     killbypid(find_dhclient_process($interface), 'TERM', true);
-}
-
-function interface_vlan_mtu_configured($realhwif, $mtu)
-{
-    global $config;
-
-    if (isset($config['vlans']['vlan'])) {
-        foreach ($config['vlans']['vlan'] as $vlan) {
-            if ($vlan['if'] != $realhwif) {
-                continue;
-            }
-            $assignedport = convert_real_interface_to_friendly_interface_name($vlan['vlanif']);
-            if (!empty($assignedport) && !empty($config['interfaces'][$assignedport]['mtu'])) {
-                if (intval($config['interfaces'][$assignedport]['mtu']) > $mtu) {
-                    $mtu = $portmtu;
-                }
-            }
-        }
-    }
-
-    return $mtu;
 }
 
 function interface_virtual_create($interface)

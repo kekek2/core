@@ -38,6 +38,7 @@
 /usr/local/etc/inc/plugins.inc.d/ipsec/auth-user.php
 /usr/local/etc/inc/plugins.inc.d/netflow.inc
 /usr/local/etc/inc/plugins.inc.d/ntpd.inc
+/usr/local/etc/inc/plugins.inc.d/ntpd/ntpdate_sync_once.sh
 /usr/local/etc/inc/plugins.inc.d/openssh.inc
 /usr/local/etc/inc/plugins.inc.d/openvpn.inc
 /usr/local/etc/inc/plugins.inc.d/openvpn/auth-user.php
@@ -75,6 +76,7 @@
 /usr/local/etc/rc.carpbackup
 /usr/local/etc/rc.carpmaster
 /usr/local/etc/rc.configure_firmware
+/usr/local/etc/rc.configure_plugins
 /usr/local/etc/rc.d/captiveportal
 /usr/local/etc/rc.d/configd
 /usr/local/etc/rc.d/flowd_aggregate
@@ -560,6 +562,7 @@
 /usr/local/opnsense/scripts/firmware/audit.sh
 /usr/local/opnsense/scripts/firmware/changelog.sh
 /usr/local/opnsense/scripts/firmware/check.sh
+/usr/local/opnsense/scripts/firmware/health.sh
 /usr/local/opnsense/scripts/firmware/hotfix.sh
 /usr/local/opnsense/scripts/firmware/install.sh
 /usr/local/opnsense/scripts/firmware/launcher.sh
@@ -569,6 +572,7 @@
 /usr/local/opnsense/scripts/firmware/reinstall.sh
 /usr/local/opnsense/scripts/firmware/remove.sh
 /usr/local/opnsense/scripts/firmware/running.sh
+/usr/local/opnsense/scripts/firmware/sets.sh
 /usr/local/opnsense/scripts/firmware/type.sh
 /usr/local/opnsense/scripts/firmware/unlock.sh
 /usr/local/opnsense/scripts/firmware/upgrade.sh
@@ -911,7 +915,6 @@
 /usr/local/sbin/configctl
 /usr/local/sbin/dhclient-script.ext
 /usr/local/sbin/mpd.script
-/usr/local/sbin/ntpdate_sync_once.sh
 /usr/local/sbin/openvpn.attributes.sh
 /usr/local/sbin/opnsense-auth
 /usr/local/sbin/opnsense-importer
