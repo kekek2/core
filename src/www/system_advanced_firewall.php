@@ -275,7 +275,7 @@ include("head.inc");
                   <td><a id="help_for_ipv6allow" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Allow IPv6"); ?></td>
                   <td>
                     <input name="ipv6allow" type="checkbox" value="yes" <?= !empty($pconfig['ipv6allow']) ? "checked=\"checked\"" :"";?> onclick="enable_change(false)" />
-                    <?=gettext("Allow IPv6"); ?>
+                    <strong><?=gettext("Allow IPv6"); ?></strong>
                     <div class="hidden" for="help_for_ipv6allow">
                       <small class="formhelp">
                       <?=gettext("All IPv6 traffic will be blocked by the firewall unless this box is checked."); ?><br />
@@ -370,7 +370,7 @@ include("head.inc");
                   <td><a id="help_for_kill_states" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Kill states");?> </td>
                   <td>
                     <input name="kill_states" type="checkbox" id="kill_states" value="yes" <?= !empty($pconfig['kill_states']) ? "checked=\"checked\"" : "";?> />
-                    <?=gettext("Disable State Killing on Gateway Failure"); ?>
+                    <strong><?=gettext("Disable State Killing on Gateway Failure"); ?></strong>
                     <div class="hidden" for="help_for_kill_states">
                       <small class="formhelp">
                       <?=gettext("The monitoring process will flush states for a gateway that goes down if this box is not checked. Check this box to disable this behavior."); ?>
@@ -382,7 +382,7 @@ include("head.inc");
                   <td><a id="help_for_skip_rules_gw_down" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Skip rules");?> </td>
                   <td>
                     <input name="skip_rules_gw_down" type="checkbox" id="skip_rules_gw_down" value="yes" <?=!empty($pconfig['skip_rules_gw_down']) ? "checked=\"checked\"" : "";?> />
-                    <?=gettext("Skip rules when gateway is down"); ?>
+                    <strong><?=gettext("Skip rules when gateway is down"); ?></strong>
                     <div class="hidden" for="help_for_skip_rules_gw_down">
                       <small class="formhelp">
                       <?=gettext("By default, when a rule has a specific gateway set, and this gateway is down, ".
@@ -411,7 +411,7 @@ include("head.inc");
                   <td><a id="help_for_lb_use_sticky" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Sticky connections");?> </td>
                   <td>
                     <input name="lb_use_sticky" type="checkbox" id="lb_use_sticky" value="yes" <?= !empty($pconfig['lb_use_sticky']) ? 'checked="checked"' : '';?>/>
-                    <?=gettext("Use sticky connections"); ?>
+                    <strong><?=gettext("Use sticky connections"); ?></strong>
                     <div class="hidden" for="help_for_lb_use_sticky">
                       <small class="formhelp">
                       <?=gettext("Successive connections will be redirected to the servers " .
@@ -562,7 +562,7 @@ include("head.inc");
                   <td><a id="help_for_disablefilter" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Disable Firewall");?></td>
                   <td>
                     <input name="disablefilter" type="checkbox" value="yes" <?= !empty($pconfig['disablefilter']) ? "checked=\"checked\"" : "";?>/>
-                    <?=gettext("Disable all packet filtering.");?>
+                    <strong><?=gettext("Disable all packet filtering.");?></strong>
                     <div class="hidden" for="help_for_disablefilter">
                       <small class="formhelp">
                       <?= gettext('Warning: This will convert into a routing-only platform!') ?><br />
@@ -628,9 +628,11 @@ include("head.inc");
                   <td>
                     <input name="maximumfrags" type="text" id="maximumfrags" value="<?=$pconfig['maximumfrags'];?>" />
                     <div class="hidden" for="help_for_maximumfrags">
+                      <small class="formhelp">
                       <strong><?=gettext("Sets the maximum number of entries in the memory pool used for fragment reassembly.");?></strong>
                       <br />
                       <?=gettext("Note: Leave this blank for the default.");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -656,7 +658,7 @@ include("head.inc");
                   <td><a id="help_for_bypassstaticroutes" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Static route filtering");?></td>
                   <td>
                     <input name="bypassstaticroutes" type="checkbox" value="yes" <?=!empty($pconfig['bypassstaticroutes']) ? "checked=\"checked\"" : "";?>/>
-                    <?=gettext("Bypass firewall rules for traffic on the same interface");?>
+                    <strong><?=gettext("Bypass firewall rules for traffic on the same interface");?></strong>
                     <div class="hidden" for="help_for_bypassstaticroutes">
                       <small class="formhelp">
                       <?=gettext("This option only applies if you have defined one or more static routes. If it is enabled, traffic that enters and " .
@@ -670,7 +672,7 @@ include("head.inc");
                   <td><a id="help_for_disablereplyto" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Disable reply-to') ?></td>
                   <td>
                     <input name="disablereplyto" type="checkbox" value="yes" <?=!empty($pconfig['disablereplyto']) ? "checked=\"checked\"" : "";?> />
-                    <?=gettext("Disable reply-to on WAN rules");?>
+                    <strong><?=gettext("Disable reply-to on WAN rules");?></strong>
                     <div class="hidden" for="help_for_disablereplyto">
                       <small class="formhelp">
                       <?=gettext("With Multi-WAN you generally want to ensure traffic leaves the same interface it arrives on, hence reply-to is added automatically by default. " .
@@ -685,6 +687,7 @@ include("head.inc");
                     <input name="noantilockout" type="checkbox" value="yes" <?= empty($pconfig['noantilockout']) ? '' : 'checked="checked"' ?>/>
                     <strong><?= gettext('Disable administration anti-lockout rule') ?></strong>
                     <div class="hidden" for="help_for_noantilockout">
+                      <small class="formhelp">
                       <?= sprintf(gettext("When this is unchecked, access to the web GUI or SSH " .
                                   "on the %s interface is always permitted, regardless of the user-defined firewall " .
                                   "rule set. Check this box to disable the automatically added rule, so access " .
@@ -692,6 +695,7 @@ include("head.inc");
                                   "in place that allows you in, or you will lock yourself out."),
                                   count($config['interfaces']) == 1 && !empty($config['interfaces']['wan']['if']) ?
                                   gettext('WAN') : gettext('LAN')) ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -712,7 +716,7 @@ include("head.inc");
                   <td><a id="help_for_checkaliasesurlcert" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Check certificate of aliases URLs");?></td>
                   <td>
                     <input name="checkaliasesurlcert" type="checkbox" value="yes" <?=!empty($pconfig['checkaliasesurlcert']) ? "checked=\"checked\"" : "";?> />
-                    <?=gettext("Verify HTTPS certificates when downloading alias URLs");?>
+                    <strong><?=gettext("Verify HTTPS certificates when downloading alias URLs");?></strong>
                     <div class="hidden" for="help_for_checkaliasesurlcert">
                       <small class="formhelp">
                       <?=gettext("Make sure the certificate is valid for all HTTPS addresses on aliases. If it's not valid or is revoked, do not download it.");?>
