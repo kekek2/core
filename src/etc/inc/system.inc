@@ -849,18 +849,46 @@ function system_kernel_configure($verbose = false)
      * Keep in sync with /usr/local/etc/erc.loader.d/20-modules
      */
     $mods = array(
-        'carp',
-        'if_bridge',
         'if_enc',
-        'if_gif',
-        'if_gre',
-        'if_lagg',
         'if_tap',
         'if_tun',
-        'if_vlan',
         'pf',
         'pflog',
         'pfsync',
+    );
+
+    $netgraph = array(
+        'netgraph',
+        'ng_UI',
+        'ng_async',
+        'ng_bpf',
+        'ng_bridge',
+        'ng_car',
+        'ng_cisco',
+        'ng_deflate',
+        'ng_echo',
+        'ng_eiface',
+        'ng_ether',
+        'ng_frame_relay',
+        'ng_hole',
+        'ng_iface',
+        'ng_ksocket',
+        'ng_l2tp',
+        'ng_lmi',
+        'ng_mppc',
+        'ng_one2many',
+        'ng_pipe',
+        'ng_ppp',
+        'ng_pppoe',
+        'ng_pptpgre',
+        'ng_pred1',
+        'ng_rfc1490',
+        'ng_socket',
+        'ng_tcpmss',
+        'ng_tee',
+        'ng_tty',
+        'ng_vjc',
+        'ng_vlan'
     );
 
     if (!empty($config['system']['crypto_hardware'])) {
@@ -877,7 +905,7 @@ function system_kernel_configure($verbose = false)
         $mods[] = $config['system']['thermal_hardware'];
     }
 
-    foreach ($mods as $mod) {
+    foreach (array_merge($mods, $netgraph) as $mod) {
         mwexecf('/sbin/kldload %s', $mod, true);
     }
 

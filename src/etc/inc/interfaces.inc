@@ -513,6 +513,8 @@ function interface_bridge_configure(&$bridge, $checkmember = 0)
         return;
     }
 
+    mwexecf('/sbin/kldload %s', 'if_bridge', true);
+
     if (file_exists("/var/run/booting") || !empty($bridge['bridgeif'])) {
         legacy_interface_destroy($bridge['bridgeif']);
         legacy_interface_create($bridge['bridgeif']);
@@ -718,6 +720,7 @@ function interface_lagg_configure(&$lagg)
     if (!count($members)) {
         return -1;
     }
+    mwexecf('/sbin/kldload %s', 'if_lagg', true);
     $interface_stats = legacy_interfaces_details();
 
     if (!empty($lagg['laggif'])) {
@@ -826,6 +829,8 @@ function interface_gre_configure(&$gre, $grekey = "")
     if (!is_array($gre)) {
         return -1;
     }
+
+    mwexecf('/sbin/kldload %s', 'if_gre', true);
 
     $realif = get_real_interface($gre['if']);
     $realifip = get_interface_ip($gre['if']);
@@ -939,6 +944,8 @@ function interface_gif_configure(&$gif, $gifkey = "")
     if (!is_array($gif)) {
         return -1;
     }
+
+    mwexecf('/sbin/kldload %s', 'if_gif', true);
 
     $realif = get_real_interface($gif['if']);
     $ipaddr = $gif['ipaddr'];
@@ -1711,9 +1718,11 @@ function interfaces_carp_setup($verbose = false)
             $syncpeer = "-syncpeer";
         }
 
+        mwexecf('/sbin/kldload %s', 'carp', true);
         mwexec("/sbin/ifconfig pfsync0 syncdev {$carp_sync_int} {$syncpeer} up", false);
     } else {
         mwexec("/sbin/ifconfig pfsync0 -syncdev -syncpeer down", false);
+        mwexecf('/sbin/kldunload %s', 'carp', true);
     }
 
     if ($verbose) {
@@ -2628,12 +2637,15 @@ function interface_configure($interface = 'wan', $reloadall = false, $linkupeven
 
         /* All vlans need to spoof their parent mac address, too. */
         if (isset($config['vlans']['vlan'])) {
+            mwexecf('/sbin/kldload %s', 'if_vlan', true);
             foreach ($config['vlans']['vlan'] as $vlan) {
                 if ($vlan['if'] == $realhwif) {
                     mwexec("/sbin/ifconfig " . escapeshellarg($vlan['vlanif']) .
                         " link " . escapeshellarg($wancfg['spoofmac']));
                 }
             }
+        } else {
+            mwexecf('/sbin/kldunload %s', 'if_vlan', true);
         }
     }
 
