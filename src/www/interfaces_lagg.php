@@ -62,9 +62,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             mwexec_bg("/sbin/ifconfig " . escapeshellarg($a_laggs[$id]['laggif']) . " destroy");
             unset($a_laggs[$id]);
             write_config();
-            if (empty($a_laggs)) {
-                mwexecf('/sbin/kldunload %s', 'if_lagg', true);
-            }
             header(url_safe('Location: /interfaces_lagg.php'));
             exit;
         }

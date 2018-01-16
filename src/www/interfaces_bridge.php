@@ -59,9 +59,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             unset($a_bridges[$id]);
             write_config();
-            if (empty($a_bridges)) {
-                mwexecf('/sbin/kldunload %s', 'if_bridge', true);
-            }
             header(url_safe('Location: /interfaces_bridge.php'));
             exit;
         }
