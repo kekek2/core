@@ -72,7 +72,7 @@ if($need_alert_display == true) {
                 </div>
               </form>
             </li>
-          <?php } ?>}>
+          <?php } ?>
           <li id="menu_messages"><?= get_menu_messages() ?></li>
           <li><a href="/index.php?logout"><span class="fa fa-sign-out fa-fw"></span><?=gettext("Logout");?></a></li>
         </ul>
