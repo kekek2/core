@@ -50,6 +50,7 @@ class ServiceController extends ApiControllerBase
             $this->sessionClose();
 
             $backend = new Backend();
+            $backend->configdRun('proxy plugins start');
             $response = $backend->configdRun("proxy start");
             return array("response" => $response);
         } else {

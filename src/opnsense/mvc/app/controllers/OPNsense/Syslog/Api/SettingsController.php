@@ -113,12 +113,12 @@ class SettingsController extends ApiControllerBase
                     $result["result"] = "ok";
 
                     if ($firewallChanged)
-                        $result["reload-firewall"] = $backend->configdRun("filter reload", true);
+                        $result["reload-firewall"] = $backend->configdRun("filter reload");
 
                     if ($webConfigChanged)
-                        $result["reload-web"] = $backend->configdRun("syslog restart_web", true);
+                        $result["reload-web"] = $backend->configdRun("syslog restart_web");
 
-                    $result["reload-pflog"] = $backend->configdRun("filter pflog start", true);
+                    $result["reload-pflog"] = $backend->configdRun("filter pflog start");
                 }
             }
         }
