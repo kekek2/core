@@ -567,7 +567,7 @@ class FirmwareController extends ApiControllerBase
                 return preg_replace('/[^0-9a-zA-Z\-]/', '', $value);
             });
             $package = $filter->sanitize($package, 'scrub');
-            $text = trim($backend->configdRun(sprintf('firmware details %s', $package)));
+            $text = gettext(trim($backend->configdRun(sprintf('firmware details %s', $package))));
             if (!empty($text)) {
                 $response['details'] = $text;
             }
@@ -615,6 +615,7 @@ class FirmwareController extends ApiControllerBase
                     $translated[$key] = $expanded[$index++];
                 }
 
+                $translated['comment'] = gettext($translated['comment']);
                 /* mark remote packages as "provided", local as "installed" */
                 $translated['provided'] = $type == 'remote' ? "1" : "0";
                 $translated['installed'] = $type == 'local' ? "1" : "0";
