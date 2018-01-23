@@ -1,30 +1,30 @@
 <?php
 
-/**
- *    Copyright (c) 2015-2017 Franco Fichtner <franco@opnsense.org>
- *    Copyright (c) 2015-2016 Deciso B.V.
- *    All rights reserved.
+/*
+ * Copyright (c) 2015-2018 Franco Fichtner <franco@opnsense.org>
+ * Copyright (c) 2015-2016 Deciso B.V.
+ * All rights reserved.
  *
- *    Redistribution and use in source and binary forms, with or without
- *    modification, are permitted provided that the following conditions are met:
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
  *
- *    1. Redistributions of source code must retain the above copyright notice,
- *       this list of conditions and the following disclaimer.
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
  *
- *    2. Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  *
- *    THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
- *    INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
- *    AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *    AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
- *    OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- *    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- *    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- *    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *    POSSIBILITY OF SUCH DAMAGE.
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
 
 namespace OPNsense\Core\Api;
@@ -44,7 +44,7 @@ class FirmwareController extends ApiControllerBase
      * @param integer $bytes bytes to convert
      * @return string
      */
-    protected function format_bytes($bytes)
+    protected function formatBytes($bytes)
     {
         if ($bytes >= (1024 * 1024 * 1024)) {
             return sprintf("%d GB", $bytes / (1024 * 1024 * 1024));
@@ -63,9 +63,33 @@ class FirmwareController extends ApiControllerBase
      */
     public function statusAction()
     {
+        $config = Config::getInstance()->object();
+        $type_want = 'opnsense';
+        if (!empty($config->system->firmware->type)) {
+            $type_want .= '-' . (string)$config->system->firmware->type;
+        }
+
         $this->sessionClose(); // long running action, close session
+
         $backend = new Backend();
+        $type_have = trim($backend->configdRun('firmware type name'));
         $backend->configdRun('firmware changelog fetch');
+
+        if (!empty($type_have) && $type_have !== $type_want) {
+            $type_ver = trim($backend->configdRun('firmware type version ' . escapeshellarg($type_want)));
+            return array(
+                'status_msg' => gettext('The release type requires an update.'),
+                'all_packages' => array($type_want => array(
+                    'new' => empty($type_ver) ? gettext('N/A') : $type_ver,
+                    'reason' => gettext('new'),
+                    'old' => gettext('N/A'),
+                    'name' => $type_want,
+                )),
+                'status_upgrade_action' => 'rel',
+                'status' => 'ok',
+            );
+        }
+
         $response = json_decode(trim($backend->configdRun('firmware check')), true);
 
         if ($response != null) {
@@ -85,10 +109,13 @@ class FirmwareController extends ApiControllerBase
                 switch (isset($matches[2]) ? strtolower($matches[2]) : 'b') {
                     case 'g':
                         $factor *= 1024;
+                        /* FALLTROUGH */
                     case 'm':
                         $factor *= 1024;
+                        /* FALLTROUGH */
                     case 'k':
                         $factor *= 1024;
+                        /* FALLTROUGH */
                     default:
                         break;
                 }
@@ -97,7 +124,7 @@ class FirmwareController extends ApiControllerBase
                 $packages_size = 0;
             }
 
-            $download_size = $this->format_bytes($packages_size + $sets_size);
+            $download_size = $this->formatBytes($packages_size + $sets_size);
 
             if (array_key_exists('connection', $response) && $response['connection'] == 'error') {
                 $response['status_msg'] = gettext('Connection error.');
@@ -149,7 +176,8 @@ class FirmwareController extends ApiControllerBase
              * downgrade_packages: array with { name: <package_name>,
              *     current_version: <current_version>, new_version: <new_version> }
              */
-            foreach (array('new_packages', 'reinstall_packages', 'upgrade_packages', 'downgrade_packages') as $pkg_type) {
+            foreach (array('new_packages', 'reinstall_packages', 'upgrade_packages',
+                'downgrade_packages') as $pkg_type) {
                 if (isset($response[$pkg_type])) {
                     foreach ($response[$pkg_type] as $value) {
                         switch ($pkg_type) {
@@ -180,7 +208,8 @@ class FirmwareController extends ApiControllerBase
                             case 'upgrade_packages':
                                 $sorted[$value['name']] = array(
                                     'reason' => gettext('upgrade'),
-                                    'old' => empty($value['current_version']) ? gettext('N/A') : $value['current_version'],
+                                    'old' => empty($value['current_version']) ?
+                                        gettext('N/A') : $value['current_version'],
                                     'new' => $value['new_version'],
                                     'name' => $value['name'],
                                 );
@@ -224,7 +253,6 @@ class FirmwareController extends ApiControllerBase
             return $response;
         }
 
-        // sanitize package name
         $filter = new \Phalcon\Filter();
         $filter->add('version', function ($value) {
             return preg_replace('/[^0-9a-zA-Z\.]/', '', $value);
@@ -263,7 +291,7 @@ class FirmwareController extends ApiControllerBase
             // sanitize package name
             $filter = new \Phalcon\Filter();
             $filter->add('scrub', function ($value) {
-                return preg_replace('/[^0-9a-zA-Z\-]/', '', $value);
+                return preg_replace('/[^0-9a-zA-Z._-]/', '', $value);
             });
             $package = $filter->sanitize($package, 'scrub');
             $text = trim($backend->configdRun(sprintf('firmware license %s', $package)));
@@ -320,6 +348,11 @@ class FirmwareController extends ApiControllerBase
      */
     public function upgradeAction()
     {
+        $config = Config::getInstance()->object();
+        $type_want = 'opnsense';
+        if (!empty($config->system->firmware->type)) {
+            $type_want .= '-' . (string)$config->system->firmware->type;
+        }
         $this->sessionClose(); // long running action, close session
         $backend = new Backend();
         $response = array();
@@ -329,6 +362,8 @@ class FirmwareController extends ApiControllerBase
                 $action = 'firmware upgrade pkg';
             } elseif ($this->request->getPost('upgrade') == 'maj') {
                 $action = 'firmware upgrade maj';
+            } elseif ($this->request->getPost('upgrade') == 'rel') {
+                $action = 'firmware type install ' . escapeshellarg($type_want);
             } else {
                 $action = 'firmware upgrade all';
             }
@@ -341,6 +376,27 @@ class FirmwareController extends ApiControllerBase
     }
 
     /**
+     * run a health check
+     * @return array status
+     * @throws \Exception
+     */
+    public function healthAction()
+    {
+        $this->sessionClose(); // long running action, close session
+        $backend = new Backend();
+        $response = array();
+
+        if ($this->request->isPost()) {
+            $response['status'] = 'ok';
+            $response['msg_uuid'] = trim($backend->configdRun("firmware health", true));
+        } else {
+            $response['status'] = 'failure';
+        }
+
+        return $response;
+    }
+
+    /*
      * run a security audit
      * @return array status
      * @throws \Exception
@@ -378,7 +434,7 @@ class FirmwareController extends ApiControllerBase
             // sanitize package name
             $filter = new \Phalcon\Filter();
             $filter->add('pkgname', function ($value) {
-                return preg_replace('/[^0-9a-zA-Z-_]/', '', $value);
+                return preg_replace('/[^0-9a-zA-Z._-]/', '', $value);
             });
             $pkg_name = $filter->sanitize($pkg_name, "pkgname");
             // execute action
@@ -407,7 +463,7 @@ class FirmwareController extends ApiControllerBase
             // sanitize package name
             $filter = new \Phalcon\Filter();
             $filter->add('pkgname', function ($value) {
-                return preg_replace('/[^0-9a-zA-Z-_]/', '', $value);
+                return preg_replace('/[^0-9a-zA-Z._-]/', '', $value);
             });
             $pkg_name = $filter->sanitize($pkg_name, "pkgname");
             // execute action
@@ -436,7 +492,7 @@ class FirmwareController extends ApiControllerBase
             // sanitize package name
             $filter = new \Phalcon\Filter();
             $filter->add('pkgname', function ($value) {
-                return preg_replace('/[^0-9a-zA-Z-_]/', '', $value);
+                return preg_replace('/[^0-9a-zA-Z._-]/', '', $value);
             });
             $pkg_name = $filter->sanitize($pkg_name, "pkgname");
             // execute action
@@ -463,7 +519,7 @@ class FirmwareController extends ApiControllerBase
         if ($this->request->isPost()) {
             $filter = new \Phalcon\Filter();
             $filter->add('pkgname', function ($value) {
-                return preg_replace('/[^0-9a-zA-Z-_]/', '', $value);
+                return preg_replace('/[^0-9a-zA-Z._-]/', '', $value);
             });
             $pkg_name = $filter->sanitize($pkg_name, "pkgname");
         } else {
@@ -495,7 +551,7 @@ class FirmwareController extends ApiControllerBase
         if ($this->request->isPost()) {
             $filter = new \Phalcon\Filter();
             $filter->add('pkgname', function ($value) {
-                return preg_replace('/[^0-9a-zA-Z-_]/', '', $value);
+                return preg_replace('/[^0-9a-zA-Z._-]/', '', $value);
             });
             $pkg_name = $filter->sanitize($pkg_name, "pkgname");
         } else {
@@ -564,7 +620,7 @@ class FirmwareController extends ApiControllerBase
             // sanitize package name
             $filter = new \Phalcon\Filter();
             $filter->add('scrub', function ($value) {
-                return preg_replace('/[^0-9a-zA-Z\-]/', '', $value);
+                return preg_replace('/[^0-9a-zA-Z._-]/', '', $value);
             });
             $package = $filter->sanitize($package, 'scrub');
             $text = trim($backend->configdRun(sprintf('firmware details %s', $package)));
@@ -613,6 +669,9 @@ class FirmwareController extends ApiControllerBase
                 }
                 foreach ($keys as $key) {
                     $translated[$key] = $expanded[$index++];
+                    if (empty($translated[$key])) {
+                        $translated[$key] = gettext('N/A');
+                    }
                 }
 
                 /* mark remote packages as "provided", local as "installed" */
@@ -646,8 +705,11 @@ class FirmwareController extends ApiControllerBase
             $response['package'][] = $package;
         }
 
-        uksort($plugins, function ($a, $b) {
-            return strnatcasecmp($a, $b);
+        uasort($plugins, function ($a, $b) {
+            return strnatcasecmp(
+                ($a['installed'] ? '0' : '1') . $a['name'],
+                ($b['installed'] ? '0' : '1') . $b['name']
+            );
         });
 
         $response['plugin'] = array();
@@ -684,7 +746,7 @@ class FirmwareController extends ApiControllerBase
     {
         $this->sessionClose(); // long running action, close session
 
-        // todo: we might want to move these into configuration files later
+        /* XXX we might want to move these into configuration files later */
         $mirrors = array();
         $mirrors['https://update0.smart-soft.ru/'] = 'Mirror #1 (RU)';
         $mirrors['https://update1.smart-soft.ru/'] = 'Mirror #2 (EU)';
@@ -717,15 +779,15 @@ class FirmwareController extends ApiControllerBase
         $result = array();
 
         $result['flavour'] = '';
-        $result['family'] = '';
         $result['mirror'] = '';
+        $result['type'] = '';
 
         if (!empty($config->system->firmware->flavour)) {
             $result['flavour'] = (string)$config->system->firmware->flavour;
         }
 
-        if (!empty($config->system->firmware->family)) {
-            $result['family'] = (string)$config->system->firmware->family;
+        if (!empty($config->system->firmware->type)) {
+            $result['type'] = (string)$config->system->firmware->type;
         }
 
         if (!empty($config->system->firmware->mirror)) {
@@ -750,7 +812,7 @@ class FirmwareController extends ApiControllerBase
 
             $selectedMirror = filter_var($this->request->getPost("mirror", null, ""), FILTER_SANITIZE_URL);
             $selectedFlavour = filter_var($this->request->getPost("flavour", null, ""), FILTER_SANITIZE_URL);
-            $selectedFamily = filter_var($this->request->getPost("family", null, ""), FILTER_SANITIZE_URL);
+            $selectedType = filter_var($this->request->getPost("type", null, ""), FILTER_SANITIZE_URL);
             $selSubscription = filter_var($this->request->getPost("subscription", null, ""), FILTER_SANITIZE_URL);
 
             // config data without model, prepare xml structure and write data
@@ -761,23 +823,35 @@ class FirmwareController extends ApiControllerBase
             if (!isset($config->system->firmware->mirror)) {
                 $config->system->firmware->addChild('mirror');
             }
-
             if (empty($selSubscription)) {
                 $config->system->firmware->mirror = $selectedMirror;
             } else {
                 // prepend subscription
                 $config->system->firmware->mirror = $selectedMirror . '/' . $selSubscription;
             }
+            if (empty($config->system->firmware->mirror)) {
+                unset($config->system->firmware->mirror);
+            }
 
             if (!isset($config->system->firmware->flavour)) {
                 $config->system->firmware->addChild('flavour');
             }
             $config->system->firmware->flavour = $selectedFlavour;
-
-            if (!isset($config->system->firmware->family)) {
-                $config->system->firmware->addChild('family');
+            if (empty($config->system->firmware->flavour)) {
+                unset($config->system->firmware->flavour);
             }
-            $config->system->firmware->family = $selectedFamily;
+
+            if (!isset($config->system->firmware->type)) {
+                $config->system->firmware->addChild('type');
+            }
+            $config->system->firmware->type = $selectedType;
+            if (empty($config->system->firmware->type)) {
+                unset($config->system->firmware->type);
+            }
+
+            if (!@count($config->system->firmware->children())) {
+                unset($config->system->firmware);
+            }
 
             Config::getInstance()->save();
 

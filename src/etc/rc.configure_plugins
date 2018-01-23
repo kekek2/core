@@ -2,8 +2,7 @@
 <?php
 
 /*
- * Copyright (C) 2007 Manuel Kasper <mk@neon1.net>.
- * Copyright (C) 2009 Seth Mos <seth.mos@dds.nl>.
+ * Copyright (C) 2017-2018 Franco Fichtner <franco@opnsense.org>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,23 +27,18 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-require_once("util.inc");
-require_once("config.inc");
-require_once("filter.inc");
-require_once('plugins.inc.d/ipsec.inc');
-require_once('auth.inc');
-require_once("interfaces.inc");
+require_once 'config.inc';
+require_once 'system.inc';
+require_once 'util.inc';
 
-/* make sure to wait until the boot scripts have finished */
-if (file_exists('/var/run/booting')) {
-    return;
-} elseif (isset($config['ipsec']['enable'])) {
-    sleep(15);
-    log_error("IPSEC: One or more IPsec tunnel endpoints has changed its IP. Refreshing.");
-} else {
-    return;
+/* assume standard operation mode as post-install */
+$script = !empty($argv[1]) ? $argv[1] : 'POST_INSTALL';
+
+/* reload subsystem that may have changed */
+if ($script == 'POST_INSTALL') {
+	system_syslogd_start(true);
 }
 
-$ipseclck = lock('ipsecdns', LOCK_EX);
-ipsec_configure_do(true);
-unlock($ipseclck);
+/* flush user-facing caches */
+(new OPNsense\Core\ACL())->invalidateCache();
+(new OPNsense\Base\Menu\MenuSystem())->invalidateCache();

@@ -610,59 +610,6 @@ function is_portoralias($port)
     return is_port($port);
 }
 
-/* create ranges of sequential port numbers (200:215) and remove duplicates */
-function group_ports($ports)
-{
-    if (!is_array($ports) || empty($ports)) {
-        return;
-    }
-
-    $uniq = array();
-    foreach ($ports as $port) {
-        if (is_portrange($port)) {
-            list($begin, $end) = explode(":", $port);
-            if ($begin > $end) {
-                $aux = $begin;
-                $begin = $end;
-                $end = $aux;
-            }
-            for ($i = $begin; $i <= $end; $i++) {
-                if (!in_array($i, $uniq)) {
-                    $uniq[] = $i;
-                }
-            }
-        } elseif (is_port($port)) {
-            if (!in_array($port, $uniq)) {
-                $uniq[] = $port;
-            }
-        }
-    }
-    sort($uniq, SORT_NUMERIC);
-
-    $result = array();
-    foreach ($uniq as $idx => $port) {
-        if ($idx == 0) {
-            $result[] = $port;
-            continue;
-        }
-
-        $last = end($result);
-        if (is_portrange($last)) {
-            list($begin, $end) = explode(":", $last);
-        } else {
-            $begin = $end = $last;
-        }
-        if ($port == ($end+1)) {
-            $end++;
-            $result[count($result)-1] = "{$begin}:{$end}";
-        } else {
-            $result[] = $port;
-        }
-    }
-
-    return $result;
-}
-
 /* returns true if $test is in the range between $start and $end */
 function is_inrange_v4($test, $start, $end)
 {
@@ -1175,34 +1122,6 @@ function format_bytes($bytes)
     }
 }
 
-/****** util/return_dir_as_array
- * NAME
- *   return_dir_as_array - Return a directory's contents as an array.
- * INPUTS
- *   $dir          - string containing the path to the desired directory.
- *   $filter_regex - string containing a regular expression to filter file names. Default empty.
- * RESULT
- *   $dir_array - array containing the directory's contents. This array will be empty if the path specified is invalid.
- ******/
-function return_dir_as_array($dir, $filter_regex = '')
-{
-    $dir_array = array();
-    if (is_dir($dir)) {
-        if ($dh = opendir($dir)) {
-            while (($file = readdir($dh)) !== false) {
-                if (($file == ".") || ($file == "..")) {
-                    continue;
-                }
-                if (empty($filter_regex) || preg_match($filter_regex, $file)) {
-                    array_push($dir_array, $file);
-                }
-            }
-            closedir($dh);
-        }
-    }
-    return $dir_array;
-}
-
 /*
  * get_sysctl($names)
  * Get values of sysctl OID's listed in $names (accepts an array or a single
@@ -1399,40 +1318,6 @@ function get_staticroutes($returnsubnetsonly = false, $returnhostnames = false)
     } else {
         return $allstaticroutes;
     }
-}
-
-/****f* util/get_alias_list
- * NAME
- *   get_alias_list - Provide a list of aliases.
- * INPUTS
- *   $type          - Optional, can be a string or array specifying what type(s) of aliases you need.
- * RESULT
- *   Array containing list of aliases.
- *   If $type is unspecified, all aliases are returned.
- *   If $type is a string, all aliases of the type specified in $type are returned.
- *   If $type is an array, all aliases of any type specified in any element of $type are returned.
- */
-function get_alias_list($type = null)
-{
-    global $config;
-
-    $result = array();
-
-    if (isset($config['aliases']['alias'])) {
-        foreach ($config['aliases']['alias'] as $alias) {
-            if ($type === null) {
-                $result[] = $alias['name'];
-            } elseif (is_array($type)) {
-                if (in_array($alias['type'], $type)) {
-                    $result[] = $alias['name'];
-                }
-            } elseif ($type === $alias['type']) {
-                $result[] = $alias['name'];
-            }
-        }
-    }
-
-    return $result;
 }
 
 function prefer_ipv4_or_ipv6()

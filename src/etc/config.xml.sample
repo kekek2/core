@@ -124,6 +124,11 @@
       <value>default</value>
     </item>
     <item>
+      <descr><![CDATA[Set to 1 to additionally filter on the physical interface for locally destined packets]]></descr>
+      <tunable>net.link.bridge.pfil_local_phys</tunable>
+      <value>default</value>
+    </item>
+    <item>
       <descr><![CDATA[Set to 0 to disable filtering on the incoming and outgoing member interfaces.]]></descr>
       <tunable>net.link.bridge.pfil_member</tunable>
       <value>default</value>
@@ -204,12 +209,9 @@
     <nextuid>2000</nextuid>
     <nextgid>2000</nextgid>
     <timezone>Etc/UTC</timezone>
-    <time-update-interval>300</time-update-interval>
-    <timeservers>0.nl.pool.ntp.org</timeservers>
+    <timeservers>2.opnsense.pool.ntp.org</timeservers>
     <webgui>
       <protocol>https</protocol>
-      <authmode>Local Database</authmode>
-      <authmode_fallback>__NO_FALLBACK__</authmode_fallback>
     </webgui>
     <disablenatreflection>yes</disablenatreflection>
     <usevirtualterminal>1</usevirtualterminal>
@@ -276,7 +278,6 @@
   </dhcpd>
   <unbound>
     <enable>1</enable>
-    <dnssec>1</dnssec>
   </unbound>
   <snmpd>
     <syslocation/>

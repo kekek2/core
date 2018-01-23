@@ -1,31 +1,29 @@
 {#
-
-Copyright (c) 2015-2017 Franco Fichtner <franco@opnsense.org>
-Copyright (c) 2015-2016 Deciso B.V.
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-1.  Redistributions of source code must retain the above copyright notice,
-this list of conditions and the following disclaimer.
-
-2.  Redistributions in binary form must reproduce the above copyright notice,
-this list of conditions and the following disclaimer in the documentation
-and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-POSSIBILITY OF SUCH DAMAGE.
-
-#}
+ # Copyright (c) 2015-2018 Franco Fichtner <franco@opnsense.org>
+ # Copyright (c) 2015-2016 Deciso B.V.
+ # All rights reserved.
+ #
+ # Redistribution and use in source and binary forms, with or without modification,
+ # are permitted provided that the following conditions are met:
+ #
+ # 1.  Redistributions of source code must retain the above copyright notice,
+ # this list of conditions and the following disclaimer.
+ #
+ # 2.  Redistributions in binary form must reproduce the above copyright notice,
+ # this list of conditions and the following disclaimer in the documentation
+ # and/or other materials provided with the distribution.
+ #
+ # THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ # INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+ # AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ # AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ # OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ # SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ # INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ # POSSIBILITY OF SUCH DAMAGE.
+ #}
 
 <script type="text/javascript">
 
@@ -65,7 +63,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
                 // unhide upgrade button
                 $("#upgrade").attr("style","");
-                $("#audit").attr("style","display:none");
+                $("#audit_all").attr("style","display:none");
 
                 // show upgrade list
                 $('#update_status').hide();
@@ -96,7 +94,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 $('#update_status').hide();
                 $('#updatelist').show();
                 $("#upgrade").attr("style","display:none");
-                $("#audit").attr("style","");
+                $("#audit_all").attr("style","");
 
                 // update list so plugins sync as well (all)
                 packagesInfo(true);
@@ -111,8 +109,8 @@ POSSIBILITY OF SUCH DAMAGE.
         $('#updatelist').hide();
         $('#update_status').show();
         $('#updatetab > a').tab('show');
-        $('#updatestatus').html("{{ lang._('Upgrading, please wait...') }}");
-        $("#audit").attr("style","display:none");
+        $('#updatestatus').html("{{ lang._('Updating, please wait...') }}");
+        $("#audit_all").attr("style","display:none");
         maj_suffix = '';
         if ($.upgrade_action == 'maj') {
             maj_suffix = '_maj';
@@ -129,16 +127,17 @@ POSSIBILITY OF SUCH DAMAGE.
     /**
      * perform audit, install poller to update status
      */
-    function audit() {
+    function audit($type) {
         $.upgrade_action = 'audit';
         $('#updatelist').hide();
         $('#update_status').show();
         $('#updatetab > a').tab('show');
         $('#updatestatus').html("{{ lang._('Auditing, please wait...') }}");
-        $("#audit").attr("style","");
+        $("#audit_all").attr("style","");
+        $("#audit_progress").removeClass("caret");
         $("#audit_progress").addClass("fa fa-spinner fa-pulse");
 
-        ajaxCall('/api/core/firmware/audit', {}, function () {
+        ajaxCall('/api/core/firmware/' + $type, {}, function () {
             $('#updatelist > tbody, thead').empty();
             setTimeout(trackStatus, 500);
         });
@@ -196,6 +195,38 @@ POSSIBILITY OF SUCH DAMAGE.
     }
 
     /**
+     * perform package action that requires reboot confirmation
+     */
+    function action_may_reboot(pkg_act, pkg_name)
+    {
+        if (pkg_act == 'reinstall' && (pkg_name == 'kernel' || pkg_name == 'base')) {
+            reboot_msg = "{{ lang._('The firewall will reboot directly after this set reinstall.') }}";
+
+            // reboot required, inform the user.
+            BootstrapDialog.show({
+                type:BootstrapDialog.TYPE_WARNING,
+                title: "{{ lang._('Reboot required') }}",
+                message: reboot_msg,
+                buttons: [{
+                    label: "{{ lang._('OK') }}",
+                    cssClass: 'btn-warning',
+                    action: function(dialogRef){
+                        dialogRef.close();
+                        action(pkg_act, pkg_name);
+                    }
+                },{
+                    label: "{{ lang._('Abort') }}",
+                    action: function(dialogRef){
+                        dialogRef.close();
+                    }
+                }]
+            });
+        } else {
+            action(pkg_act, pkg_name);
+        }
+    }
+
+    /**
      * perform package action, install poller to update status
      */
     function action(pkg_act, pkg_name)
@@ -248,12 +279,12 @@ POSSIBILITY OF SUCH DAMAGE.
 
     function rebootWait() {
         $.ajax({
-            url: document.url,
+            url: '/',
             timeout: 2500
         }).fail(function () {
             setTimeout(rebootWait, 2500);
         }).done(function () {
-            $(location).attr('href',"/");
+            $(location).attr('href', '/');
         });
     }
 
@@ -270,9 +301,10 @@ POSSIBILITY OF SUCH DAMAGE.
                 $("#upgrade_progress_maj").removeClass("fa fa-spinner fa-pulse");
                 $("#upgrade_progress").removeClass("fa fa-spinner fa-pulse");
                 $("#audit_progress").removeClass("fa fa-spinner fa-pulse");
+                $("#audit_progress").addClass("caret");
                 $("#upgrade_maj").attr("style","display:none");
                 $("#upgrade").attr("style","display:none");
-                $("#audit").attr("style","");
+                $("#audit_all").attr("style","");
                 if ($.upgrade_action == 'pkg') {
                     // update UI and delay update to avoid races
                     updateStatusPrepare(true);
@@ -281,7 +313,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     if ($.upgrade_action == 'audit') {
                         $('#updatestatus').html("{{ lang._('Audit done.') }}");
                     } else if ($.upgrade_action == 'action') {
-                        $('#updatestatus').html("{{ lang._('Done.') }}");
+                        $('#updatestatus').html("{{ lang._('Action done.') }}");
                     } else {
                         $('#updatestatus').html("{{ lang._('Upgrade done.') }}");
                     }
@@ -459,7 +491,7 @@ POSSIBILITY OF SUCH DAMAGE.
             // link buttons to actions
             $(".act_reinstall").click(function(event) {
                 event.preventDefault();
-                action('reinstall', $(this).data('package'));
+                action_may_reboot('reinstall', $(this).data('package'));
             });
             $(".act_unlock").click(function(event) {
                 event.preventDefault();
@@ -498,7 +530,8 @@ POSSIBILITY OF SUCH DAMAGE.
         // link event handlers
         $('#checkupdate').click(updateStatus);
         $('#upgrade').click(upgrade_ui);
-        $('#audit').click(audit);
+        $('#audit').click(function () { audit('audit'); });
+        $('#health').click(function () { audit('health'); });
         $('#upgrade_maj').click(function () {
             $.upgrade_needs_reboot = 1;
             $.upgrade_action = 'maj';
@@ -606,17 +639,17 @@ POSSIBILITY OF SUCH DAMAGE.
 
                 $.each(firmwareoptions.families, function(key, value) {
                     var selected = false;
-                    if (key == firmwareconfig['family']) {
+                    if (key == firmwareconfig['type']) {
                         selected = true;
                     }
-                    $("#firmware_family").append($("<option/>")
+                    $("#firmware_type").append($("<option/>")
                             .attr("value",key)
                             .text(value)
                             .prop('selected', selected)
                     );
                 });
-                $("#firmware_family").selectpicker('refresh');
-                $("#firmware_family").change();
+                $("#firmware_type").selectpicker('refresh');
+                $("#firmware_type").change();
             });
         });
 
@@ -647,7 +680,7 @@ POSSIBILITY OF SUCH DAMAGE.
             var confopt = {};
             confopt.mirror = $("#firmware_mirror_value").val();
             confopt.flavour = $("#firmware_flavour_value").val();
-            confopt.family = $("#firmware_family").val();
+            confopt.type = $("#firmware_type").val();
             if ($("#firmware_mirror option:selected").data("has_subscription") == true) {
                 confopt.subscription = $("#firmware_mirror_subscription").val();
             } else {
@@ -684,7 +717,15 @@ POSSIBILITY OF SUCH DAMAGE.
 <?php endif ?>
         <div class="alert alert-info" role="alert" style="min-height: 65px;">
             <button class='btn btn-primary pull-right' id="upgrade" style="display:none">{{ lang._('Update now') }} <i id="upgrade_progress"></i></button>
-            <button class='btn btn-primary pull-right' id="audit">{{ lang._('Audit now') }} <i id="audit_progress"></i></button>
+            <div class="btn-group pull-right">
+                <button type="button" id="audit_all" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
+                    {{ lang._('Audit now') }} <i id="audit_progress" class="caret"></i>
+                </button>
+                <ul class="dropdown-menu" role="menu">
+                    <li><a id="audit" href="#">Security</a></li>
+                    <li><a id="health" href="#">Health</a></li>
+                </ul>
+            </div>
             <button class='btn btn-default pull-right' id="checkupdate" style="margin-right: 8px;">{{ lang._('Check for updates') }} <i id="checkupdate_progress"></i></button>
             <div style="margin-top: 8px;" id="updatestatus">{{ lang._('Click to check for updates.')}}</div>
         </div>
@@ -699,7 +740,7 @@ POSSIBILITY OF SUCH DAMAGE.
             </ul>
             <div class="tab-content content-box tab-content">
                 <div id="updates" class="tab-pane fade in active">
-                    <textarea name="output" id="update_status" class="form-control" rows="25" wrap="hard" readonly style="max-width:100%; font-family: monospace; display: none;"></textarea>
+                    <textarea name="output" id="update_status" class="form-control" rows="25" wrap="hard" readonly="readonly" style="max-width:100%; font-family: monospace; display: none;"></textarea>
                     <table class="table table-striped table-condensed table-responsive" id="updatelist">
                         <thead>
                         </thead>
@@ -748,6 +789,9 @@ POSSIBILITY OF SUCH DAMAGE.
                                     <div style="display:none;" id="firmware_mirror_other">
                                         <input type="text" id="firmware_mirror_value">
                                     </div>
+                                    <output class="hidden" for="help_for_mirror">
+                                        {{ lang._('Select an alternate firmware mirror.') }}
+                                    </output>
                                 </td>
                                 <td></td>
                             </tr>

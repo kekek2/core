@@ -33,8 +33,6 @@ require_once("system.inc");
 require_once("interfaces.inc");
 require_once("services.inc");
 
-$no_change_config['theme'] = 'opnsense';
-
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = array();
 
@@ -42,16 +40,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $savemsg = htmlspecialchars(gettext($_GET['savemsg']));
     }
 
-    $pconfig['theme'] = $no_change_config['theme'];
-    $pconfig['language'] = null;
     $pconfig['dnsallowoverride'] = isset($config['system']['dnsallowoverride']);
     $pconfig['dnslocalhost'] = isset($config['system']['dnslocalhost']);
     $pconfig['domain'] = $config['system']['domain'];
     $pconfig['hostname'] = $config['system']['hostname'];
+    $pconfig['language'] = $config['system']['language'];
     $pconfig['prefer_ipv4'] = isset($config['system']['prefer_ipv4']);
-    if (isset($config['system']['language'])) {
-        $pconfig['language'] = $config['system']['language'];
-    }
+    $pconfig['theme'] = $config['theme'];
     $pconfig['timezone'] = empty($config['system']['timezone']) ? 'Etc/UTC' : $config['system']['timezone'] ;
 
     for ($dnscounter = 1; $dnscounter < 9; $dnscounter++) {
@@ -129,21 +124,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     if (count($input_errors) == 0) {
-    
-        $restart_syslog = $config['system']['hostname'] != $pconfig['hostname'] || $config['system']['timezone'] != $pconfig['timezone'];
-    
-        $config['system']['hostname'] = $pconfig['hostname'];
         $config['system']['domain'] = $pconfig['domain'];
+        $config['system']['hostname'] = $pconfig['hostname'];
         $config['system']['language'] = $pconfig['language'];
         $config['system']['timezone'] = $pconfig['timezone'];
-        $config['theme'] = $no_change_config['theme'];
-
-        if (!empty($pconfig['language']) && $pconfig['language'] != $config['system']['language']) {
-            $config['system']['language'] = $pconfig['language'];
-            $language_change = true;
-        } else {
-            $language_change = false;
-        }
+        $config['theme'] =  $pconfig['theme'];
 
         if (!empty($pconfig['prefer_ipv4'])) {
             $config['system']['prefer_ipv4'] = true;
@@ -215,8 +200,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         write_config();
 
-        /* timezone change first */
+        /* time zone change first */
         system_timezone_configure();
+
         filter_pflog_start();
         prefer_ipv4_or_ipv6();
         system_hostname_configure();
@@ -224,11 +210,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         system_resolvconf_generate();
         plugins_configure('dns');
         services_dhcpd_configure();
-
-        if($restart_syslog) {
-          system_syslogd_start();
-        }
-
         filter_configure();
 
         header(url_safe('Location: /system_general.php?savemsg=%s', array(get_std_save_message(true))));
@@ -259,37 +240,34 @@ include("head.inc");
     <section class="col-xs-12">
       <div class="content-box tab-content">
         <form method="post">
-          <table class="table table-clean-form opnsense_standard_table_form">
+          <table class="table table-striped opnsense_standard_table_form">
             <tr>
-              <td width="22%"><strong><?=gettext("System");?></strong></td>
-              <td width="78%" align="right">
+              <td style="width:22%"><strong><?=gettext("System");?></strong></td>
+              <td style="width:78%; text-align:right">
                 <small><?=gettext("full help"); ?> </small>
-                <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
+                <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page"></i>
               </td>
             </tr>
             <tr>
               <td><a id="help_for_hostname" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Hostname"); ?></td>
               <td>
                 <input name="hostname" type="text" size="40" value="<?=$pconfig['hostname'];?>" />
-                <div class="hidden" for="help_for_hostname">
-                  <small class="formhelp">
+                <output class="hidden" for="help_for_hostname">
                   <?=gettext("Name of the firewall host, without domain part"); ?>
+                  <br />
                   <?=gettext("e.g."); ?> <em><?=gettext("firewall");?></em>
-                  </small>
-                </div>
+                </output>
               </td>
             </tr>
             <tr>
               <td><a id="help_for_domain" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Domain"); ?></td>
               <td>
                 <input name="domain" type="text" value="<?=$pconfig['domain'];?>" />
-                <div class="hidden" for="help_for_domain">
-                  <small class="formhelp">
+                <output class="hidden" for="help_for_domain">
                   <?=gettext("Do not use 'local' as a domain name. It will cause local hosts running mDNS (avahi, bonjour, etc.) to be unable to resolve local hosts not running mDNS."); ?>
                   <br />
                   <?=sprintf(gettext("e.g. %smycorp.com, home, office, private, etc.%s"),'<em>','</em>') ?>
-                  </small>
-                </div>
+                </output>
               </td>
             </tr>
             <tr>
@@ -304,15 +282,10 @@ include("head.inc");
 <?php
                   endforeach; ?>
                 </select>
-                <div class="hidden" for="help_for_timezone">
-                  <small class="formhelp">
+                <output class="hidden" for="help_for_timezone">
                   <?=gettext("Select the location closest to you"); ?>
-                  </small>
-                </div>
+                </output>
               </td>
-            </tr>
-            <tr>
-              <th colspan="2" valign="top" class="listtopic"><?=gettext("Firmware"); ?></th>
             </tr>
             <tr>
               <td><a id="help_for_language" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Language");?></td>
@@ -326,34 +299,52 @@ include("head.inc");
 <?php
                   endforeach;?>
                 </select>
-                <div class="hidden" for="help_for_language">
-                  <small class="formhelp">
+                <output class="hidden" for="help_for_language">
+                  <strong>
                     <?= gettext('Choose a language for the web GUI.') ?>
-                  </small>
-                </div>
+                  </strong>
+                </output>
               </td>
             </tr>
             <tr>
-              <th colspan="2" valign="top" class="listtopic"><?=gettext("Networking"); ?></th>
+              <td><a id="help_for_theme" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Theme"); ?></td>
+              <td>
+                <select name="theme" class="selectpicker" data-size="10" data-width="auto">
+<?php
+                foreach (glob('/usr/local/opnsense/www/themes/*', GLOB_ONLYDIR) as $file):
+                  $file = basename($file);?>
+                  <option <?= $file == $pconfig['theme'] ? 'selected="selected"' : '' ?>>
+                    <?=$file;?>
+                  </option>
+<?php
+                endforeach; ?>
+                </select>
+                <output class="hidden" for="help_for_theme">
+                  <strong>
+                    <?= gettext('This will change the look and feel of the GUI.') ?>
+                  </strong>
+                </output>
+              </td>
+            </tr>
+            <tr>
+              <th colspan="2" style="vertical-align:top" class="listtopic"><?=gettext("Networking"); ?></th>
             </tr>
             <tr>
               <td><a id="help_for_prefer_ipv4" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Prefer IPv4 over IPv6"); ?></td>
               <td>
                 <input name="prefer_ipv4" type="checkbox" id="prefer_ipv4" value="yes" <?= !empty($pconfig['prefer_ipv4']) ? "checked=\"checked\"" : "";?> />
                 <strong><?=gettext("Prefer to use IPv4 even if IPv6 is available"); ?></strong>
-                <div class="hidden" for="help_for_prefer_ipv4">
-                  <small class="formhelp">
+                <output class="hidden" for="help_for_prefer_ipv4">
                   <?=gettext("By default, if a hostname resolves IPv6 and IPv4 addresses ".
                                       "IPv6 will be used, if you check this option, IPv4 will be " .
                                       "used instead of IPv6."); ?>
-                  </small>
-                </div>
+                </output>
               </td>
             </tr>
             <tr>
               <td><a id="help_for_dnsservers" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("DNS servers"); ?></td>
               <td>
-                <table class="table table-borderless table-condensed">
+                <table class="table table-striped table-condensed">
                   <thead>
                     <tr>
                       <th style="width:350px;"><?=gettext("DNS Server"); ?></th>
@@ -397,16 +388,14 @@ include("head.inc");
                     endfor; ?>
                   </tbody>
                 </table>
-                <div class="hidden" for="help_for_dnsservers">
-                  <small class="formhelp">
+                <output class="hidden" for="help_for_dnsservers">
                   <?=gettext("Enter IP addresses to be used by the system for DNS resolution. " .
                   "These are also used for the DHCP service, DNS forwarder and for PPTP VPN clients."); ?>
                   <br />
                   <br />
                   <?=gettext("In addition, optionally select the gateway for each DNS server. " .
                   "When using multiple WAN connections there should be at least one unique DNS server per gateway."); ?>
-                  </small>
-                </div>
+                </output>
               </td>
             </tr>
             <tr>
@@ -416,26 +405,22 @@ include("head.inc");
                 <strong>
                   <?=gettext("Allow DNS server list to be overridden by DHCP/PPP on WAN"); ?>
                 </strong>
-                <div class="hidden" for="help_for_dnsservers_opt">
-                  <small class="formhelp">
+                <output class="hidden" for="help_for_dnsservers_opt">
                   <?= gettext("If this option is set, DNS servers " .
                   "assigned by a DHCP/PPP server on WAN will be used " .
                   "for its own purposes (including the DNS forwarder). " .
                   "However, they will not be assigned to DHCP and PPTP " .
                   "VPN clients.") ?>
-                  </small>
-                </div>
+                </output>
                 <br/>
                 <input name="dnslocalhost" type="checkbox" value="yes" <?=$pconfig['dnslocalhost'] ? "checked=\"checked\"" : ""; ?> />
                 <strong>
                   <?=gettext("Do not use the DNS Forwarder/Resolver as a DNS server for the firewall"); ?>
                 </strong>
-                <div class="hidden" for="help_for_dnsservers_opt">
-                  <small class="formhelp">
+                <output class="hidden" for="help_for_dnsservers_opt">
                   <?=gettext("By default localhost (127.0.0.1) will be used as the first DNS server where the DNS Forwarder or DNS Resolver is enabled and set to listen on Localhost, so system can use the local DNS service to perform lookups. ".
                   "Checking this box omits localhost from the list of DNS servers."); ?>
-                  </small>
-                </div>
+                </output>
               </td>
             </tr>
             <tr>

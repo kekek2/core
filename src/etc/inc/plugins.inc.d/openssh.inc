@@ -47,8 +47,6 @@ function openssh_configure()
 
 function openssh_services()
 {
-    global $config;
-
     $services = array();
 
     if (openssh_enabled()) {
@@ -128,8 +126,8 @@ function openssh_configure_do($verbose = false, $interface = '')
     foreach ($keys as $name) {
         $file = "/conf/sshd/{$name}";
         if (!file_exists($file) || !file_exists("{$file}.pub")) {
-        $generate_keys = true;
-        break;
+            $generate_keys = true;
+            break;
         }
     }
 
@@ -162,6 +160,8 @@ function openssh_configure_do($verbose = false, $interface = '')
     $sshconf .= "Subsystem\tsftp\tinternal-sftp\n";
     if (isset($sshcfg['permitrootlogin'])) {
         $sshconf .= "PermitRootLogin yes\n";
+    } else {
+        $sshconf .= "PermitRootLogin no\n";
     }
     if (isset($sshcfg['passwordauth'])) {
         $sshconf .= "ChallengeResponseAuthentication yes\n";

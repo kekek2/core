@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (C) 2016 Franco Fichtner <franco@opnsense.org>
+# Copyright (C) 2017 Franco Fichtner <franco@opnsense.org>
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -24,12 +24,18 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-PKG_PROGRESS_FILE=/tmp/pkg_upgrade.progress
-PATCH=${1}
+LIC="BSD2CLAUSE"
+OS="FreeBSD"
+SEP=${1:-","}
 
-# Truncate upgrade progress file
-: > ${PKG_PROGRESS_FILE}
+BV=$(opnsense-update -bv)
+KV=$(opnsense-update -kv)
 
-echo "***GOT REQUEST TO HOTFIX: ${PATCH}***" >> ${PKG_PROGRESS_FILE}
-/usr/local/sbin/opnsense-patch ${PATCH} >> ${PKG_PROGRESS_FILE} 2>&1
-echo '***DONE***' >> ${PKG_PROGRESS_FILE}
+BL=0
+KL=0
+
+opnsense-update -Tb || BL=1
+opnsense-update -Tk || KL=1
+
+echo "base${SEP}${BV%-*}${SEP}${OS} userland set${SEP}${SEP}${BL}${SEP}${LIC}"
+echo "kernel${SEP}${KV%-*}${SEP}${OS} kernel set${SEP}${SEP}${KL}${SEP}${LIC}"

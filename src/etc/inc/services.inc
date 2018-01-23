@@ -313,7 +313,7 @@ function services_radvd_configure($blacklist = array())
         $mtu = legacy_interface_stats($realif)['mtu'];
         $radvdconf .= "\tAdvLinkMTU ". (is_numeric($mtu) ? $mtu : 1280) .";\n";
         $radvdconf .= "\tAdvOtherConfigFlag on;\n";
-        $radvdconf .= "\t\tprefix {$subnetv6}/{$ifcfgsnv6} {\n";
+        $radvdconf .= "\tprefix {$subnetv6}/{$ifcfgsnv6} {\n";
         $radvdconf .= "\t\tAdvOnLink on;\n";
         $radvdconf .= "\t\tAdvAutonomous on;\n";
         $radvdconf .= "\t\tAdvRouterAddr on;\n";
@@ -1324,7 +1324,10 @@ EOD;
     /* fire up dhcpd in a chroot */
     if (count($dhcpdv6ifs) > 0) {
         mwexec('/usr/local/sbin/dhcpd -6 -user dhcpd -group dhcpd -chroot /var/dhcpd -cf /etc/dhcpdv6.conf -pf /var/run/dhcpdv6.pid ' . join(' ', $dhcpdv6ifs));
-        mwexec('/usr/local/sbin/dhcpleases6 -c "/usr/local/bin/php -f /usr/local/sbin/prefixes.php|/bin/sh" -l /var/dhcpd/var/db/dhcpd6.leases');
+        mwexecf('/usr/local/sbin/dhcpleases6 -c %s -l %s', array(
+            '/usr/local/sbin/configctl dhcpd update prefixes',
+            '/var/dhcpd/var/db/dhcpd6.leases',
+        ));
     }
 
     if ($verbose) {

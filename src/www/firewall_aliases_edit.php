@@ -131,6 +131,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $pconfig[$fieldname] = null;
             }
         }
+        if (!empty($pconfig['updatefreq'])) {
+            // split update frequency (ttl) in days and hours
+            $pconfig['updatefreq_hours'] = round(((float)$pconfig['updatefreq'] - (int)$pconfig['updatefreq']) * 24, 2);
+            $pconfig['updatefreq'] = (int)$pconfig['updatefreq'];
+        }
     } elseif (isset($_GET['name'])) {
         // search alias by name
         foreach ($a_aliases as $alias_id => $alias_data) {
@@ -256,8 +261,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $input_errors[] = sprintf(gettext('The name cannot be the internally reserved keyword "%s".'), $pconfig['name']);
         }
 
-        if (!empty($pconfig['updatefreq']) && !is_numericint($pconfig['updatefreq'])) {
-            $input_errors[] = gettext("Update Frequency should be a number");
+        foreach (array('updatefreq', 'updatefreq_hours') as $fieldname) {
+            if (!empty($pconfig[$fieldname]) && !is_numeric($pconfig[$fieldname])) {
+                $input_errors[] = gettext("Expiration should be a number");
+                break;
+            }
         }
 
         /* check for name conflicts */
@@ -288,6 +296,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 if (!empty($pconfig[$fieldname])) {
                     $confItem[$fieldname] = $pconfig[$fieldname];
                 }
+            }
+            if (!empty($pconfig['updatefreq_hours'])) {
+                // append hours
+                $confItem['updatefreq'] = !empty($confItem['updatefreq']) ? $confItem['updatefreq'] : 0;
+                $confItem['updatefreq'] +=  ((float)$pconfig['updatefreq_hours']) / 24;
             }
             // fix form type conversions ( list to string, as saved in config )
             // -- fill in default row description and make sure separators are removed
@@ -420,14 +433,23 @@ include("head.inc");
     $(".act-removerow").click(removeRow);
 
     function toggleType() {
-      if ($("#typeSelect").val() == 'urltable' || $("#typeSelect").val() == 'urltable_ports'  ) {
+      if ($("#typeSelect").val() == 'urltable' ) {
         $("#updatefreq").removeClass('hidden');
+        $("#updatefreq_hours").removeClass('hidden');
         $("#updatefreqHeader").removeClass('hidden');
+        $("#addNew").addClass('hidden');
+        $('#detailTable > tbody > tr:gt(0)').remove();
+        $('.act-removerow').addClass('hidden');
+      } else if ($("#typeSelect").val() == 'urltable_ports') {
+        $("#updatefreq").addClass('hidden');
+        $("#updatefreq_hours").addClass('hidden');
+        $("#updatefreqHeader").addClass('hidden');
         $("#addNew").addClass('hidden');
         $('#detailTable > tbody > tr:gt(0)').remove();
         $('.act-removerow').addClass('hidden');
       } else {
         $("#updatefreq").addClass('hidden');
+        $("#updatefreq_hours").addClass('hidden');
         $("#updatefreqHeader").addClass('hidden');
         $("#addNew").removeClass('hidden');
         $('.act-removerow').removeClass('hidden');
@@ -518,10 +540,32 @@ include("head.inc");
             <form method="post" name="iform" id="iform">
               <table class="table table-clean-form opnsense_standard_table_form">
                 <tr>
-                  <td width="22%"><strong><?=gettext("Alias Edit");?></strong></td>
-                  <td width="78%" align="right">
+                  <td style="width:22%"><strong><?=gettext("Alias Edit");?></strong></td>
+                  <td style="width:78%; text-align:right">
                     <small><?=gettext("full help"); ?> </small>
-                    <i class="fa fa-toggle-off text-danger" style="cursor: pointer;" id="show_all_help_page" type="button"></i>
+                    <i class="fa fa-toggle-off text-danger" style="cursor: pointer;" id="show_all_help_page"></i>
+                  </td>
+                </tr>
+                <tr>
+                  <td><a id="help_for_name" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Name"); ?></td>
+                  <td>
+                    <input name="origname" type="hidden" id="origname" class="form-control unknown" size="40" value="<?=$pconfig['name'];?>" />
+                    <?php if (isset($id)): ?>
+                      <input name="id" type="hidden" value="<?=$id;?>" />
+                    <?php endif; ?>
+                    <input name="name" type="text" id="name" class="form-control unknown" size="40" maxlength="31" value="<?=$pconfig['name'];?>" />
+                    <output class="hidden" for="help_for_name">
+                      <?=gettext('The name of the alias may only consist of the characters "a-z, A-Z, 0-9 and _". Aliases can be nested using this name.'); ?>
+                    </output>
+                  </td>
+                </tr>
+                <tr>
+                  <td><a id="help_for_description" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description"); ?></td>
+                  <td>
+                    <input name="descr" type="text" class="form-control unknown" id="descr" size="40" value="<?=$pconfig['descr'];?>" />
+                    <output class="hidden" for="help_for_description">
+                      <?=gettext("You may enter a description here for your reference (not parsed)."); ?>
+                    </output>
                   </td>
                 </tr>
                 <tr>
@@ -545,19 +589,21 @@ include("head.inc");
                         <option value="IPv6" <?= in_array("IPv6", $pconfig['proto']) ? "selected=\"selected\"" : ""; ?>><?=gettext("IPv6");?></option>
                       </select>
                     </div>
-                    <div class="hidden" for="help_for_type">
-                      <span class="text-info">
-                        <?=gettext("Networks")?><br/>
-                      </span>
-                      <small class="formhelp">
-                        <?=gettext("Networks are specified in CIDR format. Select the CIDR suffix that pertains to each entry. /32 specifies a single IPv4 host, /128 specifies a single IPv6 host, /24 in IPv4 corresponds to 255.255.255.0, /64 specifies commonly used IPv6 network, etc. Hostnames (FQDNs) may also be specified, using /32 for IPv4 and /128 for IPv6.");?>
-                      </small>
-                      <br/>
+                    <output class="hidden" for="help_for_type">
                       <span class="text-info">
                         <?=gettext("Hosts")?><br/>
                       </span>
-                      <small class="formhelp">
+                      <small>
                         <?=gettext("Enter as many hosts as you would like. Hosts must be specified by their IP address or fully qualified domain name (FQDN). FQDN hostnames are periodically re-resolved and updated. If multiple IPs are returned by a DNS query, all are used.");?>
+                        <br/>
+                      </small>
+                      <br/>
+                      <span class="text-info">
+                        <?=gettext("Networks")?><br/>
+                      </span>
+                      <small>
+                        <?=gettext("Networks are specified in CIDR format. Select the CIDR suffix that pertains to each entry. /32 specifies a single IPv4 host, /128 specifies a single IPv6 host, /24 in IPv4 corresponds to 255.255.255.0, /64 specifies commonly used IPv6 network, etc. Hostnames (FQDNs) may also be specified, using /32 for IPv4 and /128 for IPv6.");?>
+                        <br/>
                       </small>
                       <br/>
                       <span class="text-info">
@@ -575,39 +621,20 @@ include("head.inc");
                         <br/>
                       </small>
                       <span class="text-info">
+                        <?=gettext("GeoIP")?><br/>
+                      </span>
+                      <small>
+                        <?=gettext("Select contries to be resolved to IPs. IPv4 and IPv6 can be mixed.");?>
+                        <br/>
+                      </small>
+                      <span class="text-info">
                         <?=gettext("External (advanced)")?><br/>
                       </span>
                       <small>
                         <?=gettext("Managed externally, the contents of this alias type could be managed by other scripts or services. ".
                                   "OPNsense only makes sure the alias exists and leaves the contents alone");?>
                       </small>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td width="22%"><a id="help_for_name" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Name"); ?></td>
-                  <td width="78%">
-                    <input name="origname" type="hidden" id="origname" class="form-control unknown" size="40" value="<?=$pconfig['name'];?>" />
-                    <?php if (isset($id)): ?>
-                      <input name="id" type="hidden" value="<?=$id;?>" />
-                    <?php endif; ?>
-                    <input name="name" type="text" id="name" class="form-control unknown" size="40" maxlength="31" value="<?=$pconfig['name'];?>" />
-                    <div class="hidden" for="help_for_name">
-                      <small class="formhelp">
-                      <?=gettext("The name of the alias may only consist of the characters \"a-z, A-Z, 0-9 and _\"."); ?>
-                      </small>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td><a id="help_for_description" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description"); ?></td>
-                  <td>
-                    <input name="descr" type="text" class="form-control unknown" id="descr" size="40" value="<?=$pconfig['descr'];?>" />
-                    <div class="hidden" for="help_for_description">
-                      <small class="formhelp">
-                      <?=gettext("You may enter a description here for your reference (not parsed)."); ?>
-                      </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr>
@@ -619,7 +646,7 @@ include("head.inc");
                           <th></th>
                           <th id="detailsHeading1"><?=gettext("Network"); ?></th>
                           <th id="detailsHeading3"><?=gettext("Description"); ?></th>
-                          <th id="updatefreqHeader" ><?=gettext("Update Freq. (days)");?></th>
+                          <th colspan="2" id="updatefreqHeader" ><?=gettext("Alias Expiration. (days + hours)");?></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -636,11 +663,18 @@ include("head.inc");
                             <input type="text" class="form-control" name="detail[]" value="<?= isset($pconfig['detail'][$aliasid])?$pconfig['detail'][$aliasid]:"";?>">
                           </td>
                           <td>
-<?php                       if ($aliasid == 0):
-?>
+<?php
+                            if ($aliasid == 0):?>
                             <input type="text" class="form-control input-sm" id="updatefreq"  name="updatefreq" value="<?=$pconfig['updatefreq'];?>" >
-<?php                       endif;
-?>
+<?php
+                            endif;?>
+                          </td>
+                          <td>
+<?php
+                            if ($aliasid == 0):?>
+                            <input type="text" class="form-control input-sm hidden" id="updatefreq_hours"  name="updatefreq_hours" value="<?=$pconfig['updatefreq_hours'];?>" >
+<?php
+                            endif;?>
                           </td>
                         </tr>
 <?php

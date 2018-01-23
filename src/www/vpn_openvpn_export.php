@@ -35,6 +35,67 @@ require_once("services.inc");
 require_once("filter.inc");
 require_once("interfaces.inc");
 
+function filter_generate_port(& $rule, $target = "source", $isnat = false) {
+    $src = "";
+
+    if (isset($rule['protocol'])) {
+        $rule['protocol'] = strtolower($rule['protocol']);
+    }
+    if (isset($rule['protocol']) && in_array($rule['protocol'], array("tcp","udp","tcp/udp"))) {
+        if (!empty($rule[$target]['port'])) {
+            $port = alias_expand(str_replace('-', ':', $rule[$target]['port']));
+            if (!empty($port)) {
+                $src = " port " . $port;
+            }
+        }
+    }
+
+    return $src;
+}
+
+function filter_generate_address(&$FilterIflist, &$rule, $target = 'source', $isnat = false)
+{
+    global $config;
+
+    $src = '';
+
+    if (isset($rule[$target]['any'])) {
+        $src = "any";
+    } elseif (!empty($rule[$target]['network'])) {
+        $network_name = $rule[$target]['network'];
+        $matches = "";
+        if ($network_name == '(self)') {
+            $src = "(self)";
+        } elseif (preg_match("/^(wan|lan|opt[0-9]+)ip$/", $network_name, $matches)) {
+            if (empty($FilterIflist[$matches[1]]['if'])) {
+                // interface non-existent or in-active
+                return null;
+            }
+            $src = "({$FilterIflist["{$matches[1]}"]['if']})";
+        } else {
+            if (empty($FilterIflist[$network_name]['if'])) {
+                // interface non-existent or in-active
+                return null;
+            }
+            $src = "({$FilterIflist[$network_name]['if']}:network)";
+        }
+        if (isset($rule[$target]['not'])) {
+            $src = " !{$src}";
+        }
+    } elseif ($rule[$target]['address']) {
+        $expsrc = alias_expand($rule[$target]['address']);
+        if (isset($rule[$target]['not'])) {
+            $not = "!";
+        } else {
+            $not = "";
+        }
+        $src = " {$not} {$expsrc}";
+    }
+    $src .= filter_generate_port($rule, $target, $isnat);
+
+    return $src;
+}
+
 function openvpn_client_export_prefix($srvid, $usrid = null, $crtid = null)
 {
     global $config;
@@ -1208,16 +1269,16 @@ if (isset($savemsg)) {
       <section class="col-xs-12">
         <div class="tab-content content-box col-xs-12">
           <div class="table-responsive">
-            <table class="table table-clean-form opnsense_standard_table_form" >
+            <table class="table table-striped opnsense_standard_table_form" >
               <tr>
-                <td width="22%"></td>
-                <td width="78%" align="right">
+                <td style="width:22%"></td>
+                <td style="width:78%; text-align:right">
                   <small><?=gettext("full help"); ?> </small>
-                  <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
+                  <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page"></i>
                 </td>
               </tr>
               <tr>
-                <td valign="top"><i class="fa fa-info-circle text-muted"></i> <?=gettext("Remote Access Server");?></td>
+                <td style="vertical-align:top"><i class="fa fa-info-circle text-muted"></i> <?=gettext("Remote Access Server");?></td>
                 <td>
                   <select name="server" id="server" class="formselect">
 <?php
@@ -1229,7 +1290,7 @@ if (isset($savemsg)) {
                 </td>
               </tr>
               <tr>
-                <td valign="top"><i class="fa fa-info-circle text-muted"></i> <?=gettext("Host Name Resolution");?></td>
+                <td style="vertical-align:top"><i class="fa fa-info-circle text-muted"></i> <?=gettext("Host Name Resolution");?></td>
                 <td>
                       <select name="useaddr" id="useaddr">
                         <option value="serveraddr" ><?=gettext("Interface IP Address");?></option>
@@ -1265,7 +1326,7 @@ if (isset($savemsg)) {
                 </td>
               </tr>
               <tr class="mode_server">
-                <td valign="top"><a id="help_for_verify_server_cn" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Verify Server CN");?></td>
+                <td style="vertical-align:top"><a id="help_for_verify_server_cn" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Verify Server CN");?></td>
                 <td >
                       <select name="verifyservercn" id="verifyservercn" class="formselect">
                         <option value="auto"><?=gettext("Automatic - Use verify-x509-name (OpenVPN 2.3+) where possible");?></option>
@@ -1273,29 +1334,25 @@ if (isset($savemsg)) {
                         <option value="tls-remote-quote"><?=gettext("Use tls-remote and quote the server CN");?></option>
                         <option value="none"><?=gettext("Do not verify the server CN");?></option>
                       </select>
-                      <div class="hidden" for="help_for_verify_server_cn">
-                        <small class="helpform">
+                      <output class="hidden" for="help_for_verify_server_cn">
                         <?=gettext("Optionally verify the server certificate Common Name (CN) when the client connects. Current clients, including the most recent versions of Windows, Viscosity, Tunnelblick, OpenVPN on iOS and Android and so on should all work at the default automatic setting.");?><br/><br/>
                         <?=gettext("Only use tls-remote if you must use an older client that you cannot control. The option has been deprecated by OpenVPN and will be removed in the next major version.");?><br/><br/>
                         <?=gettext("With tls-remote the server CN may optionally be enclosed in quotes. This can help if the server CN contains spaces and certain clients cannot parse the server CN. Some clients have problems parsing the CN with quotes. Use only as needed.");?>
-                        </small>
-                      </div>
+                      </output>
                 </td>
               </tr>
               <tr class="mode_server">
-                <td valign="top"><a id="help_for_random_local_port" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Use Random Local Port");?></td>
+                <td style="vertical-align:top"><a id="help_for_random_local_port" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Use Random Local Port");?></td>
                 <td >
                       <input name="randomlocalport" id="randomlocalport" type="checkbox" value="yes" checked="CHECKED" />
-                      <div class="hidden" for="help_for_random_local_port">
-                        <small class="helpform">
+                      <output class="hidden" for="help_for_random_local_port">
                         <?=gettext("Use a random local source port (lport) for traffic from the client. Without this set, two clients may not run concurrently.");?>
                         <br/>
                         <?=gettext("NOTE: Not supported on older clients. Automatically disabled for Yealink and Snom configurations."); ?>
-                        </small>
-                      </div>
+                      </output>
               </tr>
               <tr class="mode_server">
-                <td valign="top"><i class="fa fa-info-circle text-muted"></i> <?=gettext("Certificate Export Options");?></td>
+                <td style="vertical-align:top"><i class="fa fa-info-circle text-muted"></i> <?=gettext("Certificate Export Options");?></td>
                 <td >
                       <div>
                         <input name="usetoken" id="usetoken" type="checkbox" value="yes" />
@@ -1314,14 +1371,12 @@ if (isset($savemsg)) {
                 </td>
               </tr>
               <tr>
-                <td valign="top"><a id="help_for_http_proxy" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Use Proxy");?></td>
+                <td style="vertical-align:top"><a id="help_for_http_proxy" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Use Proxy");?></td>
                 <td >
                       <input name="useproxy" id="useproxy" type="checkbox" value="yes" />
-                      <div class="hidden" for="help_for_http_proxy">
-                        <small class="helpform">
+                      <output class="hidden" for="help_for_http_proxy">
                         <?=gettext("Use a proxy to communicate with the server.");?>
-                        </small>
-                      </div>
+                      </output>
                       <div id="useproxy_opts" style="display:none" >
                         <label for="useproxytype"><?=gettext("Type");?></label>
                         <select name="useproxytype" id="useproxytype" class="formselect">
@@ -1352,39 +1407,35 @@ if (isset($savemsg)) {
                 </td>
               </tr>
               <tr class="mode_server">
-                <td valign="top"><a id="help_for_openvpnmanager" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Management Interface OpenVPN Manager");?></td>
+                <td style="vertical-align:top"><a id="help_for_openvpnmanager" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Management Interface OpenVPN Manager");?></td>
                 <td >
                       <input name="openvpnmanager" id="openvpnmanager" type="checkbox" value="yes" />
-                      <div class="hidden" for="help_for_openvpnmanager">
-                        <small class="helpform">
+                      <output class="hidden" for="help_for_openvpnmanager">
                         <?=gettext('This will change the generated .ovpn configuration to allow for usage of the management interface. '.
                         'With this OpenVPN can be used also by non-administrator users. '.
                         'This is also useful for Windows systems where elevated permissions are needed to add routes to the system.');?>
-                        </small>
-                      </div>
+                      </output>
                 </td>
               </tr>
               <tr class="mode_server">
-                <td valign="top"><a id="help_for_advancedoptions" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Additional configuration options");?></td>
+                <td style="vertical-align:top"><a id="help_for_advancedoptions" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Additional configuration options");?></td>
                 <td >
                       <textarea rows="6" cols="68" name="advancedoptions" id="advancedoptions"></textarea><br/>
-                      <div class="hidden" for="help_for_advancedoptions">
-                        <small class="helpform">
+                      <output class="hidden" for="help_for_advancedoptions">
                         <?=gettext("Enter any additional options you would like to add to the OpenVPN client export configuration here, separated by a line break or semicolon"); ?><br/>
                         <?=gettext("EXAMPLE: remote-random"); ?>;
-                        </small>
-                      </div>
+                      </output>
                 </td>
               </tr>
               <tr>
                 <td><a id="help_for_clientpkg" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Client Install Packages");?></td>
                 <td>
-                  <table id="export_users" class="table table-borderless table-condensed">
+                  <table id="export_users" class="table table-striped table-condensed">
                     <thead>
                       <tr>
-                        <td width="25%" ><b><?=gettext("User");?></b></td>
-                        <td width="35%" ><b><?=gettext("Certificate Name");?></b></td>
-                        <td width="40%" ><b><?=gettext("Export");?></b></td>
+                        <td style="width:25%" ><b><?=gettext("User");?></b></td>
+                        <td style="width:35%" ><b><?=gettext("Certificate Name");?></b></td>
+                        <td style="width:40%" ><b><?=gettext("Export");?></b></td>
                       </tr>
                     </thead>
                     <tbody>
@@ -1503,15 +1554,14 @@ if (isset($savemsg)) {
                     endforeach;?>
                       </tbody>
                     </table>
-                    <div class="hidden" for="help_for_clientpkg">
-                      <small class="helpform">
+                    <output class="hidden" for="help_for_clientpkg">
+                      <br/><br/>
                       <?= gettext("If you expect to see a certain client in the list but it is not there, it is usually due to a CA mismatch between the OpenVPN server instance and the client certificates found in the User Manager.") ?>
-                      </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr>
-                  <td valign="top"><i class="fa fa-info-circle text-muted"></i> <?=gettext("Links to OpenVPN clients");?></td>
+                  <td style="vertical-align:top"><i class="fa fa-info-circle text-muted"></i> <?=gettext("Links to OpenVPN clients");?></td>
                   <td>
                     <a href="http://www.sparklabs.com/viscosity/"><?= gettext("Viscosity") ?></a> - <?= gettext("Recommended client for Mac OSX and Windows") ?><br/>
                     <a href="http://openvpn.net/index.php/open-source/downloads.html"><?= gettext("OpenVPN Community Client") ?></a> - <?=gettext("Binaries for Windows, Source for other platforms.")?><br/>

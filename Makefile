@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2017 Franco Fichtner <franco@opnsense.org>
+# Copyright (c) 2014-2018 Franco Fichtner <franco@opnsense.org>
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -28,7 +28,7 @@
 all:
 	@cat ${.CURDIR}/README.md | ${PAGER}
 
-WANTS=		git pear-PHP_CodeSniffer phpunit6
+WANTS=		git p5-File-Slurp pear-PHP_CodeSniffer phpunit6
 
 .for WANT in ${WANTS}
 want-${WANT}: force
@@ -60,14 +60,15 @@ CORE_REPOSITORY?=	${FLAVOUR}
 .endif
 
 
-CORE_NAME?=		ting
-CORE_FAMILY?=		stable
-CORE_ORIGIN?=		${CORE_NAME}
-CORE_COMMENT?=		TING ${CORE_FAMILY} package
+CORE_NAME?=		ting-devel
+CORE_TYPE?=		development
+CORE_MESSAGE?=
+
 CORE_MAINTAINER?=	evbevz@gmail.com
 CORE_PACKAGESITE?=	https://update0.smart-soft.ru
+CORE_ORIGIN?=		${CORE_NAME}
+CORE_COMMENT?=		TING ${CORE_TYPE} package
 CORE_WWW?=			http://smart-soft.ru/
-CORE_MESSAGE?=
 
 # CORE_DEPENDS_armv6 is empty
 CORE_DEPENDS_amd64?=	beep bsdinstaller
@@ -82,7 +83,6 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			dhcpleases \
 			dnsmasq \
 			expiretable \
-			filterdns \
 			filterlog \
 			ifinfo \
 			flock \
@@ -286,14 +286,13 @@ upgrade-check: force
 upgrade: plist-check upgrade-check package
 	@${PKG} delete -fy ${CORE_NAME}
 	@${PKG} add ${PKGDIR}/*.txz
-	@echo -n "Restarting web GUI: "
-	@configctl webgui restart
+	@/usr/local/etc/rc.restart_webgui
 
 lint: plist-check
 	find ${.CURDIR}/src ${.CURDIR}/Scripts \
 	    -name "*.sh" -type f -print0 | xargs -0 -n1 sh -n
 	find ${.CURDIR}/src ${.CURDIR}/Scripts \
-	    -name "*.xml" -type f -print0 | xargs -0 -n1 xmllint --noout
+	    -name "*.xml*" -type f -print0 | xargs -0 -n1 xmllint --noout
 	find ${.CURDIR}/src \
 	    ! -name "*.xml" ! -name "*.xml.sample" ! -name "*.eot" \
 	    ! -name "*.svg" ! -name "*.woff" ! -name "*.woff2" \
@@ -317,9 +316,14 @@ sweep: force
 	find ${.CURDIR} -type f -depth 1 -print0 | \
 	    xargs -0 -n1 ${.CURDIR}/Scripts/cleanfile
 
+STYLEDIRS?=	src/etc/inc/plugins.inc.d src/opnsense
+
 style: want-pear-PHP_CodeSniffer
-	@(phpcs --standard=ruleset.xml ${.CURDIR}/src/opnsense \
-	    || true) > ${.CURDIR}/.style.out
+	@: > ${.CURDIR}/.style.out
+.for STYLEDIR in ${STYLEDIRS}
+	@(phpcs --standard=ruleset.xml ${.CURDIR}/${STYLEDIR} \
+	    || true) >> ${.CURDIR}/.style.out
+.endfor
 	@echo -n "Total number of style warnings: "
 	@grep '| WARNING' ${.CURDIR}/.style.out | wc -l
 	@echo -n "Total number of style errors:   "
@@ -328,9 +332,11 @@ style: want-pear-PHP_CodeSniffer
 	@rm ${.CURDIR}/.style.out
 
 style-fix: want-pear-PHP_CodeSniffer
-	phpcbf --standard=ruleset.xml ${.CURDIR}/src/opnsense || true
+.for STYLEDIR in ${STYLEDIRS}
+	phpcbf --standard=ruleset.xml ${.CURDIR}/${STYLEDIR} || true
+.endfor
 
-license:
+license: want-p5-File-Slurp
 	@${.CURDIR}/Scripts/license > ${.CURDIR}/LICENSE
 
 dhparam:

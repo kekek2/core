@@ -223,10 +223,10 @@ $( document ).ready(function() {
             <input type="hidden" id="act" name="act" value="" />
             <input type="hidden" id="groupid" name="groupid" value="<?=(isset($id) ? $id : '');?>" />
             <input type="hidden" id="privid" name="privid" value="" />
-            <table class="table table-clean-form opnsense_standard_table_form">
+            <table class="table table-striped opnsense_standard_table_form">
               <tr>
-                <td width="22%"><i class="fa fa-info-circle text-muted"></i> <?=gettext("Defined by");?></td>
-                <td width="78%">
+                <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Defined by");?></td>
+                <td>
                   <strong><?=strtoupper($pconfig['scope']);?></strong>
                   <input name="scope" type="hidden" value="<?=$pconfig['scope']?>"/>
                 </td>
@@ -241,17 +241,15 @@ $( document ).ready(function() {
                 <td><a id="help_for_desc" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description");?></td>
                 <td>
                   <input name="description" type="text" value="<?=$pconfig['description'];?>" />
-                  <div class="hidden" for="help_for_desc">
-                    <small class="formhelp">
+                  <output class="hidden" for="help_for_desc">
                     <?=gettext("Group description, for your own information only");?>
-                    </small>
-                  </div>
+                  </output>
                 </td>
               </tr>
               <tr>
                 <td><a id="help_for_groups" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Group Memberships");?></td>
                 <td>
-                  <table class="table table-borderless" width="100%" border="0" cellpadding="0" cellspacing="0">
+                  <table class="table" style="width:100%; border:0; cellpadding:0; cellspacing:0">
                     <thead>
                       <tr>
                         <th><?=gettext("Not Member Of"); ?></th>
@@ -304,11 +302,9 @@ $( document ).ready(function() {
                       </td>
                     </tr>
                   </table>
-                  <div class="hidden" for="help_for_groups">
-                    <small class="formhelp">
+                  <output class="hidden" for="help_for_groups">
                       <?=gettext("Hold down CTRL (pc)/COMMAND (mac) key to select multiple items");?>
-                    </small>
-                  </div>
+                  </output>
                 </td>
               </tr>
 <?php
@@ -316,7 +312,7 @@ $( document ).ready(function() {
               <tr>
                 <td><b><?=gettext("Assigned Privileges");?></b></td>
                 <td>
-                  <table class="table table-borderless table-hover table-condensed">
+                  <table class="table table-hover table-condensed">
                     <tr>
                       <td><b><?=gettext("Name");?></b></td>
                       <td><b><?=gettext("Description");?></b></td>
@@ -365,7 +361,7 @@ $( document ).ready(function() {
             <input type="hidden" id="act" name="act" value="" />
             <input type="hidden" id="groupid" name="groupid" value="<?=(isset($id) ? $id : "");?>" />
             <input type="hidden" id="groupname" name="groupname" value="" />
-            <table class="table table-clean-form">
+            <table class="table table-striped">
               <thead>
                 <tr>
                   <th><?=gettext("Group name");?></th>

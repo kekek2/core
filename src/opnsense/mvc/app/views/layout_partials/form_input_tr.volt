@@ -38,23 +38,24 @@ style       :   css class to add
 maxheight   :   maximum height in rows if applicable
 width       :   width in pixels if applicable
 allownew    :   allow new items (for list) if applicable
+readonly    :   if true, input fields will be readonly
 
 #}
 
 <tr for="{{ id }}" {% if advanced|default(false)=='true' %} data-advanced="true"{% endif %}>
     <td >
-        <div class="control-label" for="{{ id }}">
+        <output class="control-label" for="{{ id }}">
             {% if help|default(false) %}
                 <a id="help_for_{{ id }}" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a>
             {% elseif help|default(false) == false %}
                 <i class="fa fa-info-circle text-muted"></i>
             {% endif %}
             <b>{{label}}</b>
-        </div>
+        </output>
     </td>
     <td >
         {% if type == "text" %}
-            <input type="text" class="form-control" size="{{size|default("50")}}" id="{{ id }}" >
+            <input type="text" class="form-control" size="{{size|default("50")}}" id="{{ id }}" {{ readonly ?  'readonly="readonly"' : '' }} >
         {% elseif type == "checkbox"  %}
             <input type="checkbox" id="{{ id }}" >
         {% elseif type == "select_multiple" %}
@@ -63,9 +64,9 @@ allownew    :   allow new items (for list) if applicable
         {% elseif type == "dropdown" %}
             <select {% if size|default(false) %}size="{{size}}"{% endif %}  id="{{ id }}" class="{{style|default('selectpicker')}}"  data-width="{{width|default("348px")}}"></select>
         {% elseif type == "password" %}
-            <input type="password" class="form-control" size="{{size|default("50")}}" id="{{ id }}" >
+            <input type="password" class="form-control" size="{{size|default("50")}}" id="{{ id }}"  {{ readonly ?  'readonly="readonly"' : '' }} >
         {% elseif type == "textbox" %}
-            <textarea rows="{{height|default("5")}}" id="{{ id }}"></textarea>
+            <textarea rows="{{height|default("5")}}" id="{{ id }}" {{ readonly ? 'readonly="readonly"' : '' }}></textarea>
         {% elseif type == "info" %}
             <span id="{{ id }}" ></span>
         {% endif %}
