@@ -147,9 +147,9 @@ include("head.inc");
                         endforeach;?>
                       </select>
                       <output class="hidden" for="help_for_language">
-                        <strong>
+                        <small class="formhelp">
                           <?= gettext('Choose a language for the web GUI.') ?>
-                        </strong>
+                        </small>
                       </output>
                     </td>
                   </tr>
