@@ -1116,19 +1116,29 @@ function interface_bring_down($interface = "wan", $ifacecfg = false)
         return;
     }
 
-    /*
-     * NOTE: The $realifv6 is needed when WANv4 is type PPP and v6 is DHCP and the option v6 from v4 is used.
-     * In this case the real $realif of v4 is different from that of v6 for operation.
-     * Keep this in mind while doing changes here!
-     */
+    $realif = get_real_interface($interface);
+    $realifv6 = get_real_interface($interface, "inet6");
+    if (!in_array($interface, array('openvpn', 'ppp', 'ipsec', 'enc0'))) {
+        /**
+         * NOTE: The $realifv6 is needed when WANv4 is type PPP and v6 is DHCP and the option v6 from v4 is used.
+         * XXX: we kept this in place due to dropping the $realv6iface parameter from get_real_interface(),
+        */
+        $cfg = &config_read_array('interfaces', $interface);
+        $ipaddrv6 = empty($cfg['ipaddrv6']) ? null : $cfg['ipaddrv6'];
+        if (!in_array($ipaddrv6, array('6rd', '6to4', 'pppoe', 'ppp', 'l2tp', 'pptp'))) {
+            $ipaddr = empty($cfg['ipaddr']) ? null : $cfg['ipaddr'];
+            if (in_array($ipaddr, array('pppoe', 'ppp', 'l2tp', 'pptp'))) {
+                $parents = get_parent_interface($interface);
+                $realifv6 = !empty($parents[0]) ? $parents[0] : $cfg['if'];
+            }
+        }
+    }
     if ($ifacecfg === false) {
         $ifcfg = $config['interfaces'][$interface];
         $ppps = array();
         if (isset($config['ppps']['ppp'])) {
             $ppps = $config['ppps']['ppp'];
         }
-        $realif = get_real_interface($interface);
-        $realifv6 = get_real_interface($interface, "inet6", true);
     } elseif (!is_array($ifacecfg)) {
         log_error('Wrong parameters used during interface_bring_down()');
         $ifcfg = $config['interfaces'][$interface];
@@ -1136,8 +1146,6 @@ function interface_bring_down($interface = "wan", $ifacecfg = false)
         if (isset($config['ppps']['ppp'])) {
             $ppps = $config['ppps']['ppp'];
         }
-        $realif = get_real_interface($interface);
-        $realifv6 = get_real_interface($interface, "inet6", true);
     } else {
         $ifcfg = $ifacecfg['ifcfg'];
         $ppps = $ifacecfg['ppps'];
@@ -1145,9 +1153,6 @@ function interface_bring_down($interface = "wan", $ifacecfg = false)
             $realif = $ifacecfg['ifcfg']['realif'];
             /* XXX: Any better way? */
             $realifv6 = $realif;
-        } else {
-            $realif = get_real_interface($interface);
-            $realifv6 = get_real_interface($interface, "inet6", true);
         }
     }
 
@@ -2503,27 +2508,6 @@ function kill_dhclient_process($interface)
     killbypid(find_dhclient_process($interface), 'TERM', true);
 }
 
-function interface_vlan_mtu_configured($realhwif, $mtu)
-{
-    global $config;
-
-    if (isset($config['vlans']['vlan'])) {
-        foreach ($config['vlans']['vlan'] as $vlan) {
-            if ($vlan['if'] != $realhwif) {
-                continue;
-            }
-            $assignedport = convert_real_interface_to_friendly_interface_name($vlan['vlanif']);
-            if (!empty($assignedport) && !empty($config['interfaces'][$assignedport]['mtu'])) {
-                if (intval($config['interfaces'][$assignedport]['mtu']) > $mtu) {
-                    $mtu = $portmtu;
-                }
-            }
-        }
-    }
-
-    return $mtu;
-}
-
 function interface_virtual_create($interface)
 {
     global $config;
@@ -3134,6 +3118,17 @@ function interface_dhcpv6_configure($interface = 'wan', $wancfg)
     $dhcp6cconf = "";
     $dhcp6cconf .= "interface {$wanif} {\n";
 
+    /* write DUID if override was set */
+    if (!empty($config['system']['ipv6duid'])) {
+        $temp = str_replace(':', '', $config['system']['ipv6duid']);
+        $duid_binstring = pack('H*', $temp);
+        $fd = fopen('/var/db/dhcp6c_duid', 'wb');
+        if ($fd) {
+            fwrite($fd, $duid_binstring);
+            fclose($fd);
+        }
+    }
+
     /* for SLAAC interfaces we do fire off a dhcp6 client for just our name servers */
     if ($wancfg['ipaddrv6'] == "slaac") {
         $dhcp6cconf .= "  information-only;\n";
@@ -3207,7 +3202,17 @@ function interface_dhcpv6_configure($interface = 'wan', $wancfg)
     unset($dhcp6cconf);
 
     $dhcp6cscript = "#!/bin/sh\n";
-    $dhcp6cscript .= "/usr/local/opnsense/service/configd_ctl.py interface newipv6 {$wanif}\n";
+    $dhcp6cscript .= "if [ -n '" . (!empty($wancfg['adv_dhcp6_debug']) ? 'debug' : '') . "' ]; then\n";
+    $dhcp6cscript .= "\t/usr/bin/logger -t dhcp6c \"dhcp6c \$REASON on {$wanif}\"\n";
+    $dhcp6cscript .= "fi\n";
+    $dhcp6cscript .= "case \$REASON in\n";
+    $dhcp6cscript .= "REQUEST|" . (!empty($wancfg['dhcp6norelease']) ? 'EXIT' : 'RELEASE') . ")\n";
+    $dhcp6cscript .= "\t/usr/bin/logger -t dhcp6c \"dhcp6c \$REASON on {$wanif} - running newipv6\"\n";
+    $dhcp6cscript .= "\t/usr/local/opnsense/service/configd_ctl.py interface newipv6 {$wanif}\n";
+    $dhcp6cscript .= "\t;;\n";
+    $dhcp6cscript .= "*)\n";
+    $dhcp6cscript .= "\t;;\n";
+    $dhcp6cscript .= "esac\n";
 
     if (!@file_put_contents("/var/etc/dhcp6c_{$interface}_script.sh", $dhcp6cscript)) {
         printf("Error: cannot open dhcp6c_{$interface}_script.sh in interface_dhcpv6_configure() for writing.\n");
@@ -3220,7 +3225,7 @@ function interface_dhcpv6_configure($interface = 'wan', $wancfg)
     $dhcp6ccommand = exec_safe(
         "/usr/local/sbin/dhcp6c %s -c %s -p %s %s",
         array(
-            empty($wancfg['adv_dhcp6_debug']) ? '-d' : '-D',
+            '-' . (empty($wancfg['adv_dhcp6_debug']) ? 'd' : 'D' ) . (!empty($wancfg['dhcp6norelease']) ? 'n' : ''),
             "/var/etc/dhcp6c_{$interface}.conf",
             "/var/run/dhcp6c_{$wanif}.pid",
             "{$wanif}"
@@ -3899,7 +3904,7 @@ function interface_get_wireless_clone($wlif)
     }
 }
 
-function get_real_interface($interface = "wan", $family = "all", $realv6iface = false, $flush = true)
+function get_real_interface($interface = "wan", $family = "all", $flush = true)
 {
     global $config;
 
@@ -3953,7 +3958,7 @@ function get_real_interface($interface = "wan", $family = "all", $realv6iface = 
                             case 'ppp':
                             case 'l2tp':
                             case 'pptp':
-                                if (isset($cfg['dhcp6usev4iface']) && $realv6iface === false) {
+                                if (isset($cfg['dhcp6usev4iface'])) {
                                     $wanif = $cfg['if'];
                                 } else {
                                     $parents = get_parent_interface($interface);

@@ -219,7 +219,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // redirect
         header(url_safe('Location: /system_usermanager.php?savemsg=%s&act=edit&userid=%s', array($savemsg, $id)));
         exit;
-    } elseif (isset($pconfig['save'])) {
+    } elseif (isset($pconfig['save']) || isset($pconfig['save_close'])) {
         // save user
         /* input validation */
         $reqdfields = explode(' ', 'usernamefld');
@@ -369,6 +369,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             if (!empty($pconfig['chkNewCert'])) {
                 // redirect to cert manager when a new cert is requested for this user
                 header(url_safe('Location: /system_certmanager.php?act=new&userid=%s', array(isset($id) ? $id : count($a_user) - 1)));
+            } elseif (isset($pconfig['save_close'])) {
+                header(url_safe('Location: /system_usermanager.php?savemsg=%s', array(get_std_save_message())));
             } else {
                 header(url_safe('Location: /system_usermanager.php?act=edit&userid=%s&savemsg=%s', array(isset($id) ? $id : count($a_user) - 1, get_std_save_message())));
                 exit;
@@ -524,6 +526,10 @@ $( document ).ready(function() {
         $("#groups > option").prop('selected', true);
         $("#notgroups > option").prop('selected', false);
     });
+    $("#save_close").click(function(){
+        $("#groups > option").prop('selected', true);
+        $("#notgroups > option").prop('selected', false);
+    });
 });
 </script>
 
@@ -582,7 +588,7 @@ $( document ).ready(function() {
                   <tr>
                     <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("User distinguished name");?></td>
                     <td>
-                      <input name="user_dn" type="text" class="formfld user" id="user_dn" size="20" value="<?=$pconfig['user_dn'];?>"/ readonly>
+                      <input name="user_dn" type="text" class="formfld user" id="user_dn" size="20" value="<?=$pconfig['user_dn'];?>" readonly="readonly" />
                     </td>
                   </tr>
 <?php
@@ -929,6 +935,7 @@ $( document ).ready(function() {
                     <td>&nbsp;</td>
                     <td>
                       <button name="save" id="save" type="submit" class="btn btn-primary" value="save" /><?= gettext('Save') ?></button>
+                      <button name="save_close" id="save_close" type="submit" class="btn btn-primary" value="save_close" /><?= gettext('Save and go back') ?></button>
                       <button name="cancel" id="cancel" type="submit" class="btn btn-default" value="cancel" /><?= gettext('Cancel') ?></button>
 <?php
                       if (isset($id) && !empty($a_user[$id])) :?>

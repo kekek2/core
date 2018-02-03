@@ -93,8 +93,8 @@ rrd interval 60s;
 
 ## These parameters can be overridden in a specific alarm configuration
 alarm default {
-  command on "/usr/local/opnsense/service/configd_ctl.py -m 'dyndns reload %T' 'rfc2136 reload %T' 'ipsecdns reload' 'openvpn reload %T'  'filter reload' "
-  command off "/usr/local/opnsense/service/configd_ctl.py -m 'dyndns reload %T' 'rfc2136 reload %T' 'ipsecdns reload' 'openvpn reload %T' 'filter reload' "
+  command on "/usr/local/opnsense/service/configd_ctl.py -m 'dyndns reload %T' 'rfc2136 reload %T' 'openvpn reload %T'  'filter reload' "
+  command off "/usr/local/opnsense/service/configd_ctl.py -m 'dyndns reload %T' 'rfc2136 reload %T' 'openvpn reload %T' 'filter reload' "
   combine 10s
 }
 
@@ -680,9 +680,9 @@ function return_gateways_array($disabled = false, $localhost = false, $inactive 
 
             /* special treatment for tunnel interfaces */
             if ($gateway['ipprotocol'] == "inet6") {
-                $gateway['interface'] = get_real_interface($gateway['interface'], "inet6", false, false);
+                $gateway['interface'] = get_real_interface($gateway['interface'], "inet6", false);
             } else {
-                $gateway['interface'] = get_real_interface($gateway['interface'], "all", false, false);
+                $gateway['interface'] = get_real_interface($gateway['interface'], "all", false);
             }
 
             /* entry has a default flag, use it */

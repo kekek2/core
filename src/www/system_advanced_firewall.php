@@ -50,6 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['maximumfrags'] = isset($config['system']['maximumfrags']) ? $config['system']['maximumfrags'] : null;
     $pconfig['adaptivestart'] = isset($config['system']['adaptivestart']) ? $config['system']['adaptivestart'] : null;
     $pconfig['adaptiveend'] = isset($config['system']['adaptiveend']) ? $config['system']['adaptiveend'] : null;
+    $pconfig['noantilockout'] = isset($config['system']['webgui']['noantilockout']);
     $pconfig['aliasesresolveinterval'] = isset($config['system']['aliasesresolveinterval']) ? $config['system']['aliasesresolveinterval'] : null;
     $pconfig['checkaliasesurlcert'] = isset($config['system']['checkaliasesurlcert']);
     $pconfig['maximumtableentries'] = !empty($config['system']['maximumtableentries']) ? $config['system']['maximumtableentries'] : null ;
@@ -63,17 +64,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['pf_share_forward'] = isset($config['system']['pf_share_forward']);
     $pconfig['pf_disable_force_gw'] = isset($config['system']['pf_disable_force_gw']);
     $pconfig['srctrack'] = !empty($config['system']['srctrack']) ? $config['system']['srctrack'] : null;
-    if (!isset($config['system']['disablenatreflection'])) {
-        $pconfig['natreflection'] = "purenat";
-    } else {
-        $pconfig['natreflection'] = "disable";
-    }
+    $pconfig['natreflection'] = empty($config['system']['disablenatreflection']);
     $pconfig['enablebinatreflection'] = !empty($config['system']['enablebinatreflection']);
     $pconfig['enablenatreflectionhelper'] = isset($config['system']['enablenatreflectionhelper']) ? $config['system']['enablenatreflectionhelper'] : null;
+    $pconfig['snat_use_sticky'] = !empty($config['system']['snat_use_sticky']);
     $pconfig['bypassstaticroutes'] = isset($config['filter']['bypassstaticroutes']);
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pconfig = $_POST;
-    $old_aliasesresolveinterval = $config['system']['aliasesresolveinterval'];
     $input_errors = array();
 
     /* input validation */
@@ -117,6 +114,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             unset($config['system']['lb_use_sticky']);
         }
 
+        if ($pconfig['noantilockout'] == "yes") {
+            $config['system']['webgui']['noantilockout'] = true;
+        } elseif (isset($config['system']['webgui']['noantilockout'])) {
+            unset($config['system']['webgui']['noantilockout']);
+        }
+
         if (!empty($pconfig['srctrack'])) {
             $config['system']['srctrack'] = $pconfig['srctrack'];
         } elseif (isset($config['system']['srctrack'])) {
@@ -152,12 +155,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             unset($config['system']['checkaliasesurlcert']);
         }
 
-        if ($pconfig['natreflection'] == "purenat") {
-            if (isset($config['system']['disablenatreflection'])) {
-                unset($config['system']['disablenatreflection']);
-            }
-        } else {
-            $config['system']['disablenatreflection'] = "yes";
+        /* setting is inverted on the page */
+        if (empty($pconfig['natreflection'])) {
+            $config['system']['disablenatreflection'] = 'yes';
+        } elseif (isset($config['system']['disablenatreflection'])) {
+            unset($config['system']['disablenatreflection']);
         }
 
         if (!empty($pconfig['enablebinatreflection'])) {
@@ -165,6 +167,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         } elseif (isset($config['system']['enablebinatreflection'])) {
             unset($config['system']['enablebinatreflection']);
         }
+
+        $config['system']['snat_use_sticky'] = !empty($pconfig['snat_use_sticky']);
 
         if (!empty($pconfig['disablereplyto'])) {
             $config['system']['disablereplyto'] = $pconfig['disablereplyto'];
@@ -221,11 +225,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         if (write_config())
             firewall_syslog("Update Firewall/Settings/Advanced");
-
-        // Kill filterdns when value changes, filter_configure() will restart it
-        if ($old_aliasesresolveinterval != $config['system']['aliasesresolveinterval']) {
-            killbypid('/var/run/filterdns.pid');
-        }
 
         $savemsg = get_std_save_message();
 
@@ -284,20 +283,10 @@ include("head.inc");
                 <tr>
                   <td><a id="help_for_natreflection" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Reflection for port forwards");?></td>
                   <td>
-                    <select name="natreflection" class="formselect selectpicker" data-style="btn-default">
-                      <option value="disable" <?=$pconfig['natreflection'] == "disable" ? "selected=\"selected\"" : "";?>>
-                        <?=gettext("Disable"); ?>
-                      </option>
-                      <option value="purenat" <?=$pconfig['natreflection'] == "purenat" ? "selected=\"selected\"" : "";?>>
-                        <?=gettext("Enable (Pure NAT)"); ?>
-                      </option>
-                    </select>
+                    <input name="natreflection" type="checkbox" id="natreflection" value="yes" <?= !empty($pconfig['natreflection']) ? 'checked="checked"' : '' ?>/>
                     <div class="hidden" for="help_for_natreflection">
                       <small class="formhelp">
-                      <strong><?=gettext("When enabled, this automatically creates additional NAT redirect rules for access to port forwards on your external IP addresses from within your internal networks.");?></strong>
-                      <br /><br />
-                      <?=gettext("The pure NAT mode uses a set of NAT rules to direct packets to the target of the port forward. It has better scalability, but it must be possible to accurately determine the interface and gateway IP used for communication with the target at the time the rules are loaded. There are no inherent limits to the number of ports other than the limits of the protocols. All protocols available for port forwards are supported.");?>
-                      <br /><br />
+                      <?=gettext("When enabled, this automatically creates additional NAT redirect rules for access to port forwards on your external IP addresses from within your internal networks.");?>
                       <?=gettext("Individual rules may be configured to override this system setting on a per-rule basis.");?>
                       </small>
                     </div>
@@ -309,9 +298,7 @@ include("head.inc");
                     <input name="enablebinatreflection" type="checkbox" id="enablebinatreflection" value="yes" <?=!empty($pconfig['enablebinatreflection']) ? "checked=\"checked\"" : "";?>/>
                     <div class="hidden" for="help_for_enablebinatreflection">
                       <small class="formhelp">
-                      <strong><?=gettext("Enables the automatic creation of additional NAT redirect rules for access to 1:1 mappings of your external IP addresses from within your internal networks.");?></strong><br />
-                      <?=gettext("Note: Reflection on 1:1 mappings is only for the inbound component of the 1:1 mappings. This functions the same as the pure NAT mode for port forwards. For more details, refer to the pure NAT mode description above.");?>
-                      <br /><br />
+                      <?=gettext("Enables the automatic creation of additional NAT redirect rules for access to 1:1 mappings of your external IP addresses from within your internal networks.");?>
                       <?=gettext("Individual rules may be configured to override this system setting on a per-rule basis.");?>
                       </small>
                     </div>
@@ -323,10 +310,18 @@ include("head.inc");
                     <input name="enablenatreflectionhelper" type="checkbox" id="enablenatreflectionhelper" value="yes" <?=!empty($pconfig['enablenatreflectionhelper']) ? "checked=\"checked\"" : "";?> />
                     <div class="hidden" for="help_for_enablenatreflectionhelper">
                       <small class="formhelp">
-                      <strong><?=gettext("Automatically create outbound NAT rules which assist inbound NAT rules that direct traffic back out to the same subnet it originated from.");?></strong><br />
-                      <?=gettext("Required for full functionality of the pure NAT mode of NAT Reflection for port forwards or NAT Reflection for 1:1 NAT.");?>
-                      <br /><br />
-                      <?=gettext("Note: This only works for assigned interfaces. Other interfaces require manually creating the outbound NAT rules that direct the reply packets back through the router.");?>
+                      <?=gettext("Automatically create outbound NAT rules which assist inbound NAT rules that direct traffic back out to the same subnet it originated from.");?>
+                      </small>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td><a id="help_for_snat_use_sticky" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Sticky oubound NAT");?></td>
+                  <td>
+                    <input name="snat_use_sticky" type="checkbox" id="snat_use_sticky" <?=!empty($pconfig['snat_use_sticky']) ? "checked=\"checked\"" : "";?> />
+                    <div class="hidden" for="help_for_snat_use_sticky">
+                      <small class="formhelp">
+                      <?=gettext("When using automatic outbound NAT rules this makes the handled connections stick to a specific address when there are multiple addresses configured on the same interface.");?>
                       </small>
                     </div>
                   </td>
@@ -669,6 +664,22 @@ include("head.inc");
                       <?=gettext("With Multi-WAN you generally want to ensure traffic leaves the same interface it arrives on, hence reply-to is added automatically by default. " .
                                           "When using bridging, you must disable this behavior if the WAN gateway IP is different from the gateway IP of the hosts behind the bridged interface.");?>
                       </small>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td><a id="help_for_noantilockout" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Disable anti-lockout"); ?></td>
+                  <td>
+                    <input name="noantilockout" type="checkbox" value="yes" <?= empty($pconfig['noantilockout']) ? '' : 'checked="checked"' ?>/>
+                    <strong><?= gettext('Disable administration anti-lockout rule') ?></strong>
+                    <div class="hidden" for="help_for_noantilockout">
+                      <?= sprintf(gettext("When this is unchecked, access to the web GUI or SSH " .
+                                  "on the %s interface is always permitted, regardless of the user-defined firewall " .
+                                  "rule set. Check this box to disable the automatically added rule, so access " .
+                                  "is controlled only by the user-defined firewall rules. Ensure you have a firewall rule " .
+                                  "in place that allows you in, or you will lock yourself out."),
+                                  count($config['interfaces']) == 1 && !empty($config['interfaces']['wan']['if']) ?
+                                  gettext('WAN') : gettext('LAN')) ?>
                     </div>
                   </td>
                 </tr>

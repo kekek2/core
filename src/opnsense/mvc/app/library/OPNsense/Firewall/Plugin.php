@@ -39,6 +39,7 @@ class Plugin
 {
     private $anchors = array();
     private $filterRules = array();
+    private $natRules = array();
     private $interfaceMapping = array();
     private $gatewayMapping = array();
     private $systemDefaults = array();
@@ -49,11 +50,22 @@ class Plugin
      */
     public function __construct()
     {
+        $this->systemDefaults = array("filter" => array(), "forward" => array(), "nat" => array());
         if (!empty(Config::getInstance()->object()->system->disablereplyto)) {
-            $this->systemDefaults['disablereplyto'] = true;
+            $this->systemDefaults['filter']['disablereplyto'] = true;
         }
         if (!empty(Config::getInstance()->object()->system->skip_rules_gw_down)) {
-            $this->systemDefaults['skip_rules_gw_down'] = true;
+            $this->systemDefaults['filter']['skip_rules_gw_down'] = true;
+        }
+        if (empty(Config::getInstance()->object()->system->disablenatreflection)) {
+            $this->systemDefaults['forward']['natreflection'] = "enable";
+        }
+        if (!empty(Config::getInstance()->object()->system->enablebinatreflection)) {
+            $this->systemDefaults['nat']['natreflection'] = "enable";
+        }
+        if (!empty(Config::getInstance()->object()->system->enablenatreflectionhelper)) {
+            $this->systemDefaults['forward']['enablenatreflectionhelper'] = true;
+            $this->systemDefaults['nat']['enablenatreflectionhelper'] = true;
         }
     }
 
@@ -205,8 +217,8 @@ class Plugin
      */
     public function registerFilterRule($prio, $conf, $defaults = null)
     {
-        if (!empty($this->systemDefaults)) {
-            $conf = array_merge($this->systemDefaults, $conf);
+        if (!empty($this->systemDefaults['filter'])) {
+            $conf = array_merge($this->systemDefaults['filter'], $conf);
         }
         if ($defaults != null) {
             $conf = array_merge($defaults, $conf);
@@ -216,6 +228,68 @@ class Plugin
             $this->filterRules[$prio] = array();
         }
         $this->filterRules[$prio][] = $rule;
+    }
+
+    /**
+     * register a Forward (rdr) rule
+     * @param int $prio priority
+     * @param array $conf configuration
+     */
+    public function registerForwardRule($prio, $conf)
+    {
+        if (!empty($this->systemDefaults['forward'])) {
+            $conf = array_merge($this->systemDefaults['forward'], $conf);
+        }
+        $rule = new ForwardRule($this->interfaceMapping, $conf);
+        if (empty($this->natRules[$prio])) {
+            $this->natRules[$prio] = array();
+        }
+        $this->natRules[$prio][] = $rule;
+    }
+
+    /**
+     * register a destination Nat rule
+     * @param int $prio priority
+     * @param array $conf configuration
+     */
+    public function registerDNatRule($prio, $conf)
+    {
+        if (!empty($this->systemDefaults['nat'])) {
+            $conf = array_merge($this->systemDefaults['nat'], $conf);
+        }
+        $rule = new DNatRule($this->interfaceMapping, $conf);
+        if (empty($this->natRules[$prio])) {
+            $this->natRules[$prio] = array();
+        }
+        $this->natRules[$prio][] = $rule;
+    }
+
+    /**
+     * register a destination Nat rule
+     * @param int $prio priority
+     * @param array $conf configuration
+     */
+    public function registerSNatRule($prio, $conf)
+    {
+        $rule = new SNatRule($this->interfaceMapping, $conf);
+        if (empty($this->natRules[$prio])) {
+            $this->natRules[$prio] = array();
+        }
+        $this->natRules[$prio][] = $rule;
+    }
+
+    /**
+     * register an Npt rule
+     * @param int $prio priority
+     * @param array $conf configuration
+     */
+    public function registerNptRule($prio, $conf)
+    {
+        $rule = new NptRule($this->interfaceMapping, $conf);
+        if (empty($this->natRules[$prio])) {
+            $this->natRules[$prio] = array();
+        }
+        $this->natRules[$prio][] = $rule;
     }
 
     /**
@@ -234,6 +308,21 @@ class Plugin
         return $output;
     }
 
+    /**
+     * filter rules to text
+     * @return string
+     */
+    public function outputNatRules()
+    {
+        $output = "";
+        ksort($this->natRules);
+        foreach ($this->natRules as $prio => $ruleset) {
+            foreach ($ruleset as $rule) {
+                $output .= (string)$rule;
+            }
+        }
+        return $output;
+    }
     /**
      * register a pf table
      * @param string $name table name

@@ -348,7 +348,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
       "adv_dhcp6_authentication_statement_rdm", "adv_dhcp6_key_info_statement_keyname", "adv_dhcp6_key_info_statement_realm",
       "adv_dhcp6_key_info_statement_keyid", "adv_dhcp6_key_info_statement_secret", "adv_dhcp6_key_info_statement_expire",
       "adv_dhcp6_config_advanced", "adv_dhcp6_config_file_override", "adv_dhcp6_config_file_override_path",
-      "spoofmac", "mtu", "mss",
+      "spoofmac", "mtu", "mss", 'dhcp6vlanprio',
       "dhcp6-ia-pd-len", "track6-interface", "track6-prefix-id", "prefix-6rd", "prefix-6rd-v4plen", "gateway-6rd",
       "ipaddrv6", "subnetv6", "gatewayv6"
     );
@@ -363,6 +363,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['dhcp6sendsolicit'] = isset($a_interfaces[$if]['dhcp6sendsolicit']);
     $pconfig['dhcp6prefixonly'] = isset($a_interfaces[$if]['dhcp6prefixonly']);
     $pconfig['dhcp6usev4iface'] = isset($a_interfaces[$if]['dhcp6usev4iface']);
+    $pconfig['dhcp6norelease'] = isset($a_interfaces[$if]['dhcp6norelease']);
+    // Due to the settings being split per interface type, we need to copy the settings that use the same
+    // config directive.
+    $pconfig['staticv6usev4iface'] = $pconfig['dhcp6usev4iface'];
     $pconfig['adv_dhcp6_debug'] = isset($a_interfaces[$if]['adv_dhcp6_debug']);
     $pconfig['track6-prefix-id--hex'] = sprintf("%x", empty($pconfig['track6-prefix-id']) ? 0 :$pconfig['track6-prefix-id']);
 
@@ -1059,6 +1063,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             // switch ipv6 config by type
             switch($pconfig['type6']) {
                 case "staticv6":
+                    if (!empty($pconfig['staticv6usev4iface'])) {
+                        $new_config['dhcp6usev4iface'] = true;
+                    }
                     $new_config['ipaddrv6'] = $pconfig['ipaddrv6'];
                     $new_config['subnetv6'] = $pconfig['subnetv6'];
                     if ($pconfig['gatewayv6'] != "none") {
@@ -1082,6 +1089,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     }
                     if (!empty($pconfig['dhcp6usev4iface'])) {
                         $new_config['dhcp6usev4iface'] = true;
+                    }
+                    if (!empty($pconfig['dhcp6norelease'])) {
+                        $new_config['dhcp6norelease'] = true;
+                    }
+                    if (isset($pconfig['dhcp6vlanprio']) && $pconfig['dhcp6vlanprio'] !== '') {
+                        $new_config['dhcp6vlanprio'] = $pconfig['dhcp6vlanprio'];
                     }
                     $new_config['adv_dhcp6_debug'] = !empty($pconfig['adv_dhcp6_debug']);
                     $new_config['adv_dhcp6_interface_statement_send_options'] = $pconfig['adv_dhcp6_interface_statement_send_options'];
@@ -2432,6 +2445,15 @@ include("head.inc");
                           </td>
                         </tr>
                         <tr>
+                          <td><a id="help_for_staticv6usev4iface" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Use IPv4 connectivity"); ?></td>
+                          <td>
+                            <input name="staticv6usev4iface" type="checkbox" id="staticv6usev4iface" value="yes" <?=!empty($pconfig['staticv6usev4iface']) ? "checked=\"checked\"" : ""; ?> />
+                            <div class="hidden" for="help_for_staticv6usev4iface">
+                                <?=gettext("Use the IPv4 connectivity link.");?>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
                           <td><a id="help_for_gatewayv6" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPv6 Upstream Gateway"); ?></td>
                           <td>
                             <select name="gatewayv6" class="selectpicker" data-size="10" data-style="btn-default" id="gatewayv6">
@@ -2546,7 +2568,7 @@ include("head.inc");
                           </td>
                         </tr>
                         <tr class="dhcpv6_basic">
-                          <td><a id="help_for_dhcp6-ia-pd-len" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("DHCPv6 Prefix Delegation size"); ?></td>
+                          <td><a id="help_for_dhcp6-ia-pd-len" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Prefix delegation size"); ?></td>
                           <td>
                             <select name="dhcp6-ia-pd-len" class="selectpicker" data-style="btn-default" id="dhcp6-ia-pd-len">
 <?php
@@ -2587,12 +2609,12 @@ include("head.inc");
                           </td>
                         </tr>
                         <tr>
-                          <td><a id="help_for_dhcp6usev4iface" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Use IPv4 connectivity"); ?></td>
+                          <td><a id="help_for_dhcp6norelease" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Prevent release"); ?></td>
                           <td>
-                            <input name="dhcp6usev4iface" type="checkbox" id="dhcp6usev4iface" value="yes" <?=!empty($pconfig['dhcp6usev4iface']) ? "checked=\"checked\"" : ""; ?> />
-                            <div class="hidden" for="help_for_dhcp6usev4iface">
+                            <input name="dhcp6norelease" type="checkbox" id="dhcp6norelease" value="yes" <?= !empty($pconfig['dhcp6norelease']) ? 'checked="checked"' : '' ?> />
+                            <div class="hidden" for="help_for_dhcp6norelease">
                               <small class="formhelp">
-                              <?=gettext("Request a IPv6 prefix/information through the IPv4 connectivity link"); ?>
+                              <?=gettext("Do not send a release message on client exit to prevent the release of an allocated address or prefix on the server."); ?>
                               </small>
                             </div>
                           </td>
@@ -2607,6 +2629,31 @@ include("head.inc");
                                 </small>
                               </div>
                             </td>
+                        </tr>
+                        <tr>
+                          <td><a id="help_for_dhcp6usev4iface" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Use IPv4 connectivity"); ?></td>
+                          <td>
+                            <input name="dhcp6usev4iface" type="checkbox" id="dhcp6usev4iface" value="yes" <?=!empty($pconfig['dhcp6usev4iface']) ? "checked=\"checked\"" : ""; ?> />
+                            <div class="hidden" for="help_for_dhcp6usev4iface">
+                              <?=gettext("Request a IPv6 prefix/information through the IPv4 connectivity link"); ?>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td><a id="help_for_dhcp6vlanprio" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('Use VLAN priority') ?></td>
+                          <td>
+                            <select name="dhcp6vlanprio">
+                              <option value="" <?= "{$pconfig['dhcp6vlanprio']}" === '' ? 'selected="selected"' : '' ?>><?= gettext('Disabled') ?></option>
+<?php
+                              foreach (interfaces_vlan_priorities() as $pcp => $priority): ?>
+                              <option value="<?= html_safe($pcp) ?>" <?= "{$pconfig['dhcp6vlanprio']}" === "$pcp" ? 'selected="selected"' : '' ?>><?= htmlspecialchars($priority) ?></option>
+<?php
+                              endforeach ?>
+                            </select>
+                            <div class="hidden" for="help_for_dhcp6vlanprio">
+                              <?= gettext('Certain ISPs may require that DHCPv6 requests are sent with a specific VLAN priority.') ?>
+                            </div>
+                          </td>
                         </tr>
                         <tr class="dhcpv6_advanced">
                           <td><a id="help_for_dhcp6_intf_stmt" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Interface Statement");?></td>

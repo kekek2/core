@@ -33,6 +33,7 @@
 # download_size: <size_of_total_downloads>
 # new_packages: array with { name: <package_name>, version: <package_version> }
 # reinstall_packages: array with { name: <package_name>, version: <package_version> }
+# downgrade_packages: array with { name: <package_name>, current_version: <current_version>, new_version: <new_version> }
 # upgrade_packages: array with { name: <package_name>, current_version: <current_version>, new_version: <new_version> }
 
 # TODO: Add object with items that will be removed
@@ -231,10 +232,12 @@ if [ "$pkg_running" == "" ]; then
               # the main update from package will override this during upgrade
               if [ -z "$base_to_reboot" ]; then
                   base_to_reboot="$(opnsense-update -v)"
+                  base_to_reboot="${base_to_reboot%-*}"
               fi
             fi
             if [ -n "$base_to_reboot" ]; then
               base_to_delete="$(opnsense-update -bv)"
+              base_to_delete="${base_to_delete%-*}"
               base_is_size="$(opnsense-update -bfS)"
               upgrade_needs_reboot="1"
               if [ "$base_to_reboot" != "$base_to_delete" -a -n "$base_is_size" ]; then
@@ -253,10 +256,12 @@ if [ "$pkg_running" == "" ]; then
               # the main update from package will override this during upgrade
               if [ -z "$kernel_to_reboot" ]; then
                   kernel_to_reboot="$(opnsense-update -v)"
+                  kernel_to_reboot="${kernel_to_reboot%-*}"
               fi
             fi
             if [ -n "$kernel_to_reboot" ]; then
               kernel_to_delete="$(opnsense-update -kv)"
+              kernel_to_delete="${kernel_to_delete%-*}"
               kernel_is_size="$(opnsense-update -fkS)"
               upgrade_needs_reboot="1"
               if [ "$kernel_to_reboot" != "$kernel_to_delete" -a -n "$kernel_is_size" ]; then

@@ -34,12 +34,11 @@ require_once("auth.inc");
 use SmartSoft\Core\Tools;
 
 // provided via legacy_bindings.inc
-global $priv_list;
 $acl = new OPNsense\Core\ACL();
-$priv_list = $acl->getLegacyPrivList();
+$priv_list = $acl->getPrivList();
 
-
-function cmp_page_matches($page, & $matches, $fullwc = true) {
+function cmp_page_matches($page, &$matches, $fullwc = true)
+{
     if (!is_array($matches)) {
         return false;
     }
@@ -99,7 +98,8 @@ function isAllowedPage($page)
 }
 
 
-function getPrivPages(& $entry, & $allowed_pages) {
+function getPrivPages(&$entry, &$allowed_pages)
+{
     global $priv_list;
 
     if (!isset($entry['priv']) || !is_array($entry['priv'])) {
@@ -235,7 +235,7 @@ function session_auth(&$Login_Error)
             $_SESSION['last_access'] = time();
             $_SESSION['protocol'] = $config['system']['webgui']['protocol'];
             if (!isset($config['system']['webgui']['quietlogin'])) {
-              log_error(sprintf("Successful login for user '%s' from: %s", $_POST['usernamefld'], $_SERVER['REMOTE_ADDR']));
+                log_error(sprintf("Successful login for user '%s' from: %s", $_POST['usernamefld'], $_SERVER['REMOTE_ADDR']));
             }
             if (!empty($_GET['url'])) {
                 header(url_safe("Location: {$_GET['url']}"));
@@ -479,7 +479,6 @@ function display_login_form($Login_Error)
         if (is_ipaddr($http_host) && !$local_ip && !isset($config['system']['webgui']['nohttpreferercheck'])) {
             print_info_box(sprintf(gettext("You are accessing this router by an IP address not configured locally, which may be forwarded by NAT or other means. %sIf you did not setup this forwarding, you may be the target of a man-in-the-middle attack."),'<br /><br />'));
         }
-                $loginautocomplete = isset($config['system']['webgui']['loginautocomplete']) ? '' : 'autocomplete="off"';
             ?>
 
 
@@ -490,7 +489,7 @@ function display_login_form($Login_Error)
 
         <div id="inputerrors" class="text-danger"><?= !empty($Login_Error) ? $Login_Error : '&nbsp;' ?></div><br />
 
-            <form class="clearfix" id="iform" name="iform" method="post" <?= $loginautocomplete ?> action="<?=$_SERVER['REQUEST_URI'];?>">
+            <form class="clearfix" id="iform" name="iform" method="post" autocomplete="off" action="<?=$_SERVER['REQUEST_URI'];?>">
 
         <div class="form-group">
           <label for="usernamefld"><?=gettext("Username:"); ?></label>

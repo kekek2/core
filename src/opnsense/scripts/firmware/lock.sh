@@ -28,14 +28,17 @@
 PKG_PROGRESS_FILE=/tmp/pkg_upgrade.progress
 PACKAGE=${1}
 
-if [ -z "${PACKAGE}" ]; then
-	opnsense-update -L
-	exit 0
-fi
-
 # Truncate upgrade progress file
 : > ${PKG_PROGRESS_FILE}
 
 echo "***GOT REQUEST TO LOCK: ${PACKAGE}***" >> ${PKG_PROGRESS_FILE}
-pkg lock -y ${PACKAGE} >> ${PKG_PROGRESS_FILE} 2>&1
+if [ "${PACKAGE}" = "base" ]; then
+	echo "Locking base set" >> ${PKG_PROGRESS_FILE}
+	opnsense-update -bL >> ${PKG_PROGRESS_FILE} 2>&1
+elif [ "${PACKAGE}" = "kernel" ]; then
+	echo "Locking kernel set" >> ${PKG_PROGRESS_FILE}
+	opnsense-update -kL >> ${PKG_PROGRESS_FILE} 2>&1
+else
+	pkg lock -y ${PACKAGE} >> ${PKG_PROGRESS_FILE} 2>&1
+fi
 echo '***DONE***' >> ${PKG_PROGRESS_FILE}

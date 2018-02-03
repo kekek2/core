@@ -69,49 +69,6 @@ function is_bogonsv6_used()
     return $usebogonsv6;
 }
 
-function download_file($url, $destination, $verify_ssl = false, $connect_timeout = 60, $timeout = 0)
-{
-    global $config, $g;
-
-    $fp = fopen($destination, "wb");
-
-    if (!$fp) {
-        return false;
-    }
-
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    if (!$verify_ssl) {
-        /* leave the curl defaults untouched when verify is used */
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-    }
-    curl_setopt($ch, CURLOPT_FILE, $fp);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $connect_timeout);
-    curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
-    curl_setopt($ch, CURLOPT_HEADER, false);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-    curl_setopt($ch, CURLOPT_USERAGENT, $g['product_name'] . '/' . rtrim(file_get_contents("/usr/local/opnsense/version/opnsense")));
-
-    @curl_exec($ch);
-    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    fclose($fp);
-    curl_close($ch);
-
-    /*
-     * Crash reports indicated that this can fail on bad
-     * lines, causing the download to be "ok", but not
-     * actually writing the target file.  Make it a hard
-     * failure...
-     */
-    if (!file_exists($destination)) {
-        return false;
-    }
-
-    return ($http_code == 200);
-}
-
-
 /* sort by interface only, retain the original order of rules that apply to
    the same interface */
 function filter_rules_sort()
@@ -226,19 +183,9 @@ function filter_configure_sync($verbose = false)
     $filterlck = lock('filter', LOCK_EX);
 
     // initialize fw plugin object
-    $fw = new \OPNsense\Firewall\Plugin();
-    $cnfint = legacy_config_get_interfaces(array("enable" => true));
-    // to set "reply-to" we need to know the gateway for our interface, let's collect it here and pass it on to
-    // setInterfaceMapping()
-    foreach ($cnfint as $key => &$value) {
-        $value['gateway'] = get_interface_gateway($key);
-        $value['gatewayv6'] = get_interface_gateway_v6($key);
-    }
-    // init interfaces and gateways
-    $fw->setInterfaceMapping($cnfint);
-    $fw->setGateways(return_gateways_array(false, true));
-    $fw->setGatewayGroups(return_gateway_groups_array());
+    $fw = filter_core_get_initialized_plugin_system();
     filter_core_bootstrap($fw);
+    $cnfint = $fw->getInterfaceMapping();
 
     plugins_firewall($fw);
 
@@ -283,6 +230,89 @@ function filter_configure_sync($verbose = false)
         }
     }
 
+    // manual outbound nat rules
+    if (in_array($config['nat']['outbound']['mode'], array("advanced", "hybrid"))) {
+        if (!empty($config['nat']['outbound']['rule'])) {
+            foreach ($config['nat']['outbound']['rule'] as $rule) {
+                $fw->registerSNatRule(100, $rule);
+            }
+        }
+    }
+
+    if (in_array($config['nat']['outbound']['mode'], array("automatic", "hybrid"))) {
+        // generate standard outbound rules when mode is automatic ot hybrid
+        $intfv4 = array();
+        foreach ($fw->getInterfaceMapping() as $intf => $intfcf) {
+            if (!empty($intfcf['ifconfig']['ipv4']) && empty($intfcf['gateway'])) {
+                $intfv4[] =  $intf;
+            }
+        }
+        // add VPN and local networks
+        $intfv4 = array_merge($intfv4, filter_core_get_default_nat_outbound_networks());
+        foreach ($fw->getInterfaceMapping() as $intf => $ifcfg) {
+            $pool_opts = !empty($config['system']['snat_use_sticky']) ? "sticky-address" : "";
+            if (substr($ifcfg['if'], 0, 4) != 'ovpn' && !empty($ifcfg['gateway'])) {
+                foreach (array(500, null) as $dstport) {
+                    $rule = array(
+                        "interface" => $intf,
+                        "dstport" => $dstport,
+                        "staticnatport" => !empty($dstport),
+                        "poolopts" => $pool_opts,
+                        "destination" => array("any" => true),
+                        "ipprotocol" => 'inet',
+                        "descr" => "Automatic outbound rule"
+                    );
+                    foreach ($intfv4 as $network) {
+                        $rule['source'] = array("network" => $network);
+                        $fw->registerSNatRule(200, $rule);
+                    }
+                }
+            }
+        }
+    }
+
+    // prevent redirection on ports with "lock out" protection
+    $lockoutprts = filter_core_antilockout_ports();
+    if (count($lockoutprts) > 0 &&
+        (!empty($cnfint['lan']['if']) || (count($config['interfaces']) == 1 && !empty($cnfint['wan']['if'])))
+    ) {
+        foreach ($lockoutprts as $port) {
+            $rule = array(
+                "interface" => !empty($cnfint['lan']['if']) ? "lan" : "wan",
+                "nordr" => true,
+                "protocol" => "tcp",
+                "destination" => array(
+                    "network" => !empty($cnfint['lan']['if']) ? "lanip" : "wanip",
+                    "port" => $port
+                ),
+                "descr" => "Anti lockout, prevent redirects for protected ports to this interface ip"
+            );
+            $fw->registerForwardRule(300, $rule);
+        }
+    }
+
+
+    if (!empty($config['nat']['npt'])) {
+        // register user npt rules
+        foreach ($config['nat']['npt'] as $rule) {
+            $fw->registerNptRule(400, $rule);
+        }
+    }
+
+    if (!empty($config['nat']['onetoone'])) {
+        // register user 1:1 mappings
+        foreach ($config['nat']['onetoone'] as $rule) {
+            $fw->registerDNatRule(500, $rule);
+        }
+    }
+    if (!empty($config['nat']['rule'])) {
+        // register user forward rules
+        foreach ($config['nat']['rule'] as $rule) {
+            $fw->registerForwardRule(600, $rule);
+        }
+    }
+
+
     filter_pflog_start();
 
     if ($verbose) {
@@ -297,7 +327,7 @@ function filter_configure_sync($verbose = false)
         fixup_default_gateway($gateways_status, $gateways_arr);
     }
 
-    $aliases = filter_generate_aliases($cnfint);
+    $aliases = filter_generate_aliases();
     $aliases .= "\n# Plugins tables\n";
     $aliases .= $fw->tablesToText();
 
@@ -306,13 +336,10 @@ function filter_configure_sync($verbose = false)
         flush();
     }
 
-    $FilterIflist = filter_generate_optcfg_array();
-    $natrules = filter_nat_rules_generate($FilterIflist);
-
-    if ($verbose) {
-        echo '.';
-        flush();
-    }
+    $natrules = "\n# NAT Redirects\n";
+    $natrules = "no nat proto carp all\n";
+    $natrules = "no rdr proto carp all\n";
+    $natrules .= $fw->outputNatRules();
 
     if ($verbose) {
         echo '.';
@@ -396,8 +423,6 @@ function filter_configure_sync($verbose = false)
     $rules .= $fw->outputFilterRules();
     $rules .= $fw->anchorToText('fw', 'tail');
 
-    unset($aliases, $natrules);
-
     // Copy rules.debug to rules.debug.old
     if (file_exists('/tmp/rules.debug')) {
         @copy('/tmp/rules.debug', '/tmp/rules.debug.old');
@@ -411,10 +436,7 @@ function filter_configure_sync($verbose = false)
 
     @file_put_contents('/tmp/rules.limits', $limitrules);
     mwexec('/sbin/pfctl -Of /tmp/rules.limits');
-    unset($rules, $limitrules);
-
-    unset($rules_loading, $rules_error);
-    $_grbg = exec('/sbin/pfctl -o basic -f /tmp/rules.debug 2>&1', $rules_error, $rules_loading);
+    exec('/sbin/pfctl -o basic -f /tmp/rules.debug 2>&1', $rules_error, $rules_loading);
 
     foreach ($sched_kill_states as $label) {
         mwexecf('/sbin/pfctl -k label -k %s', $label);
@@ -447,7 +469,6 @@ function filter_configure_sync($verbose = false)
             if (is_array($line_split)) {
                 $config_line_error = sprintf(' - ' . gettext('The line in question reads [%d]: %s'), $line_number, $line_split[$line_number-1]);
             }
-            unset($line_split);
         }
 
         /* Brutal ugly hack but required -- PF is stuck, unwedge */
@@ -456,9 +477,8 @@ function filter_configure_sync($verbose = false)
             $error_msg = gettext("PF was wedged/busy and has been reset.");
             file_notice("pf_busy", $error_msg, "pf_busy", "");
         } else {
-            $_grbg = exec('/sbin/pfctl -o basic -f /tmp/rules.debug.old 2>&1');
+            exec('/sbin/pfctl -o basic -f /tmp/rules.debug.old 2>&1');
         }
-        unset($rules_loading, $rules_error);
 
         file_notice('filter_load', sprintf(gettext('There were error(s) loading the rules: %s%s'), $saved_line_error, $config_line_error), 'Filter Reload', '');
         unlock($filterlck);
@@ -475,7 +495,7 @@ function filter_configure_sync($verbose = false)
      * not there, the kill is still fine).
      */
     if (!is_bogonsv6_used()) {
-        $_grbg = exec('/sbin/pfctl -t bogonsv6 -T kill 2>/dev/null');
+        exec('/sbin/pfctl -t bogonsv6 -T kill 2>/dev/null');
     }
 
     if ($verbose) {
@@ -555,21 +575,20 @@ function filter_generate_scrubing(&$FilterIflist)
 
     /* scrub per interface options */
     if (empty($config['system']['scrub_interface_disable'])) {
-        foreach ($FilterIflist as $scrubif => $scrubcfg) {
+        foreach ($FilterIflist as $scrubcfg) {
             if (isset($scrubcfg['virtual']) || empty($scrubcfg['descr'])) {
                 continue;
-            } else {
-                /* set up MSS clamping */
-                if (!empty($scrubcfg['mss']) && is_numeric($scrubcfg['mss']) &&
-                    !in_array($scrubcfg['if'], array('pppoe', 'pptp', 'l2tp'))) {
-                    $mssclamp = "max-mss " . (intval($scrubcfg['mss'] - 40));
-                } else {
-                    $mssclamp = '';
-                }
-                $scrubnodf = !empty($config['system']['scrubnodf']) ? "no-df" : "";
-                $scrubrnid = !empty($config['system']['scrubrnid']) ? "random-id" : "";
-                $scrubrules .= "scrub on \${$scrubif} all {$scrubnodf} {$scrubrnid} {$mssclamp}\n";
             }
+
+            $mssclamp = '';
+            if (!empty($scrubcfg['mss']) && is_numeric($scrubcfg['mss']) &&
+                !in_array($scrubcfg['if'], array('pppoe', 'pptp', 'l2tp'))) {
+                $mssclamp = 'max-mss ' . (intval($scrubcfg['mss'] - 40));
+            }
+
+            $scrubnodf = !empty($config['system']['scrubnodf']) ? 'no-df' : '';
+            $scrubrnid = !empty($config['system']['scrubrnid']) ? 'random-id' : '';
+            $scrubrules .= "scrub on {$scrubcfg['if']} all {$scrubnodf} {$scrubrnid} {$mssclamp}\n";
         }
     }
 
@@ -577,49 +596,23 @@ function filter_generate_scrubing(&$FilterIflist)
 }
 
 
-function filter_generate_aliases(&$FilterIflist)
+function filter_generate_aliases()
 {
     global $config;
 
-    $aliases = "# System aliases\n";
-    $aliases .= "loopback = \"{ lo0 }\"\n";
-
-    foreach ($FilterIflist as $if => $ifcfg) {
-        if (!empty($ifcfg['if'])) {
-            if (isset($ifcfg['ipaddrv6']) && $ifcfg['ipaddrv6'] == '6rd') {
-                $aliases .= "{$if} = \"{ {$ifcfg['if']} {$if}_stf";
-            } elseif (isset($ifcfg['ipaddrv6']) && $ifcfg['ipaddrv6'] == '6to4') {
-                $aliases .= "{$if} = \"{ {$ifcfg['if']} {$if}_stf";
-            } else {
-                $aliases .= "{$if} = \"{ {$ifcfg['if']}";
-                if (isset($ifcfg['ipaddr']) && $ifcfg['ipaddr'] == 'pptp') {
-                    foreach (get_parent_interface($ifcfg['if']) as $parent_if) {
-                        if ($parent_if != $ifcfg['if']) {
-                            $aliases .= " {$parent_if}";
-                        }
-                    }
-                }
-            }
-            $aliases .= " }\"\n";
-        }
-    }
-
-    $aliases .= "\n# SSH Lockout Table\n";
+    $aliases .= "\n# Lockout tables\n";
     $aliases .= "table <sshlockout> persist\n";
     $aliases .= "table <webConfiguratorlockout> persist\n";
 
-    $aliases .= "# Other tables\n";
+    $aliases .= "\n# Other tables\n";
     $aliases .= "table <virusprot>\n";
-    touch('/usr/local/etc/bogons');
-    touch('/usr/local/etc/bogonsv6');
     $aliases .= "table <bogons> persist file \"/usr/local/etc/bogons\"\n";
     if (is_bogonsv6_used()) {
         $aliases .= "table <bogonsv6> persist file \"/usr/local/etc/bogonsv6\"\n";
     }
 
-    $aliases .= "\n# User Aliases \n";
-    /* Setup pf groups */
     if (isset($config['aliases']['alias'])) {
+        $aliases .= "\n# User Aliases\n";
         foreach ($config['aliases']['alias'] as $aliased) {
             switch ($aliased['type']) {
 
@@ -643,1004 +636,6 @@ function filter_generate_aliases(&$FilterIflist)
     return $aliases;
 }
 
-/* returns space separated list of directly connected networks
- * optionally returns an array instead, including friendly interface and gateway (if applicable)
- */
-function filter_get_direct_networks_list(&$FilterIflist, $returnsubnetsonly = true)
-{
-    global $config, $GatewaysList;
-
-    /* build list of directly connected interfaces and networks */
-    $networks = "";
-    $networks_arr = array();
-
-    foreach ($FilterIflist as $ifent => $ifcfg) {
-        $subnet = "{$ifcfg['sa']}/{$ifcfg['sn']}";
-        if (is_subnet($subnet)) {
-            if ($returnsubnetsonly) {
-                $networks_arr[] = $subnet;
-            } else {
-                $networks_arr[] = array(
-                  'subnet' => $subnet,
-                  'if' => $ifent,
-                  'ip' => $ifcfg['ip']);
-            }
-        }
-    }
-    foreach(get_configured_ip_aliases_list(true) as $vip) {
-        $subnet = "{$vip['subnet']}/{$vip['subnet_bits']}";
-        if (is_subnet($subnet) && !(is_subnetv4($subnet) && $vip['subnet_bits'] == 32) && !(is_subnetv6($subnet) && $vip['subnet_bits'] == 128)) {
-            if (is_subnetv4($subnet)) {
-                $subnet = gen_subnet($vip['subnet'], $vip['subnet_bits']) . "/{$vip['subnet_bits']}";
-            } elseif (is_subnetv6($subnet)) {
-                $subnet = gen_subnetv6($vip['subnet'], $vip['subnet_bits']) . "/{$vip['subnet_bits']}";
-            }
-            if ($returnsubnetsonly) {
-                $networks_arr[] = $subnet;
-            } else {
-                $networks_arr[] = array(
-                  'subnet' => $subnet,
-                  'if' => $vip['interface'],
-                  'ip' => $vip['subnet']);
-            }
-        }
-    }
-    foreach(get_staticroutes() as $netent) {
-        if (is_subnet($netent['network'])) {
-            if ($returnsubnetsonly) {
-                $networks_arr[] = $netent['network'];
-            } elseif (isset($GatewaysList[$netent['gateway']])) {
-                $networks_arr[] = array(
-                  'subnet' => $netent['network'],
-                  'if' => $GatewaysList[$netent['gateway']]['friendlyiface'],
-                  'gateway' => $GatewaysList[$netent['gateway']]['gateway']);
-            }
-        }
-    }
-    if ($returnsubnetsonly) {
-        if (!empty($networks_arr)) {
-            $networks = implode(" ", $networks_arr);
-        }
-        return $networks;
-    } else {
-        return $networks_arr;
-    }
-}
-
-function filter_generate_optcfg_array()
-{
-    global $config;
-
-    $FilterIflist = array();
-
-    /* traverse interfaces */
-    foreach (legacy_config_get_interfaces(array("enable" => true)) as $if => $ifdetail) {
-        if (isset($ifdetail['internal_dynamic'])) {
-            // transform plugin configuration
-            $oic = array();
-            $oic['internal_dynamic'] = true;
-            $oic['vips'] = array();
-            $oic['vips6'] = array();
-            $oic['descr'] = $ifdetail['descr'];
-            $oic['if'] = $ifdetail['if'];
-            if (isset($ifdetail['virtual'])) {
-                $oic['virtual'] = $ifdetail['virtual'];
-            }
-            if (!empty($ifdetail['networks'])) {
-                foreach (isset($ifdetail['networks'][0]) ? $ifdetail['networks'] : array($ifdetail['networks']) as $indx => $network) {
-                    if (is_ipaddrv4($network['network'])) {
-                        if ($indx == 0) {
-                            $oic['sa'] = $network['network'];
-                            $oic['sn'] = $network['mask'];
-                        } else {
-                            $vip = array();
-                            $vip['sa'] = $network['network'];
-                            $vip['sn'] = $network['mask'];
-                            $oic['vips'][] = $vip;
-                        }
-                    } elseif (is_ipaddrv6($network['network'])) {
-                        if ($indx == 0) {
-                            $oic['sav6'] = $network['network'];
-                            $oic['snv6'] = $network['mask'];
-                        } else {
-                            $vip = array();
-                            $vip['sa'] = $network['network'];
-                            $vip['sn'] = $network['mask'];
-                            $oic['vips6'][] = $vip;
-                        }
-                    }
-                }
-            }
-            $FilterIflist[$if] = $oic;
-        } else {
-            // XXX needs cleanup, original content
-            $oic = array();
-            $oic['if'] = get_real_interface($if);
-            if (!does_interface_exist($oic['if'])) {
-                continue;
-            }
-            $oic['ifv6'] = get_real_interface($if, "inet6");
-            $oic['ip'] = get_interface_ip($if);
-            $oic['ipv6'] = get_interface_ipv6($if);
-            if (!is_ipaddrv4($ifdetail['ipaddr']) && !empty($ifdetail['ipaddr'])) {
-                $oic['type'] = $ifdetail['ipaddr'];
-            }
-            if (isset($ifdetail['ipaddrv6'])) {
-                if ( !is_ipaddrv6($ifdetail['ipaddrv6']) && !empty($ifdetail['ipaddrv6'])) {
-                    $oic['type6'] = $ifdetail['ipaddrv6'];
-                }
-            } else {
-                $oic['type6'] = null;
-            }
-            if (!empty($ifdetail['track6-interface'])) {
-                $oic['track6-interface'] = $ifdetail['track6-interface'];
-            }
-            $oic['sn'] = get_interface_subnet($if);
-            $oic['snv6'] = get_interface_subnetv6($if);
-            $oic['mtu'] = empty($ifdetail['mtu']) ? 1500 : $ifdetail['mtu'];
-            $oic['mss'] = empty($ifdetail['mss']) ? '' : $ifdetail['mss'];
-            $oic['descr'] = !empty($ifdetail['descr']) ? $ifdetail['descr'] : $if;
-            $oic['sa'] = gen_subnet($oic['ip'], $oic['sn']);
-            $oic['sav6'] = gen_subnetv6($oic['ipv6'], $oic['snv6']);
-            if (isset($ifdetail['alias-address'])) {
-                $oic['alias-address'] = $ifdetail['alias-address'];
-            } else {
-                $oic['alias-address'] = null;
-            }
-            if (isset($ifdetail['alias-subnet'])) {
-                $oic['alias-subnet'] = $ifdetail['alias-subnet'];
-            } else {
-                $oic['alias-subnet'] = null;
-            }
-            if (isset($ifdetail['gateway'])) {
-                $oic['gateway'] = $ifdetail['gateway'];
-            } else {
-                $oic['gateway'] = null ;
-            }
-            if (isset($ifdetail['gatewayv6'])) {
-                $oic['gatewayv6'] = $ifdetail['gatewayv6'];
-            } else {
-                $oic['gatewayv6'] = null;
-            }
-            $oic['bridge'] = link_interface_to_bridge($if);
-            $vips = link_interface_to_vips($if);
-            if (!empty($vips)) {
-                foreach ($vips as $vipidx => $vip) {
-                    if (is_ipaddrv4($vip['subnet'])) {
-                        if (!isset($oic['vips'])) {
-                            $oic['vips'] = array();
-                        }
-                        $oic['vips'][$vipidx]['ip'] = $vip['subnet'];
-                        if (empty($vip['subnet_bits'])) {
-                            $oic['vips'][$vipidx]['sn'] = 32;
-                        } else {
-                            $oic['vips'][$vipidx]['sn'] = $vip['subnet_bits'];
-                        }
-                    } elseif (is_ipaddrv6($vip['subnet'])) {
-                        if (!is_array($oic['vips6'])) {
-                            $oic['vips6'] = array();
-                        }
-                        $oic['vips6'][$vipidx]['ip'] = $vip['subnet'];
-                        if (empty($vip['subnet_bits'])) {
-                            $oic['vips6'][$vipidx]['sn'] = 128;
-                        } else {
-                            $oic['vips6'][$vipidx]['sn'] = $vip['subnet_bits'];
-                        }
-                    }
-                }
-            }
-            unset($vips);
-            $FilterIflist[$if] = $oic;
-        }
-    }
-
-    return $FilterIflist ;
-}
-
-
-function filter_get_reflection_interfaces(&$FilterIflist, $natif)
-{
-    $nat_if_list = array();
-    foreach ($FilterIflist as $ifent => $ifname) {
-        if ($ifname['if'] != $natif && !interface_has_gateway($ifent)) {
-            $nat_if_list[] = $ifname['if'];
-        }
-    }
-    return $nat_if_list;
-}
-
-function filter_generate_reflection_nat(&$FilterIflist, $rule, &$route_table, $nat_ifs, $protocol, $target, $target_ip, $target_subnet = '')
-{
-    // Initialize natrules holder string
-    $natrules = '';
-
-    /* TODO: Add this option to port forwards page. */
-    if (isset($rule['staticnatport'])) {
-        $static_port = " static-port";
-    } else {
-        $static_port = " port 1024:65535";
-    }
-
-    if (!empty($protocol)) {
-        $protocol_text = " proto {$protocol}";
-    } else {
-        $protocol_text = "";
-    }
-
-    if (empty($target_subnet) || !is_numeric($target_subnet)) {
-        $target_subnet = 32;
-    }
-
-    if (!is_array($route_table)) {
-        /* get a simulated IPv4-only route table based on the config */
-        $route_table = filter_get_direct_networks_list($FilterIflist, false);
-        foreach($route_table as $rt_key => $rt_ent) {
-            if (!is_subnetv4($rt_ent['subnet'])) {
-                unset($route_table[$rt_key]);
-            }
-            if (isset($route_table[$rt_key]) && isset($FilterIflist[$rt_ent['if']]['if'])) {
-                $route_table[$rt_key]['if'] = $FilterIflist[$rt_ent['if']]['if'];
-            }
-        }
-    }
-
-    /* Check if the target is accessed through a static route */
-    foreach($route_table as $route) {
-        if (isset($route['gateway']) && is_ipaddr($route['gateway'])) {
-            $subnet_split = explode("/", $route['subnet']);
-            if (in_array($route['if'], $nat_ifs) && check_subnets_overlap($target_ip, $target_subnet, $subnet_split[0], $subnet_split[1])) {
-                $target_ip = $route['gateway'];
-                $target_subnet = 32;
-                break;
-            }
-        }
-    }
-
-    /* Search for matching subnets in the routing table */
-    foreach($route_table as $route) {
-        $subnet = $route['subnet'];
-        $subnet_split = explode("/", $subnet);
-        $subnet_if = $route['if'];
-        if (in_array($subnet_if, $nat_ifs) && check_subnets_overlap($target_ip, $target_subnet, $subnet_split[0], $subnet_split[1])) {
-            $ifsubnet_ip = "";
-            /* Find interface IP to use for NAT */
-            foreach ($route_table as $ifnetwork) {
-                if (isset($ifnetwork['ip']) && is_ipaddr($ifnetwork['ip']) && $ifnetwork['if'] == $subnet_if && ip_in_subnet($ifnetwork['ip'], $subnet)) {
-                    $ifsubnet_ip = $ifnetwork['ip'];
-                    break;
-                }
-            }
-            if (!empty($ifsubnet_ip)) {
-                $subnets = array($subnet);
-                /* Find static routes that also need to be referenced in the NAT rule */
-                foreach($route_table as $rtentry) {
-                    if (isset($rtentry['gateway']) && is_ipaddr($rtentry['gateway']) && $rtentry['if'] == $subnet_if && ip_in_subnet($rtentry['gateway'], $subnet)) {
-                        $subnets[] = $rtentry['subnet'];
-                    }
-                }
-                if (count($subnets) > 1) {
-                    $subnet = "{ " . implode(" ", $subnets) . " }";
-                }
-                $natrules .= "no nat on {$subnet_if}{$protocol_text} from {$subnet_if} to {$target}\n";
-                $natrules .= "nat on {$subnet_if}{$protocol_text} from {$subnet} to {$target} -> {$ifsubnet_ip}{$static_port}\n";
-            }
-        }
-    }
-
-    if (!empty($natrules)) {
-        $natrules .= "\n";
-    }
-
-    return $natrules;
-}
-
-
-function filter_nat_rules_automatic_tonathosts(&$FilterIflist, $with_descr = false)
-{
-    global $config, $GatewaysList;
-
-    $tonathosts = array("127.0.0.0/8");
-    $descriptions = array(gettext("localhost"));
-
-    foreach (get_staticroutes() as $route) {
-        $netip = explode("/", $route['network']);
-        if (isset($GatewaysList[$route['gateway']])) {
-            $gateway =& $GatewaysList[$route['gateway']];
-            if (!interface_has_gateway($gateway['interface']) && is_private_ip($netip[0])) {
-                $tonathosts[] = $route['network'];
-                $descriptions[] = gettext("static route");
-            }
-        }
-    }
-
-    /* create outbound nat entries for all local networks */
-    foreach($FilterIflist as $ocname => $oc) {
-        if (interface_has_gateway($ocname)) {
-            continue;
-        }
-        if (isset($oc['alias-address']) && is_ipaddr($oc['alias-address'])) {
-            $tonathosts[] = "{$oc['alias-address']}/{$oc['alias-subnet']}";
-            $descriptions[] = $oc['descr'] . " " . gettext("DHCP alias address");
-        }
-        if (!empty($oc['sa'])) {
-            $tonathosts[] = "{$oc['sa']}/{$oc['sn']}";
-            $descriptions[] = $oc['descr'];
-            if (!empty($oc['vips']) && !empty($oc['internal_dynamic'])) {
-                foreach ($oc['vips'] as $vip) {
-                    $tonathosts[] = "{$vip['sa']}/{$vip['sn']}";
-                    $descriptions[] = $oc['descr'];
-                }
-            } elseif (isset($oc['vips']) && is_array($oc['vips'])) {
-                $if_subnets = array("{$oc['sa']}/{$oc['sn']}");
-                foreach ($oc['vips'] as $vip) {
-                    if (!is_ipaddrv4($vip['ip'])) {
-                        continue;
-                    }
-                    foreach ($if_subnets as $subnet) {
-                        if (ip_in_subnet($vip['ip'], $subnet)) {
-                            continue 2;
-                        }
-                    }
-                    $network = gen_subnet($vip['ip'], $vip['sn']);
-                    array_unshift($tonathosts, $network . '/' . $vip['sn']);
-                    array_unshift($descriptions, "Virtual IP ({$oc['descr']})");
-                    $if_subnets[] = $network . '/' . $vip['sn'];
-                    unset($network);
-                }
-                unset($if_subnets);
-            }
-        }
-    }
-
-    /* add openvpn interfaces */
-    if (isset($config['openvpn']['openvpn-server'])) {
-        foreach ($config['openvpn']['openvpn-server'] as $ovpnsrv) {
-            if (!isset($ovpnsrv['disable']) && !empty($ovpnsrv['tunnel_network'])) {
-                $tonathosts[] = $ovpnsrv['tunnel_network'];
-                $descriptions[] = gettext("OpenVPN server");
-            }
-        }
-    }
-
-    if (isset($config['openvpn']['openvpn-client'])) {
-        foreach ($config['openvpn']['openvpn-client'] as $ovpncli) {
-            if (!isset($ovpncli['disable']) && !empty($ovpncli['tunnel_network'])) {
-                $tonathosts[] = $ovpncli['tunnel_network'];
-                $descriptions[] = gettext("OpenVPN client");
-            }
-        }
-    }
-
-    /* IPsec mode_cfg subnet */
-    if (isset($config['ipsec']['client']['enable']) &&
-        !empty($config['ipsec']['client']['pool_address']) &&
-        !empty($config['ipsec']['client']['pool_netbits'])) {
-        $tonathosts[] = "{$config['ipsec']['client']['pool_address']}/{$config['ipsec']['client']['pool_netbits']}";
-        $descriptions[] = gettext("IPsec client");
-    }
-
-    if ($with_descr) {
-        $combined = array();
-        foreach ($tonathosts as $idx => $subnet) {
-            $combined[] = array(
-              "subnet" => $subnet,
-              "descr" => $descriptions[$idx]);
-        }
-
-        return $combined;
-    } else {
-        return $tonathosts;
-    }
-}
-
-function filter_nat_rules_outbound_automatic(&$FilterIflist, $src)
-{
-    global $config ;
-
-    $rules = array();
-
-    foreach ($FilterIflist as $if => $ifcfg) {
-        if (substr($ifcfg['if'], 0, 4) == 'ovpn') {
-            continue;
-        }
-
-        if (!interface_has_gateway($if)) {
-            continue;
-        }
-
-        $natent = array();
-        $natent['interface'] = $if;
-        $natent['source']['network'] = $src;
-        $natent['dstport'] = '500';
-        $natent['target'] = '';
-        $natent['destination']['any'] = true;
-        $natent['staticnatport'] = true;
-        $natent['descr'] = gettext('Auto created rule for ISAKMP');
-        $rules[] = $natent;
-
-        $natent = array();
-        $natent['interface'] = $if;
-        $natent['source']['network'] = $src;
-        $natent['sourceport'] = '';
-        $natent['target'] = '';
-        $natent['destination']['any'] = true;
-        $natent['natport'] = '';
-        $natent['descr'] = gettext('Auto created rule');
-        $rules[] = $natent;
-    }
-
-    return $rules;
-}
-
-/* Generate a 'nat on' or 'no nat on' rule for given interface */
-function filter_nat_rules_generate_if(&$FilterIflist, $if, $src = "any", $srcport = "", $dst = "any", $dstport = "", $natip = "", $natport = "", $nonat = false, $staticnatport = false, $proto = "", $poolopts = "", $log = false, $ipproto = "inet", $tag = '', $tagged = '')
-{
-    global $config;
-
-    if ($natip != "") {
-        if (is_subnet($natip)) {
-            $tgt = $natip;
-        } elseif (is_alias($natip)) {
-            $tgt = "\${$natip}";
-        } elseif (is_ipaddrv6($natip)) {
-            $tgt = "{$natip}/128";
-        } else {
-            $tgt = "{$natip}/32";
-        }
-    } else {
-        if ($ipproto == "inet6") {
-            $natip = get_interface_ipv6($if);
-        } else {
-            $natip = get_interface_ip($if);
-        }
-
-        if (is_ipaddrv6($natip)){
-            $tgt = "{$natip}/128";
-        } elseif (is_ipaddr($natip)) {
-            $tgt = "{$natip}/32";
-        } else {
-            $tgt = "(" . $FilterIflist[$if]['if'] . ")";
-        }
-    }
-    $logtag = '';
-    if ($log) {
-        $logtag = 'log';
-    }
-    /* Add the protocol, if defined */
-    if (!empty($proto) && $proto != "any") {
-        if ($proto == "tcp/udp") {
-            $protocol = " proto { tcp udp }";
-        } else {
-            $protocol = " proto {$proto}";
-        }
-    } else {
-        $protocol = "";
-    }
-
-    /* Add the ip protocol */
-    if (!empty($ipproto) && $ipproto != "inet") {
-        $ipprotocol = " {$ipproto}";
-    } else {
-        $ipprotocol = "";
-    }
-
-    /* Add the hard set source port (useful for ISAKMP) */
-    if ($natport != "") {
-        $tgt .= " port {$natport}";
-    }
-    /* sometimes this gets called with "" instead of a value */
-    if ($src == "") {
-        $src = "any";
-    }
-    /* Match on this source port */
-    if ($srcport != "") {
-        $srcportexpand = alias_expand($srcport);
-        if (!$srcportexpand) {
-            $srcportexpand = $srcport;
-        }
-        $src .= " port {$srcportexpand}";
-    }
-    /* sometimes this gets called with "" instead of a value */
-    if ($dst == "") {
-        $dst = "any";
-    }
-    /* Match on this dest port */
-    if ($dstport != "") {
-        $dstportexpand = alias_expand($dstport);
-        if (!$dstportexpand) {
-            $dstportexpand = $dstport;
-        }
-        $dst .= " port {$dstportexpand}";
-    }
-    /* outgoing static-port option, hamachi, Grandstream, VOIP, etc */
-    $staticnatport_txt = "";
-    if ($staticnatport) {
-        $staticnatport_txt = "static-port";
-    } elseif (!$natport) {
-        $tgt .= " port 1024:65535"; // set source port range
-    }
-    /* set and get tag handling */
-    $tagging = '';
-    if (!empty($tag)) {
-        $tagging .= " tag {$tag}";
-    }
-    if (!empty($tagged)) {
-        $tagging .= " tagged {$tagged}";
-    }
-    /* Allow for negating NAT entries */
-    if ($nonat) {
-        $nat = "no nat";
-        $target = "";
-        $staticnatport_txt = "";
-        $poolopts = "";
-    } else {
-        $nat = "nat";
-        $target = "-> {$tgt}";
-    }
-    /* Put all the pieces together */
-    $natrule = "{$nat} {$logtag} on \${$if}{$ipprotocol}{$protocol} from {$src} to {$dst}${tagging} {$target} {$poolopts} {$staticnatport_txt}\n";
-
-    return $natrule;
-}
-
-function filter_nat_rules_generate(&$FilterIflist)
-{
-    global $config, $GatewaysList;
-
-    $natrules = "no nat proto carp\n";
-    $natrules .= "no rdr proto carp\n";
-
-    $reflection_txt = "";
-    $route_table = "";
-
-    /* any 1:1 mappings? */
-    if (isset($config['nat']['onetoone']) && is_array($config['nat']['onetoone'])) {
-        foreach ($config['nat']['onetoone'] as $rule) {
-            if (isset($rule['disabled'])) {
-                continue;
-            }
-            $sn = "";
-            $sn1 = "";
-            $target = alias_expand($rule['external']);
-            if (!$target) {
-                $natrules .= "# Unresolvable alias {$rule['target']}\n";
-                continue;               /* unresolvable alias */
-            }
-
-            if (!$rule['interface']) {
-                $natif = "wan";
-            } else {
-                $natif = $rule['interface'];
-            }
-            if (!isset($FilterIflist[$natif])) {
-                continue;
-            }
-            $srcaddr = filter_generate_address($FilterIflist, $rule, 'source');
-            $dstaddr = filter_generate_address($FilterIflist, $rule, 'destination');
-            if (!$dstaddr) {
-                $dstaddr = $FilterIflist[$natif]['ip'];
-            }
-
-            $srcaddr = trim($srcaddr);
-            $dstaddr = trim($dstaddr);
-
-            $tmp = explode('/', $srcaddr);
-            $srcip = $tmp[0];
-            if (!empty($tmp[1]) && is_numeric($tmp[1]) && strpos($target, '/') === false) {
-                $sn = $tmp[1];
-                $sn1 = "/{$sn}";
-            }
-
-            $natif = $FilterIflist[$natif]['if'];
-
-            /*
-             * If reflection is enabled, turn on extra redirections
-             * for this rule by adding other interfaces to an rdr rule.
-             */
-            if ((isset($config['system']['enablebinatreflection']) || $rule['natreflection'] == "enable")
-               && $rule['natreflection'] != "disable") {
-                 $nat_if_list = filter_get_reflection_interfaces($FilterIflist, $natif);
-            } else {
-                $nat_if_list = array();
-            }
-            $nattype = empty($rule['type']) ? "binat" : $rule['type'];
-            $natrules .= "{$nattype} on {$natif} from {$srcaddr} to {$dstaddr} -> {$target}{$sn1}\n";
-            if (!empty($nat_if_list)) {
-                $binat_if_list = implode(" ", $nat_if_list);
-                $binat_if_list = "{ {$binat_if_list} }";
-                $reflection_txt .= "rdr on {$binat_if_list} from {$dstaddr} to {$target}{$sn1} -> {$srcaddr} bitmask\n";
-            }
-
-            $nat_if_list = array_merge(array($natif), $nat_if_list);
-            if (isset($config['system']['enablenatreflectionhelper'])) {
-                $reflection_txt .= filter_generate_reflection_nat($FilterIflist, $rule, $route_table, $nat_if_list, '', $srcaddr, $srcip, $sn);
-            }
-        }
-    }
-
-    /* Add binat rules for Network Prefix translation */
-    if (isset($config['nat']['npt']) && is_array($config['nat']['npt'])) {
-        foreach ($config['nat']['npt'] as $rule) {
-            if (isset($rule['disabled'])) {
-                continue;
-            }
-            if (!$rule['interface']) {
-                $natif = "wan";
-            } else {
-                $natif = $rule['interface'];
-            }
-            if (!isset($FilterIflist[$natif])) {
-                continue;
-            }
-            $srcaddr = filter_generate_address($FilterIflist, $rule, 'source');
-            $dstaddr = filter_generate_address($FilterIflist, $rule, 'destination');
-            $srcaddr = trim($srcaddr);
-            $dstaddr = trim($dstaddr);
-
-            $natrules .= "binat on \${$natif} from {$srcaddr} to any -> {$dstaddr}\n";
-            $natrules .= "binat on \${$natif} from {$dstaddr} to any -> {$srcaddr}\n";
-        }
-    }
-
-    if (isset($config['nat']['outbound']['mode']) && $config['nat']['outbound']['mode'] == "disabled") {
-        $natrules .= "\n# Outbound NAT rules are disabled\n";
-    }
-
-    if (isset($config['nat']['outbound']['mode']) && ($config['nat']['outbound']['mode'] == "advanced" || $config['nat']['outbound']['mode'] == "hybrid")) {
-        $natrules .= "\n# Outbound NAT rules (manual)\n";
-        /* advanced outbound rules */
-        if (isset($config['nat']['outbound']['rule'])) {
-            foreach ($config['nat']['outbound']['rule'] as $obent) {
-                if (isset($obent['disabled'])) {
-                    continue;
-                }
-                $src = alias_expand($obent['source']['network']);
-                if (!$src) {
-                    $src = $obent['source']['network'];
-                }
-                if (isset($obent['source']['not']) && !isset($obent['source']['any'])) {
-                    $src = "! $src";
-                }
-                $dst = alias_expand($obent['destination']['address']);
-                if (!$dst) {
-                    $dst = $obent['destination']['address'];
-                }
-                if (isset($obent['destination']['not']) && !isset($obent['destination']['any'])) {
-                    $dst = "! $dst";
-                }
-
-                if (!$obent['interface'] || !isset($FilterIflist[$obent['interface']])) {
-                    continue;
-                }
-                $obtarget = ($obent['target'] == "other-subnet") ? $obent['targetip'] . '/' . $obent['targetip_subnet']: $obent['target'];
-                $poolopts = (is_subnet($obtarget) || is_alias($obtarget)) ? $obent['poolopts'] : "";
-
-                $natrules .= filter_nat_rules_generate_if(
-                  $FilterIflist,
-                  $obent['interface'],
-                  $src,
-                  $obent['sourceport'],
-                  $dst,
-                  $obent['dstport'],
-                  $obtarget,
-                  $obent['natport'],
-                  isset($obent['nonat']),
-                  isset($obent['staticnatport']),
-                  $obent['protocol'],
-                  $poolopts,
-                  isset($obent['log']),
-                  $obent['ipprotocol'],
-                  $obent['tag'],
-                  $obent['tagged']
-                );
-            }
-        }
-    }
-
-    /* outbound rules */
-    if (!isset($config['nat']['outbound']['mode']) ||
-        $config['nat']['outbound']['mode'] == "automatic" ||
-        $config['nat']['outbound']['mode'] == "hybrid") {
-        $natrules .= "\n# Outbound NAT rules (automatic)\n";
-        /* standard outbound rules (one for each interface) */
-        $tonathosts_array = filter_nat_rules_automatic_tonathosts($FilterIflist);
-        $tonathosts = implode(" ", $tonathosts_array);
-        $numberofnathosts = count($tonathosts_array);
-
-        $natrules .= "\n# Subnets to NAT \n";
-        if ($numberofnathosts > 0) {
-            if ($numberofnathosts > 4) {
-                $natrules .= "table <tonatsubnets> { {$tonathosts} }\n";
-                $macroortable = "<tonatsubnets>";
-            } else {
-                $natrules .= "tonatsubnets  = \"{ {$tonathosts} }\"\n";
-                $macroortable = "\$tonatsubnets";
-            }
-
-            $a_outs = filter_nat_rules_outbound_automatic($FilterIflist, $macroortable);
-            foreach ($a_outs as $a_out) {
-                $natrules .= filter_nat_rules_generate_if(
-                    $FilterIflist,
-                    $a_out['interface'],
-                    $a_out['source']['network'],
-                    isset($a_out['sourceport']) ? $a_out['sourceport'] : null,
-                    isset($a_out['destination']['address']) ? $a_out['destination']['address'] : null,
-                    isset($a_out['dstport']) ? $a_out['dstport'] : null,
-                    isset($a_out['target']) ? $a_out['target'] : null,
-                    isset($a_out['natport']) ? $a_out['natport'] : null,
-                    isset($a_out['nonat']),
-                    isset($a_out['staticnatport'])
-                );
-            }
-        }
-        unset($tonathosts, $tonathosts_array, $numberofnathosts);
-    }
-
-    // prevent redirection on ports with "lock out" protection
-    $lockoutprts = filter_core_antilockout_ports();
-    if (count($lockoutprts) > 0) {
-        $alports = implode(' ', $lockoutprts);
-        if (!empty($FilterIflist['lan']['if']) ) {
-            $alintrf = $FilterIflist['lan']['if'];
-        } elseif (count($config['interfaces']) == 1 && !empty($FilterIflist['wan']['if']) ) {
-            $alintrf = $FilterIflist['wan']['if'];
-        } else {
-            $alintrf = null;
-        }
-        if (!empty($alintrf) ) {
-            $natrules .= "\n# Anti lockout, prevent redirects for protected ports to this interface ip \n";
-            $natrules .= "no rdr on {$alintrf} proto tcp from any to ( {$alintrf} ) port { {$alports} }\n";
-        }
-        unset($alports);
-    }
-
-    if (isset($config['nat']['rule'])) {
-        $natrules .= "\n# NAT Inbound Redirects\n";
-          foreach ($config['nat']['rule'] as $rule) {
-            if (isset($rule['disabled'])) {
-                continue;
-            }
-
-            /* if item is an alias, expand */
-            $dstport = array(alias_expand($rule['destination']['port']));
-            if (empty($dstport[0])) {
-                $dstport = explode("-", $rule['destination']['port']);
-            }
-
-            if (!empty($rule['protocol']) && in_array($rule['protocol'], array('tcp/udp', 'udp', 'tcp'))) {
-                $localport = alias_expand($rule['local-port']);
-                if (!$localport || $dstport[0] == $localport) {
-                    $localport = "";
-                } elseif (is_alias($rule['local-port'])) {
-                    $localport = filter_core_get_port_alias($rule['local-port']);
-                    if (!empty($localport)) {
-                        $localport = $localport[0];
-                        $localport = " port {$localport}";
-                    }
-                } elseif (is_alias($rule['destination']['port'])) {
-                    $localport = " port {$localport}";
-                } else {
-                    if (($dstport[1]) && ($dstport[0] != $dstport[1])) {
-                        $localendport = $localport + ($dstport[1] - $dstport[0]);
-                        $localport .= ":$localendport";
-                    }
-                    $localport = " port {$localport}";
-                }
-            } else {
-                $localport = "";
-            }
-
-            $address_family = !empty($rule['ipprotocol']) ? $rule['ipprotocol'] : "";
-            switch(strtolower(!empty($rule['protocol']) ? $rule['protocol'] : "")) {
-                case "tcp/udp":
-                    $protocol = "{ tcp udp }";
-                    break;
-                default:
-                    $protocol = strtolower($rule['protocol']);
-                    break;
-            }
-
-            $target = alias_expand($rule['target']);
-            if (!$target && !isset($rule['nordr'])) {
-                $natrules .= "# Unresolvable alias {$rule['target']}\n";
-                continue;    /* unresolvable alias */
-            }
-
-            if (is_alias($rule['target'])) {
-                $target_ip = "${$rule['target']}";
-            } elseif (is_ipaddr($rule['target'])) {
-                $target_ip = $rule['target'];
-            } elseif (is_ipaddr($FilterIflist[$rule['target']]['ip'])) {
-                $target_ip = $FilterIflist[$rule['target']]['ip'];
-            } else {
-                $target_ip = $rule['target'];
-            }
-            $target_ip = trim($target_ip);
-
-            if ($rule['associated-rule-id'] == "pass") {
-                $rdrpass = "pass ";
-            } else {
-                $rdrpass = "";
-            }
-
-            if (isset($rule['nordr'])) {
-                $nordr = "no ";
-                $rdrpass = "";
-            } else {
-                $nordr = "";
-            }
-
-            if (!$rule['interface']) {
-                $natif = "wan";
-            } else {
-                $natif = $rule['interface'];
-            }
-
-            if (!isset($FilterIflist[$natif])) {
-                continue;
-            }
-            $srcaddr = trim(filter_generate_address($FilterIflist, $rule, 'source', true));
-            $dstaddr = trim(filter_generate_address($FilterIflist, $rule, 'destination', true));
-
-            if (!$dstaddr) {
-                $dstaddr = $FilterIflist[$natif]['ip'];
-            }
-
-            $dstaddr_port = explode(" ", $dstaddr);
-            if (empty($dstaddr_port[0]) || strtolower(trim($dstaddr_port[0])) == "port") {
-                continue; // Skip port forward if no destination address found
-            }
-            $dstaddr_reflect = $dstaddr;
-            if (isset($rule['destination']['any'])) {
-                /* With reflection enabled, destination of 'any' has side effects
-                 * that most people would not expect, so change it on reflection rules. */
-                $dstaddr_reflect = $FilterIflist[$natif]['ip'];
-                if (!empty($FilterIflist[$natif]['sn'])) {
-                    $dstaddr_reflect = gen_subnet($dstaddr_reflect, $FilterIflist[$natif]['sn']) . '/' . $FilterIflist[$natif]['sn'];
-                }
-                if ($dstaddr_port[2]) {
-                    $dstaddr_reflect .= " port " . $dstaddr_port[2];
-                }
-            }
-
-            $natif = $FilterIflist[$natif]['if'];
-
-            $localport_nat = $localport;
-            if (empty($localport_nat) && $dstaddr_port[2]) {
-                $localport_nat = " port " . $dstaddr_port[2];
-            }
-
-            $tagging = '';
-            if (!empty($rule['tag'])) {
-                $tagging .= " tag {$rule['tag']}";
-            }
-            if (!empty($rule['tagged'])) {
-                $tagging .= " tagged {$rule['tagged']}";
-            }
-
-            $poolopts = '';
-            if (!empty($rule['poolopts']) && (is_subnet($rule['target']) || is_alias($rule['target']))) {
-                $poolopts = " {$rule['poolopts']}";
-            }
-
-            if ($srcaddr <> "" && $dstaddr <> "" && $natif) {
-                $protocol_keyword = !empty($protocol) ? "proto" : "";
-                $natrules .= "{$nordr}rdr {$rdrpass}on {$natif} {$address_family} {$protocol_keyword} {$protocol} from {$srcaddr} to {$dstaddr}{$tagging}" . ($nordr == "" ? " -> {$target}{$localport}{$poolopts}" : '');
-                /* Does this rule redirect back to a internal host? */
-                if (isset($rule['destination']['any']) && !isset($rule['nordr']) && !isset($config['system']['enablenatreflectionhelper'])) {
-                    if ($address_family == 'inet6' && !interface_has_gatewayv6($rule['interface'])) {
-                        $rule_interface_subnet = find_interface_subnet6($natif);
-                        $rule_interface_ip = find_interface_ipv6($natif);
-                        $rule_subnet = gen_subnetv6($rule_interface_ip, $rule_interface_subnet);
-                    } elseif (!interface_has_gateway($rule['interface'])) {
-                        $rule_interface_subnet = find_interface_subnet($natif);
-                        $rule_interface_ip = find_interface_ip($natif);
-                        $rule_subnet = gen_subnet($rule_interface_ip, $rule_interface_subnet);
-                    }
-                    if (!empty($rule_interface_ip) && !empty($rule_interface_subnet)) {
-                        $natrules .= "\n";
-                        $natrules .= "no nat on {$natif} {$address_family} proto tcp from ({$natif}) to {$rule_subnet}/{$rule_interface_subnet}\n";
-                        $natrules .= "nat on {$natif} {$address_family} proto tcp from {$rule_subnet}/{$rule_interface_subnet} to {$target} port {$dstport[0]} -> ({$natif})\n";
-                    }
-                }
-
-                $nat_if_list = array();
-                if ($rule['natreflection'] != "disable" && $dstaddr_port[0] != "0.0.0.0" && !is_ipaddrv6($target)) {
-                    $nat_if_list = filter_get_reflection_interfaces($FilterIflist, $natif);
-                    if (!empty($nat_if_list)) {
-                        if (in_array($rule['natreflection'], array("purenat", "enable")) || !isset($config['system']['disablenatreflection'])) {
-                            $rdr_if_list = implode(" ", $nat_if_list);
-                            if (count($nat_if_list) > 1) {
-                                $rdr_if_list = "{ {$rdr_if_list} }";
-                            }
-                            $natrules .= "\n# Reflection redirect\n";
-                            $protocol_keyword = !empty($protocol) ? "proto" : "";
-                            $natrules .= "{$nordr}rdr {$rdrpass}on {$rdr_if_list} {$address_family} {$protocol_keyword} {$protocol} from {$srcaddr} to {$dstaddr_reflect}" . ($nordr == "" ? " -> {$target}{$localport}" : "");
-                            $nat_if_list = array_merge(array($natif), $nat_if_list);
-                        }
-                    }
-                }
-
-                if (empty($nat_if_list)) {
-                    $nat_if_list = array($natif);
-                }
-
-                $natrules .= "\n";
-
-                if (!isset($rule['nordr']) && isset($config['system']['enablenatreflectionhelper'])) {
-                    $natrules .= filter_generate_reflection_nat($FilterIflist, $rule, $route_table, $nat_if_list, $protocol, "{$target}{$localport_nat}", $target_ip);
-                }
-            }
-        }
-    }
-
-    if (!empty($reflection_txt)) {
-        $natrules .= "\n# Reflection redirects and NAT for 1:1 mappings\n" . $reflection_txt;
-    }
-
-    return $natrules;
-}
-
-function filter_generate_port(& $rule, $target = "source", $isnat = false) {
-    $src = "";
-
-    if (isset($rule['protocol'])) {
-        $rule['protocol'] = strtolower($rule['protocol']);
-    }
-    if (isset($rule['protocol']) && in_array($rule['protocol'], array("tcp","udp","tcp/udp"))) {
-        if (!empty($rule[$target]['port'])) {
-            $port = alias_expand(str_replace('-', ':', $rule[$target]['port']));
-            if (!empty($port)) {
-                $src = " port " . $port;
-            }
-        }
-    }
-
-    return $src;
-}
-
-function filter_generate_address(&$FilterIflist, &$rule, $target = 'source', $isnat = false)
-{
-    global $config;
-
-    $src = '';
-
-    if (isset($rule[$target]['any'])) {
-        $src = "any";
-    } elseif (!empty($rule[$target]['network'])) {
-        $network_name = $rule[$target]['network'];
-        $matches = "";
-        if ($network_name == '(self)') {
-            $src = "(self)";
-        } elseif (preg_match("/^(wan|lan|opt[0-9]+)ip$/", $network_name, $matches)) {
-            if (empty($FilterIflist[$matches[1]]['if'])) {
-                // interface non-existent or in-active
-                return null;
-            }
-            $src = "({$FilterIflist["{$matches[1]}"]['if']})";
-        } else {
-            if (empty($FilterIflist[$network_name]['if'])) {
-                // interface non-existent or in-active
-                return null;
-            }
-            $src = "({$FilterIflist[$network_name]['if']}:network)";
-        }
-        if (isset($rule[$target]['not'])) {
-            $src = " !{$src}";
-        }
-    } elseif ($rule[$target]['address']) {
-        $expsrc = alias_expand($rule[$target]['address']);
-        if (isset($rule[$target]['not'])) {
-            $not = "!";
-        } else {
-            $not = "";
-        }
-        $src = " {$not} {$expsrc}";
-    }
-    $src .= filter_generate_port($rule, $target, $isnat);
-
-    return $src;
-}
 
 function filter_rules_legacy(&$FilterIflist)
 {
@@ -1659,7 +654,7 @@ function filter_rules_legacy(&$FilterIflist)
         }
     }
     foreach ($FilterIflist as $on => $oc) {
-        if (!$isbridged && !isset($oc['internal_dynamic'])) {
+        if (!$isbridged && !isset($oc['internal_dynamic']) && $oc['if'] != 'lo0') {
             $ipfrules .= "antispoof {$log['block']} for {$oc['if']} \n";
         }
     }

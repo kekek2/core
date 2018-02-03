@@ -1,8 +1,7 @@
 <?php
 
-/**
+/*
  *    Copyright (C) 2015 Deciso B.V.
- *
  *    All rights reserved.
  *
  *    Redistribution and use in source and binary forms, with or without
@@ -25,8 +24,8 @@
  *    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  *    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *    POSSIBILITY OF SUCH DAMAGE.
- *
  */
+
 namespace OPNsense\Base\Menu;
 
 use OPNsense\Core\Config;
@@ -41,6 +40,16 @@ class MenuSystem
      * @var null|MenuItem root node
      */
     private $root = null;
+
+    /**
+     * @var string location to store merged menu xml
+     */
+    private $menuCacheFilename = null;
+
+    /**
+     * @var int time to live for merged menu xml
+     */
+    private $menuCacheTTL = 3600;
 
     /**
      * add menu structure to root
@@ -61,10 +70,7 @@ class MenuSystem
             throw new MenuInitException('Menu xml '.$filename.' seems to be of wrong type');
         }
 
-        // traverse items
-        foreach ($menuXml as $key => $node) {
-            $this->root->addXmlNode($node);
-        }
+        return $menuXml;
     }
 
     /**
@@ -88,19 +94,86 @@ class MenuSystem
     }
 
     /**
-     * construct a new menu
-     * @throws MenuInitException
+     * invalidate cache, removes cache file from disk if available, which forces the next request to persist() again
      */
-    public function __construct()
+    public function invalidateCache()
     {
-        $this->root = new MenuItem("root");
+        @unlink($this->menuCacheFilename);
+    }
+
+    /**
+     * Load and persist Menu configuration to disk.
+     * @param bool $nowait when the cache is locked, skip waiting for it to become available.
+     * @return SimpleXMLElement
+     */
+    public function persist($nowait = true)
+    {
+        // collect all XML menu definitions into a single file
+        $menuXml = new \DOMDocument('1.0');
+        $root = $menuXml->createElement('menu');
+        $menuXml->appendChild($root);
         // crawl all vendors and modules and add menu definitions
         foreach (glob(__DIR__.'/../../../*') as $vendor) {
             foreach (glob($vendor.'/*') as $module) {
                 $menu_cfg_xml = $module.'/Menu/Menu.xml';
                 if (file_exists($menu_cfg_xml)) {
-                    $this->addXML($menu_cfg_xml);
+                    $domNode = dom_import_simplexml($this->addXML($menu_cfg_xml));
+                    $domNode = $root->ownerDocument->importNode($domNode, true);
+                    $root->appendChild($domNode);
                 }
+            }
+        }
+        // flush to disk
+        $fp = fopen($this->menuCacheFilename, file_exists($this->menuCacheFilename) ? "r+" : "w+");
+        $lockMode = $nowait ? LOCK_EX | LOCK_NB : LOCK_EX;
+        if (flock($fp, $lockMode)) {
+            ftruncate($fp, 0);
+            fwrite($fp, $menuXml->saveXML());
+            fflush($fp);
+            flock($fp, LOCK_UN);
+            fclose($fp);
+            chmod($this->menuCacheFilename, 0660);
+        }
+        // return generated xml
+        return simplexml_import_dom($root);
+    }
+
+    /**
+     * check if stored menu's are expired
+     * @return bool is expired
+     */
+    public function isExpired()
+    {
+        if (file_exists($this->menuCacheFilename)) {
+            $fstat = stat($this->menuCacheFilename);
+            return $this->menuCacheTTL < (time() - $fstat['mtime']);
+        }
+        return true;
+    }
+
+    /**
+     * construct a new menu
+     * @throws MenuInitException
+     */
+    public function __construct()
+    {
+        // set cache location
+        $this->menuCacheFilename = sys_get_temp_dir(). "/opnsense_menu_cache.xml";
+
+        // load menu xml's
+        $menuxml = null;
+        if (!$this->isExpired()) {
+            $menuxml = @simplexml_load_file($this->menuCacheFilename);
+        }
+        if ($menuxml == null) {
+            $menuxml = $this->persist();
+        }
+
+        // load menu xml's
+        $this->root = new MenuItem("root");
+        foreach ($menuxml as $menu) {
+            foreach ($menu as $node) {
+                $this->root->addXmlNode($node);
             }
         }
 
@@ -191,11 +264,15 @@ class MenuSystem
                 'visiblename' => "[$descr]",
                 'order' => $ordid++,
             ));
-            $this->appendItem('Services.DHCPv4.' . $key, 'Add' . $key, array(
+            $this->appendItem('Services.DHCPv4.' . $key, 'Edit' . $key, array(
+                'url' => '/services_dhcp.php?if='. $key . '&*',
+                'visibility' => 'hidden',
+            ));
+            $this->appendItem('Services.DHCPv4.' . $key, 'AddStatic' . $key, array(
                 'url' => '/services_dhcp_edit.php?if='. $key,
                 'visibility' => 'hidden',
             ));
-            $this->appendItem('Services.DHCP4.' . $key, 'Edit' . $key, array(
+            $this->appendItem('Services.DHCPv4.' . $key, 'EditStatic' . $key, array(
                 'url' => '/services_dhcp_edit.php?if='. $key . '&*',
                 'visibility' => 'hidden',
             ));
