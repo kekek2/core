@@ -31,7 +31,6 @@
 
 require_once("guiconfig.inc");
 require_once("interfaces.inc");
-require_once("logs.inc");
 
 /**
  * find max vhid
@@ -215,14 +214,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // update or insert item in config
         if (isset($id)) {
             $a_vip[$id] = $vipent;
-            $vip_action = "Update Firewall/Virtual IPs";
         } else {
             $a_vip[] = $vipent;
-            $vip_action = "Add Firewall/Virtual IPs";
         }
         write_config();
         mark_subsystem_dirty('vip');
-        firewall_syslog($vip_action, $a_vip, $vipent);
         file_put_contents('/tmp/.firewall_virtual_ip.apply', serialize($toapplylist));
         header(url_safe('Location: /firewall_virtual_ip.php'));
         exit;
@@ -313,14 +309,14 @@ $( document ).ready(function() {
         <section class="col-xs-12">
           <div class="content-box tab-content">
             <form method="post" name="iform" id="iform">
-              <table class="table table-clean-form opnsense_standard_table_form">
+              <table class="table table-striped opnsense_standard_table_form">
                 <thead></thead>
                 <tbody>
                   <tr>
-                    <td width="22%"><strong><?=gettext("Edit Virtual IP");?></strong></td>
-                    <td  width="78%" align="right">
+                    <td style="width:22%"><strong><?=gettext("Edit Virtual IP");?></strong></td>
+                    <td style="width:78%; text-align:right">
                       <small><?=gettext("full help"); ?> </small>
-                      <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
+                      <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page"></i>
                     </td>
                   </tr>
                   <tr>
@@ -332,11 +328,9 @@ $( document ).ready(function() {
                         <option value="proxyarp" <?=$pconfig['mode'] == "proxyarp" ? "selected=\"selected\"" : ""; ?>><?=gettext("Proxy ARP");?></option>
                         <option value="other" <?=$pconfig['mode'] == "other" ? "selected=\"selected\"" : ""; ?>><?=gettext("Other");?></option>
                       </select>
-                      <div class="hidden" for="help_for_mode">
-                        <small class="formhelp">
+                      <output class="hidden" for="help_for_mode">
                         <?=gettext("Proxy ARP and other type Virtual IPs cannot be bound to by anything running on the firewall, such as IPsec, OpenVPN, etc. Use a CARP or IP Alias type address for these cases.");?>
-                        </small>
-                      </div>
+                      </output>
                     </td>
                   </tr>
                   <tr>
@@ -374,9 +368,9 @@ $( document ).ready(function() {
                   <tr>
                       <td><a id="help_for_address" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Address");?></td>
                       <td>
-                        <table border="0" cellspacing="0" cellpadding="0">
+                        <table style="border:0; cellspacing:0; cellpadding:0">
                           <tr>
-                            <td width="348px">
+                            <td style="width:348px">
                               <input name="subnet" type="text" class="form-control" id="subnet" size="28" value="<?=$pconfig['subnet'];?>" />
                             </td>
                             <td >
@@ -393,32 +387,26 @@ $( document ).ready(function() {
                             </td>
                           </tr>
                         </table>
-                        <div class="hidden" for="help_for_address">
-                            <small class="formhelp">
+                        <output class="hidden" for="help_for_address">
                             <i id="typenote"></i>
-                            </small>
-                        </div>
+                        </output>
                       </td>
                   </tr>
                   <tr id="noexpandrow">
                       <td><a id="help_for_noexpand" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Expansion");?> </td>
                       <td>
                           <input id="noexpand" name="noexpand" type="checkbox" class="form-control unknown" id="noexpand" <?= !empty($pconfig['noexpand']) ? "checked=\"checked\"" : "" ; ?> />
-                          <div class="hidden" for="help_for_noexpand">
-                            <small class="formhelp">
+                          <output class="hidden" for="help_for_noexpand">
                             <?=gettext("Disable expansion of this entry into IPs on NAT lists (e.g. 192.168.1.0/24 expands to 256 entries.");?>
-                            </small>
-                          </div>
+                          </output>
                   </tr>
                   <tr>
                     <td><a id="help_for_password" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Virtual IP Password");?></td>
                     <td>
                       <input type='password'  name='password' id="password" value="<?=$pconfig['password'];?>" />
-                      <div class="hidden" for="help_for_password">
-                        <small class="formhelp">
+                      <output class="hidden" for="help_for_password">
                         <?=gettext("Enter the VHID group password.");?>
-                        </small>
-                      </div>
+                      </output>
                     </td>
                   </tr>
                   <tr>
@@ -435,11 +423,9 @@ $( document ).ready(function() {
                       <button type="button" data-vhid="<?=find_last_used_vhid() + 1;?>" id="max_vhid" class="btn btn-default btn-cs">
                         <?=gettext("Select an unassigned VHID");?>
                       </button>
-                      <div class="hidden" for="help_for_vhid">
-                        <small class="formhelp">
+                      <output class="hidden" for="help_for_vhid">
                         <?=gettext("Enter the VHID group that the machines will share.");?>
-                        </small>
-                      </div>
+                      </output>
                     </td>
                   </tr>
                   <tr>
@@ -462,22 +448,19 @@ $( document ).ready(function() {
                         <?php endfor; ?>
                       </select>
 
-                      <div class="hidden" for="help_for_adv">
-                        <small class="formhelp">
+                      <output class="hidden" for="help_for_adv">
+                        <br/>
                         <?=gettext("The frequency that this machine will advertise. 0 usually means master. Otherwise the lowest combination of both values in the cluster determines the master.");?>
-                        </small>
-                      </div>
+                      </output>
                     </td>
                   </tr>
                   <tr>
                     <td><a id="help_for_descr" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description");?></td>
                     <td>
                       <input name="descr" type="text" class="form-control unknown" id="descr" size="40" value="<?=$pconfig['descr'];?>" />
-                      <div class="hidden" for="help_for_adv">
-                        <small class="formhelp">
+                      <output class="hidden" for="help_for_adv">
                         <?=gettext("You may enter a description here for your reference (not parsed).");?>
-                        </small>
-                      </div>
+                      </output>
                     </td>
                   </tr>
                   <tr>

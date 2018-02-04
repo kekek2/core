@@ -476,8 +476,6 @@ function openvpn_add_keyfile($data, &$conf, $mode_id, $directive, $opt = '')
 
 function openvpn_reconfigure($mode, $settings, $device_only = false)
 {
-    global $config;
-
     if (empty($settings)) {
         return;
     }
@@ -623,7 +621,7 @@ function openvpn_reconfigure($mode, $settings, $device_only = false)
                         $conf .= "server-ipv6 {$ipv6}/{$prefix}\n";
                     }
                 }
-                break;
+                /* XXX FALLTHROUGH */
             case 'p2p_shared_key':
                 if (!empty($ip) && !empty($mask)) {
                     list($ip1, $ip2) = openvpn_get_interface_ip($ip, $mask);
@@ -676,8 +674,8 @@ function openvpn_reconfigure($mode, $settings, $device_only = false)
         // configure user auth modes
         switch ($settings['mode']) {
             case 'server_user':
-                $conf .= "client-cert-not-required\n";
-                break;
+                $conf .= "verify-client-cert none\n";
+                /* FALLTHROUGH */
             case 'server_tls_user':
                 /* username-as-common-name is not compatible with server-bridge */
                 if (stristr($conf, "server-bridge") === false && empty($settings['use-common-name'])) {
@@ -748,7 +746,7 @@ function openvpn_reconfigure($mode, $settings, $device_only = false)
         switch ($settings['mode']) {
             case 'p2p_tls':
                 $conf .= "tls-client\n";
-                break;
+                /* XXX FALLTHROUGH */
             case 'shared_key':
                 $conf .= "client\n";
                 break;
@@ -923,8 +921,6 @@ function openvpn_reconfigure($mode, $settings, $device_only = false)
 
 function openvpn_restart($mode, $settings)
 {
-    global $config;
-
     $vpnid = $settings['vpnid'];
     $mode_id = $mode.$vpnid;
 
@@ -962,8 +958,6 @@ function openvpn_restart($mode, $settings)
 
 function openvpn_delete($mode, &$settings)
 {
-    global $config;
-
     $vpnid = $settings['vpnid'];
     $mode_id = $mode.$vpnid;
 

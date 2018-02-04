@@ -108,9 +108,10 @@ function get_default_sysctl_value($id)
         "net.inet.icmp.icmplim" => "0",
         "net.inet.ip.process_options" => 0,
         "net.inet.udp.checksum" => 1,
-        "net.link.bridge.pfil_onlyip" => "0",
-        "net.link.bridge.pfil_member" => "1",
         "net.link.bridge.pfil_bridge" => "0",
+        "net.link.bridge.pfil_local_phys" => "0",
+        "net.link.bridge.pfil_member" => "1",
+        "net.link.bridge.pfil_onlyip" => "0",
         "net.link.tap.user_open" => "1",
         "net.route.netisr_maxqlen" => 1024,
         "net.inet.icmp.reply_from_interface" => 1,
@@ -234,8 +235,6 @@ function get_locale_list()
     $locales['pt_BR'] = gettext('Portuguese (Brazil)');
     $locales['pt_PT'] = gettext('Portuguese (Portugal)');
     $locales['ru_RU'] = gettext('Russian');
-    $locales['es_ES'] = gettext('Spanish');
-    $locales['tr_TR'] = gettext('Turkish');
 
     return $locales;
 }
@@ -621,7 +620,7 @@ function system_syslogd_start($verbose = false)
     global $config;
 
     if ($verbose) {
-        echo 'Starting syslog...';
+        echo 'Configuring system logging...';
         flush();
     }
 

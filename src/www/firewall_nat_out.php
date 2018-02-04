@@ -113,6 +113,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $mode = $config['nat']['outbound']['mode'];
 
+$interface_names= array();
+// add this hosts ips
+foreach ($config['interfaces'] as $intf => $intfdata) {
+    if (isset($intfdata['ipaddr']) && $intfdata['ipaddr'] != 'dhcp') {
+        $interface_names[$intfdata['ipaddr']] = sprintf(gettext('%s address'), !empty($intfdata['descr']) ? $intfdata['descr'] : $intf );
+    }
+}
+
+
 include("head.inc");
 
 ?>
@@ -395,14 +404,15 @@ include("head.inc");
                     <td class="hidden-xs hidden-sm">
 <?php
 
-                      if (isset($natent['nonat']))
-                        $nat_address = '<I>NO NAT</I>';
-                      elseif (!$natent['target'])
-                        $nat_address = htmlspecialchars(convert_friendly_interface_to_friendly_descr($natent['interface'])) . " address";
-                      elseif ($natent['target'] == "other-subnet")
-                        $nat_address = $natent['targetip'] . '/' . $natent['targetip_subnet'];
-                      else
-                        $nat_address = htmlspecialchars($natent['target']);
+                      if (isset($natent['nonat'])) {
+                          $nat_address = '<I>NO NAT</I>';
+                      } elseif (empty($natent['target'])) {
+                          $nat_address = gettext("Interface address");
+                      } elseif ($natent['target'] == "other-subnet") {
+                          $nat_address = $natent['targetip'] . '/' . $natent['targetip_subnet'];
+                      } else {
+                          $nat_address = htmlspecialchars($natent['target']);
+                      }
 ?>
 <?php                 if (isset($natent['target']) && is_alias($natent['target'])): ?>
                         <span title="<?=htmlspecialchars(get_alias_description($natent['target']));?>" data-toggle="tooltip">
@@ -412,6 +422,8 @@ include("head.inc");
                             title="<?=gettext("edit alias");?>" data-toggle="tooltip">
                           <i class="fa fa-list"></i>
                         </a>
+<?php                 elseif (!empty($interface_names[$nat_address])): ?>
+                        <?=$interface_names[$nat_address];?>
 <?php                 else: ?>
                         <?=$nat_address;?>
 <?php                 endif; ?>
@@ -484,7 +496,7 @@ include("head.inc");
                   <td colspan="12">&nbsp;</td>
                 </tr>
                 <tr>
-                  <td width="16"><span class="glyphicon glyphicon-play text-success"></span></td>
+                  <td style="width:16px"><span class="glyphicon glyphicon-play text-success"></span></td>
                   <td colspan="11"><?=gettext("Enabled rule"); ?></td>
                 </tr>
                 <tr>

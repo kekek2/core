@@ -28,7 +28,7 @@
 all:
 	@cat ${.CURDIR}/README.md | ${PAGER}
 
-WANTS=		git pear-PHP_CodeSniffer phpunit6
+WANTS=		git p5-File-Slurp pear-PHP_CodeSniffer phpunit6
 
 .for WANT in ${WANTS}
 want-${WANT}: force
@@ -41,8 +41,8 @@ CORE_VERSION=	${CORE_COMMIT:C/-.*$//1}
 CORE_HASH=	${CORE_COMMIT:C/^.*-//1}
 .endif
 
-TING_ABI?=	1.2
-CORE_ABI?=	17.7
+TING_ABI?=	1.3
+CORE_ABI?=	18.1
 CORE_ARCH?=	${ARCH}
 CORE_OPENVPN?=	# empty
 CORE_PHP?=	71
@@ -60,7 +60,7 @@ CORE_REPOSITORY?=	${FLAVOUR}
 .endif
 
 CORE_NAME?=		ting
-CORE_TYPE?=		development
+CORE_TYPE?=		release
 CORE_MESSAGE?=		
 
 CORE_MAINTAINER?=	evbevz@gmail.com
@@ -335,7 +335,7 @@ style-fix: want-pear-PHP_CodeSniffer
 	phpcbf --standard=ruleset.xml ${.CURDIR}/${STYLEDIR} || true
 .endfor
 
-license:
+license: want-p5-File-Slurp
 	@${.CURDIR}/Scripts/license > ${.CURDIR}/LICENSE
 
 dhparam:

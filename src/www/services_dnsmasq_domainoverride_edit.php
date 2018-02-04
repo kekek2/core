@@ -135,70 +135,60 @@ include("head.inc");
             <div class="content-box">
               <form method="post" name="iform" id="iform">
                 <div class="table-responsive">
-                  <table class="table table-clean-form opnsense_standard_table_form">
+                  <table class="table table-striped opnsense_standard_table_form">
                     <tr>
-                      <td width="22%"><strong><?=gettext("Edit Domain Override entry");?></strong></td>
-                      <td width="78%" align="right">
+                      <td style="width:22%"><strong><?=gettext("Edit Domain Override entry");?></strong></td>
+                      <td style="width:78%; text-align:right">
                         <small><?=gettext("full help"); ?> </small>
-                        <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
+                        <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page"></i>
                       </td>
                     </tr>
                     <tr>
-                      <td width="22%"><a id="help_for_domain" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Domain");?></td>
-                      <td width="78%">
+                      <td style="width:22%"><a id="help_for_domain" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Domain");?></td>
+                      <td style="width:78%">
                         <input name="domain" type="text" value="<?=$pconfig['domain'];?>" />
-                        <div class="hidden" for="help_for_domain">
-                          <small class="formhelp">
+                        <output class="hidden" for="help_for_domain">
                           <?=gettext("Domain to override (NOTE: this does not have to be a valid TLD!)"); ?><br />
                           <?=gettext("e.g."); ?> <em><?=gettext("test"); ?></em> <?=gettext("or"); ?> <em>mycompany.localdomain</em> <?=gettext("or"); ?> <em>1.168.192.in-addr.arpa</em>
-                          </small>
-                        </div>
+                        </output>
                       </td>
                     </tr>
                     <tr>
                       <td><a id="help_for_ip" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IP address");?></td>
                       <td>
                         <input name="ip" type="text" value="<?=$pconfig['ip'];?>" />
-                        <div class="hidden" for="help_for_ip">
-                          <small class="formhelp">
+                        <output class="hidden" for="help_for_ip">
                           <?=gettext("IP address of the authoritative DNS server for this domain"); ?><br />
                           <?=gettext("e.g."); ?> <em>192.168.100.100</em><br /><?=gettext("Or enter # for an exclusion to pass through this host/subdomain to standard nameservers instead of a previous override."); ?><br /><?=gettext("Or enter ! for lookups for this host/subdomain to NOT be forwarded anywhere."); ?>
-                          </small>
-                        </div>
+                        </output>
                       </td>
                     </tr>
                     <tr>
                       <td><a id="help_for_port" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Port");?></td>
                       <td>
                         <input name="port" type="text" value="<?=$pconfig['port'];?>" />
-                        <div class="hidden" for="help_for_port">
-                          <small class="formhelp">
+                        <output class="hidden" for="help_for_port">
                           <?=gettext("Specify a non standard port number here, leave blank for default"); ?><br />
-                          </small>
-                        </div>
+                        </output>
                       </td>
                     </tr>
                     <tr>
                       <td><a id="help_for_dnssrcip" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Source IP");?></td>
                       <td>
                         <input name="dnssrcip" type="text" value="<?=$pconfig['dnssrcip'];?>" />
-                        <div class="hidden" for="help_for_dnssrcip">
-                          <small class="formhelp">
+                        <output class="hidden" for="help_for_dnssrcip">
                           <?=gettext("Source IP address for queries to the DNS server for the override domain."); ?><br />
                           <?=gettext("Leave blank unless your DNS server is accessed through a VPN tunnel."); ?>
-                          </small>
-                        </div>
+                        </output>
                       </td>
                     </tr>
                     <tr>
                       <td><a id="help_for_descr" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description");?></td>
                       <td>
                         <input name="descr" type="text" value="<?=$pconfig['descr'];?>" />
-                        <div class="hidden" for="help_for_descr">
-                          <small class="formhelp">
+                        <output class="hidden" for="help_for_descr">
                           <?=gettext("You may enter a description here"." for your reference (not parsed).");?>
-                          </small>
-                        </div>
+                        </output>
                       </td>
                     </tr>
                     <tr>

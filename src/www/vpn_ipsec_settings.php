@@ -140,12 +140,12 @@ if (isset($input_errors) && count($input_errors) > 0) {
           <div class="tab-content content-box col-xs-12">
               <form method="post" name="iform" id="iform">
                 <div class="table-responsive">
-                  <table class="table table-clean-form opnsense_standard_table_form">
+                  <table class="table table-striped opnsense_standard_table_form">
                     <tr>
                       <td ><strong><?=gettext("IPsec Advanced Settings"); ?></strong></td>
-                      <td align="right">
+                      <td style="text-align:right">
                         <small><?=gettext("full help"); ?> </small>
-                        <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
+                        <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page"></i>
                       </td>
                     </tr>
                     <tr>
@@ -157,16 +157,14 @@ if (isset($input_errors) && count($input_errors) > 0) {
                     </tr>
                     <tr>
                       <td><a id="help_for_preferoldsa_enable" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Security Associations"); ?></td>
-                      <td width="78%" class="vtable">
+                      <td style="width:78%" class="vtable">
                         <input name="preferoldsa_enable" type="checkbox" id="preferoldsa_enable" value="yes" <?= !empty($pconfig['preferoldsa_enable']) ? "checked=\"checked\"" : "";?> />
                         <strong><?=gettext("Prefer older IPsec SAs"); ?></strong>
-                        <div class="hidden" for="help_for_preferoldsa_enable">
-                          <small class="formhelp">
+                        <output class="hidden" for="help_for_preferoldsa_enable">
                             <?=gettext("By default, if several SAs match, the newest one is " .
                                                   "preferred if it's at least 30 seconds old. Select this " .
                                                   "option to always prefer old SAs over new ones."); ?>
-                          </small>
-                        </div>
+                        </output>
                       </td>
                     </tr>
                     <tr>
@@ -178,18 +176,18 @@ if (isset($input_errors) && count($input_errors) > 0) {
                           <option value="<?=$ptnet;?>" selected="selected"><?=$ptnet;?></option>
 <?php                   endforeach; ?>
                         </select>
-                        <div class="hidden" for="help_for_passthrough_networks">
-                          <small class="formhelp">
+                        <output class="hidden" for="help_for_passthrough_networks">
                             <?=gettext("This exempts traffic for one or more subnets from getting processed by the IPsec stack in the kernel. ".
                                         "When sending all traffic to the remote location, you probably want to add your lan network(s) here"); ?>
-                          </small>
-                        </div>
+                        </output>
                       </td>
                     </tr>
                     <tr>
                       <td><a id="help_for_ipsec_debug" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPsec Debug"); ?></td>
                       <td>
-                        <strong><?=gettext("Start IPsec in debug mode based on sections selected"); ?></strong> <br/>
+                        <output class="hidden" for="help_for_ipsec_debug">
+                                      <strong><?=gettext("Start IPsec in debug mode based on sections selected"); ?></strong> <br/>
+                        </output>
 <?php                   foreach ($ipsec_loglevels as $lkey => $ldescr) :
 ?>
                         <?=$ldescr?>
@@ -205,11 +203,9 @@ endforeach; ?>
                         </select>
 <?php
 endforeach; ?>
-                        <div class="hidden" for="help_for_ipsec_debug">
-                          <small class="formhelp">
-                          <?=gettext("Launch IPsec in debug mode so that more verbose logs will be generated to aid in troubleshooting."); ?>
-                          </small>
-                        </div>
+                        <output class="hidden" for="help_for_ipsec_debug">
+                        <?=gettext("Launch IPsec in debug mode so that more verbose logs will be generated to aid in troubleshooting."); ?>
+                        </output>
                       </td>
                     </tr>
                     <tr>
