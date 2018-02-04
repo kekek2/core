@@ -201,12 +201,12 @@ include("head.inc");
     <section class="col-xs-12">
       <div class="content-box tab-content table-responsive">
         <form method="post" name="iform" id="iform">
-          <table class="table table-clean-form opnsense_standard_table_form">
+          <table class="table table-striped opnsense_standard_table_form">
               <tr>
-                <td width="22%"><strong><?= gettext('Network Interfaces') ?></strong></td>
-                <td width="78%" align="right">
+                <td style="width:22%"><strong><?= gettext('Network Interfaces') ?></strong></td>
+                <td style="width:78%; text-align:right">
                   <small><?=gettext("full help"); ?> </small>
-                  <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
+                  <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page"></i>
                 </td>
               </tr>
               <tr>
@@ -214,35 +214,29 @@ include("head.inc");
                 <td>
                   <input name="disablechecksumoffloading" type="checkbox" id="disablechecksumoffloading" value="yes" <?= !empty($pconfig['disablechecksumoffloading']) ? "checked=\"checked\"" :"";?> />
                   <strong><?=gettext("Disable hardware checksum offload"); ?></strong>
-                  <div class="hidden" for="help_for_disablechecksumoffloading">
-                    <small class="formhelp">
+                  <output class="hidden" for="help_for_disablechecksumoffloading">
                     <?=gettext("Checking this option will disable hardware checksum offloading. Checksum offloading is broken in some hardware, particularly some Realtek cards. Rarely, drivers may have problems with checksum offloading and some specific NICs."); ?>
-                    </small>
-                  </div>
+                  </output>
                 </td>
               </tr>
               <tr>
                 <td><a id="help_for_disablesegmentationoffloading" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Hardware TSO"); ?></td>
                 <td>
                   <input name="disablesegmentationoffloading" type="checkbox" id="disablesegmentationoffloading" value="yes" <?= !empty($pconfig['disablesegmentationoffloading']) ? "checked=\"checked\"" :"";?>/>
-                  <strong><?=gettext("Disable hardware TCP segmentation offload"); ?></strong>
-                  <div class="hidden" for="help_for_disablesegmentationoffloading">
-                    <small class="formhelp">
+                  <strong><?=gettext("Disable hardware TCP segmentation offload"); ?></strong><br />
+                  <output class="hidden" for="help_for_disablesegmentationoffloading">
                     <?=gettext("Checking this option will disable hardware TCP segmentation offloading (TSO, TSO4, TSO6). This offloading is broken in some hardware drivers, and may impact performance with some specific NICs."); ?>
-                    </small>
-                  </div>
+                  </output>
                 </td>
               </tr>
               <tr>
                 <td><a id="help_for_disablelargereceiveoffloading" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Hardware LRO"); ?></td>
                 <td>
                   <input name="disablelargereceiveoffloading" type="checkbox" id="disablelargereceiveoffloading" value="yes" <?= !empty($pconfig['disablelargereceiveoffloading']) ? "checked=\"checked\"" :"";?>/>
-                  <strong><?=gettext("Disable hardware large receive offload"); ?></strong>
-                  <div class="hidden" for="help_for_disablelargereceiveoffloading">
-                    <small class="formhelp">
+                  <strong><?=gettext("Disable hardware large receive offload"); ?></strong><br />
+                  <output class="hidden" for="help_for_disablelargereceiveoffloading">
                     <?=gettext("Checking this option will disable hardware large receive offloading (LRO). This offloading is broken in some hardware drivers, and may impact performance with some specific NICs."); ?>
-                    </small>
-                  </div>
+                  </output>
                 </td>
               </tr>
               <tr>
@@ -259,33 +253,29 @@ include("head.inc");
                         <?=gettext("Leave default");?>
                       </option>
                   </select>
-                  <div class="hidden" for="help_for_disablevlanhwfilter">
-                    <small class="formhelp">
-                    <?=gettext("Checking this option will disable VLAN hardware filtering. This offloading is broken in some hardware drivers, and may impact performance with some specific NICs."); ?>
-                    </small>
-                  </div>
+                  <output class="hidden" for="help_for_disablevlanhwfilter">
+                    <?= gettext('Set usage of VLAN hardware filtering. This hardware acceleration may be broken in a particular device driver, or may impact performance.') ?>
+                  </output>
                 </td>
               </tr>
               <tr>
                 <td><a id="help_for_sharednet" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("ARP Handling"); ?></td>
                 <td>
                   <input name="sharednet" type="checkbox" id="sharednet" value="yes" <?= !empty($pconfig['sharednet']) ? "checked=\"checked\"" :"";?>/>
-                  <strong><?=gettext("Suppress ARP messages"); ?></strong>
-                  <div class="hidden" for="help_for_sharednet">
-                    <small class="formhelp">
+                  <strong><?=gettext("Suppress ARP messages"); ?></strong><br />
+                  <output class="hidden" for="help_for_sharednet">
                     <?=gettext("This option will suppress ARP log messages when multiple interfaces reside on the same broadcast domain"); ?>
-                    </small>
-                  </div>
+                  </output>
                 </td>
               </tr>
               <tr>
                 <td><a id="help_for_persistent_duid" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("DHCP Unique Identifier"); ?></td>
                 <td>
                   <input name="ipv6duid" type="text" id="ipv6duid" value="<?=htmlspecialchars($pconfig['ipv6duid']);?>" />
-                  <div class="hidden" for="help_for_persistent_duid">
+                  <output class="hidden" for="help_for_persistent_duid">
                     <?= gettext('This field can be used to enter an explicit DUID for use by IPv6 DHCP clients.') ?><br />
                     <a onclick="$('#ipv6duid').val('<?= html_safe($duid) ?>');" href="#"><?=gettext("Insert the existing DUID here"); ?></a>
-                </div>
+                </output>
               </td>
             </tr>
             <tr>

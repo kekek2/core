@@ -150,13 +150,13 @@ include("head.inc");
         <div class="content-box">
           <div class="table-responsive">
             <form method="post" name="iform" id="iform">
-              <table class="table table-clean-form opnsense_standard_table_form">
+              <table class="table table-striped opnsense_standard_table_form">
                 <thead>
                   <tr>
-                    <td width="22%"><strong><?=gettext("Interface VLAN Edit");?></strong></td>
-                    <td width="78%" align="right">
+                    <td style="width:22%"><strong><?=gettext("Interface VLAN Edit");?></strong></td>
+                    <td style="width:78%; text-align:right">
                       <small><?=gettext("full help"); ?> </small>
-                      <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
+                      <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page"></i>
                       &nbsp;
                     </td>
                   </tr>
@@ -193,22 +193,18 @@ include("head.inc");
                       endforeach;?>
 
                       </select>
-                      <div class="hidden" for="help_for_if">
-                        <small class="formhelp">
+                      <output class="hidden" for="help_for_if">
                         <?=gettext("Only VLAN capable interfaces will be shown.");?>
-                        </small>
-                      </div>
+                      </output>
                     </td>
                   </tr>
                   <tr>
                     <td><a id="help_for_tag" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("VLAN tag");?></td>
                     <td>
                       <input name="tag" type="text" value="<?=$pconfig['tag'];?>" />
-                      <div class="hidden" for="help_for_tag">
-                        <small class="formhelp">
+                      <output class="hidden" for="help_for_tag">
                         <?=gettext("802.1Q VLAN tag (between 1 and 4094)");?>
-                        </small>
-                      </div>
+                      </output>
                     </td>
                   </tr>
                   <tr>
@@ -219,27 +215,23 @@ include("head.inc");
                         <option value="<?=$pcp;?>"<?=($pconfig['pcp'] == $pcp ? ' selected="selected"' : '');?>><?=htmlspecialchars($priority);?></option>
 <? endforeach ?>
                       </select>
-                      <div class="hidden" for="help_for_pcp">
-                        <small class="formhelp">
+                      <output class="hidden" for="help_for_pcp">
                         <?=gettext('802.1Q VLAN PCP (priority code point)');?>
-                        </small>
-                      </div>
+                      </output>
                     </td>
                   </tr>
                   <tr>
                     <td><a id="help_for_descr" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description"); ?></td>
                     <td>
                       <input name="descr" type="text" value="<?=$pconfig['descr'];?>" />
-                      <div class="hidden" for="help_for_descr">
-                        <small class="formhelp">
+                      <output class="hidden" for="help_for_descr">
                         <?=gettext("You may enter a description here for your reference (not parsed).");?>
-                        </small>
-                      </div>
+                      </output>
                     </td>
                   </tr>
                   <tr>
-                    <td width="22%" valign="top">&nbsp;</td>
-                    <td width="78%">
+                    <td style="width:22%; vertical-align:top">&nbsp;</td>
+                    <td style="width:78%">
                       <input type="hidden" name="vlanif" value="<?=$pconfig['vlanif']; ?>" />
                       <input name="Submit" type="submit" class="btn btn-primary" value="<?=gettext("Save");?>" />
                       <input type="button" class="btn btn-default" value="<?=gettext("Cancel");?>" onclick="window.location.href='/interfaces_vlan.php'" />

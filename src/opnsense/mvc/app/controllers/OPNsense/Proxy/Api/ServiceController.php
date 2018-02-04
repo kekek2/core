@@ -39,10 +39,10 @@ use \OPNsense\Core\Config;
  */
 class ServiceController extends ApiMutableServiceControllerBase
 {
-    static $internalServiceClass = '\OPNsense\Proxy\Proxy';
-    static $internalServiceEnabled = 'general.enabled';
-    static $internalServiceTemplate = 'OPNsense/Proxy';
-    static $internalServiceName = 'proxy';
+    static protected $internalServiceClass = '\OPNsense\Proxy\Proxy';
+    static protected $internalServiceEnabled = 'general.enabled';
+    static protected $internalServiceTemplate = 'OPNsense/Proxy';
+    static protected $internalServiceName = 'proxy';
 
     /**
      * reconfigure hook
@@ -69,20 +69,19 @@ class ServiceController extends ApiMutableServiceControllerBase
 
         $mdlProxy = new Proxy();
 
+        // some operations can not be performed by a squid -k reconfigure,
+        // try to determine if we need a stop/start here
+        $prev_sslbump_cert = trim(@file_get_contents('/var/squid/ssl_crtd.id'));
+        $prev_cache_active = !empty(trim(@file_get_contents('/var/squid/cache/active')));
+
         $http_delete = (string) $mdlProxy->forward->transparentMode == "0" && disableRule($mdlProxy->forward->port);
         $https_delete = (string) $mdlProxy->forward->sslbump == "0" && disableRule($mdlProxy->forward->sslbumpport);
 
         if ($http_delete || $https_delete)
         {
             Config::getInstance()->save();
-            $backend = new Backend();
             $backend->configdRun("filter reload");
         }
-
-        // some operations can not be performed by a squid -k reconfigure,
-        // try to determine if we need a stop/start here
-        $prev_sslbump_cert = trim(@file_get_contents('/var/squid/ssl_crtd.id'));
-        $prev_cache_active = !empty(trim(@file_get_contents('/var/squid/cache/active')));
 
         return (((string)$mdlProxy->forward->sslcertificate) != $prev_sslbump_cert) ||
             (!empty((string)$mdlProxy->general->cache->local->enabled) != $prev_cache_active);

@@ -41,12 +41,18 @@ class Tools
         asort($interfaces);
         foreach ($interfaces as $iface) {
             $ifname = preg_replace("/(\w+)(\d+)/", "$1.$2", trim($iface));
-            $output = [];
-            if (!exec("/sbin/sysctl -n dev.{$ifname}.orig_mac_addr", $output)) {
-                continue;
-            }
-            foreach ($output as $line) {
-                return strtoupper($line);
+            $proc = proc_open("/sbin/sysctl -n dev.{$ifname}.orig_mac_addr",[
+                    1 => ['pipe','w'],
+                    2 => ['pipe','w'],
+                ],$pipes);
+            if ($proc) {
+                $stdout = trim(stream_get_contents($pipes[1]));
+                fclose($pipes[1]);
+                fclose($pipes[2]);
+                proc_close($proc);
+                if(!empty($stdout)) {
+                    return strtoupper($stdout);
+                }
             }
         }
         return false;

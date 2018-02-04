@@ -135,10 +135,6 @@ include("fbegin.inc");?>
                         echo '<p class="__nomb">' . gettext('To bypass the wizard, click on the logo in the upper left corner.') . "</p>\n";
                     } else {
                         echo '<p>' . sprintf(gettext('Congratulations! %s is now configured.'), $g['product_name']) . "</p>\n";
-                        echo '<p>' . sprintf(gettext(
-                            'Please consider donating to the project to help us with our overhead costs. ' .
-                            'See %sour website%s to donate or purchase available %s support services.'),
-                            '<a target="_new" href="' . $g['product_website'] . '">', '</a>', $g['product_name']) . "</p>\n";
                         echo '<p class="__nomb">' . sprintf(gettext('Click to %scontinue to the dashboard%s.'), '<a href="/">', '</a>') . "</p>\n";
                     }
                 ?>
@@ -278,6 +274,8 @@ include("fbegin.inc");?>
       // sortable widgets
       $(".dashboard_grid_column").sortable({
         handle: '.content-box-head',
+        delay: 50,
+        distance: 2,
         group: 'dashboard_grid_column',
         itemSelector: '.widgetdiv',
         containerSelector: '.dashboard_grid_column',
@@ -371,7 +369,7 @@ include("fbegin.inc");?>
           }?>
           <section class="widgetdiv" data-sortkey="<?=$widgetItem['sortKey'] ?>" id="<?=$widgetItem['name'];?>"  style="display:<?=$divdisplay;?>;">
             <div class="content-box">
-              <header class="content-box-head container-fluid">
+              <header class="content-box-head container-fluid" style="touch-action: none">
                 <ul class="list-inline __nomb">
                   <li><h3>
 <?php

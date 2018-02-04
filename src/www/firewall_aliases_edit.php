@@ -540,10 +540,10 @@ include("head.inc");
             <form method="post" name="iform" id="iform">
               <table class="table table-clean-form opnsense_standard_table_form">
                 <tr>
-                  <td width="22%"><strong><?=gettext("Alias Edit");?></strong></td>
-                  <td width="78%" align="right">
+                  <td style="width:22%"><strong><?=gettext("Alias Edit");?></strong></td>
+                  <td style="width:78%; text-align:right">
                     <small><?=gettext("full help"); ?> </small>
-                    <i class="fa fa-toggle-off text-danger" style="cursor: pointer;" id="show_all_help_page" type="button"></i>
+                    <i class="fa fa-toggle-off text-danger" style="cursor: pointer;" id="show_all_help_page"></i>
                   </td>
                 </tr>
                 <tr>
@@ -554,18 +554,18 @@ include("head.inc");
                       <input name="id" type="hidden" value="<?=$id;?>" />
                     <?php endif; ?>
                     <input name="name" type="text" id="name" class="form-control unknown" size="40" maxlength="31" value="<?=$pconfig['name'];?>" />
-                    <div class="hidden" for="help_for_name">
+                    <output class="hidden" for="help_for_name">
                       <?=gettext('The name of the alias may only consist of the characters "a-z, A-Z, 0-9 and _". Aliases can be nested using this name.'); ?>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr>
                   <td><a id="help_for_description" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description"); ?></td>
                   <td>
                     <input name="descr" type="text" class="form-control unknown" id="descr" size="40" value="<?=$pconfig['descr'];?>" />
-                    <div class="hidden" for="help_for_description">
+                    <output class="hidden" for="help_for_description">
                       <?=gettext("You may enter a description here for your reference (not parsed)."); ?>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr>
@@ -589,11 +589,11 @@ include("head.inc");
                         <option value="IPv6" <?= in_array("IPv6", $pconfig['proto']) ? "selected=\"selected\"" : ""; ?>><?=gettext("IPv6");?></option>
                       </select>
                     </div>
-                    <div class="hidden" for="help_for_type">
+                    <output class="hidden" for="help_for_type">
                       <span class="text-info">
                         <?=gettext("Hosts")?><br/>
                       </span>
-                      <small class="formhelp">
+                      <small>
                         <?=gettext("Enter as many hosts as you would like. Hosts must be specified by their IP address or fully qualified domain name (FQDN). FQDN hostnames are periodically re-resolved and updated. If multiple IPs are returned by a DNS query, all are used.");?>
                         <br/>
                       </small>
@@ -601,7 +601,7 @@ include("head.inc");
                       <span class="text-info">
                         <?=gettext("Networks")?><br/>
                       </span>
-                      <small class="formhelp">
+                      <small>
                         <?=gettext("Networks are specified in CIDR format. Select the CIDR suffix that pertains to each entry. /32 specifies a single IPv4 host, /128 specifies a single IPv6 host, /24 in IPv4 corresponds to 255.255.255.0, /64 specifies commonly used IPv6 network, etc. Hostnames (FQDNs) may also be specified, using /32 for IPv4 and /128 for IPv6.");?>
                         <br/>
                       </small>
@@ -634,7 +634,7 @@ include("head.inc");
                         <?=gettext("Managed externally, the contents of this alias type could be managed by other scripts or services. ".
                                   "OPNsense only makes sure the alias exists and leaves the contents alone");?>
                       </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr>

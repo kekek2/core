@@ -1833,13 +1833,14 @@ function interface_ipalias_configure(&$vip)
         return;
     }
 
-    $if = get_real_interface($vip['interface']);
+    $if = escapeshellarg(get_real_interface($vip['interface']));
     $af = "inet";
     if (is_ipaddrv6($vip['subnet'])) {
         $af = "inet6";
     }
     $vhid = !empty($vip['vhid']) ? "vhid " . escapeshellarg($vip['vhid']) : "";
-    mwexec("/sbin/ifconfig " . escapeshellarg($if) ." {$af} ". escapeshellarg($vip['subnet']) ."/" . escapeshellarg($vip['subnet_bits']) . " alias ". $vhid);
+    $gateway = !empty($vip['gateway']) ? escapeshellarg($vip['gateway']) . " " : "";
+    mwexec("/sbin/ifconfig " . $if ." {$af} ". escapeshellarg($vip['subnet']) ."/" . escapeshellarg($vip['subnet_bits']) . " alias ".$gateway. $vhid);
 }
 
 function interface_carp_configure(&$vip)
@@ -3139,15 +3140,15 @@ function interface_dhcpv6_configure($interface = 'wan', $wancfg)
     } else {
         /* skip address request if this is set */
         if (!isset($wancfg['dhcp6prefixonly'])) {
-            $dhcp6cconf .= "  send ia-na 0;   # request stateful address\n";
+            $dhcp6cconf .= "  send ia-na 0; # request stateful address\n";
         }
         if (is_numeric($wancfg['dhcp6-ia-pd-len'])) {
-            $dhcp6cconf .= "  send ia-pd 0;  # request prefix delegation\n";
+            $dhcp6cconf .= "  send ia-pd 0; # request prefix delegation\n";
         }
 
-        $dhcp6cconf .= "\trequest domain-name-servers;\n";
-        $dhcp6cconf .= "\trequest domain-name;\n";
-        $dhcp6cconf .= "\tscript \"/var/etc/dhcp6c_{$interface}_script.sh\"; # we'd like some nameservers please\n";
+        $dhcp6cconf .= "  request domain-name-servers;\n";
+        $dhcp6cconf .= "  request domain-name;\n";
+        $dhcp6cconf .= "  script \"/var/etc/dhcp6c_{$interface}_script.sh\"; # we'd like some nameservers please\n";
 
         $dhcp6cconf .= "};\n";
 
@@ -3238,9 +3239,10 @@ function interface_dhcpv6_configure($interface = 'wan', $wancfg)
     $rtsoldscript .= "\techo \${2} > /tmp/{$wanif}_routerv6\n";
     $rtsoldscript .= "\techo \${2} > /tmp/{$wanif}_defaultgwv6\n";
     $rtsoldscript .= "fi\n";
-    $rtsoldscript .= "if [ -f /var/run/dhcp6c_{$wanif}.pid ]; then\n";
-    $rtsoldscript .= "\t/bin/pkill -F /var/run/dhcp6c_{$wanif}.pid\n";
-    $rtsoldscript .= "\t/bin/sleep 1\n";
+    $rtsoldscript .= "PID=$(cat /var/run/dhcp6c_{$wanif}.pid)\n";
+    $rtsoldscript .= "if [ -n \"\${PID}\" ]; then\n";
+    $rtsoldscript .= "\t/bin/kill \${PID}\n";
+    $rtsoldscript .= "\t/bin/pwait \${PID}\n";
     $rtsoldscript .= "fi\n";
     $rtsoldscript .= "/usr/bin/logger -t rtsold \"Starting dhcp6 client for interface {$interface}({$wanif})\"\n";
     $rtsoldscript .= "$dhcp6ccommand\n";
