@@ -230,15 +230,6 @@ $( document ).ready(function() {
           }
       });
 
-      $("#rules").removeClass("table-clean-form");
-      // add stripes again
-      $(".rule:visible").each(function (index) {
-        $(this).css("background-color", "inherit");
-        if ( index % 2 == 0) {
-          $(this).css("background-color", $("#fw_category").data('stripe_color'));
-        }
-      });
-
       // hook into tab changes, keep selected category/categories when following link
       $(".top_tab").each(function(){
           var add_link = "";
