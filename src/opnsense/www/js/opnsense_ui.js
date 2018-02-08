@@ -153,6 +153,59 @@ function updateServiceStatusUI(status) {
     $('#service_status_container').html(status_html);
 }
 
+function timeoutServiceControlUI(ServiceName)
+{
+    ajaxCall(url="/api/" + ServiceName + "/service/status", sendData={}, callback=function(data,status) {
+        $("#startService").removeClass("btn-danger").removeClass("btn-success");
+        if (data['status'] == "running") {
+            $("#startService").addClass("btn-success");
+        } else if (data['status'] == "stopped") {
+            $("#startService").addClass("btn-danger");
+        }
+        setTimeout(function() {timeoutServiceControlUI(ServiceName)}, 1000);
+    });
+}
+
+function updateServiceControlUI(ServiceName)
+{
+    ajaxCall(url="/api/" + ServiceName + "/service/status", sendData={}, callback=function(data,status) {
+        var status_html = '';
+        if (data['status'] == "running") {
+            status_html += 'btn-success' ;
+        } else if (data['status'] == "stopped") {
+            status_html += 'btn-danger' ;
+        }
+
+        var buttons = '<span id="startService" class="glyphicon glyphicon-play btn ' + status_html + '"></span>';
+        buttons += '<span id="restartService" class="glyphicon glyphicon-refresh btn"></span>';
+        buttons += '<span id="stopService" class="glyphicon glyphicon-stop btn"></span>';
+        $('#service_status_container').html(buttons);
+
+        $("#startService").click(function(){
+            ajaxCall(url="/api/" + ServiceName + "/service/start", sendData={},callback=function(data,status) {
+                $("#responseMsg").removeClass("hidden");
+                $("#responseMsg").html(data['message']);
+            });
+        });
+
+        $("#restartService").click(function(){
+            ajaxCall(url="/api/" + ServiceName + "/service/restart", sendData={},callback=function(data,status) {
+                $("#responseMsg").removeClass("hidden");
+                $("#responseMsg").html(data['message']);
+            });
+        });
+
+        $("#stopService").click(function(){
+            ajaxCall(url="/api/" + ServiceName + "/service/stop", sendData={},callback=function(data,status) {
+                $("#responseMsg").removeClass("hidden");
+                $("#responseMsg").html(data['message']);
+            });
+        });
+
+        setTimeout(function() {timeoutServiceControlUI(ServiceName)}, 1000);
+    });
+}
+
 /**
  * reformat all tokenizers on this document
  */
