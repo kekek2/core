@@ -348,7 +348,7 @@ if (isset($input_errors) && count($input_errors) > 0) {
            <div class="tab-content content-box col-xs-12">
                <form method="post" name="iform" id="iform">
                <div class="table-responsive">
-                <table class="table table-striped opnsense_standard_table_form">
+                <table class="table table-clean-form opnsense_standard_table_form">
                     <tr>
                       <td style="width:22%"><b><?=gettext("IKE Extensions"); ?> </b></td>
                       <td style="width:78%; text-align:right">

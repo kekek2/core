@@ -627,7 +627,7 @@ include("head.inc");
             <div class="tab-content content-box col-xs-12">
               <form method="post" name="iform" id="iform">
                 <div class="table-responsive">
-                  <table class="table table-striped opnsense_standard_table_form">
+                  <table class="table table-clean-form opnsense_standard_table_form">
                     <tr>
                       <td style="width:22%; vertical-align:top"></td>
                       <td style="width:78%; text-align:right">
@@ -971,7 +971,7 @@ include("head.inc");
                           <input type="button" onclick="show_shownumbervalue()" class="btn btn-default btn-xs" value="<?=gettext("Advanced");?>" /> - <?=gettext("Show Additional BOOTP/DHCP Options");?>
                         </div>
                         <div id="shownumbervalue" style="display:none">
-                          <table class="table table-striped table-condensed" id="numberoptions_table">
+                          <table class="table table-clean-form table-condensed" id="numberoptions_table">
                             <thead>
                               <tr>
                                 <th></th>
@@ -1087,7 +1087,7 @@ include("head.inc");
           <section class="col-xs-12">
             <div class="tab-content content-box col-xs-12">
               <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-clean-form">
                   <tr>
                     <td colspan="5" style="vertical-align:top"><?=gettext("DHCP Static Mappings for this interface.");?></td>
                     <td>&nbsp;</td>

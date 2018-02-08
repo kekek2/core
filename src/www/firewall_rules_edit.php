@@ -674,7 +674,7 @@ include("head.inc");
                 <input name="after" type="hidden" value="<?=isset($after) ? $after :'';?>" />
                 <input type="hidden" name="floating" value="<?=$pconfig['floating'];?>" />
                 <div class="table-responsive">
-                  <table class="table table-striped opnsense_standard_table_form">
+                  <table class="table table-clean-form opnsense_standard_table_form">
                   <tr>
                     <td style="vertical-align:top"><strong><?=gettext("Edit Firewall rule");?></strong></td>
                     <td style="text-align:right">

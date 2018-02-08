@@ -228,7 +228,7 @@ $( document ).ready(function() {
         <div class="content-box">
           <form method="post" name="iform" id="iform">
             <div class="table-responsive">
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <tr>
                   <td style="vertical-align:top"><strong><?=gettext("General DNS Forwarder Options");?></strong></td>
                   <td style="text-align:right">
@@ -295,7 +295,7 @@ $( document ).ready(function() {
                 <tr>
                   <td><a id="help_for_strict_order" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("DNS Query Forwarding");?></td>
                   <td>
-                    <table class="table table-striped table-condensed">
+                    <table class="table table-clean-form table-condensed">
                       <tr>
                         <td>
                           <input name="strict_order" type="checkbox" id="strict_order" value="yes" <?=!empty($pconfig['strict_order']) ? "checked=\"checked\"" : "";?> />
@@ -416,7 +416,7 @@ $( document ).ready(function() {
       <section class="col-xs-12">
         <div class="content-box content-box-main">
           <div class="table-responsive">
-            <table class="table table-striped">
+            <table class="table table-clean-form">
               <thead>
                 <tr>
                   <th colspan="5"><?=gettext("Host Overrides");?></th>
@@ -480,7 +480,7 @@ $( document ).ready(function() {
       <section class="col-xs-12">
         <div class="content-box content-box-main">
           <div class="table-responsive">
-            <table class="table table-striped">
+            <table class="table table-clean-form">
               <thead>
                 <tr>
                   <th colspan="4"><?=gettext("Domain Overrides");?></th>

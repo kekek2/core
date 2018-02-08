@@ -287,7 +287,7 @@ include("head.inc");
             <section class="col-xs-12">
               <div class="content-box">
                 <div class="table-responsive">
-                  <table class="table table-striped opnsense_standard_table_form">
+                  <table class="table table-clean-form opnsense_standard_table_form">
                   <tr>
                     <td style="vertical-align:top"><strong><?=gettext("Edit Firewall scrub rule");?></strong></td>
                     <td style="text-align:right">
@@ -570,7 +570,7 @@ include("head.inc");
           <section class="col-xs-12">
             <div class="content-box">
               <div class="table-responsive">
-                <table class="table table-striped opnsense_standard_table_form">
+                <table class="table table-clean-form opnsense_standard_table_form">
                   <tr>
                     <td colspan="2"><strong><?=gettext("Normalizations");?></strong></td>
                   </tr>
@@ -634,7 +634,7 @@ include("head.inc");
           <section class="col-xs-12">
             <div class="content-box">
               <div class="table-responsive">
-                <table class="table table-striped opnsense_standard_table_form">
+                <table class="table table-clean-form opnsense_standard_table_form">
 <?php
                     $has_created_time = (isset($a_scrub[$id]['created']) && is_array($a_scrub[$id]['created']));
                     $has_updated_time = (isset($a_scrub[$id]['updated']) && is_array($a_scrub[$id]['updated']));

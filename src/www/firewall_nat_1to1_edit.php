@@ -237,7 +237,7 @@ include("head.inc");
           <div class="content-box">
             <form method="post" name="iform" id="iform">
               <div class="table-responsive">
-                <table class="table table-striped opnsense_standard_table_form">
+                <table class="table table-clean-form opnsense_standard_table_form">
                   <tr>
                     <td style="vertical-align:top"><?=gettext("Edit NAT 1:1 entry"); ?></td>
                     <td style="text-align:right">

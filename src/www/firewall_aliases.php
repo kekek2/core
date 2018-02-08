@@ -226,7 +226,7 @@ $( document ).ready(function() {
               <input type="hidden" name="id" value="" id="delId"/>
               <input type="hidden" name="act" value="del"/>
                 <div class="table-responsive">
-                  <table class="table table-striped">
+                  <table class="table table-clean-form">
                     <tr>
                       <td><?=gettext("Name"); ?></td>
                       <td><?=gettext("Type"); ?></td>

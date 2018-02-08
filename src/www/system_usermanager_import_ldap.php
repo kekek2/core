@@ -142,7 +142,7 @@ include('head.inc');
 else :
 ?>
 <form method="post">
-  <table class="table table-striped">
+  <table class="table table-clean-form">
     <tbody>
       <tr>
       <th colspan="3">

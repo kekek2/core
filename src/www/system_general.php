@@ -240,7 +240,7 @@ include("head.inc");
     <section class="col-xs-12">
       <div class="content-box tab-content">
         <form method="post">
-          <table class="table table-striped opnsense_standard_table_form">
+          <table class="table table-clean-form opnsense_standard_table_form">
             <tr>
               <td style="width:22%"><strong><?=gettext("System");?></strong></td>
               <td style="width:78%; text-align:right">
@@ -322,7 +322,7 @@ include("head.inc");
             <tr>
               <td><a id="help_for_dnsservers" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("DNS servers"); ?></td>
               <td>
-                <table class="table table-striped table-condensed">
+                <table class="table table-clean-form table-condensed">
                   <thead>
                     <tr>
                       <th style="width:350px;"><?=gettext("DNS Server"); ?></th>

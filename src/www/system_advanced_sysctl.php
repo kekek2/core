@@ -155,7 +155,7 @@ $( document ).ready(function() {
         <div class="table-responsive content-box tab-content" style="overflow: auto;">
 <?php
         if ($act != "edit") :?>
-          <table class="table table-clean-form table-striped">
+          <table class="table table-clean-form table-clean-form">
             <thead>
               <tr>
                 <th><?=gettext("Tunable Name"); ?></th>

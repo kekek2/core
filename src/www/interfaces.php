@@ -1650,7 +1650,7 @@ include("head.inc");
           <form method="post" name="iform" id="iform">
               <div class="tab-content content-box col-xs-12 __mb">
                 <div class="table-responsive">
-                  <table class="table table-striped opnsense_standard_table_form">
+                  <table class="table table-clean-form opnsense_standard_table_form">
                     <thead>
                       <tr>
                         <td style="width:22%"><strong><?=gettext("General configuration"); ?></strong></td>
@@ -1684,7 +1684,7 @@ include("head.inc");
                 <div class="tab-content content-box col-xs-12 __mb">
                   <div class="table-responsive">
                     <!-- Section : All -->
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("General configuration"); ?></th>
@@ -1825,7 +1825,7 @@ include("head.inc");
                 <!-- static IPv4 -->
                 <div class="tab-content content-box col-xs-12 __mb" id="staticv4" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("Static IPv4 configuration"); ?></th>
@@ -1875,7 +1875,7 @@ include("head.inc");
                             <button type="button" class="btn btn-sm" id="btn_show_add_gateway" title="<?=gettext("Add a new one.");?>"  data-toggle="tooltip"><span class="glyphicon glyphicon-plus"></span></button>
                             <div class="hidden" id="addgateway">
                               <br/>
-                              <table class="table table-striped table-condensed">
+                              <table class="table table-clean-form table-condensed">
                                 <tbody>
                                   <tr>
                                     <td colspan="2"><b><?=gettext("Add new gateway"); ?></b></td>
@@ -1922,7 +1922,7 @@ include("head.inc");
                 <!-- Section : dhcp v4 -->
                 <div class="tab-content content-box col-xs-12 __mb" id="dhcp" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("DHCP client configuration");?></th>
@@ -2085,7 +2085,7 @@ include("head.inc");
                 <!-- Section : PPP -->
                 <div class="tab-content content-box col-xs-12 __mb" id="ppp" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("PPP configuration"); ?></th>
@@ -2187,7 +2187,7 @@ include("head.inc");
                 <!-- Section : PPPOE -->
                 <div class="tab-content content-box col-xs-12 __mb" id="pppoe" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("PPPoE configuration"); ?></th>
@@ -2262,7 +2262,7 @@ include("head.inc");
                 <!-- Section : PPTP / L2TP -->
                 <div class="tab-content content-box col-xs-12 __mb" id="pptp" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("PPTP/L2TP configuration"); ?></th>
@@ -2341,7 +2341,7 @@ include("head.inc");
                 <!-- Section : static IPv6 -->
                 <div class="tab-content content-box col-xs-12 __mb" id="staticv6" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("Static IPv6 configuration"); ?></th>
@@ -2406,7 +2406,7 @@ include("head.inc");
                             </output>
                             <div class="hidden" id="addgatewayv6">
                               <br/>
-                              <table class="table table-striped table-condensed">
+                              <table class="table table-clean-form table-condensed">
                                 <thead>
                                   <tr>
                                     <th colspan="2"><?=gettext("Add new v6 gateway:"); ?></th>
@@ -2448,7 +2448,7 @@ include("head.inc");
                 <!-- Section : dhcp v6 -->
                 <div class="tab-content content-box col-xs-12 __mb" id="dhcp6" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("DHCPv6 client configuration");?></th>
@@ -2695,7 +2695,7 @@ include("head.inc");
                 <!-- Section : 6RD-->
                 <div class="tab-content content-box col-xs-12 __mb" id="6rd" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("6RD Rapid Deployment"); ?></th>
@@ -2744,7 +2744,7 @@ include("head.inc");
                 <!-- Section : Track 6 -->
                 <div class="tab-content content-box col-xs-12 __mb" id="track6" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("Track IPv6 Interface"); ?></th>
@@ -2800,7 +2800,7 @@ include("head.inc");
                 <!-- Section : Wireless -->
                 <div class="tab-content content-box col-xs-12 __mb">
                   <div class="table-responsive">
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("Common wireless configuration - Settings apply to all wireless networks on"); ?> <?=$wlanbaseif;?> </th>
@@ -3301,7 +3301,7 @@ include("head.inc");
               </div>
               <div class="tab-content content-box col-xs-12 __mb">
                 <div class="table-responsive">
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <tr>
                         <td style="width:22%"></td>
                         <td style="width:78%">

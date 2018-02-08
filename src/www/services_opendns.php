@@ -125,7 +125,7 @@ include 'head.inc';
       <section class="col-xs-12">
         <div class="content-box table-responsive">
           <form method="post">
-            <table class="table table-striped opnsense_standard_table_form">
+            <table class="table table-clean-form opnsense_standard_table_form">
               <thead>
                 <tr>
                   <td style="width:22%"><strong><?=gettext('OpenDNS Setup'); ?></strong></td>

@@ -378,7 +378,7 @@ if ($act!="new" && $act!="edit") {
           if ($act=="new" || $act=="edit") :?>
               <form method="post" name="iform" id="iform">
                <div class="table-responsive">
-                <table class="table table-striped opnsense_standard_table_form">
+                <table class="table table-clean-form opnsense_standard_table_form">
                   <tr>
                     <td><?=gettext("General information"); ?></td>
                     <td style="text-align:right">
@@ -690,7 +690,7 @@ if ($act!="new" && $act!="edit") {
                 <input type="hidden" id="id" name="id" value="" />
                 <input type="hidden" id="action" name="act" value="" />
                 <div class="table-responsive">
-                  <table class="table table-striped">
+                  <table class="table table-clean-form">
                     <tr>
                       <td></td>
                       <td><?=gettext("Common Name"); ?></td>
