@@ -597,7 +597,6 @@ include("head.inc");
                         <?=gettext("Enter as many hosts as you would like. Hosts must be specified by their IP address or fully qualified domain name (FQDN). FQDN hostnames are periodically re-resolved and updated. If multiple IPs are returned by a DNS query, all are used.");?>
                         <br/>
                       </small>
-                      <br/>
                       <span class="text-info">
                         <?=gettext("Networks")?><br/>
                       </span>
@@ -605,18 +604,17 @@ include("head.inc");
                         <?=gettext("Networks are specified in CIDR format. Select the CIDR suffix that pertains to each entry. /32 specifies a single IPv4 host, /128 specifies a single IPv6 host, /24 in IPv4 corresponds to 255.255.255.0, /64 specifies commonly used IPv6 network, etc. Hostnames (FQDNs) may also be specified, using /32 for IPv4 and /128 for IPv6.");?>
                         <br/>
                       </small>
-                      <br/>
                       <span class="text-info">
                         <?=gettext("Ports")?><br/>
                       </span>
-                      <small class="formhelp">
+                      <small>
                         <?=gettext("Enter as many ports as you wish. Port ranges can be expressed by separating with a colon.");?>
+                        <br/>
                       </small>
-                      <br/>
                       <span class="text-info">
                         <?=gettext("URLs")?><br/>
                       </span>
-                      <small class="formhelp">
+                      <small>
                         <?=gettext("Enter an URL containing a large number of IPs, ports or subnets. After saving the lists will be downloaded and scheduled for automatic updates when a frequency is provided.");?>
                         <br/>
                       </small>
