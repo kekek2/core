@@ -245,6 +245,17 @@
             </ul>
           </div>
         </header>
+        <!-- page content -->
+        <section class="page-content-main">
+          <div class="container-fluid">
+            <div class="row">
+                <section class="col-xs-12">
+                    <div id="messageregion"></div>
+                        {{ content() }}
+                </section>
+            </div>
+          </div>
+        </section>
       </div>
     </main>
 
