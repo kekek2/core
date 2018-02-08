@@ -300,29 +300,7 @@ include("head.inc");
                   endforeach;?>
                 </select>
                 <output class="hidden" for="help_for_language">
-                  <strong>
                     <?= gettext('Choose a language for the web GUI.') ?>
-                  </strong>
-                </output>
-              </td>
-            </tr>
-            <tr>
-              <td><a id="help_for_theme" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Theme"); ?></td>
-              <td>
-                <select name="theme" class="selectpicker" data-size="10" data-width="auto">
-<?php
-                foreach (glob('/usr/local/opnsense/www/themes/*', GLOB_ONLYDIR) as $file):
-                  $file = basename($file);?>
-                  <option <?= $file == $pconfig['theme'] ? 'selected="selected"' : '' ?>>
-                    <?=$file;?>
-                  </option>
-<?php
-                endforeach; ?>
-                </select>
-                <output class="hidden" for="help_for_theme">
-                  <strong>
-                    <?= gettext('This will change the look and feel of the GUI.') ?>
-                  </strong>
                 </output>
               </td>
             </tr>
