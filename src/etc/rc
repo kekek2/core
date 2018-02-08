@@ -41,9 +41,28 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin:/usr/local/sbin
 export HOME PATH
 
 echo "Mounting filesystems..."
+echo -n "Checking root on ZFS... "
 
-# tunefs may refuse otherwise
-mount -fr /
+#Checking ZFS on root
+ZFSCHK=`mount -t zfs`
+ZFS_ROOT=""
+
+for rmnt in "$ZFSCHK"; do
+    ZFS_DEV=`echo $rmnt | awk '{ print $1 }'`
+    ZFS_MNT=`echo $rmnt | awk '{ print $3 }'`
+    if [ "$ZFS_MNT" = "/" ]; then
+        ZFS_ROOT="yes"
+        break;
+    fi
+done
+
+if [ "$ZFS_ROOT" = "yes" ]; then
+    echo "yes, on $ZFS_DEV"
+else
+    echo "no"
+    # tunefs may refuse otherwise
+    mount -fr /
+fi
 
 GROWFS_MARKER=/.probe.for.growfs.nano
 
@@ -90,16 +109,23 @@ while read FS_PART FS_MNT FS_TYPE FS_MORE; do
 	fi
 done < /etc/fstab
 
-attempts=0
-while [ ${attempts} -lt 3 ]; do
-	fsck -C -y /
-	fsck -C -y /
-	if mount -a 2> /dev/null; then
-		# bail if all is well
-		break
-	fi
-	attempts=$((attempts+1))
-done
+#Skip fsck and remount rw if ZFS on root
+if [ "$ZFS_ROOT" != "yes" ]; then
+    attempts=0
+    while [ ${attempts} -lt 3 ]; do
+        fsck -C -y /
+        fsck -C -y /
+        if mount -a 2> /dev/null; then
+            # bail if all is well
+            break
+        fi
+        attempts=$((attempts+1))
+    done
+else
+    mount -t zfs -o rw,remount $ZFS_DEV /
+    #Mount all from fstab
+    mount -a 2> /dev/null
+fi
 
 # clear growfs marker now that we are read/write
 rm -f ${GROWFS_MARKER}
