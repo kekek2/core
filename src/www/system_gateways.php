@@ -289,7 +289,7 @@ $( document ).ready(function() {
             <form method="post"  name="iform" id="iform">
               <input type="hidden" id="id" name="id" value="" />
               <input type="hidden" id="action" name="act" value="" />
-              <table class="table table-clean-form table-striped">
+              <table class="table table-clean-form table-clean-form">
                 <thead>
                   <tr>
                     <th colspan="2">&nbsp;</th>

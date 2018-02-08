@@ -86,7 +86,7 @@ if (isset($_GET['basedn']) && isset($_GET['host'])) {
     <div class="container-fluid">
       <div class="row">
         <div class="table-responsive">
-          <table class="table table-striped">
+          <table class="table table-clean-form">
             <tbody>
               <tr>
                 <th><?=gettext("Please select which containers to Authenticate against:");?></th>

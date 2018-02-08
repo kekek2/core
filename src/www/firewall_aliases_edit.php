@@ -638,7 +638,7 @@ include("head.inc");
                 <tr>
                   <td><div id="addressnetworkport"><i class="fa fa-info-circle text-muted"></i> <?= gettext('Aliases') ?></div></td>
                   <td>
-                    <table class="table table-striped table-borderless table-condensed not_geoip_table" id="detailTable">
+                    <table class="table table-clean-form table-borderless table-condensed not_geoip_table" id="detailTable">
                       <thead>
                         <tr>
                           <th></th>
@@ -691,7 +691,7 @@ $where = geoip_regions();
 $unique = array_unique($where);
 uasort($unique , function($a, $b) {return strcasecmp($a, $b);});
 foreach ($unique as $region): ?>
-                    <table class="table table-striped table-condensed geoip_table">
+                    <table class="table table-clean-form table-condensed geoip_table">
                       <tr>
                         <td colspan="3">
                           <input type="checkbox" class="region_toggle" data="<?= html_safe($region) ?>" />

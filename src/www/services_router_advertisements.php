@@ -208,7 +208,7 @@ include("head.inc");
           <div class="tab-content content-box col-xs-12">
             <form method="post" name="iform" id="iform">
               <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-clean-form">
                   <tr>
                     <td style="width:22%"><a id="help_for_ramode" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Router Advertisements");?></td>
                     <td style="width:78%">
@@ -296,7 +296,7 @@ include("head.inc");
                   <tr>
                     <td><a id="help_for_raroutes" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('Advertise Routes') ?></td>
                     <td>
-                      <table class="table table-striped table-condensed" id="maintable">
+                      <table class="table table-clean-form table-condensed" id="maintable">
                         <thead>
                           <tr>
                             <th></th>

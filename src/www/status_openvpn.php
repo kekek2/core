@@ -191,7 +191,7 @@ $( document ).ready(function() {
                       <small>
                         <?=$server['name'];?> <?=gettext("Routing Table"); ?>
                       </small>
-                      <table class="table table-striped table-bordered">
+                      <table class="table table-clean-form table-bordered">
                         <thead>
                           <tr>
                             <th><?=gettext("Common Name"); ?></th>

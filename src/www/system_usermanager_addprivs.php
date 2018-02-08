@@ -167,7 +167,7 @@ include("head.inc");
           <form method="post" name="iform">
             <input name="id" type="hidden" value="<?=$id;?>" />
             <input name="input_type" type="hidden" value="<?=$input_type;?>" />
-            <table class="table table-striped opnsense_standard_table_form">
+            <table class="table table-clean-form opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"><?=gettext("System Privileges");?></td>
                 <td style="width:78%">

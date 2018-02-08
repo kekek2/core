@@ -422,7 +422,7 @@ $( document ).ready(function() {
             <?php if ($act == "new" || $act == "edit") :
 ?>
             <form id="iform" name="iform" method="post">
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <tr>
                   <td style="width:22%"></td>
                   <td style="width:78%; text-align:right">
@@ -727,7 +727,7 @@ else :
           <form id="iform_overview" method="post">
             <input type="hidden" id="overview_id" name="id">
             <input type="hidden" id="overview_act" name="act">
-            <table class="table table-striped">
+            <table class="table table-clean-form">
               <thead>
                 <tr>
                   <th><?=gettext("Server Name");?></th>

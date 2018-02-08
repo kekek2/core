@@ -44,7 +44,7 @@ if (isset($config['system']['authserver'][0]['host'])) {
 ?>
 <html>
   <body>
-    <table class='table table-striped'>
+    <table class='table table-clean-form'>
 <?php
       if (empty($authcfg)):?>
       <tr>

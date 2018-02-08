@@ -1269,7 +1269,7 @@ if (isset($savemsg)) {
       <section class="col-xs-12">
         <div class="tab-content content-box col-xs-12">
           <div class="table-responsive">
-            <table class="table table-striped opnsense_standard_table_form" >
+            <table class="table table-clean-form opnsense_standard_table_form" >
               <tr>
                 <td style="width:22%"></td>
                 <td style="width:78%; text-align:right">
@@ -1430,7 +1430,7 @@ if (isset($savemsg)) {
               <tr>
                 <td><a id="help_for_clientpkg" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Client Install Packages");?></td>
                 <td>
-                  <table id="export_users" class="table table-striped table-condensed">
+                  <table id="export_users" class="table table-clean-form table-condensed">
                     <thead>
                       <tr>
                         <td style="width:25%" ><b><?=gettext("User");?></b></td>

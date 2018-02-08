@@ -705,7 +705,7 @@ $( document ).ready(function() {
             <input name="id" type="hidden" value="<?=$id;?>" />
 <?php
             endif;?>
-            <table class="table table-striped opnsense_standard_table_form">
+            <table class="table table-clean-form opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"></td>
                 <td  style="width:78%; text-align:right">
@@ -735,7 +735,7 @@ $( document ).ready(function() {
               </tr>
             </table>
             <!-- existing cert -->
-            <table id="import" class="table table-striped opnsense_standard_table_form">
+            <table id="import" class="table table-clean-form opnsense_standard_table_form">
               <thead>
                 <tr>
                   <th colspan="2"><?=gettext("Import Certificate");?></th>
@@ -763,7 +763,7 @@ $( document ).ready(function() {
               </tbody>
             </table>
             <!-- internal cert -->
-            <table id="internal" class="table table-striped opnsense_standard_table_form">
+            <table id="internal" class="table table-clean-form opnsense_standard_table_form">
               <thead>
                 <tr>
                   <th colspan="2"><?=gettext("Internal Certificate");?></th>
@@ -977,7 +977,7 @@ $( document ).ready(function() {
               </tbody>
             </table>
             <!-- external cert -->
-            <table id="external" class="table table-striped opnsense_standard_table_form">
+            <table id="external" class="table table-clean-form opnsense_standard_table_form">
               <thead>
                 <tr>
                   <td colspan="2"><?=gettext("External Signing Request");?></td>
@@ -1100,7 +1100,7 @@ $( document ).ready(function() {
             </tbody>
           </table>
           <!-- choose existing cert -->
-          <table id="existing" class="table table-striped">
+          <table id="existing" class="table table-clean-form">
             <thead>
               <tr>
                 <th colspan="2"><?=gettext("Choose an Existing Certificate");?></th>
@@ -1157,7 +1157,7 @@ $( document ).ready(function() {
             <input name="id" type="hidden" value="<?=htmlspecialchars($id);?>" />
 <?php
             endif;?>
-            <table class="table table-striped">
+            <table class="table table-clean-form">
               <tr>
                 <td style="width:22%"><i class="fa fa-info-circle text-muted"></i> <?=gettext("Descriptive name");?></td>
                 <td style="width:78%">
@@ -1200,7 +1200,7 @@ $( document ).ready(function() {
             <input type="hidden" name="id" id="id" value="<?=isset($id) ? $id :"";?>"/>
             <input type="hidden" name="act" id="action" value="<?=$act;?>"/>
           </form>
-          <table class="table table-striped">
+          <table class="table table-clean-form">
             <thead>
               <tr>
                 <th><?=gettext("Name");?></th>

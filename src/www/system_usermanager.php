@@ -554,7 +554,7 @@ $( document ).ready(function() {
                 <input type="hidden" id="priv_delete" name="priv_delete" value="" /> <!-- delete priv action -->
                 <input type="hidden" id="api_delete" name="api_delete" value="" /> <!-- delete api ke action -->
                 <input type="hidden" id="certid" name="certid" value="" /> <!-- remove cert association action -->
-                <table class="table table-striped opnsense_standard_table_form">
+                <table class="table table-clean-form opnsense_standard_table_form">
                   <tr>
                     <td style="width:22%"></td>
                     <td style="width:78%; text-align:right">
@@ -935,7 +935,7 @@ $( document ).ready(function() {
                 <input type="hidden" id="act2" name="act" value="" />
                 <input type="hidden" id="userid" name="userid" value="<?=(isset($id) ? $id : '');?>" />
                 <input type="hidden" id="username" name="username" value="" />
-                <table class="table table-striped">
+                <table class="table table-clean-form">
                   <thead>
                     <tr>
                       <th><?=gettext("Username"); ?></th>

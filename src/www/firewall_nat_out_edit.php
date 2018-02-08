@@ -384,7 +384,7 @@ include("head.inc");
         <section class="col-xs-12">
           <div class="content-box">
             <form method="post" name="iform" id="iform">
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <tr>
                   <td colspan="2">
                     <table>

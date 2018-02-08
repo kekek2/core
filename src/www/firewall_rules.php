@@ -230,7 +230,7 @@ $( document ).ready(function() {
           }
       });
 
-      $("#rules").removeClass("table-striped");
+      $("#rules").removeClass("table-clean-form");
       // add stripes again
       $(".rule:visible").each(function (index) {
         $(this).css("background-color", "inherit");

@@ -198,7 +198,7 @@ include("head.inc");
               if($act=="new" || $act=="edit"): ?>
               <input name="id" type="hidden" value="<?=$id;?>" />
               <input name="act" type="hidden" value="<?=$act;?>" />
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <tr>
                   <td style="width:22%"><strong><?=ucwords(sprintf(gettext("%s Access List"),$act));?></strong></td>
                   <td style="width:78%; text-align:right">
@@ -244,7 +244,7 @@ include("head.inc");
                 <tr>
                   <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Networks");?></td>
                   <td>
-                    <table class="table table-striped table-condensed" id="acl_networks_table">
+                    <table class="table table-clean-form table-condensed" id="acl_networks_table">
                       <thead>
                         <tr>
                           <th></th>
@@ -319,7 +319,7 @@ include("head.inc");
 <?php
             else:?>
             <form method="post" name="iform" id="iform">
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <thead>
                   <tr>
                     <th colspan="4"><?=gettext("From General settings");?></th>
@@ -373,7 +373,7 @@ include("head.inc");
           </section>
           <section class="col-xs-12">
             <div class="tab-content content-box col-xs-12">
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <thead>
                   <tr>
                     <th><?=gettext("Access List Name"); ?></th>

@@ -49,7 +49,7 @@ legacy_html_escape_form_data($sad);
         <section class="col-xs-12">
           <div class="tab-content content-box col-xs-12">
               <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-clean-form">
                   <?php if (count($sad)): ?>
                   <tr>
                     <td><?=gettext("Source");?></td>
