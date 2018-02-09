@@ -153,19 +153,6 @@ function updateServiceStatusUI(status) {
     $('#service_status_container').html(status_html);
 }
 
-function timeoutServiceControlUI(ServiceName)
-{
-    ajaxCall(url="/api/" + ServiceName + "/service/status", sendData={}, callback=function(data,status) {
-        $("#startService").removeClass("btn-danger").removeClass("btn-success");
-        if (data['status'] == "running") {
-            $("#startService").addClass("btn-success");
-        } else if (data['status'] == "stopped") {
-            $("#startService").addClass("btn-danger");
-        }
-        setTimeout(function() {timeoutServiceControlUI(ServiceName)}, 1000);
-    });
-}
-
 function updateServiceControlUI(ServiceName)
 {
     ajaxCall(url="/api/" + ServiceName + "/service/status", sendData={}, callback=function(data,status) {
@@ -188,11 +175,18 @@ function updateServiceControlUI(ServiceName)
                     $('#processing-dialog').modal('show');
                     ajaxCall(url="/api/" + ServiceName + "/service/" + command, sendData={},callback=function(data,status) {
                         $('#processing-dialog').modal('hide');
+                        ajaxCall(url="/api/" + ServiceName + "/service/status", sendData={}, callback=function(data,status) {
+                            $("#startService").removeClass("btn-danger").removeClass("btn-success");
+                            if (data['status'] == "running") {
+                                $("#startService").addClass("btn-success");
+                            } else if (data['status'] == "stopped") {
+                                $("#startService").addClass("btn-danger");
+                            }
+                        });
                     });
                 });
             })((commands[i]));
         }
-        setTimeout(function() {timeoutServiceControlUI(ServiceName)}, 1000);
     });
 }
 

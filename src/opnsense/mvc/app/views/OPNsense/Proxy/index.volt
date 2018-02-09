@@ -34,9 +34,9 @@
         mapDataToFormUI(data_get_map).done(function(){
             formatTokenizersUI();
             $('.selectpicker').selectpicker('refresh');
+            // request service status on load and update status box
+            updateServiceControlUI("proxy");
         });
-
-        updateServiceControlUI("proxy");
 
         /*************************************************************************************************************
          * link grid actions
@@ -174,6 +174,9 @@
                                 message: JSON.stringify(data),
                                 draggable: true
                             });
+                        } else {
+                            // request service status after successful save and update status box
+                            updateServiceControlUI("proxy");
                         }
                     });
                 });
