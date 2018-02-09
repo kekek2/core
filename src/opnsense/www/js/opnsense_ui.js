@@ -181,27 +181,17 @@ function updateServiceControlUI(ServiceName)
         buttons += '<span id="stopService" class="glyphicon glyphicon-stop btn"></span>';
         $('#service_status_container').html(buttons);
 
-        $("#startService").click(function(){
-            ajaxCall(url="/api/" + ServiceName + "/service/start", sendData={},callback=function(data,status) {
-                $("#responseMsg").removeClass("hidden");
-                $("#responseMsg").html(data['message']);
-            });
-        });
-
-        $("#restartService").click(function(){
-            ajaxCall(url="/api/" + ServiceName + "/service/restart", sendData={},callback=function(data,status) {
-                $("#responseMsg").removeClass("hidden");
-                $("#responseMsg").html(data['message']);
-            });
-        });
-
-        $("#stopService").click(function(){
-            ajaxCall(url="/api/" + ServiceName + "/service/stop", sendData={},callback=function(data,status) {
-                $("#responseMsg").removeClass("hidden");
-                $("#responseMsg").html(data['message']);
-            });
-        });
-
+        var commands = ["start", "restart", "stop"];
+        for (var i = 0; i < commands.length; i++) {
+            (function (command) {
+                $("#" + command + "Service").click(function(){
+                    $('#processing-dialog').modal('show');
+                    ajaxCall(url="/api/" + ServiceName + "/service/" + command, sendData={},callback=function(data,status) {
+                        $('#processing-dialog').modal('hide');
+                    });
+                });
+            })((commands[i]));
+        }
         setTimeout(function() {timeoutServiceControlUI(ServiceName)}, 1000);
     });
 }
