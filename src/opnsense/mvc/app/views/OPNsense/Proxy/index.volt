@@ -34,12 +34,9 @@
         mapDataToFormUI(data_get_map).done(function(){
             formatTokenizersUI();
             $('.selectpicker').selectpicker('refresh');
-            // request service status on load and update status box
-            ajaxCall(url="/api/proxy/service/status", sendData={}, callback=function(data,status) {
-                updateServiceStatusUI(data['status']);
-            });
-
         });
+
+        updateServiceControlUI("proxy");
 
         /*************************************************************************************************************
          * link grid actions
@@ -177,11 +174,6 @@
                                 message: JSON.stringify(data),
                                 draggable: true
                             });
-                        } else {
-                            // request service status after successful save and update status box
-                            ajaxCall(url="/api/proxy/service/status", sendData={}, callback=function(data,status) {
-                                updateServiceStatusUI(data['status']);
-                            });
                         }
                     });
                 });
@@ -279,3 +271,4 @@
 </div>
 
 {{ partial("layout_partials/base_dialog",['fields':formDialogEditBlacklist,'id':'DialogEditBlacklist','label':lang._('Edit blacklist')])}}
+{{ partial("layout_partials/base_dialog_processing") }}

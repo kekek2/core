@@ -185,13 +185,9 @@ function updateServiceControlUI(ServiceName)
         for (var i = 0; i < commands.length; i++) {
             (function (command) {
                 $("#" + command + "Service").click(function(){
+                    $('#processing-dialog').modal('show');
                     ajaxCall(url="/api/" + ServiceName + "/service/" + command, sendData={},callback=function(data,status) {
-                        var dialogRef = BootstrapDialog.show({
-                            type: BootstrapDialog.TYPE_INFO,
-                            title: "Service " + command,
-                            message: (data['message'] === 'undefined') ? "" : data['message']
-                        });
-                        setTimeout(function () {dialogRef.close()}, 2000);
+                        $('#processing-dialog').modal('hide');
                     });
                 });
             })((commands[i]));
