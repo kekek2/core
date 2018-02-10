@@ -650,5 +650,33 @@ select {
 
 #grid-log th[data-column-id="__timestamp__"],
 #filter-log-entries th[data-column-id="__timestamp__"] {
-	min-width: 3.5em;
+  min-width: 3.5em;
+}
+
+.table-responsive {
+  @media screen and (max-width: $screen-xs-max) {
+    margin-bottom: 0;
+    > .table {
+      > thead,
+      > tbody,
+      > tfoot {
+        > tr {
+          > th,
+          > td {
+            white-space: normal;
+          }
+        }
+      }
+    }
+  }
+}
+
+label>input[type="checkbox"],
+label>input[type="radio"] {
+  margin-right: .4em;
+  float:left;
+}
+
+#log-settings label[for^="act"] {
+  margin-right: 1.5em;
 }

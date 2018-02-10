@@ -5,13 +5,13 @@
   <head>
 
     <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
     <meta name="robots" content="noindex, nofollow, noodp, noydir" />
     <meta name="keywords" content="" />
     <meta name="description" content="" />
     <meta name="copyright" content="" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 
     <title>{{headTitle|default("OPNsense") }} | {{system_hostname}}.{{system_domain}}</title>
     {% set theme_name = ui_theme|default('opnsense') %}
@@ -34,18 +34,18 @@
     <link href="/ui/themes/{{theme_name}}/build/images/favicon.png" rel="shortcut icon">
 
     <!-- Stylesheet for fancy select/dropdown -->
-    <link rel="stylesheet" type="text/css" href="/ui/themes/{{theme_name}}/build/css/bootstrap-select.css">
+    <link rel="stylesheet" type="text/css" href="{{theme_file_or_default('/css/bootstrap-select.css', theme_name)}}">
 
     <!-- bootstrap dialog -->
-    <link href="/ui/themes/{{theme_name}}/build/css/bootstrap-dialog.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="{{theme_file_or_default('/css/bootstrap-dialog.css', theme_name)}}">
 
     <!-- Font awesome -->
     <link rel="stylesheet" href="/ui/css/font-awesome.min.css">
 
     <!-- JQuery -->
-    <script type="text/javascript" src="/ui/js/jquery-3.2.1.min.js"></script>
-    <script type="text/javascript" src="/ui/js/jquery-migrate-3.0.1.min.js"></script>
-    <script type="text/javascript">
+    <script src="/ui/js/jquery-3.2.1.min.js"></script>
+    <script src="/ui/js/jquery-migrate-3.0.1.min.js"></script>
+    <script>
             // setup default scripting after page loading.
             $( document ).ready(function() {
                 // hook into jquery ajax requests to ensure csrf handling.
@@ -166,12 +166,12 @@
 
 
         <!-- JQuery Tokenize (http://zellerda.com/projects/tokenize) -->
-        <script type="text/javascript" src="/ui/js/jquery.tokenize.js"></script>
-        <link rel="stylesheet" type="text/css" href="/ui/css/jquery.tokenize.css" />
+        <script src="/ui/js/jquery.tokenize.js"></script>
+        <link rel="stylesheet" type="text/css" href="{{theme_file_or_default('/css/jquery.tokenize.css', theme_name)}}" />
 
         <!-- Bootgrind (grid system from http://www.jquery-bootgrid.com/ )  -->
-        <link rel="stylesheet" type="text/css" href="/ui/css/jquery.bootgrid.css"/>
-        <script type="text/javascript" src="/ui/js/jquery.bootgrid.js"></script>
+        <link rel="stylesheet" type="text/css" href="{{theme_file_or_default('/css/jquery.bootgrid.css', theme_name)}}" />
+        <script src="/ui/js/jquery.bootgrid.js"></script>
         <script>
         /* patch translations into bootgrid library */
         Object.assign(
@@ -188,18 +188,17 @@
         </script>
 
         <!-- Bootstrap type ahead -->
-        <script type="text/javascript" src="/ui/js/bootstrap3-typeahead.min.js"></script>
+        <script src="/ui/js/bootstrap3-typeahead.min.js"></script>
 
         <!-- OPNsense standard toolkit -->
-        <script type="text/javascript" src="/ui/js/opnsense.js"></script>
-        <script type="text/javascript" src="/ui/js/opnsense_ui.js"></script>
-        <script type="text/javascript" src="/ui/js/opnsense_bootgrid_plugin.js"></script>
-        {{javascript_include_when_exists('/ui/themes/' ~ theme_name ~ '/build/js/theme.js')}}
-
+        <script src="/ui/js/opnsense.js"></script>
+        <script src="/ui/js/opnsense_ui.js"></script>
+        <script src="/ui/js/opnsense_bootgrid_plugin.js"></script>
+        <script src="{{theme_file_or_default('/js/theme.js', theme_name)}}"></script>
   </head>
   <body>
   <header class="page-head">
-    <nav class="navbar navbar-default" role="navigation">
+    <nav class="navbar navbar-default">
       <div class="container-fluid">
         <div class="navbar-header">
           <a class="navbar-brand" href="/">
@@ -260,8 +259,8 @@
     </main>
 
     <!-- bootstrap script -->
-    <script type="text/javascript" src="/ui/js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="/ui/js/bootstrap-select.min.js"></script>
+    <script src="/ui/js/bootstrap.min.js"></script>
+    <script src="/ui/js/bootstrap-select.min.js"></script>
     <!-- bootstrap dialog -->
     <script src="/ui/js/bootstrap-dialog.min.js"></script>
 

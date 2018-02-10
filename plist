@@ -67,9 +67,9 @@
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20160104
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20160630
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20161210
+/usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20170625
 /usr/local/etc/pkg/fingerprints/OPNsense/trusted/opnsense-update.deciso.com.20160725
 /usr/local/etc/pkg/fingerprints/OPNsense/trusted/opnsense-update.deciso.com.20170721
-/usr/local/etc/pkg/fingerprints/OPNsense/trusted/pkg.opnsense.org.20170625
 /usr/local/etc/pkg/fingerprints/OPNsense/trusted/pkg.opnsense.org.20171219
 /usr/local/etc/rc
 /usr/local/etc/rc.backup_captiveportal
@@ -824,6 +824,7 @@
 /usr/local/opnsense/www/js/opnsense_bootgrid_plugin.js
 /usr/local/opnsense/www/js/opnsense_ui.js
 /usr/local/opnsense/www/js/qrcode.js
+/usr/local/opnsense/www/js/theme.js
 /usr/local/opnsense/www/themes/opnsense/LICENSE
 /usr/local/opnsense/www/themes/opnsense/assets/fonts/SourceSansPro-Bold/SourceSansPro-Bold.eot
 /usr/local/opnsense/www/themes/opnsense/assets/fonts/SourceSansPro-Bold/SourceSansPro-Bold.otf
@@ -988,6 +989,7 @@
 /usr/local/www/diag_logs_resolver.php
 /usr/local/www/diag_logs_routing.php
 /usr/local/www/diag_logs_settings.php
+/usr/local/www/diag_logs_suricata.php
 /usr/local/www/diag_logs_template.inc
 /usr/local/www/diag_logs_wireless.php
 /usr/local/www/diag_packet_capture.php

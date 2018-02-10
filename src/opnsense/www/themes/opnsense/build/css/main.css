@@ -5838,6 +5838,7 @@ table {
   padding: 10px 20px; }
 
 .label-opnsense {
+  /* emulates btn */
   border: 1px solid transparent;
   display: inline-block;
   vertical-align: middle;
@@ -5846,9 +5847,11 @@ table {
   border-radius: 3px; }
 
 .label-opnsense-sm {
+  /* emulates btn-sm */
   padding: 5px 10px; }
 
 .label-opnsense-xs {
+  /* emulates btn-xs */
   padding: 1px 5px; }
 
 ::-webkit-scrollbar {
@@ -5888,8 +5891,8 @@ select {
 
 #grid-log th[data-column-id="__timestamp__"],
 #filter-log-entries th[data-column-id="__timestamp__"] {
-	min-width: 3.5em;
-}
+  min-width: 3.5em; }
+
 
 /* TING FLAVORED */
 
@@ -5943,3 +5946,22 @@ select {
 .table-borderless > tfoot > tr > td {
   border: none;
   line-height: 2; }
+
+@media screen and (max-width: 767px) {
+  .table-responsive {
+    margin-bottom: 0; }
+    .table-responsive > .table > thead > tr > th,
+    .table-responsive > .table > thead > tr > td,
+    .table-responsive > .table > tbody > tr > th,
+    .table-responsive > .table > tbody > tr > td,
+    .table-responsive > .table > tfoot > tr > th,
+    .table-responsive > .table > tfoot > tr > td {
+      white-space: normal; } }
+
+label > input[type="checkbox"],
+label > input[type="radio"] {
+  margin-right: .4em;
+  float: left; }
+
+#log-settings label[for^="act"] {
+  margin-right: 1.5em; }

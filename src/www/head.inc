@@ -34,13 +34,13 @@ $pagetitle .= html_safe(sprintf(' | %s.%s', $config['system']['hostname'], $conf
 <!--[if (gt IE 9)|!(IE)]><!--><html lang="<?=system_get_language_code();?>" class="no-js"><!--<![endif]-->
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
     <meta name="robots" content="noindex, nofollow, noodp, noydir" />
     <meta name="keywords" content="" />
     <meta name="description" content="" />
     <meta name="copyright" content="" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 
     <title><?= $pagetitle ?></title>
 
@@ -81,10 +81,10 @@ $pagetitle .= html_safe(sprintf(' | %s.%s', $config['system']['hostname'], $conf
     <link href="/ui/themes/<?= $themename ?>/build/images/favicon.png" rel="shortcut icon">
 
     <!-- Stylesheet for fancy select/dropdown -->
-    <link rel="stylesheet" type="text/css" href="/ui/themes/<?= $themename ?>/build/css/bootstrap-select.css">
+    <link rel="stylesheet" type="text/css" href="<?=get_themed_filename("/css/bootstrap-select.css");?>">
 
     <!-- bootstrap dialog -->
-    <link href="/ui/themes/<?= $themename ?>/build/css/bootstrap-dialog.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="<?=get_themed_filename("/css/bootstrap-dialog.css");?>">
 
     <!-- Font awesome -->
     <link rel="stylesheet" href="/ui/css/font-awesome.min.css">
@@ -92,34 +92,34 @@ $pagetitle .= html_safe(sprintf(' | %s.%s', $config['system']['hostname'], $conf
     <!--[if lt IE 9]><script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.2/html5shiv.min.js"></script><![endif]-->
 
     <!-- nvd3 -->
-    <link rel="stylesheet" href="/ui/css/nv.d3.css">
+    <link rel="stylesheet" type="text/css" href="<?=get_themed_filename("/css/nv.d3.css");?>">
 
     <!-- datepicker css -->
-    <link  href="/ui/css/bootstrap-datepicker3.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="<?=get_themed_filename("/css/bootstrap-datepicker3.min.css");?>">
 
     <!-- JQuery -->
-    <script type="text/javascript" src="/ui/js/jquery-3.2.1.min.js"></script>
-    <script type="text/javascript" src="/ui/js/jquery-migrate-3.0.1.min.js"></script>
+    <script src="/ui/js/jquery-3.2.1.min.js"></script>
+    <script src="/ui/js/jquery-migrate-3.0.1.min.js"></script>
 
     <!-- datepicker -->
     <script src="/ui/js/bootstrap-datepicker.min.js"></script>
 
     <!-- d3 -->
-    <script type="text/javascript" src="/ui/js/d3.min.js"></script>
+    <script src="/ui/js/d3.min.js"></script>
 
     <!-- nvd3 -->
-    <script type="text/javascript" src="/ui/js/nv.d3.min.js"></script>
+    <script src="/ui/js/nv.d3.min.js"></script>
 
     <!-- append some helper functions to integrate into the legacy code -->
-    <script type="text/javascript" src="/javascript/opnsense_legacy.js"></script>
+    <script src="/javascript/opnsense_legacy.js"></script>
 
     <!-- opnsense non legacy helper functions -->
-    <script type="text/javascript" src="/ui/js/opnsense.js"></script>
+    <script src="/ui/js/opnsense.js"></script>
 
     <!-- Bootstrap type ahead -->
-    <script type="text/javascript" src="/ui/js/bootstrap3-typeahead.min.js"></script>
+    <script src="/ui/js/bootstrap3-typeahead.min.js"></script>
 
-    <script type="text/javascript">
+    <script>
     //<![CDATA[
     $( document ).ready(function() {
       $('[data-toggle="tooltip"]').tooltip();
@@ -248,7 +248,7 @@ $pagetitle .= html_safe(sprintf(' | %s.%s', $config['system']['hostname'], $conf
     </script>
 <?php
     if (file_exists("/usr/local/opnsense/www/themes/".$themename."/build/js/theme.js")):?>
-    <script type="text/javascript" src="/ui/themes/<?=$themename?>/build/js/theme.js"></script>
+    <script src="/ui/themes/<?=$themename?>/build/js/theme.js"></script>
 <?php
     endif;?>
 </head>

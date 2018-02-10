@@ -45,7 +45,7 @@ POSSIBILITY OF SUCH DAMAGE.
     }
 </style>
 
-<script type="text/javascript">
+<script>
 
     $( document ).ready(function() {
         var interface_descriptions = {};
@@ -226,9 +226,8 @@ POSSIBILITY OF SUCH DAMAGE.
          * load content on tab changes
          */
         $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
-            if (e.target.id == 'settings_tab'){
-                loadGeneralSettings();
-            } else if (e.target.id == 'download_settings_tab') {
+            loadGeneralSettings();
+            if (e.target.id == 'download_settings_tab') {
                 /**
                  * grid for installable rule files
                  */
