@@ -163,9 +163,9 @@ function updateServiceControlUI(serviceName, processingDialog)
             status_html += 'btn-danger' ;
         }
 
-        var buttons = '<span id="startService" class="glyphicon glyphicon-play btn ' + status_html + '"></span>';
-        buttons += '<span id="restartService" class="glyphicon glyphicon-refresh btn"></span>';
-        buttons += '<span id="stopService" class="glyphicon glyphicon-stop btn"></span>';
+        var buttons = '<span id="startService" class="btn ' +  status_html + ' glyphicon glyphicon-play"></span>';
+        buttons += '<span id="restartService" class="btn btn-default srv_status_act glyphicon glyphicon-refresh"></span>';
+        buttons += '<span id="stopService" class="btn btn-default srv_status_act glyphicon glyphicon-stop"></span>';
         $('#service_status_container').html(buttons);
 
         var commands = ["start", "restart", "stop"];
