@@ -182,7 +182,7 @@ include("head.inc");
               <tr>
                 <td><a id="help_for_notification_name" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Notification Name"); ?></td>
                 <td>
-                  <input name='notification_name' type='text' value='<?=$pconfig['notification_name']; ?>' /><br />
+                  <input name='notification_name' type='text' value='<?=$pconfig['notification_name']; ?>' />
                   <output class="hidden" for="help_for_notification_name">
                     <?=sprintf(gettext("Enter a name for the Growl notifications (default: %s growl alert)."), $g['product_name']); ?>
                   </output>
@@ -191,7 +191,7 @@ include("head.inc");
               <tr>
                 <td><a id="help_for_ipaddress" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IP Address"); ?></td>
                 <td>
-                  <input name="ipaddress" type="text" value="<?=$pconfig['ipaddress']; ?>" /><br />
+                  <input name="ipaddress" type="text" value="<?=$pconfig['ipaddress']; ?>" />
                   <output class="hidden" for="help_for_ipaddress">
                     <?=gettext("This is the IP address that you would like to send growl notifications to."); ?>
                   </output>
@@ -200,7 +200,7 @@ include("head.inc");
               <tr>
                 <td><a id="help_for_password" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Password"); ?></td>
                 <td>
-                  <input name="password" type="password" value="<?=$pconfig['password']; ?>"/><br />
+                  <input name="password" type="password" value="<?=$pconfig['password']; ?>"/>
                   <output class="hidden" for="help_for_password">
                     <?=gettext("Enter the password of the remote growl notification device."); ?>
                   </output>
@@ -268,18 +268,16 @@ include("head.inc");
                 <td>
                   <input name="smtpusername" type="text" value="<?=$pconfig['smtpusername']; ?>" />
                   <output class="hidden" for="help_for_smtpusername">
-                    <small><?=gettext("(optional)");?></small><br/>
-                    <?=gettext("Enter the email address username for SMTP authentication."); ?>
+                    <?=gettext("Enter the email address username for SMTP authentication."); ?> <?=gettext("(optional)");?>
                   </output>
                 </td>
               </tr>
               <tr>
                 <td><a id="help_for_smtppassword" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Email auth password"); ?></td>
                 <td>
-                  <input name='smtppassword' type='password' value='<?=$pconfig['smtppassword']; ?>' /><br />
+                  <input name='smtppassword' type='password' value='<?=$pconfig['smtppassword']; ?>' />
                   <output class="hidden" for="help_for_smtppassword">
-                    <small><?=gettext("(optional)");?></small><br/>
-                    <?=gettext("Enter the email address password for SMTP authentication."); ?>
+                    <?=gettext("Enter the email address password for SMTP authentication."); ?> <?=gettext("(optional)");?>
                   </output>
                 </td>
               </tr>
