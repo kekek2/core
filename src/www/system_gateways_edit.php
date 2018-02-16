@@ -560,7 +560,7 @@ $( document ).ready(function() {
               <input type='hidden' name='friendlyiface' id='friendlyiface' value="<?=$pconfig['friendlyiface'];?>"/>
               <table class="table table-clean-form opnsense_standard_table_form">
                 <tr>
-                  <td style="width:22%"><?=gettext("Edit gateway");?></td>
+                  <td style="width:22%"><strong><?=gettext("Edit gateway");?></strong></td>
                   <td style="width:78%; text-align:right">
                     <small><?=gettext("full help"); ?> </small>
                     <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page"></i>
