@@ -556,7 +556,7 @@ $( document ).ready(function() {
               <td>
                 <input name="disable" type="checkbox" value="yes" <?= !empty($pconfig['disable']) ? "checked=\"checked\"" : "";?> />
                 <output class="hidden" for="help_for_disable">
-                  <small><?=gettext("Set this option to disable this client without removing it from the list"); ?>.</small>
+                  <?=gettext("Set this option to disable this client without removing it from the list"); ?>.
                 </output>
               </td>
             </tr>
@@ -565,7 +565,7 @@ $( document ).ready(function() {
               <td>
                 <input name="description" type="text" class="form-control unknown" size="30" value="<?=$pconfig['description'];?>" />
                 <output class="hidden" for="help_for_description">
-                  <small><?=gettext("You may enter a description here for your reference (not parsed)"); ?>.</small>
+                  <?=gettext("You may enter a description here for your reference (not parsed)"); ?>.
                 </output>
               </td>
             </tr>
@@ -717,7 +717,7 @@ $( document ).ready(function() {
               <input name="resolve_retry" type="checkbox" value="yes" <?= !empty($pconfig['resolve_retry']) ? 'checked="checked"' : '' ?>/>
               <strong><?= gettext('Infinitely resolve remote server') ?></strong>
               <output class="hidden" for="help_for_resolve_retry">
-                <div><small><?=gettext("Continuously attempt to resolve the server host name. Useful when communicating with a server that is not permanently connected to the Internet"); ?></small></div>
+                <?=gettext("Continuously attempt to resolve the server host name. Useful when communicating with a server that is not permanently connected to the Internet"); ?>
               </output>
             </td>
           </tr>
@@ -755,7 +755,7 @@ $( document ).ready(function() {
             <td>
               <input name="local_port" type="text" class="form-control unknown" size="5" value="<?=$pconfig['local_port'];?>" />
               <output class="hidden" for="help_for_local_port">
-                <em><small><?=gettext("Set this option if you would like to bind to a specific port. Leave this blank or enter 0 for a random dynamic port."); ?></small></em>
+                <?=gettext("Set this option if you would like to bind to a specific port. Leave this blank or enter 0 for a random dynamic port."); ?>
               </output>
             </td>
           </tr>
