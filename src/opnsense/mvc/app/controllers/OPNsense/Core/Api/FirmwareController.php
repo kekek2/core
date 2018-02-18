@@ -64,7 +64,7 @@ class FirmwareController extends ApiControllerBase
     public function statusAction()
     {
         $config = Config::getInstance()->object();
-        $type_want = 'opnsense';
+        $type_want = 'ting';
         if (!empty($config->system->firmware->type)) {
             $type_want .= '-' . (string)$config->system->firmware->type;
         }
