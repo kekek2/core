@@ -49,6 +49,11 @@ bootstrap_and_exit()
 	if [ -d ${MNT} ]; then
 		umount ${MNT} 2> /dev/null
 		rm -rf ${MNT}
+		if [ ! -z "${ZFSPOOL}" ]; then
+		    echo -n "Exporting ${ZFSPOOL}... "
+		    zpool export ${ZFSPOOL}
+		    echo "done. "
+		fi
 	fi
 
 	exit 0
@@ -155,15 +160,47 @@ echo
 
 mkdir -p ${MNT}
 
-echo -n "Running fsck..."
-fsck -t ufs -y ${PART} > /dev/null
-echo "done."
+###Detect ZFS here
+echo -n "Checking ZFS on ${PART} ... "
 
-if ! mount ${PART} ${MNT} 2> /dev/null; then
+zpool import -af >/dev/null 2>/dev/null
+ZPCHK=`zpool get -H cachefile`
+ZFSPOOL=""
+ORIGINAL_IFS="${IFS}"
+
+IFS=$'\n'
+
+for zplist in ${ZPCHK}; do
+    CPOOL=`echo $zplist | awk '{ print $1  }'`
+    ###We don't use ZFS on MBR, so search pool only on p3
+    zt=$(zpool status ${CPOOL} | grep -c ${DEV}p3)
+    if [ $zt -ne "0" ]; then
+	ZFSPOOL=${CPOOL}
+    else
+	zpool export $CPOOL >/dev/null 2>/dev/null
+    fi
+done
+
+if [ -z "${ZFSPOOL}" ]; then
+    echo "no."
+    echo -n "Running fsck..."
+    fsck -t ufs -y ${PART} > /dev/null
+    echo "done."
+    if ! mount ${PART} ${MNT} 2> /dev/null; then
 	echo "The device could not be mounted."
 	bootstrap_and_exit
 	# XXX redo
+    fi
+else
+    echo "yes, ${ZFSPOOL}"
+    if ! mount -t zfs ${ZFSPOOL}/root ${MNT} 2>/dev/null; then
+	echo "ZFS pool ${ZFSPOOL} could not be mounted."
+	zpool export ${ZFSPOOL} >/dev/null 2>/dev/null
+	bootstrap_and_exit
+    fi
 fi
+
+IFS="${ORIGINAL_IFS}"
 
 if [ -f "${MNT}/conf/config.xml" ]; then
 	rm -rf /conf/*
