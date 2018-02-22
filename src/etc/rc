@@ -44,10 +44,12 @@ echo "Mounting filesystems..."
 echo -n "Checking root on ZFS... "
 
 #Checking ZFS on root
+ORIGINAL_IFS="${IFS}"
+IFS=$'\n'
 ZFSCHK=`mount -t zfs`
 ZFS_ROOT=""
 
-for rmnt in "$ZFSCHK"; do
+for rmnt in $ZFSCHK; do
     ZFS_DEV=`echo $rmnt | awk '{ print $1 }'`
     ZFS_MNT=`echo $rmnt | awk '{ print $3 }'`
     if [ "$ZFS_MNT" = "/" ]; then
@@ -55,6 +57,8 @@ for rmnt in "$ZFSCHK"; do
         break;
     fi
 done
+
+IFS="${ORIGINAL_IFS}"
 
 if [ "$ZFS_ROOT" = "yes" ]; then
     echo "yes, on $ZFS_DEV"
