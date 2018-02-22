@@ -570,8 +570,8 @@ $( document ).ready(function() {
                   <td><a id="help_for_disabled" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Disabled"); ?></td>
                   <td>
                     <input name="disabled" type="checkbox" id="disabled" value="yes" <?= !empty($pconfig['disabled']) ? "checked=\"checked\"" : ""; ?> />
+                    <strong><?=gettext("Disable this gateway");?></strong>
                     <output class="hidden" for="help_for_disabled">
-                      <strong><?=gettext("Disable this gateway");?></strong><br />
                       <?=gettext("Set this option to disable this gateway without removing it from the list.");?>
                     </output>
                   </td>
