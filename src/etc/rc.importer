@@ -206,6 +206,7 @@ if [ -f "${MNT}/conf/config.xml" ]; then
 			echo "done."
 		fi
 	done
+	cp -f "${MNT}/usr/local/etc/ssl/ting-client.*" /usr/local/etc/ssl/
 	for DIR in backup sshd; do
 		if [ -d "${MNT}/conf/${DIR}" ]; then
 			echo -n "Restoring ${DIR}..."
