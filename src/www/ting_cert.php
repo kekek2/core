@@ -184,20 +184,21 @@ if ($installed_crt_info) {
               <?php if (!$installed_crt_info) { ?>
                 <tr>
                   <td width="22%"><p><?=gettext('No certificate installed.')?></p></td>
-                  <td colspan="2"></td>
+                  <td colspan="3"></td>
                 </tr>
               <?php } else { ?>
                 <tr>
                   <td width="22%"><?=gettext('Expires at')?></td>
                   <td><?php echo strftime("%Y-%m-%d", $installed_crt_info['validTo_time_t']); ?></td>
                   <td>CORE</td>
-                  <?php echo getCrtInfo($installed_crt_info);?>
+                  <td><?php echo getCrtInfo($installed_crt_info);?></td>
                 </tr>
                 <?php foreach ($installed_crt_modules_info as $module_info) { ?>
                   <tr>
                     <td></td>
                     <td><?php echo strftime("%Y-%m-%d", $module_info['validTo_time_t']); ?></td>
-                    <?php echo getCrtInfo($module_info); ?>
+                    <td><?php echo getCrtInfo($module_info); ?></td>
+                    <td></td>
                   </tr>
                 <?php } ?>
               <?php } ?>
