@@ -86,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
 
-            $company = ($code == '200' && preg_match('/^\w{0,48}$/', $body)) ? $body : " ";
+            $company = ($code == '200' && preg_match('/^[\w\s.-]{0,48}$/', $body)) ? $body : " ";
             $company = preg_replace('/[^\w\d- ]/', '', $company);
 
             $pkey = openssl_get_privatekey("file://{$installed_key_path}");
@@ -184,20 +184,21 @@ if ($installed_crt_info) {
               <?php if (!$installed_crt_info) { ?>
                 <tr>
                   <td width="22%"><p><?=gettext('No certificate installed.')?></p></td>
-                  <td colspan="2"></td>
+                  <td colspan="3"></td>
                 </tr>
               <?php } else { ?>
                 <tr>
                   <td width="22%"><?=gettext('Expires at')?></td>
                   <td><?php echo strftime("%Y-%m-%d", $installed_crt_info['validTo_time_t']); ?></td>
                   <td>CORE</td>
-                  <?php echo getCrtInfo($installed_crt_info);?>
+                  <td><?php echo getCrtInfo($installed_crt_info);?></td>
                 </tr>
                 <?php foreach ($installed_crt_modules_info as $module_info) { ?>
                   <tr>
                     <td></td>
                     <td><?php echo strftime("%Y-%m-%d", $module_info['validTo_time_t']); ?></td>
-                    <?php echo getCrtInfo($module_info); ?>
+                    <td><?php echo getCrtInfo($module_info); ?></td>
+                    <td></td>
                   </tr>
                 <?php } ?>
               <?php } ?>
