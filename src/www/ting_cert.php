@@ -39,7 +39,7 @@ function getCrtInfo($crt_info)
             $ret .= "<td></td>";
 
     } elseif (isset($crt_info['subject']['tingModule'])) {
-        $ret .= $crt_info['subject']['tingModule'];
+        $ret .= "<td>" . $crt_info['subject']['tingModule'] . "</td>";
 
         if ($crt_info['subject']['tingAddress'] != Tools::getCurrentMacAddress())
             $ret .= "<td>" . gettext("License is not valid for this device") . "</td>";
@@ -55,6 +55,7 @@ if (file_exists($installed_crt_path) && file_exists($installed_key_path)) {
 
 $form_errors = [];
 $form_fields = ['csr_license_key' => ''];
+$form_success = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!isset($_POST['csr_license_key'])) {
@@ -123,8 +124,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         if (openssl_x509_parse($crt)) {
                             if ($module) {
                                 $cert_path = $ting_crt_dir . '/ting-client.module.' . strtolower($module) . '.crt';
+                                $form_success[] = sprintf(gettext("License certificate for module %s added successful"), $module);
                             } else {
                                 $cert_path = $installed_crt_path;
+                                $form_success[] = gettext("License certificate for CORE added successful");
                             }
 
                             file_put_contents($cert_path, $crt);
@@ -172,12 +175,18 @@ if ($installed_crt_info) {
     <div class="row">
       <section class="col-xs-12">
         <div class="content-box tab-content">
-
-          <table class="table table-clean-form opnsense_standard_table_form ">
+            <?php if ($form_success) { ?>
+                <div class="alert alert-info" role="alert" id="responseMsg">
+                    <?php foreach ($form_success as $success) { ?>
+                        <?php echo $success; ?>
+                    <?php } ?>
+                </div>
+            <?php } ?>
+            <table class="table table-clean-form opnsense_standard_table_form ">
             <thead>
               <tr style="background-color: rgb(251, 251, 251);">
                 <td><strong><?=gettext('Installed certificates')?></strong></td>
-                <td colspan="2"></td>
+                <td colspan="3"></td>
               </tr>
             </thead>
             <tbody>
@@ -191,14 +200,13 @@ if ($installed_crt_info) {
                   <td width="22%"><?=gettext('Expires at')?></td>
                   <td><?php echo strftime("%Y-%m-%d", $installed_crt_info['validTo_time_t']); ?></td>
                   <td>CORE</td>
-                  <td><?php echo getCrtInfo($installed_crt_info);?></td>
+                  <?php echo getCrtInfo($installed_crt_info);?>
                 </tr>
                 <?php foreach ($installed_crt_modules_info as $module_info) { ?>
                   <tr>
                     <td></td>
                     <td><?php echo strftime("%Y-%m-%d", $module_info['validTo_time_t']); ?></td>
-                    <td><?php echo getCrtInfo($module_info); ?></td>
-                    <td></td>
+                    <?php echo getCrtInfo($module_info); ?>
                   </tr>
                 <?php } ?>
               <?php } ?>
