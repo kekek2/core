@@ -24,14 +24,19 @@ $temporary_crt_info = false;
 $installed_crt_modules_path = "{$ting_crt_dir}/ting-client.module.*.crt";
 $installed_crt_modules_info = [];
 
-function getCrtInfo($crt_info)
+function getCrtInfo($crt_info, $key_modulus, $cert_modulus)
 {
     $ret = "";
     if (isset($crt_info['subject']['UNDEF'])) {
         if (isset($crt_info['subject']['UNDEF'][2]) && $crt_info['subject']['UNDEF'][2] != "" )
-            $ret .= "<td>" . $crt_info['subject']['UNDEF'][2] . "</td>\n                    ";
+            if ($crt_info['subject']['UNDEF'][2] != "") {
+                $ret .= "<td>" . $crt_info['subject']['UNDEF'][2] . "</td>\n";
+            }
 
-        if (!isset($crt_info['subject']['UNDEF'][0]))
+        if ($key_modulus !== $cert_modulus)
+        {
+            $ret .= "<td>" . gettext("The certificate does not match the private key") . "</td>";
+        } elseif (!isset($crt_info['subject']['UNDEF'][0]))
             $ret .= "<td>" . gettext("Can not validate certificate") . "</td>";
         elseif ($crt_info['subject']['UNDEF'][0] != Tools::getCurrentMacAddress())
             $ret .= "<td>" . gettext("License is not valid for this device") . "</td>";
@@ -39,9 +44,14 @@ function getCrtInfo($crt_info)
             $ret .= "<td></td>";
 
     } elseif (isset($crt_info['subject']['tingModule'])) {
-        $ret .= "<td>" . $crt_info['subject']['tingModule'] . "</td>";
+        if ($crt_info['subject']['tingModule'] != "") {
+            $ret .= "<td>" . $crt_info['subject']['tingModule'] . "</td>";
+        }
 
-        if ($crt_info['subject']['tingAddress'] != Tools::getCurrentMacAddress())
+        if ($key_modulus !== $cert_modulus)
+        {
+            $ret .= "<td>" . gettext("The certificate does not match the private key") . "</td>";
+        } elseif ($crt_info['subject']['tingAddress'] != Tools::getCurrentMacAddress())
             $ret .= "<td>" . gettext("License is not valid for this device") . "</td>";
         else
             $ret .= "<td></td>";
@@ -49,8 +59,22 @@ function getCrtInfo($crt_info)
     return $ret . "\n";
 }
 
+$core_modulus = false;
+$key_modulus = false;
 if (file_exists($installed_crt_path) && file_exists($installed_key_path)) {
-    $installed_crt_info = openssl_x509_parse(file_get_contents($installed_crt_path));
+    $cert_file = file_get_contents($installed_crt_path);
+    $installed_crt_info = openssl_x509_parse($cert_file);
+    if (($pub_key = openssl_pkey_get_public($cert_file))) {
+        if (($keyData = openssl_pkey_get_details($pub_key)) && $keyData["type"] == OPENSSL_KEYTYPE_RSA) {
+            $core_modulus = $keyData["rsa"]["n"];
+        }
+    }
+    $key_file = file_get_contents($installed_key_path);
+    if (($priv_key = openssl_pkey_get_private($key_file))) {
+        if (($keyData = openssl_pkey_get_details($priv_key)) && $keyData["type"] == OPENSSL_KEYTYPE_RSA) {
+            $key_modulus = $keyData["rsa"]["n"];
+        }
+    }
 }
 
 $form_errors = [];
@@ -160,7 +184,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 if ($installed_crt_info) {
     foreach (glob($installed_crt_modules_path) as $module_crt_path) {
-        $installed_crt_modules_info[] = openssl_x509_parse(file_get_contents($module_crt_path));
+        $cert_module_file = file_get_contents($module_crt_path);
+        $module_modulus = false;
+        if (($pub_key = openssl_pkey_get_public($cert_module_file))) {
+            if (($keyData = openssl_pkey_get_details($pub_key)) && $keyData["type"] == OPENSSL_KEYTYPE_RSA) {
+                $module_modulus = $keyData["rsa"]["n"];
+            }
+        }
+        $installed_crt_modules_info[] = ["cert" => openssl_x509_parse($cert_module_file), "modulus" => $module_modulus];
     }
 }
 
@@ -200,13 +231,13 @@ if ($installed_crt_info) {
                   <td width="22%"><?=gettext('Expires at')?></td>
                   <td><?php echo strftime("%Y-%m-%d", $installed_crt_info['validTo_time_t']); ?></td>
                   <td>CORE</td>
-                  <?php echo getCrtInfo($installed_crt_info);?>
+                  <?php echo getCrtInfo($installed_crt_info, $key_modulus, $core_modulus);?>
                 </tr>
                 <?php foreach ($installed_crt_modules_info as $module_info) { ?>
                   <tr>
                     <td></td>
-                    <td><?php echo strftime("%Y-%m-%d", $module_info['validTo_time_t']); ?></td>
-                    <?php echo getCrtInfo($module_info); ?>
+                    <td><?php echo strftime("%Y-%m-%d", $module_info["cert"]['validTo_time_t']); ?></td>
+                    <?php echo getCrtInfo($module_info["cert"], $key_modulus, $module_info["modulus"]); ?>
                   </tr>
                 <?php } ?>
               <?php } ?>
