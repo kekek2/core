@@ -258,6 +258,10 @@ package-check: force
 		exit 1; \
 	fi
 
+REMOTESHELL?=ssh -q encoder
+RCP?=scp -q
+RCPHOST?=encoder
+
 package: package-check
 	@rm -rf ${WRKSRC}
 .for CORE_DEPEND in ${CORE_DEPENDS}
@@ -265,12 +269,17 @@ package: package-check
 .endfor
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} metadata
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} install
-	@if [ -d /usr/local/ioncube ]; then \
+	@if [ -f /root/.ssh/encoder_rsa ]; then \
 	    echo ">>> Encode some files"; \
+	    ENC_TEMP=`${REMOTESHELL} 'mktemp -d'`; \
 	    for TOENCODE in ${FILES_TO_ENCODE}; do \
-		/usr/local/ioncube/ioncube_encoder.sh -C -71 --encode "*.inc" $${TOENCODE} -o $${TOENCODE}.enc; \
-		mv -f $${TOENCODE}.enc $${TOENCODE}; \
+		TOENCODE_BASENAME=`basename $${TOENCODE}`; \
+		${RCP} $${TOENCODE} ${RCPHOST}:$${ENC_TEMP}; \
+		${REMOTESHELL} "/usr/local/ioncube/ioncube_encoder.sh -C -71 --encode '*.inc' $${ENC_TEMP}/$${TOENCODE_BASENAME} -o $${ENC_TEMP}/$${TOENCODE_BASENAME}.enc ; \
+		    mv -f $${ENC_TEMP}/$${TOENCODE_BASENAME}.enc $${ENC_TEMP}/$${TOENCODE_BASENAME}"; \
+		${RCP} ${RCPHOST}:$${ENC_TEMP}/$${TOENCODE_BASENAME} $${TOENCODE}; \
 	    done; \
+	    ${REMOTESHELL} "rm -rf $${ENC_TEMP}"; \
 	fi
 	@PORTSDIR=${.CURDIR} ${PKG} create -v -m ${WRKSRC} -r ${WRKSRC} \
 	    -p ${WRKSRC}/plist -o ${PKGDIR}
