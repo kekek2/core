@@ -1,0 +1,6 @@
+<menu>
+    <Lobby>
+        <License cssClass="fa fa-certificate fa-fw" order="2" url="/ui/license/" />
+    </Lobby>
+</menu>
+
