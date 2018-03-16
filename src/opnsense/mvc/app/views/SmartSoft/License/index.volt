@@ -1,3 +1,4 @@
+<link rel="stylesheet" href="/ui/css/bootstrap-fileupload.css"/>
 <script type="text/javascript">
     $(document).ready(function () {
         $("#grid-certlist").UIBootgrid(
@@ -21,7 +22,16 @@
             });
         });
 
-        $("#importAct").click(function () {
+        $("#exportAct").click(function () {
+            window.location = "/api/license/settings/export";
+        });
+
+        $(".btn-file input[type=file]").change(function(){
+            var filename = $(this).val().replace(/.*\\/, "");
+            $("#filename").val(filename);
+        });
+
+        $(':file').on('fileselect', function(event, numFiles, label) {
             var formData = new FormData($("#importform")[0]);
             $.ajax({
                 url: "/api/license/settings/import",
@@ -38,10 +48,13 @@
             });
             return false;
         });
+    });
 
-        $("#exportAct").click(function () {
-            window.location = "/api/license/settings/export";
-        });
+    $(document).on('change', ':file', function() {
+        var input = $(this),
+            numFiles = input.get(0).files ? input.get(0).files.length : 1,
+            label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
+        input.trigger('fileselect', [numFiles, label]);
     });
 </script>
 
@@ -79,12 +92,15 @@
             <button id="exportAct" type="button" class="btn btn-primary">{{ lang._('Export license') }}</button>
         </td>
         <td style="width: auto; margin: 5px; padding: 5px">
-            <button id="importAct" type="button" class="btn btn-primary">{{ lang._('Import license') }}</button>
-        </td>
-        <td style="width: auto; margin: 5px; padding: 5px">
             <form method="post" enctype="multipart/form-data" id="importform">
-                <input name="importfile" type="file" id="importfile"/>
+                <span class="btn btn-primary btn-file">
+                    {{ lang._('Import license') }}
+                    <input name="importfile" type="file" id="importfile"/>
+                </span>
             </form>
+        </td>
+        <td>
+            <input type="text" id="filename" class="filename" disabled>
         </td>
     </tr>
 </table>
