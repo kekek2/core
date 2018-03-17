@@ -46,7 +46,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['hostname'] = $config['system']['hostname'];
     $pconfig['language'] = $config['system']['language'];
     $pconfig['prefer_ipv4'] = isset($config['system']['prefer_ipv4']);
-    $pconfig['theme'] = $config['theme'];
     $pconfig['timezone'] = empty($config['system']['timezone']) ? 'Etc/UTC' : $config['system']['timezone'] ;
 
     for ($dnscounter = 1; $dnscounter < 9; $dnscounter++) {
@@ -128,7 +127,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $config['system']['hostname'] = $pconfig['hostname'];
         $config['system']['language'] = $pconfig['language'];
         $config['system']['timezone'] = $pconfig['timezone'];
-        $config['theme'] =  $pconfig['theme'];
 
         if (!empty($pconfig['prefer_ipv4'])) {
             $config['system']['prefer_ipv4'] = true;
