@@ -44,7 +44,7 @@
                     $('#responseMsg').attr('class', 'alert alert-info');
                 else
                     $('#responseMsg').attr('class', 'alert alert-danger');
-                $('#responseMsg').attr('style', '').html("{{ lang._('License imported: ') }}" + data.status)
+                $('#responseMsg').attr('style', '').html("{{ lang._('License imported: ') }}" + data.message)
             });
             return false;
         });
