@@ -220,20 +220,20 @@ class SettingsController extends ApiControllerBase
     {
         $this->sessionClose(); // long running action, close session
         if (!$this->request->hasFiles()) {
-            return ["status" => "failure"];
+            return ["status" => "failure", "message" => gettext("No files attached")];
         }
         foreach ($this->request->getUploadedFiles() as $file)
         {
             if ($file->getName() == "")
-                return ["status" => "failure"];
+                return ["status" => "failure", "message" => gettext("Not specified the file name")];
             $key_file = file_get_contents($file->getTempName());
             if (!strstr($key_file, "BEGIN RSA PRIVATE KEY") || !strstr($key_file, "END RSA PRIVATE KEY")) {
-                return ["status" => "failure"];
+                return ["status" => "failure", "message" => gettext("This file not contain license.")];
             }
             $file->moveTo($this->installed_key_path);
-            return ['status' => "OK"];
+            return ['status' => "OK", "message" => gettext("License imported successful")];
         }
-        return ["status" => "failure"];
+        return ["status" => "failure", "message" => gettext("No license attached")];
     }
 
     public function exportAction()
