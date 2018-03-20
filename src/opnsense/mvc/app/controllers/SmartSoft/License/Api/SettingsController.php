@@ -224,9 +224,12 @@ class SettingsController extends ApiControllerBase
         }
         foreach ($this->request->getUploadedFiles() as $file)
         {
-            $fileName = $file->getName();
-            if ($fileName == "")
+            if ($file->getName() == "")
                 return ["status" => "failure"];
+            $key_file = file_get_contents($file->getTempName());
+            if (!strstr($key_file, "BEGIN RSA PRIVATE KEY") || !strstr($key_file, "END RSA PRIVATE KEY")) {
+                return ["status" => "failure"];
+            }
             $file->moveTo($this->installed_key_path);
             return ['status' => "OK"];
         }
