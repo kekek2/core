@@ -84,7 +84,7 @@
 <table style="width: auto">
     <tr>
         <td style="width: auto; margin: 5px; padding: 5px">
-            <button id="getAct" type="button" class="btn btn-primary">{{ lang._('Get license') }} <i id="getActProgress"
+            <button id="getAct" type="button" class="btn btn-primary">{{ lang._('Activate license') }} <i id="getActProgress"
                                                                                                      class=""></i>
             </button>
         </td>
