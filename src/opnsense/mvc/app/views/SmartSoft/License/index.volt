@@ -26,11 +26,6 @@
             window.location = "/api/license/settings/export";
         });
 
-        $(".btn-file input[type=file]").change(function(){
-            var filename = $(this).val().replace(/.*\\/, "");
-            $("#filename").val(filename);
-        });
-
         $(':file').on('fileselect', function(event, numFiles, label) {
             var formData = new FormData($("#importform")[0]);
             $.ajax({
@@ -98,9 +93,6 @@
                     <input name="importfile" type="file" id="importfile"/>
                 </span>
             </form>
-        </td>
-        <td>
-            <input type="text" id="filename" class="filename" disabled>
         </td>
     </tr>
 </table>
