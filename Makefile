@@ -23,23 +23,14 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-.include "Mk/defaults.mk"
-
 all:
 	@cat ${.CURDIR}/README.md | ${PAGER}
 
-WANTS=		git p5-File-Slurp pear-PHP_CodeSniffer phpunit6
+.include "Mk/defaults.mk"
 
-.for WANT in ${WANTS}
-want-${WANT}: force
-	@${PKG} info ${WANT} > /dev/null
-.endfor
-
-.if ${GIT} != true
 CORE_COMMIT!=	${.CURDIR}/Scripts/version.sh
 CORE_VERSION=	${CORE_COMMIT:C/-.*$//1}
 CORE_HASH=	${CORE_COMMIT:C/^.*-//1}
-.endif
 
 TING_ABI?=	1.3
 CORE_ABI?=	18.1
@@ -96,10 +87,7 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			openssh-portable \
 			openvpn${CORE_OPENVPN} \
 			pam_opnsense \
-			pecl-http \
-			pecl-radius \
 			pftop \
-			phalcon \
 			php${CORE_PHP}-ctype \
 			php${CORE_PHP}-curl \
 			php${CORE_PHP}-dom \
@@ -112,6 +100,9 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			php${CORE_PHP}-mcrypt \
 			php${CORE_PHP}-openssl \
 			php${CORE_PHP}-pdo \
+			php${CORE_PHP}-pecl-http \
+			php${CORE_PHP}-pecl-radius \
+			php${CORE_PHP}-phalcon \
 			php${CORE_PHP}-session \
 			php${CORE_PHP}-simplexml \
 			php${CORE_PHP}-sockets \
@@ -151,7 +142,15 @@ FILES_TO_ENCODE=${WRKSRC}${LOCALBASE}/etc/inc/authgui.inc \
 		${WRKSRC}${LOCALBASE}/www/ting_cert_manual.php \
 		${WRKSRC}${LOCALBASE}/opnsense/mvc/app/library/SmartSoft/Core/Tools.php
 
-mount: want-git
+WANTS=		p5-File-Slurp php${CORE_PHP}-pear-PHP_CodeSniffer \
+		phpunit6-php${CORE_PHP}
+
+.for WANT in ${WANTS}
+want-${WANT}:
+	@${PKG} info ${WANT} > /dev/null
+.endfor
+
+mount:
 	@if [ ! -f ${WRKDIR}/.mount_done ]; then \
 	    echo -n "Enabling core.git live mount..."; \
 	    echo "${CORE_COMMIT}" > \
@@ -162,7 +161,7 @@ mount: want-git
 	    service configd restart; \
 	fi
 
-umount: force
+umount:
 	@if [ -f ${WRKDIR}/.mount_done ]; then \
 	    echo -n "Disabling core.git live mount..."; \
 	    umount -f "<above>:${.CURDIR}/src"; \
@@ -172,7 +171,7 @@ umount: force
 	    service configd restart; \
 	fi
 
-manifest: want-git
+manifest:
 	@echo "name: \"${CORE_NAME}\""
 	@echo "version: \"${CORE_VERSION}\""
 	@echo "origin: \"${CORE_ORIGIN}\""
@@ -195,17 +194,17 @@ manifest: want-git
 	done
 	@echo "}"
 
-name: force
+name:
 	@echo ${CORE_NAME}
 
-depends: force
+depends:
 	@echo ${CORE_DEPENDS}
 
 PKG_SCRIPTS=	+PRE_INSTALL +POST_INSTALL \
 		+PRE_UPGRADE +POST_UPGRADE \
 		+PRE_DEINSTALL +POST_DEINSTALL
 
-scripts: want-git
+scripts:
 .for PKG_SCRIPT in ${PKG_SCRIPTS}
 	@if [ -e ${.CURDIR}/${PKG_SCRIPT} ]; then \
 		cp -v -- ${.CURDIR}/${PKG_SCRIPT} ${DESTDIR}/; \
@@ -217,42 +216,52 @@ scripts: want-git
 	fi
 .endfor
 
-install: force
+install:
 	@${MAKE} -C ${.CURDIR}/contrib install DESTDIR=${DESTDIR}
 	@${MAKE} -C ${.CURDIR}/src install DESTDIR=${DESTDIR} \
 	    CORE_NAME=${CORE_NAME} CORE_ABI=${CORE_ABI} \
 	    CORE_PACKAGESITE=${CORE_PACKAGESITE} \
 	    CORE_REPOSITORY=${CORE_REPOSITORY}
 
-bootstrap: force
+collect:
+	@(cd ${.CURDIR}/src; find * -type f) | while read FILE; do \
+		if [ -f ${DESTDIR}${LOCALBASE}/$${FILE} ]; then \
+			tar -C ${DESTDIR}${LOCALBASE} -cpf - $${FILE} | \
+			    tar -C ${.CURDIR}/src -xpf -; \
+		fi; \
+	done
+
+bootstrap:
 	@${MAKE} -C ${.CURDIR}/src install-bootstrap DESTDIR=${DESTDIR} \
 	    NO_SAMPLE=please CORE_PACKAGESITE=${CORE_PACKAGESITE} \
 	    CORE_NAME=${CORE_NAME} CORE_ABI=${CORE_ABI} \
 	    CORE_REPOSITORY=${CORE_REPOSITORY}
 
-plist: force
+plist:
 	@(${MAKE} -C ${.CURDIR}/contrib plist && \
 	    ${MAKE} -C ${.CURDIR}/src plist) | sort
 
-plist-fix: force
+plist-fix:
 	@${MAKE} DESTDIR=${DESTDIR} plist > ${.CURDIR}/plist
 
-plist-check: force
+plist-check:
 	@${MAKE} DESTDIR=${DESTDIR} plist > ${WRKDIR}/plist.new
 	@cat ${.CURDIR}/plist > ${WRKDIR}/plist.old
 	@if ! diff -uq ${WRKDIR}/plist.old ${WRKDIR}/plist.new > /dev/null ; then \
 		diff -u ${WRKDIR}/plist.old ${WRKDIR}/plist.new || true; \
 		echo ">>> Package file lists do not match.  Please run 'make plist-fix'." >&2; \
+		rm ${WRKDIR}/plist.*; \
 		exit 1; \
 	fi
+	@rm ${WRKDIR}/plist.*
 
-metadata: force
+metadata:
 	@mkdir -p ${DESTDIR}
 	@${MAKE} DESTDIR=${DESTDIR} scripts
 	@${MAKE} DESTDIR=${DESTDIR} manifest > ${DESTDIR}/+MANIFEST
 	@${MAKE} DESTDIR=${DESTDIR} plist > ${DESTDIR}/plist
 
-package-check: force
+package-check:
 	@if [ -f ${WRKDIR}/.mount_done ]; then \
 		echo ">>> Cannot continue with live mount.  Please run 'make umount'." >&2; \
 		exit 1; \
@@ -262,8 +271,7 @@ REMOTESHELL?=ssh -q encoder
 RCP?=scp -q
 RCPHOST?=encoder
 
-package: package-check
-	@rm -rf ${WRKSRC}
+package: package-check clean-work
 .for CORE_DEPEND in ${CORE_DEPENDS}
 	@if ! ${PKG} info ${CORE_DEPEND} > /dev/null; then ${PKG} install -yA ${CORE_DEPEND}; fi
 .endfor
@@ -284,17 +292,19 @@ package: package-check
 	@PORTSDIR=${.CURDIR} ${PKG} create -v -m ${WRKSRC} -r ${WRKSRC} \
 	    -p ${WRKSRC}/plist -o ${PKGDIR}
 
-upgrade-check: force
+upgrade-check:
 	@if ! ${PKG} info ${CORE_NAME} > /dev/null; then \
 		echo ">>> Cannot find package.  Please run 'opnsense-update -t ${CORE_NAME}'" >&2; \
 		exit 1; \
 	fi
-	@rm -rf ${PKGDIR}
 
-upgrade: plist-check upgrade-check package
+upgrade: plist-check upgrade-check clean-package package
 	@${PKG} delete -fy ${CORE_NAME}
 	@${PKG} add ${PKGDIR}/*.txz
 	@/usr/local/etc/rc.restart_webgui
+
+update:
+	@${GIT} pull
 
 lint: plist-check
 	find ${.CURDIR}/src ${.CURDIR}/Scripts \
@@ -309,7 +319,7 @@ lint: plist-check
 	    ! -name "*.tgz" ! -name "*.xml.dist" \
 	    -type f -print0 | xargs -0 -n1 php -l
 
-sweep: force
+sweep:
 	find ${.CURDIR}/src -type f -name "*.map" -print0 | \
 	    xargs -0 -n1 rm
 	if grep -nr sourceMappingURL= ${.CURDIR}/src; then \
@@ -326,20 +336,20 @@ sweep: force
 
 STYLEDIRS?=	src/etc/inc/plugins.inc.d src/opnsense
 
-style: want-pear-PHP_CodeSniffer
-	@: > ${.CURDIR}/.style.out
+style: want-php${CORE_PHP}-pear-PHP_CodeSniffer
+	@: > ${WRKDIR}/style.out
 .for STYLEDIR in ${STYLEDIRS}
 	@(phpcs --standard=ruleset.xml ${.CURDIR}/${STYLEDIR} \
-	    || true) >> ${.CURDIR}/.style.out
+	    || true) >> ${WRKDIR}/style.out
 .endfor
 	@echo -n "Total number of style warnings: "
-	@grep '| WARNING' ${.CURDIR}/.style.out | wc -l
+	@grep '| WARNING' ${WRKDIR}/style.out | wc -l
 	@echo -n "Total number of style errors:   "
-	@grep '| ERROR' ${.CURDIR}/.style.out | wc -l
-	@cat ${.CURDIR}/.style.out
-	@rm ${.CURDIR}/.style.out
+	@grep '| ERROR' ${WRKDIR}/style.out | wc -l
+	@cat ${WRKDIR}/style.out | ${PAGER}
+	@rm ${WRKDIR}/style.out
 
-style-fix: want-pear-PHP_CodeSniffer
+style-fix: want-php${CORE_PHP}-pear-PHP_CodeSniffer
 .for STYLEDIR in ${STYLEDIRS}
 	phpcbf --standard=ruleset.xml ${.CURDIR}/${STYLEDIR} || true
 .endfor
@@ -349,16 +359,25 @@ license: want-p5-File-Slurp
 
 dhparam:
 .for BITS in 1024 2048 4096
-	openssl dhparam -out ${.CURDIR}/src/etc/dh-parameters.${BITS} ${BITS}
+	${OPENSSL} dhparam -out \
+	    ${.CURDIR}/src/etc/dh-parameters.${BITS} ${BITS}
 .endfor
 
-test: want-phpunit6
+test: want-phpunit6-php${CORE_PHP}
 	@cd ${.CURDIR}/src/opnsense/mvc/tests && \
 	    phpunit --configuration PHPunit.xml
 
-clean: want-git
+clean-package:
+	@rm -rf ${PKGDIR}
+
+clean-src:
 	@${GIT} reset -q ${.CURDIR}/src && \
 	    ${GIT} checkout -f ${.CURDIR}/src && \
 	    ${GIT} clean -xdqf ${.CURDIR}/src
 
-.PHONY: license
+clean-work:
+	@rm -rf ${WRKSRC}
+
+clean: clean-package clean-src clean-work
+
+.PHONY: license plist

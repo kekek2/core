@@ -5669,8 +5669,7 @@ body {
 .collapse .list-group-item:last-child {
   border-bottom: none; }
 
-.dropdown-menu > li > a,
-.dropdown-header {
+ul.nav > li.dropdown > ul.dropdown-menu > li > a {
   padding: 3px 10px; }
 
 .nav-tabs {
@@ -5965,3 +5964,14 @@ label > input[type="radio"] {
 
 #log-settings label[for^="act"] {
   margin-right: 1.5em; }
+
+#log-settings table>tbody>tr>td {
+  vertical-align: middle; }
+
+#log-settings select#filterlogentries,
+#log-settings select#filterlogentriesupdateinterval {
+  width: 5em; }
+
+#log-settings select#filterlogentriesinterfaces {
+  min-width: 100%;
+  max-width: 100%; }

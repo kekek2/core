@@ -184,9 +184,9 @@ function print_alert_box($msg, $alert = 'warning', $button = '')
 {
     echo <<<EOFnp
 <div class="col-xs-12">
-  <div class="alert alert-{$alert}" role="alert">
+  <div class="alert alert-{$alert}" role="alert" style="min-height: 65px;">
     {$button}
-    <p>{$msg}</p>
+    <div style="margin-top: 8px;">{$msg}</div>
   </div>
 </div>
 EOFnp;
@@ -210,7 +210,7 @@ function print_info_box_apply($msg)
     $value = 'Apply changes';
     $name= 'apply';
 
-    $savebutton = sprintf('<form action="' . $_SERVER['REQUEST_URI'] . '" method="post">', $_SERVER['REQUEST_URI']);
+    $savebutton = '<form method="post">';
     $savebutton .= sprintf(
         '<button type="submit" name="%s" id="%s" class="btn btn-primary pull-right" value="%s">%s</button>',
         $name,
