@@ -26,11 +26,6 @@
             window.location = "/api/license/settings/export";
         });
 
-        $(".btn-file input[type=file]").change(function(){
-            var filename = $(this).val().replace(/.*\\/, "");
-            $("#filename").val(filename);
-        });
-
         $(':file').on('fileselect', function(event, numFiles, label) {
             var formData = new FormData($("#importform")[0]);
             $.ajax({
@@ -84,7 +79,7 @@
 <table style="width: auto">
     <tr>
         <td style="width: auto; margin: 5px; padding: 5px">
-            <button id="getAct" type="button" class="btn btn-primary">{{ lang._('Get license') }} <i id="getActProgress"
+            <button id="getAct" type="button" class="btn btn-primary">{{ lang._('Activate license') }} <i id="getActProgress"
                                                                                                      class=""></i>
             </button>
         </td>
@@ -98,9 +93,6 @@
                     <input name="importfile" type="file" id="importfile"/>
                 </span>
             </form>
-        </td>
-        <td>
-            <input type="text" id="filename" class="filename" disabled>
         </td>
     </tr>
 </table>
