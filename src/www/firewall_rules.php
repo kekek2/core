@@ -136,7 +136,7 @@ include("head.inc");
 
 ?>
 <body>
-<script type="text/javascript">
+<script>
 $( document ).ready(function() {
   // link delete buttons
   $(".act_delete").click(function(event){
@@ -231,7 +231,7 @@ $( document ).ready(function() {
       });
 
       // hook into tab changes, keep selected category/categories when following link
-      $(".top_tab").each(function(){
+      $("#Firewall_Rules > .menu-level-3-item").each(function(){
           var add_link = "";
           if (selected_values.length > 0) {
               add_link = "&" + $.param({'category': selected_values});
@@ -263,10 +263,33 @@ $( document ).ready(function() {
       $(".rule_select").prop("checked", $(this).prop("checked"));
   });
 
+  // move category block
+  $("#category_block").detach().appendTo($(".page-content-head > .container-fluid > .list-inline"));
+  $("#category_block").addClass("pull-right");
+
 });
 </script>
 
 <?php include("fbegin.inc"); ?>
+  <div class="hidden">
+    <div id="category_block" style="z-index:-100;">
+        <div class="hidden-sm hidden-lg"><br/></div>
+        <select class="selectpicker" data-live-search="true" data-size="5"  multiple placeholder="<?=gettext("Select category");?>" id="fw_category">
+<?php
+            // collect unique list of categories and append to option list
+            $categories = array();
+            foreach ($a_filter as $tmp_rule) {
+              if (!empty($tmp_rule['category']) && !in_array($tmp_rule['category'], $categories)) {
+                  $categories[] = $tmp_rule['category'];
+              }
+            }
+            foreach ($categories as $category):?>
+                <option value="<?=$category;?>" <?=in_array($category, $selected_category) ? "selected=\"selected\"" : "" ;?>><?=$category;?></option>
+<?php
+            endforeach;?>
+        </select>
+    </div>
+  </div>
   <section class="page-content-main">
     <div class="container-fluid">
       <div class="row">
@@ -305,7 +328,7 @@ $( document ).ready(function() {
                 if (!isset($config['system']['ipv6allow']) &&
                         ($selected_if == 'FloatingRules')):
 ?>
-                  <tr style="vertical-align:top">
+                  <tr>
                     <td>&nbsp;</td>
                     <td><span class="glyphicon glyphicon-remove text-danger"></span></td>
                     <td>IPv6 *</td>
@@ -327,9 +350,9 @@ $( document ).ready(function() {
                         || ((count($config['interfaces']) == 1) && ($selected_if == 'wan')))):
                         $alports = implode('<br />', filter_core_antilockout_ports());
 ?>
-                  <tr style="vertical-align:top">
+                  <tr>
                     <td>&nbsp;</td>
-                    <td><span class="glyphicon glyphicon-play text-success"></span></td>
+                    <td><span class="fa fa-play text-success"></span></td>
                     <td>*</td>
                     <td>*</td>
                     <td class="hidden-xs hidden-sm">*</td>
@@ -339,7 +362,7 @@ $( document ).ready(function() {
                     <td class="hidden-xs hidden-sm">&nbsp;</td>
                     <td><?=gettext("Anti-Lockout Rule");?></td>
                     <td>
-                      <a href="system_advanced_admin.php" data-toggle="tooltip" title="<?=gettext("change configuration");?>" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-pencil"></span></a>
+                      <a href="system_advanced_firewall.php" data-toggle="tooltip" title="<?=gettext("change configuration");?>" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-pencil"></span></a>
                     </td>
                   </tr>
 <?php
@@ -364,14 +387,14 @@ $( document ).ready(function() {
                     <td class="hidden-xs hidden-sm">*</td>
                     <td class="hidden-xs hidden-sm">&nbsp;</td>
                     <td class="hidden-xs hidden-sm"><?=gettext("Block private networks");?></td>
-                    <td style="vertical-align:middle" class="list nowrap">
-                        <a href="interfaces.php?if=<?=$selected_if?>#rfc1918" data-toggle="tooltip" title="<?=gettext("change configuration");?>" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-pencil"></span></a>
+                    <td class="nowrap">
+                      <a href="interfaces.php?if=<?=$selected_if?>#rfc1918" data-toggle="tooltip" title="<?=gettext("change configuration");?>" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-pencil"></span></a>
                     </td>
                   </tr>
 <?php
               endif;
               if (isset($config['interfaces'][$selected_if]['blockbogons'])): ?>
-                  <tr style="vertical-align:top" id="frrfc1918">
+                  <tr id="frrfc1918">
                     <td>&nbsp;</td>
                     <td>
                       <span class="glyphicon glyphicon-remove text-danger"></span>
@@ -412,21 +435,21 @@ $( document ).ready(function() {
 
                   // select icon
                   if ($filterent['type'] == "block" && empty($filterent['disabled'])) {
-                      $iconfn = "glyphicon-remove text-danger";
+                      $iconfn = "glyphicon glyphicon-remove text-danger";
                   } elseif ($filterent['type'] == "block" && !empty($filterent['disabled'])) {
-                      $iconfn = "glyphicon-remove text-muted";
+                      $iconfn = "glyphicon glyphicon-remove text-muted";
                   }  elseif ($filterent['type'] == "reject" && empty($filterent['disabled'])) {
-                      $iconfn = "glyphicon-remove-sign text-danger";
+                      $iconfn = "glyphicon glyphicon-remove-sign text-danger";
                   }  elseif ($filterent['type'] == "reject" && !empty($filterent['disabled'])) {
-                      $iconfn = "glyphicon-remove-sign text-muted";
+                      $iconfn = "glyphicon glyphicon-remove-sign text-muted";
                   } else if ($filterent['type'] == "match" && empty($filterent['disabled'])) {
-                      $iconfn = "glyphicon-ok text-info";
+                      $iconfn = "glyphicon glyphicon-ok text-info";
                   } else if ($filterent['type'] == "match" && !empty($filterent['disabled'])) {
-                      $iconfn = "glyphicon-ok text-muted";
+                      $iconfn = "glyphicon glyphicon-ok text-muted";
                   } elseif (empty($filterent['disabled'])) {
-                      $iconfn = "glyphicon-play text-success";
+                      $iconfn = "fa fa-play text-success";
                   } else {
-                      $iconfn = "glyphicon-play text-muted";
+                      $iconfn = "fa fa-play text-muted";
                   }
 
                   // construct line ipprotocol
@@ -453,7 +476,7 @@ $( document ).ready(function() {
                       <input class="rule_select" type="checkbox" name="rule[]" value="<?=$i;?>"  />
                     </td>
                     <td>
-                      <a href="#" class="act_toggle" id="toggle_<?=$i;?>" data-toggle="tooltip" title="<?=(empty($filterent['disabled'])) ? gettext("disable rule") : gettext("enable rule");?>"><span class="glyphicon <?=$iconfn;?>"></span></a>
+                      <a href="#" class="act_toggle" id="toggle_<?=$i;?>" data-toggle="tooltip" title="<?=(empty($filterent['disabled'])) ? gettext("Disable") : gettext("Enable");?>"><span class="<?=$iconfn;?>"></span></a>
 <?php
                       if (!empty($filterent['direction']) && $filterent['direction'] == "in"):?>
                         <i class="fa fa-long-arrow-right text-info" data-toggle="tooltip" title="<?=gettext("in");?>"></i>
@@ -636,7 +659,7 @@ $( document ).ready(function() {
                   if (!$interface_has_rules):
 ?>
                   <tr>
-                    <td colspan="11" style="text-align:center; vertical-align:middle">
+                    <td colspan="11">
                     <span class="text-muted">
                 <?php if ($selected_if == 'FloatingRules'): ?>
                       <?= gettext('No floating rules are currently defined. Floating rules are ' .
@@ -651,22 +674,7 @@ $( document ).ready(function() {
                   </tr>
                 <?php endif; ?>
                   <tr>
-                    <td colspan="5">
-                      <select class="selectpicker" data-live-search="true" data-size="5"  multiple placeholder="<?=gettext("Select category");?>" id="fw_category">
-<?php
-                        // collect unique list of categories and append to option list
-                        $categories = array();
-                        foreach ($a_filter as $tmp_rule) {
-                            if (!empty($tmp_rule['category']) && !in_array($tmp_rule['category'], $categories)) {
-                                $categories[] = $tmp_rule['category'];
-                            }
-                        }
-                        foreach ($categories as $category):?>
-                        <option value="<?=$category;?>" <?=in_array($category, $selected_category) ? "selected=\"selected\"" : "" ;?>><?=$category;?></option>
-<?php
-                        endforeach;?>
-                      </select>
-                    </td>
+                    <td colspan="5"></td>
                     <td colspan="5" class="hidden-xs hidden-sm"></td>
                     <td>
                       <a type="submit" id="move_<?=$i;?>" name="move_<?=$i;?>_x" data-toggle="tooltip" title="<?=gettext("Move selected rules to end");?>" class="act_move btn btn-default btn-xs">
@@ -689,7 +697,7 @@ $( document ).ready(function() {
                     <td colspan="11">
                       <table style="width:100%; border:0; cellspacing:0; cellpadding:0">
                         <tr>
-                          <td style="width:16px"><span class="glyphicon glyphicon-play text-success"></span></td>
+                          <td style="width:16px"><span class="fa fa-play text-success"></span></td>
                           <td style="width:100px"><?=gettext("pass");?></td>
                           <td style="width:14px"></td>
                           <td style="width:16px"><span class="glyphicon glyphicon-remove text-danger"></span></td>
@@ -708,7 +716,7 @@ $( document ).ready(function() {
 <?php                     endif; ?>
                         </tr>
                         <tr>
-                          <td><span class="glyphicon glyphicon-play text-muted"></span></td>
+                          <td><span class="fa fa-play text-muted"></span></td>
                           <td class="nowrap"><?=gettext("pass (disabled)");?></td>
                           <td>&nbsp;</td>
                           <td><span class="glyphicon glyphicon-remove text-muted"></span></td>

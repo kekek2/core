@@ -308,7 +308,7 @@ if (!isset($_GET['act']) || $_GET['act'] != 'new')
 
 <body>
 
-<script type="text/javascript">
+<script>
 $( document ).ready(function() {
     $("#type").change(function(){
         $(".auth_options").addClass('hidden');
@@ -380,29 +380,65 @@ $( document ).ready(function() {
     $("#type").change();
 
     $("#act_select").click(function() {
+        var request_data = {
+            'port': $("#ldap_port").val(),
+            'host': $("#ldap_host").val(),
+            'scope': $("#ldap_scope").val(),
+            'basedn': $("#ldap_basedn").val(),
+            'binddn': $("#ldap_binddn").val(),
+            'bindpw': $("#ldap_bindpw").val(),
+            'urltype': $("#ldap_urltype").val(),
+            'proto': $("#ldap_protver").val(),
+            'authcn': $("#ldapauthcontainers").val(),
+        };
+        if ($("#ldap_caref").val() != undefined) {
+            request_data['cert'] = $("#ldap_caref").val();
+        }
+        //
         if ($("#ldap_port").val() == '' || $("#ldap_host").val() == '' || $("#ldap_scope").val() == '' || $("#ldap_basedn").val() == '') {
-            alert("<?=gettext("Please fill the required values.");?>");
-            return;
+            BootstrapDialog.show({
+              type: BootstrapDialog.TYPE_DANGER,
+              title: "<?= gettext("Server");?>",
+              message: "<?=gettext("Please fill the required values.");?>",
+              buttons: [{
+                        label: "<?= gettext("Close");?>",
+                        action: function(dialogRef) {
+                            dialogRef.close();
+                        }
+                    }]
+            });
         } else {
-            var url = 'system_usermanager_settings_ldapacpicker.php?';
-            url += 'port=' + $("#ldap_port").val();
-            url += '&host=' + $("#ldap_host").val();
-            url += '&scope=' + $("#ldap_scope").val();
-            url += '&basedn=' + $("#ldap_basedn").val();
-            url += '&binddn=' + $("#ldap_binddn").val();
-            url += '&bindpw=' + $("#ldap_bindpw").val();
-            url += '&urltype=' + $("#ldap_urltype").val();
-            url += '&proto=' + $("#ldap_protver").val();
-            url += '&authcn=' + $("#ldapauthcontainers").val();
-            if ($("#ldap_caref").val() != undefined) {
-                url += '&cert=' + $("#ldap_caref").val();
-            } else {
-                url += '&cert=';
-            }
-            var oWin = window.open(url, "OPNsense", "width=620,height=400,top=150,left=150, scrollbars=yes");
-            if (oWin==null || typeof(oWin)=="undefined") {
-                alert("<?=gettext('Popup blocker detected. Action aborted.');?>");
-            }
+            $.post('system_usermanager_settings_ldapacpicker.php', request_data, function(data) {
+                var tbl  = $("<table/>");
+                var tbl_body = $("<tbody/>");
+                for (var i=0; i < data.length ; ++i) {
+                    var tr = $("<tr/>");
+                    tr.append($("<td/>").append(
+                        $("<input type='checkbox' class='ldap_item_select'>")
+                            .prop('checked', data[i].selected)
+                            .prop('value', data[i].value)
+                    ));
+                    tr.append($("<td/>").text(data[i].value));
+                    tbl_body.append(tr);
+                }
+                tbl.append(tbl_body);
+                BootstrapDialog.show({
+                  type: BootstrapDialog.TYPE_PRIMARY,
+                  title: "<?=gettext("Please select which containers to Authenticate against:");?>",
+                  message: tbl,
+                  buttons: [{
+                            label: "<?= gettext("Close");?>",
+                            action: function(dialogRef) {
+
+                                var values = $(".ldap_item_select:checked").map(function(){
+                                    return $(this).val();
+                                }).get().join(';');
+                                $("#ldapauthcontainers").val(values);
+                                dialogRef.close();
+                            }
+                        }]
+                });
+            }, dataType="json");
         }
     });
 });
@@ -472,9 +508,9 @@ endif; ?>
                   <td><a id="help_for_ldap_host" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Hostname or IP address");?></td>
                   <td>
                     <input name="ldap_host" type="text" id="ldap_host" size="20" value="<?=$pconfig['ldap_host'];?>"/>
-                    <output class="hidden" for="help_for_ldap_host">
+                    <div class="hidden" data-for="help_for_ldap_host">
                       <?= gettext("NOTE: When using SSL, this hostname MUST match the Common Name (CN) of the LDAP server's SSL Certificate."); ?>
-                    </output>
+                    </div>
                   </td>
                 </tr>
                 <tr class="auth_ldap auth_options hidden">
@@ -486,7 +522,7 @@ endif; ?>
                 <tr class="auth_ldap auth_options hidden">
                   <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Transport");?></td>
                   <td>
-                    <select name='ldap_urltype' id='ldap_urltype' class="formselect selectpicker" data-style="btn-default">
+                    <select name="ldap_urltype" id="ldap_urltype" class="selectpicker" data-style="btn-default">
                       <option value="TCP - Standard" data-port="389" <?=$pconfig['ldap_urltype'] == "TCP - Standard" ? "selected=\"selected\"" : "";?>>
                         <?=gettext("TCP - Standard");?>
                       </option>
@@ -504,7 +540,7 @@ endif; ?>
                   <td>
 <?php
                     if (count($config['ca'])) :?>
-                    <select id='ldap_caref' name='ldap_caref' class="formselect selectpicker" data-style="btn-default">
+                    <select id="ldap_caref" name="ldap_caref" class="selectpicker" data-style="btn-default">
 <?php
                     foreach ($config['ca'] as $ca) :
 ?>
@@ -512,10 +548,10 @@ endif; ?>
 <?php
                     endforeach; ?>
                     </select>
-                    <output class="hidden" for="help_for_ldap_caref">
+                    <div class="hidden" data-for="help_for_ldap_caref">
                       <span><?=gettext("This option is used if 'SSL Encrypted' option is choosen.");?> <br />
                       <?=gettext("It must match with the CA in the AD otherwise problems will arise.");?></span>
-                    </output>
+                    </div>
 <?php
                     else :?>
                     <b><?=gettext('No Certificate Authorities defined.');?></b> <br /><?=gettext('Create one under');?> <a href="system_camanager.php"><?=gettext('System: Certificates');?></a>.
@@ -526,7 +562,7 @@ endif; ?>
                 <tr class="auth_ldap auth_options hidden">
                   <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Protocol version");?></td>
                   <td>
-                    <select name='ldap_protver' id='ldap_protver' class="formselect selectpicker" data-style="btn-default">
+                    <select name="ldap_protver" id="ldap_protver" class="selectpicker" data-style="btn-default">
                       <option value="2" <?=$pconfig['ldap_protver'] == 2 ? "selected=\"selected\"" : "";?>>2</option>
                       <option value="3" <?=$pconfig['ldap_protver'] == 3 ? "selected=\"selected\"" : "";?>>3</option>
                     </select>
@@ -539,15 +575,15 @@ endif; ?>
                     <input name="ldap_binddn" type="text" id="ldap_binddn" size="40" value="<?=$pconfig['ldap_binddn'];?>"/>
                     <?=gettext("Password:");?><br/>
                     <input name="ldap_bindpw" type="password" class="formfld pwd" id="ldap_bindpw" size="20" value="<?=$pconfig['ldap_bindpw'];?>"/><br />
-                    <output class="hidden" for="help_for_ldap_binddn">
+                    <div class="hidden" data-for="help_for_ldap_binddn">
                       <?=gettext("Leave empty to use anonymous binds to resolve distinguished names");?>
-                    </output>
+                    </div>
                   </td>
                 </tr>
                 <tr class="auth_ldap auth_options hidden">
                   <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Search scope");?></td>
                   <td>
-                    <select name='ldap_scope' id='ldap_scope' class="formselect selectpicker" data-style="btn-default">
+                    <select name="ldap_scope" id="ldap_scope" class="selectpicker" data-style="btn-default">
                       <option value="one" <?=$pconfig['ldap_scope'] == 'one' ?  "selected=\"selected\"" : "";?>>
                         <?=gettext('One Level');?>
                       </option>
@@ -571,19 +607,19 @@ endif; ?>
                     <li><input type="button" id="act_select" class="btn btn-default" value="<?=gettext("Select");?>" /></li>
                     </ul>
                     <br/>
-                    <output class="hidden" for="help_for_ldapauthcontainers">
+                    <div class="hidden" data-for="help_for_ldapauthcontainers">
                         <br/><?= gettext('Semicolon-separated list of distinguished names optionally containing DC= components.') ?>
                         <br/><?=gettext("Example:");?> OU=Freelancers,O=Company,DC=example,DC=com;CN=Users,OU=Staff,O=Company
-                    </output>
+                    </div>
                   </td>
                 </tr>
                 <tr class="auth_ldap auth_options hidden">
                   <td><a id="help_for_ldap_extended_query" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Extended Query");?></td>
                   <td>
                     <input name="ldap_extended_query" type="text" id="ldap_extended_query" size="40" value="<?=$pconfig['ldap_extended_query'];?>"/>
-                    <output class="hidden" for="help_for_ldap_extended_query">
+                    <div class="hidden" data-for="help_for_ldap_extended_query">
                       <?=gettext("Example:");?> &amp;(objectClass=inetOrgPerson)(mail=*@example.com)
-                    </output>
+                    </div>
                   </td>
                 </tr>
 <?php if (!isset($id)) :
@@ -591,7 +627,7 @@ endif; ?>
                 <tr class="auth_ldap auth_options hidden">
                   <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Initial Template");?></td>
                   <td>
-                    <select name='ldap_tmpltype' id='ldap_tmpltype' class="formselect selectpicker" data-style="btn-default">
+                    <select name="ldap_tmpltype" id="ldap_tmpltype" class="selectpicker" data-style="btn-default">
                       <option value="open"><?=gettext('OpenLDAP');?></option>
                       <option value="msad"><?=gettext('Microsoft AD');?></option>
                       <option value="edir"><?=gettext('Novell eDirectory');?></option>
@@ -604,9 +640,9 @@ endif; ?>
                   <td><a id="help_for_ldap_attr_user" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("User naming attribute");?></td>
                   <td>
                     <input name="ldap_attr_user" type="text" id="ldap_attr_user" size="20" value="<?=$pconfig['ldap_attr_user'];?>"/>
-                    <output class="hidden" for="help_for_ldap_attr_user">
+                    <div class="hidden" data-for="help_for_ldap_attr_user">
                       <?= gettext('Typically "cn" (OpenLDAP, Novell eDirectory), "sAMAccountName" (Microsoft AD)') ?>
-                    </output>
+                    </div>
                   </td>
                 </tr>
                 <!-- RADIUS -->
@@ -625,7 +661,7 @@ endif; ?>
                 <tr class="auth_radius auth_options hidden">
                   <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Services offered");?></td>
                   <td>
-                    <select name='radius_srvcs' id='radius_srvcs' class="formselect selectpicker" data-style="btn-default">
+                    <select name="radius_srvcs" id="radius_srvcs" class="selectpicker" data-style="btn-default">
                       <option value="both" <?=$pconfig['radius_srvcs'] == 'both' ? "selected=\"selected\"" :"";?>>
                         <?=gettext('Authentication and Accounting');?>
                       </option>
@@ -651,11 +687,11 @@ endif; ?>
                   <td><a id="help_for_radius_timeout" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Authentication Timeout");?></td>
                   <td>
                     <input name="radius_timeout" type="text" id="radius_timeout" size="20" value="<?=$pconfig['radius_timeout'];?>"/>
-                    <output class="hidden" for="help_for_radius_timeout">
+                    <div class="hidden" data-for="help_for_radius_timeout">
                       <br /><?= gettext("This value controls how long, in seconds, that the RADIUS server may take to respond to an authentication request.") ?>
                       <br /><?= gettext("If left blank, the default value is 5 seconds.") ?>
                       <br /><br /><?= gettext("NOTE: If you are using an interactive two-factor authentication system, increase this timeout to account for how long it will take the user to receive and enter a token.") ?>
-                    </output>
+                    </div>
                   </td>
                 </tr>
                 <!-- pluggable options -->
@@ -696,9 +732,9 @@ endif; ?>
                         <input name="<?=$fieldname;?>" type="checkbox" value="1" <?=!empty($pconfig[$fieldname]) ? "checked=\"checked\"" : ""; ?>/>
 <?php
                         endif;?>
-                        <output class="hidden" for="help_for_field_<?=$typename;?>_<?=$fieldname;?>">
+                        <div class="hidden" data-for="help_for_field_<?=$typename;?>_<?=$fieldname;?>">
                           <?=$field['help'];?>
-                        </output>
+                        </div>
                       </td>
                     </tr>
 

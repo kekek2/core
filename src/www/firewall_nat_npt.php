@@ -111,7 +111,7 @@ $main_buttons = array(
 
 
 <body>
-  <script type="text/javascript">
+  <script>
   $( document ).ready(function() {
     // link delete buttons
     $(".act_delete").click(function(){
@@ -223,11 +223,11 @@ $main_buttons = array(
                           <input class="rule_select" type="checkbox" name="rule[]" value="<?=$i;?>"  />
                       </td>
                       <td>
-                        <a href="#" class="act_toggle" id="toggle_<?=$i;?>" data-toggle="tooltip" title="<?=(!isset($natent['disabled'])) ? gettext("disable rule") : gettext("enable rule");?>">
+                        <a href="#" class="act_toggle" id="toggle_<?=$i;?>" data-toggle="tooltip" title="<?=(!isset($natent['disabled'])) ? gettext("Disable") : gettext("Enable");?>">
 <?php                     if(isset($natent['disabled'])):?>
-                          <span class="glyphicon glyphicon-play text-muted"></span>
+                          <span class="fa fa-play text-muted"></span>
 <?php                        else:?>
-                          <span class="glyphicon glyphicon-play text-success"></span>
+                          <span class="fa fa-play text-success"></span>
 <?php                     endif; ?>
                         </a>
                       </td>
@@ -289,11 +289,11 @@ $main_buttons = array(
                       <td colspan="8">&nbsp;</td>
                     </tr>
                     <tr>
-                      <td><span class="glyphicon glyphicon-play text-success"></span></td>
+                      <td><span class="fa fa-play text-success"></span></td>
                       <td colspan="7"><?=gettext("Enabled rule"); ?></td>
                     </tr>
                     <tr>
-                      <td><span class="glyphicon glyphicon-play text-muted"></span></td>
+                      <td><span class="fa fa-play text-muted"></span></td>
                       <td colspan="7"><?=gettext("Disabled rule"); ?></td>
                     </tr>
                   </tfoot>

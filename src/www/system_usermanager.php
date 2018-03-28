@@ -76,7 +76,6 @@ function get_user_privdesc(& $user)
     return $privs;
 }
 
-// link user section
 $a_user = &config_read_array('system', 'user');
 
 // reset errors and action
@@ -95,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
     if ($act == "expcert" && isset($id)) {
         // export certificate
-        $cert =& lookup_cert($a_user[$id]['cert'][$_GET['certid']]);
+        $cert = &lookup_cert($a_user[$id]['cert'][$_GET['certid']]);
 
         $exp_name = urlencode("{$a_user[$id]['name']}-{$cert['descr']}.crt");
         $exp_data = base64_decode($cert['crt']);
@@ -108,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     } elseif ($act == "expckey" && isset($id)) {
         // export private key
-        $cert =& lookup_cert($a_user[$id]['cert'][$_GET['certid']]);
+        $cert = &lookup_cert($a_user[$id]['cert'][$_GET['certid']]);
         $exp_name = urlencode("{$a_user[$id]['name']}-{$cert['descr']}.key");
         $exp_data = base64_decode($cert['prv']);
         $exp_size = strlen($exp_data);
@@ -120,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     } elseif ($act == 'new' || $act == 'edit') {
         // edit user, load or init data
-        $fieldnames = array('user_dn', 'descr', 'expires', 'scope', 'uid', 'priv', 'ipsecpsk', 'lifetime', 'otp_seed', 'email', 'comment');
+        $fieldnames = array('user_dn', 'descr', 'expires', 'scope', 'uid', 'priv', 'ipsecpsk', 'lifetime', 'otp_seed', 'email', 'shell', 'comment');
         if (isset($id)) {
             if (isset($a_user[$id]['authorizedkeys'])) {
                 $pconfig['authorizedkeys'] = base64_decode($a_user[$id]['authorizedkeys']);
@@ -237,6 +236,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         if ($pconfig['passwordfld1'] != $pconfig['passwordfld2']) {
             $input_errors[] = gettext('The passwords do not match.');
+        } elseif (empty($pconfig['gen_new_password'])) {
+            // check against local password policy
+            $authenticator = get_authenticator();
+            $input_errors = array_merge(
+                $input_errors, $authenticator->checkPolicy($pconfig['usernamefld'], null, $pconfig['passwordfld1'])
+            );
         }
 
         if (!empty($pconfig['passwordfld1']) && !empty($pconfig['gen_new_password'])) {
@@ -304,7 +309,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
         }
 
-        if (count($input_errors)==0) {
+        if (!empty($pconfig['shell']) && !in_array($pconfig['shell'], auth_get_shells(isset($id) ? $a_user[$id]['uid'] : $config['system']['nextuid']))) {
+            $input_errors[] = gettext('Invalid login shell provided.');
+        }
+
+        if (!count($input_errors)) {
             $userent = array();
 
             if (isset($id)) {
@@ -354,6 +363,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 unset($userent['comment']);
             }
 
+            if (!empty($pconfig['shell'])) {
+                $userent['shell'] = $pconfig['shell'];
+            } elseif (isset($userent['shell'])) {
+                unset($userent['shell']);
+            }
+
             if (isset($id)) {
                 $a_user[$id] = $userent;
             } else {
@@ -361,8 +376,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $a_user[] = $userent;
             }
 
-            local_user_set($userent);
             local_user_set_groups($userent, $pconfig['groups']);
+            local_user_set($userent);
             write_config();
 
             if (!empty($pconfig['chkNewCert'])) {
@@ -387,14 +402,14 @@ legacy_html_escape_form_data($a_user);
 include("head.inc");
 
 ?>
-<script type="text/javascript" src="/ui/js/jquery.qrcode.js"></script>
-<script type="text/javascript" src="/ui/js/qrcode.js"></script>
+<script src="/ui/js/jquery.qrcode.js"></script>
+<script src="/ui/js/qrcode.js"></script>
 
 <body>
 
 <?php include("fbegin.inc"); ?>
 
-<script type="text/javascript">
+<script>
 $( document ).ready(function() {
     // unhide otp QR code if found
     $('#otp_unhide').click(function () {
@@ -605,27 +620,27 @@ $( document ).ready(function() {
                     <td><a id="help_for_fullname" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Full name");?></td>
                     <td>
                       <input name="descr" type="text" value="<?=$pconfig['descr'];?>" <?= $pconfig['scope'] == "system" || !empty($pconfig['user_dn']) ? "readonly=\"readonly\"" : "";?> />
-                      <output class="hidden" for="help_for_fullname">
+                      <div class="hidden" data-for="help_for_fullname">
                         <?=gettext("User's full name, for your own information only");?>
-                      </output>
+                      </div>
                     </td>
                   </tr>
                   <tr>
                     <td><a id="help_for_email" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("E-Mail");?></td>
                     <td>
                       <input name="email" type="text" value="<?= $pconfig['email'] ?>" />
-                      <output class="hidden" for="help_for_email">
+                      <div class="hidden" data-for="help_for_email">
                         <?= gettext('User\'s e-mail address, for your own information only') ?>
-                      </output>
+                      </div>
                     </td>
                   </tr>
                   <tr>
                     <td><a id="help_for_comment" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Comment");?></td>
                     <td>
                       <textarea name="comment" id="comment" class="form-control" cols="65" rows="3"><?= $pconfig['comment'] ?></textarea>
-                      <output class="hidden" for="help_for_comment">
+                      <div class="hidden" data-for="help_for_comment">
                         <?= gettext('User comment, for your own information only') ?>
-                      </output>
+                      </div>
                     </td>
                   </tr>
                   <tr>
@@ -636,12 +651,24 @@ $( document ).ready(function() {
                     </td>
                   </tr>
                   <tr>
+                    <td><i class="fa fa-info-circle text-muted"></i> <?= gettext('Login shell') ?></td>
+                    <td>
+                      <select name="shell" class="selectpicker" data-style="btn-default">
+<?php
+                      foreach (auth_get_shells(isset($id) ? $a_user[$id]['uid'] : $config['system']['nextuid']) as $shell_key => $shell_value) :?>
+                        <option value="<?= html_safe($shell_key) ?>" <?= $pconfig['shell'] == $shell_key ? 'selected="selected"' : '' ?>><?= html_safe($shell_value) ?></option>
+<?php
+                      endforeach;?>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr>
                     <td><a id="help_for_expires" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Expiration date"); ?></td>
                     <td>
                       <input name="expires" type="text" id="expires" class="datepicker" data-date-format="mm/dd/yyyy" value="<?=$pconfig['expires'];?>" />
-                      <output class="hidden" for="help_for_expires">
+                      <div class="hidden" data-for="help_for_expires">
                           <?=gettext("Leave blank if the account shouldn't expire, otherwise enter the expiration date in the following format: mm/dd/yyyy"); ?>
-                      </output>
+                      </div>
                     </td>
                   </tr>
                   <tr>
@@ -702,9 +729,9 @@ $( document ).ready(function() {
                           </td>
                         </tr>
                       </table>
-                      <output class="hidden" for="help_for_groups">
+                      <div class="hidden" data-for="help_for_groups">
                           <?=gettext("Hold down CTRL (pc)/COMMAND (mac) key to select multiple items");?>
-                      </output>
+                      </div>
                     </td>
                   </tr>
 <?php
@@ -852,10 +879,10 @@ $( document ).ready(function() {
                                   </tr>
                               </tfoot>
                           </table>
-                          <output class="hidden" for="help_for_apikeys">
+                          <div class="hidden" data-for="help_for_apikeys">
                               <hr/>
                               <?=gettext('Manage API keys here for machine to machine interaction using this user\'s credentials.');?>
-                          </output>
+                          </div>
                       </td>
                   </tr>
 <?php
@@ -873,9 +900,9 @@ $( document ).ready(function() {
                     <td>
                       <input name="otp_seed" type="text" value="<?=$pconfig['otp_seed'];?>"/>
                       <input type="checkbox" name="gen_otp_seed"/>&nbsp;<small><?= gettext('Generate new secret (160 bit)') ?></small>
-                      <output class="hidden" for="help_for_otp_seed">
+                      <div class="hidden" data-for="help_for_otp_seed">
                         <?=gettext("OTP (base32) seed to use when a one time password authenticator is used");?><br/>
-                      </output>
+                      </div>
                     </td>
                   </tr>
 <?php
@@ -890,13 +917,13 @@ $( document ).ready(function() {
                     <td>
                       <label class="btn btn-primary" id="otp_unhide"><?= gettext('Click to unhide') ?></label>
                       <div style="display:none;" id="otp_qrcode"></div>
-                      <script type="text/javascript">
+                      <script>
                         $('#otp_qrcode').qrcode('<?= $otp_url ?>');
                       </script>
                       </div>
-                      <output class="hidden" for="help_for_otp_code">
+                      <div class="hidden" data-for="help_for_otp_code">
                         <?= gettext('Scan this QR code for easy setup with external apps.') ?>
-                      </output>
+                      </div>
                     </td>
                   </tr>
 <?php

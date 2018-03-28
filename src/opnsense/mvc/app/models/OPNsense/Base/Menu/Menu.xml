@@ -48,16 +48,15 @@
             <Log order="100" VisibleName="Log File" url="/ui/syslog/logview/showlog/routing"/>
         </Routes>
         <Gateways order="30" cssClass="fa fa-location-arrow fa-fw">
-            <All url="/system_gateways.php">
-                <All url="/system_gateways.php*" visibility="hidden"/>
+            <Single order="10" url="/system_gateways.php">
+                <List url="/system_gateways.php*" visibility="hidden"/>
                 <Edit url="/system_gateways_edit.php*" visibility="hidden"/>
-            </All>
-            <AllStatus VisibleName="Status" url="/status_gateways.php"/>
-            <Group url="/system_gateway_groups.php">
+            </Single>
+            <Group order="20" url="/system_gateway_groups.php">
+                <List url="/system_gateway_groups.php*" visibility="hidden"/>
                 <Edit url="/system_gateway_groups_edit.php*" visibility="hidden"/>
             </Group>
-            <GroupStatus VisibleName="Group Status" url="/status_gateway_groups.php"/>
-            <Log VisibleName="Log File" url="/diag_logs_gateways.php"/>
+            <Log VisibleName="Log File" order="30" url="/diag_logs_gateways.php"/>
         </Gateways>
         <Settings order="20" cssClass="fa fa-cogs fa-fw">
             <General order="100" url="/system_general.php">
@@ -70,7 +69,11 @@
                 <Edit url="/system_advanced_sysctl.php*" visibility="hidden"/>
             </Tunables>
         </Settings>
-        <LogFile order="150" VisibleName="Log File" url="/ui/syslog/logview/showlog/system" cssClass="fa fa-eye fa-fw"/>
+        <LogFiles order="150" VisibleName="Log Files" cssClass="fa fa-eye fa-fw">
+            <General order="100" VisibleName="General" url="/ui/syslog/logview/showlog/system"/>
+            <Configd order="150" VisibleName="Configd" url="/ui/syslog/logview/showlog/configd"/>
+            <WebGUI order="200" VisibleName="Web GUI" url="/ui/syslog/logview/showlog/httpd"/>
+        </LogFiles>
         <Wizard order="140" url="/wizard.php?xml=system" cssClass="fa fa-magic fa-fw">
             <Step url="/wizard.php?xml=system*" visibility="hidden"/>
         </Wizard>
@@ -119,9 +122,6 @@
             <LAGG url="/interfaces_lagg.php">
                 <Edit url="/interfaces_lagg_edit.php*" visibility="hidden"/>
             </LAGG>
-            <QinQ url="/interfaces_qinq.php">
-                <Edit url="/interfaces_qinq_edit.php*" visibility="hidden"/>
-            </QinQ>
             <VLAN url="/interfaces_vlan.php">
                 <Edit url="/interfaces_vlan_edit.php*" visibility="hidden"/>
             </VLAN>

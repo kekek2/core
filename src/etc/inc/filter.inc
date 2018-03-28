@@ -253,14 +253,12 @@ function filter_configure_sync($verbose = false)
         // add VPN and local networks
         $intfv4 = array_merge($intfv4, filter_core_get_default_nat_outbound_networks());
         foreach ($fw->getInterfaceMapping() as $intf => $ifcfg) {
-            $pool_opts = !empty($config['system']['snat_use_sticky']) ? "sticky-address" : "";
             if (substr($ifcfg['if'], 0, 4) != 'ovpn' && !empty($ifcfg['gateway'])) {
                 foreach (array(500, null) as $dstport) {
                     $rule = array(
                         "interface" => $intf,
                         "dstport" => $dstport,
                         "staticnatport" => !empty($dstport),
-                        "poolopts" => $pool_opts,
                         "destination" => array("any" => true),
                         "ipprotocol" => 'inet',
                         "descr" => "Automatic outbound rule"
@@ -323,7 +321,6 @@ function filter_configure_sync($verbose = false)
         flush();
     }
 
-    /* XXX deprectated feature, only called on reconfigure */
     if (isset($config['system']['gw_switch_default'])) {
         $gateways_status = return_gateways_status(true);
         $gateways_arr = return_gateways_array();

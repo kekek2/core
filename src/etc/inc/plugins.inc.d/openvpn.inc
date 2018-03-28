@@ -124,27 +124,38 @@ function openvpn_xmlrpc_sync()
     return $result;
 }
 
-$openvpn_verbosity_level = array(
-    0 => gettext('0 (none)'),
-    1 => gettext('1 (default)'),
-    2 => gettext('2'),
-    3 => gettext('3 (recommended)'),
-    4 => gettext('4'),
-    5 => gettext('5'),
-    6 => gettext('6'),
-    7 => gettext('7'),
-    8 => gettext('8'),
-    9 => gettext('9'),
-    10 => gettext('10'),
-    11 => gettext('11'),
-);
+function openvpn_verbosity_level()
+{
+    return array(
+       0 => gettext('0 (none)'),
+       1 => gettext('1 (default)'),
+       2 => gettext('2'),
+       3 => gettext('3 (recommended)'),
+       4 => gettext('4'),
+       5 => gettext('5'),
+       6 => gettext('6'),
+       7 => gettext('7'),
+       8 => gettext('8'),
+       9 => gettext('9'),
+       10 => gettext('10'),
+       11 => gettext('11'),
+    );
+}
 
-$openvpn_compression_modes = array(
-    '' => gettext('No Preference'),
-    'no' => gettext('Disabled - No Compression'),
-    'adaptive' => gettext('Enabled with Adaptive Compression'),
-    'yes' => gettext('Enabled without Adaptive Compression'),
-);
+function openvpn_compression_modes()
+{
+    return array(
+        '' => gettext('No Preference'),
+        'no' => gettext('Disabled - No Compression'),
+        'adaptive' => gettext('Enabled with Adaptive Compression'),
+        'yes' => gettext('Enabled without Adaptive Compression'),
+    );
+}
+
+function openvpn_get_protocols()
+{
+    return array('UDP', 'UDP4', 'UDP6', 'TCP', 'TCP4', 'TCP6');
+}
 
 function openvpn_create_key()
 {
@@ -194,6 +205,11 @@ function openvpn_port_used($prot, $interface, $port, $curvpnid = 0)
 {
     global $config;
 
+    if (strlen($prot) > 3) {
+        /* ignore "4" or "6" if given */
+        $prot = substr($prot, 0, 3);
+    }
+
     if (isset($config['openvpn']['openvpn-server'])) {
         foreach ($config['openvpn']['openvpn-server'] as & $settings) {
             if (isset($settings['disable'])) {
@@ -204,7 +220,7 @@ function openvpn_port_used($prot, $interface, $port, $curvpnid = 0)
                 continue;
             }
 
-            if ($port == $settings['local_port'] && $prot == $settings['protocol'] &&
+            if ($port == $settings['local_port'] && strpos($settings['protocol'], $prot) === 0 &&
               ($interface == $settings['interface'] || $interface == "any" || $settings['interface'] == "any")) {
                 return $settings['vpnid'];
             }
@@ -221,21 +237,24 @@ function openvpn_port_used($prot, $interface, $port, $curvpnid = 0)
                 continue;
             }
 
-            if ($port == $settings['local_port'] && $prot == $settings['protocol'] &&
+            if ($port == $settings['local_port'] && strpos($settings['protocol'], $prot) === 0 &&
               ($interface == $settings['interface'] || $interface == "any" || $settings['interface'] == "any")) {
                 return $settings['vpnid'];
             }
         }
     }
+
     return 0;
 }
 
 function openvpn_port_next($prot, $interface = "wan")
 {
     $port = 1194;
+
     while (openvpn_port_used($prot, $interface, $port)) {
         $port++;
     }
+
     while (openvpn_port_used($prot, "any", $port)) {
         $port++;
     }
@@ -335,6 +354,9 @@ function openvpn_validate_port($value, $name)
 
 function openvpn_validate_cidr($value, $name, $multiple = false, $ipproto = 'ipv4', $allow_hosts = false)
 {
+    $error_multi = gettext("The field '%s' must contain only valid %s CIDR range(s) separated by commas.");
+    $error_single = gettext("The field '%s' must contain a single valid %s CIDR range.");
+
     $value = trim($value);
     $error = false;
     if (empty($value)) {
@@ -343,7 +365,7 @@ function openvpn_validate_cidr($value, $name, $multiple = false, $ipproto = 'ipv
     $networks = explode(',', $value);
 
     if (!$multiple && (count($networks) > 1)) {
-        return sprintf(gettext("The field '%s' must contain a single valid %s CIDR range."), $name, $ipproto);
+        return sprintf($error_single, $name, $ipproto);
     }
 
     foreach ($networks as $network) {
@@ -358,11 +380,14 @@ function openvpn_validate_cidr($value, $name, $multiple = false, $ipproto = 'ipv
     }
 
     if ($error) {
-        return sprintf(gettext("The field '%s' must contain only valid %s CIDR range(s) " .
-            "separated by commas."), $name, $ipproto);
-    } else {
-        return false;
+        if (!$multiple) {
+            return sprintf($error_single, $name, $ipproto);
+        }
+
+        return sprintf($error_multi, $name, $ipproto);
     }
+
+    return false;
 }
 
 function openvpn_validate_cidr_ipv4($value, $allow_hosts = false)
@@ -1266,7 +1291,7 @@ function openvpn_get_server_status($server, $socket)
         stream_set_timeout($fp, 1);
 
         /* send our status request */
-        fputs($fp, "status 2\n");
+        fputs($fp, "status 3\n");
 
         /* recv all response lines */
         while (!feof($fp)) {
@@ -1286,7 +1311,7 @@ function openvpn_get_server_status($server, $socket)
             }
             /* parse client list line */
             if (strstr($line, "CLIENT_LIST")) {
-                $list = explode(",", $line);
+                $list = explode("\t", $line);
                 $conn = array();
                 $conn['common_name'] = $list[1];
                 $conn['remote_host'] = $list[2];
@@ -1298,7 +1323,7 @@ function openvpn_get_server_status($server, $socket)
             }
             /* parse routing table lines */
             if (strstr($line, "ROUTING_TABLE")) {
-                $list = explode(",", $line);
+                $list = explode("\t", $line);
                 $conn = array();
                 $conn['virtual_addr'] = $list[1];
                 $conn['common_name'] = $list[2];
@@ -1362,7 +1387,7 @@ function openvpn_get_client_status($client, $socket)
     if ($fp) {
         stream_set_timeout($fp, 1);
         /* send our status request */
-        fputs($fp, "state 1\n");
+        fputs($fp, "state all\n");
 
         /* recv all response lines */
         while (!feof($fp)) {
@@ -1375,31 +1400,24 @@ function openvpn_get_client_status($client, $socket)
             }
 
             /* Get the client state */
+            $list = explode(",", $line);
+            if (count($list) > 1) {
+                $client['connect_time'] = date('Y-m-d H:i:s', $list[0]);
+            }
             if (strstr($line, "CONNECTED")) {
                 $client['status']="up";
-                $list = explode(",", $line);
-
-                $client['connect_time'] = date('Y-m-d H:i:s', $list[0]);
                 $client['virtual_addr'] = $list[3];
                 $client['remote_host'] = $list[4];
-            }
-            if (strstr($line, "CONNECTING")) {
+            } elseif (strstr($line, "CONNECTING")) {
                 $client['status']="connecting";
-            }
-            if (strstr($line, "ASSIGN_IP")) {
-                $client['status']="waiting";
-                $list = explode(",", $line);
-                $client['connect_time'] = date('Y-m-d H:i:s', $list[0]);
+            } elseif (strstr($line, "ASSIGN_IP")) {
+                $client['status'] = "waiting";
                 $client['virtual_addr'] = $list[3];
-            }
-            if (strstr($line, "RECONNECTING")) {
-                $client['status']="reconnecting";
-                $list = explode(",", $line);
-                $client['connect_time'] = date('Y-m-d H:i:s', $list[0]);
+            } elseif (strstr($line, "RECONNECTING")) {
+                $client['status'] = "reconnecting";
                 $client['status'] .= "; " . $list[2];
-            }
-            /* parse end of output line */
-            if (strstr($line, "END") || strstr($line, "ERROR")) {
+            } elseif (strstr($line, "END") || strstr($line, "ERROR")) {
+                /* parse end of output line */
                 break;
             }
         }
@@ -1417,18 +1435,13 @@ function openvpn_get_client_status($client, $socket)
                     break;
                 }
 
+                $list = explode(",", $line);
                 if (strstr($line, "TCP/UDP read bytes")) {
-                    $list = explode(",", $line);
                     $client['bytes_recv'] = $list[1];
-                }
-
-                if (strstr($line, "TCP/UDP write bytes")) {
-                    $list = explode(",", $line);
+                } elseif (strstr($line, "TCP/UDP write bytes")) {
                     $client['bytes_sent'] = $list[1];
-                }
-
-                /* parse end of output line */
-                if (strstr($line, "END")) {
+                } elseif (strstr($line, "END")) {
+                    /* parse end of output line */
                     break;
                 }
             }

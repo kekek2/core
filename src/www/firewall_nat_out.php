@@ -113,11 +113,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $mode = $config['nat']['outbound']['mode'];
 
+$interface_names= array();
+// add this hosts ips
+foreach ($config['interfaces'] as $intf => $intfdata) {
+    if (isset($intfdata['ipaddr']) && $intfdata['ipaddr'] != 'dhcp') {
+        $interface_names[$intfdata['ipaddr']] = sprintf(gettext('%s address'), !empty($intfdata['descr']) ? $intfdata['descr'] : $intf );
+    }
+}
+
+
 include("head.inc");
 
 ?>
 <body>
-  <script type="text/javascript">
+  <script>
   $( document ).ready(function() {
     // link delete buttons
     $(".act_delete").click(function(){
@@ -310,12 +319,12 @@ include("head.inc");
 <?php
                     if ($mode == "disabled" || $mode == "automatic"):
 ?>
-                      <span data-toggle="tooltip" title="<?=gettext("All manual rules are being ignored");?>" class="glyphicon glyphicon-play <?=$mode == "disabled" || $mode == "automatic" || isset($natent['disabled']) ? "text-muted" : "text-success";?>"></span>
+                      <span data-toggle="tooltip" title="<?=gettext("All manual rules are being ignored");?>" class="fa fa-play <?=$mode == "disabled" || $mode == "automatic" || isset($natent['disabled']) ? "text-muted" : "text-success";?>"></span>
 <?php
                     else:
 ?>
-                      <a href="#" class="act_toggle" id="toggle_<?=$i;?>" data-toggle="tooltip" title="<?=(!isset($natent['disabled'])) ? gettext("disable rule") : gettext("enable rule");?>" class="btn btn-default btn-xs <?=isset($natent['disabled']) ? "text-muted" : "text-success";?>">
-                        <span class="glyphicon glyphicon-play <?=isset($natent['disabled']) ? "text-muted" : "text-success";?>  "></span>
+                      <a href="#" class="act_toggle" id="toggle_<?=$i;?>" data-toggle="tooltip" title="<?=(!isset($natent['disabled'])) ? gettext("Disable") : gettext("Enable");?>" class="btn btn-default btn-xs <?=isset($natent['disabled']) ? "text-muted" : "text-success";?>">
+                        <span class="fa fa-play <?=isset($natent['disabled']) ? "text-muted" : "text-success";?>  "></span>
                       </a>
 <?php
                     endif;
@@ -395,14 +404,15 @@ include("head.inc");
                     <td class="hidden-xs hidden-sm">
 <?php
 
-                      if (isset($natent['nonat']))
-                        $nat_address = '<I>NO NAT</I>';
-                      elseif (!$natent['target'])
-                        $nat_address = htmlspecialchars(convert_friendly_interface_to_friendly_descr($natent['interface'])) . " address";
-                      elseif ($natent['target'] == "other-subnet")
-                        $nat_address = $natent['targetip'] . '/' . $natent['targetip_subnet'];
-                      else
-                        $nat_address = htmlspecialchars($natent['target']);
+                      if (isset($natent['nonat'])) {
+                          $nat_address = '<I>NO NAT</I>';
+                      } elseif (empty($natent['target'])) {
+                          $nat_address = gettext("Interface address");
+                      } elseif ($natent['target'] == "other-subnet") {
+                          $nat_address = $natent['targetip'] . '/' . $natent['targetip_subnet'];
+                      } else {
+                          $nat_address = htmlspecialchars($natent['target']);
+                      }
 ?>
 <?php                 if (isset($natent['target']) && is_alias($natent['target'])): ?>
                         <span title="<?=htmlspecialchars(get_alias_description($natent['target']));?>" data-toggle="tooltip">
@@ -412,6 +422,8 @@ include("head.inc");
                             title="<?=gettext("edit alias");?>" data-toggle="tooltip">
                           <i class="fa fa-list"></i>
                         </a>
+<?php                 elseif (!empty($interface_names[$nat_address])): ?>
+                        <?=$interface_names[$nat_address];?>
 <?php                 else: ?>
                         <?=$nat_address;?>
 <?php                 endif; ?>
@@ -484,11 +496,11 @@ include("head.inc");
                   <td colspan="12">&nbsp;</td>
                 </tr>
                 <tr>
-                  <td style="width:16px"><span class="glyphicon glyphicon-play text-success"></span></td>
+                  <td style="width:16px"><span class="fa fa-play text-success"></span></td>
                   <td colspan="11"><?=gettext("Enabled rule"); ?></td>
                 </tr>
                 <tr>
-                  <td><span class="glyphicon glyphicon-play text-muted"></span></td>
+                  <td><span class="fa fa-play text-muted"></span></td>
                   <td colspan="11"><?=gettext("Disabled rule"); ?></td>
                 </tr>
               </tfoot>
@@ -539,7 +551,7 @@ include("head.inc");
                 <tr>
                   <td>&nbsp;</td>
                   <td>
-                    <span class="glyphicon glyphicon-play text-success" data-toggle="tooltip" title="<?=gettext("automatic outbound nat");?>"></span>
+                    <span class="fa fa-play text-success" data-toggle="tooltip" title="<?=gettext("automatic outbound nat");?>"></span>
                   </td>
                   <td><?= htmlspecialchars($natintf['descr']); ?></td>
                   <td><?= implode(', ', $intfv4);?></td>
@@ -554,7 +566,7 @@ include("head.inc");
                 <tr>
                   <td>&nbsp;</td>
                   <td>
-                    <span class="glyphicon glyphicon-play text-success" data-toggle="tooltip" title="<?=gettext("automatic outbound nat");?>"></span>
+                    <span class="fa fa-play text-success" data-toggle="tooltip" title="<?=gettext("automatic outbound nat");?>"></span>
                   </td>
                   <td><?= htmlspecialchars($natintf['descr']); ?></td>
                   <td><?= implode(', ', $intfv4);?></td>

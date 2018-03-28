@@ -127,6 +127,7 @@ if (isset($config['interfaces'][$interface]['ipaddrv6'])) {
             break;
         case "dhcp6":
             if (isset($config['interfaces'][$interface]['dhcp6usev4iface'])) {
+                interface_dhcpv6_prepare($interface, $config['interfaces'][$interface]);
                 interface_dhcpv6_configure($interface, $config['interfaces'][$interface]);
             }
             break;
@@ -144,7 +145,7 @@ if (isset($config['gifs']['gif']) && is_array($config['gifs']['gif'])){
                   if (!empty($confif)) {
                       interface_configure($confif);
                   }
-                  system_routing_configure($ifname);
+                  system_routing_configure(false, $ifname);
                 }
             }
         }
@@ -161,15 +162,15 @@ $cacheip = @file_get_contents($cacheip_file);
 if (!is_ipaddr($cacheip) || $ip != $cacheip || !is_ipaddr($configip)) {
     @unlink($cacheip_file);
 
-    system_routing_configure($interface);
+    system_routing_configure(false, $interface);
     setup_gateways_monitor();
-    plugins_configure('vpn', false, array($interface));
     filter_configure_sync();
 
     if (is_ipaddr($ip)) {
         @file_put_contents($cacheip_file, $ip);
     }
 
+    plugins_configure('vpn', false, array($interface));
     plugins_configure('newwanip', false, array($interface));
     rrd_configure();
 }

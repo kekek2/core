@@ -217,7 +217,7 @@ legacy_html_escape_form_data($pconfig);
 include("head.inc");
 
 ?>
-<script type="text/javascript">
+<script>
 //<![CDATA[
 var daysSelected = "";
 var month_array = <?= json_encode($monthArray) ?>;
@@ -622,7 +622,7 @@ function insertElements(tempFriendlyTime, starttimehour, starttimemin, stoptimeh
     tbody = d.getElementById("scheduletable").getElementsByTagName("tbody").item(0);
     tr = d.createElement("tr");
     td = d.createElement("td");
-    td.innerHTML= "<span class='vexpl'>" + tempFriendlyTime + "<\/span>";
+    td.innerHTML= "<span>" + tempFriendlyTime + "<\/span>";
     tr.appendChild(td);
 
     td = d.createElement("td");
@@ -811,9 +811,9 @@ function removeRow(el) {
                         <td><a id="help_for_description" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description");?></td>
                         <td>
                           <input name="descr" type="text" id="descr" value="<?=$pconfig['descr'];?>" /><br />
-                          <output class="hidden" for="help_for_name">
+                          <div class="hidden" data-for="help_for_name">
                             <?=gettext("You may enter a description here for your reference (not parsed).");?>
-                          </output>
+                          </div>
                         </td>
                       </tr>
                       <tr>
@@ -876,20 +876,20 @@ function removeRow(el) {
                                         echo "<tr>";
                                       }
                                       if ($firstdayofmonth == $positioncounter){?>
-                                        <td style="text-align:center; cursor: pointer;" class="listr" id="w<?=$weekcounter;?>p<?=$positioncounter;?>" onclick="daytoggle('w<?=$weekcounter;?>p<?=$positioncounter;?>-m<?=$monthcounter;?>d<?=$daycounter;?>');">
+                                        <td style="text-align:center; cursor: pointer;" id="w<?=$weekcounter;?>p<?=$positioncounter;?>" onclick="daytoggle('w<?=$weekcounter;?>p<?=$positioncounter;?>-m<?=$monthcounter;?>d<?=$daycounter;?>');">
                                         <?php
                                           echo $daycounter;
                                           $daycounter++;
                                           $firstdayprinted = TRUE;
                                           echo "</td>";
                                       } elseif ($firstdayprinted == TRUE && $daycounter <= $numberofdays){?>
-                                      <td style="text-align:center; cursor: pointer;" class="listr" id="w<?=$weekcounter;?>p<?=$positioncounter;?>" onclick="daytoggle('w<?=$weekcounter;?>p<?=$positioncounter;?>-m<?=$monthcounter;?>d<?=$daycounter;?>');">
+                                      <td style="text-align:center; cursor: pointer;" id="w<?=$weekcounter;?>p<?=$positioncounter;?>" onclick="daytoggle('w<?=$weekcounter;?>p<?=$positioncounter;?>-m<?=$monthcounter;?>d<?=$daycounter;?>');">
                                         <?php
                                           echo $daycounter;
                                           $daycounter++;
                                           echo "</td>";
                                       } else {
-                                        echo "<td style=\"text-align:center\" class=\"listr\"></td>";
+                                        echo "<td style=\"text-align:center\"></td>";
                                       }
 
                                       if ($positioncounter == 7 || $daycounter > $numberofdays) {
@@ -911,10 +911,10 @@ function removeRow(el) {
                               }
                             } //end for loop
 ?>
-                          <output class="hidden" for="help_for_month">
+                          <div class="hidden" data-for="help_for_month">
                             <br />
                             <?=gettext("Click individual date to select that date only. Click the appropriate weekday Header to select all occurrences of that weekday.");?>
-                          </output>
+                          </div>
                         </td>
                       </tr>
                       <tr>
@@ -964,19 +964,19 @@ function removeRow(el) {
                               </td>
                             </tr>
                           </table>
-                          <output class="hidden" for="help_for_time">
+                          <div class="hidden" data-for="help_for_time">
                             <br />
                           <?=gettext("Select the time range for the day(s) selected on the Month(s) above. A full day is 0:00-23:59.")?>
-                          </output>
+                          </div>
                         </td>
                       </tr>
                       <tr>
                         <td><a id="help_for_timerange_desc" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Time Range Description")?></td>
                         <td>
                           <input name="timerangedescr" type="text" id="timerangedescr"/>
-                          <output class="hidden" for="help_for_timerange_desc">
+                          <div class="hidden" data-for="help_for_timerange_desc">
                             <?=gettext("You may enter a description here for your reference (not parsed).")?>
-                          </output>
+                          </div>
                         </td>
                       </tr>
                       <tr>
@@ -987,7 +987,7 @@ function removeRow(el) {
                         </td>
                       </tr>
                       <tr>
-                        <th colspan="2" style="vertical-align:top" class="listtopic"><?=gettext("Schedule repeat");?></td>
+                        <th colspan="2"><?= gettext('Schedule repeat') ?></th>
                       </tr>
                       <tr>
                         <td><?=gettext("Configured Ranges");?></td>

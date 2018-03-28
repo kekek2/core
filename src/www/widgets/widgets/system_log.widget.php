@@ -98,7 +98,7 @@ function dump_log($system_logfile, $syslogEntriesToFetch)
 </div>
 
 <!-- needed to display the widget settings menu -->
-<script type="text/javascript">
+<script>
 //<![CDATA[
   $("#system_log-configure").removeClass("disabled");
 //]]>
