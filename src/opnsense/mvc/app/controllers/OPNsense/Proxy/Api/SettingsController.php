@@ -33,8 +33,6 @@ use \OPNsense\Cron\Cron;
 use \OPNsense\Core\Config;
 use \OPNsense\Base\UIModelGrid;
 
-include_once('/usr/local/opnsense/contrib/simplepie/idn/idna_convert.class.php');
-
 /**
  * Class SettingsController
  * @package OPNsense\Proxy
@@ -268,17 +266,26 @@ class SettingsController extends ApiMutableModelControllerBase
      */
     public function setAction()
     {
-        $result = parent::setAction();
         $mdlProxy = $this->getModel();
-        if (isset($mdlProxy->forward->acl->whiteList)) {
-            $mdlProxy->forward->acl->whiteList = self::decode($mdlProxy->forward->acl->whiteList);
+        if (($prevAuthMethod = $mdlProxy->forward->authentication->method) != null) {
+            $prevAuthMethod = $prevAuthMethod->__toString();
         }
-        if (isset($mdlProxy->forward->acl->blackList)) {
-            $mdlProxy->forward->acl->blackList = self::decode($mdlProxy->forward->acl->blackList);
+        $result = parent::setAction();
+        if (($whiteList = $mdlProxy->forward->acl->whiteList) != null) {
+            $mdlProxy->forward->acl->whiteList = self::encode($whiteList->__toString());
         }
-        if (isset($mdlProxy->forward->icap->exclude)) {
-            $mdlProxy->forward->icap->exclude = self::decode($mdlProxy->forward->icap->exclude);
+        if (($blackList = $mdlProxy->forward->acl->blackList) != null) {
+            $mdlProxy->forward->acl->blackList = self::encode($blackList->__toString());
         }
+        if (($exclude = $mdlProxy->forward->icap->exclude) != null) {
+            $mdlProxy->forward->icap->exclude = self::encode($exclude->__toString());
+        }
+        $this->save();
+
+        if (($authMethod = $mdlProxy->forward->authentication->method) != null) {
+            $authMethod = $authMethod->__toString();
+        }
+        $result["force_restart"] = $prevAuthMethod != $authMethod;
         return $result;
     }
 
@@ -289,11 +296,12 @@ class SettingsController extends ApiMutableModelControllerBase
      */
     public static function encode($domains)
     {
+        if (($domains = $domains) == "") {
+            return "";
+        }
         $result = array();
         foreach (explode(",", $domains) as $domain) {
-            if ($domain != "") {
-                $result[] = ($domain[0] == "." ? "." : "") . idn_to_ascii($domain);
-            }
+            $result[] = ($domain[0] == "." ? "." : "") . idn_to_ascii($domain);
         }
         return implode(",", $result);
     }
