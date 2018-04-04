@@ -84,7 +84,8 @@ class ServiceController extends ApiMutableServiceControllerBase
         }
 
         return (((string)$mdlProxy->forward->sslcertificate) != $prev_sslbump_cert) ||
-            (!empty((string)$mdlProxy->general->cache->local->enabled) != $prev_cache_active);
+            (!empty((string)$mdlProxy->general->cache->local->enabled) != $prev_cache_active) ||
+            ($this->request->isPost() && $this->request->hasPost("force_restart") && $this->request->getPost("force_restart"));
     }
 
     /**

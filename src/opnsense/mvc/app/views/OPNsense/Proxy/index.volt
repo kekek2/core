@@ -157,12 +157,12 @@
                 var frm_id = $(this).closest("form").attr("id");
                 var frm_title = $(this).closest("form").attr("data-title");
                 // save data for General TAB
-                saveFormToEndpoint(url="/api/proxy/settings/set",formid=frm_id,callback_ok=function(){
+                saveFormToEndpoint(url="/api/proxy/settings/set",formid=frm_id,callback_ok=function(data){
                     // on correct save, perform reconfigure. set progress animation when reloading
                     $("#"+frm_id+"_progress").addClass("fa fa-spinner fa-pulse");
 
                     //
-                    ajaxCall(url="/api/proxy/service/reconfigure", sendData={}, callback=function(data,status){
+                    ajaxCall(url="/api/proxy/service/reconfigure", sendData={'force_restart' : data.force_restart}, callback=function(data,status){
                         // when done, disable progress animation.
                         $("#"+frm_id+"_progress").removeClass("fa fa-spinner fa-pulse");
 
