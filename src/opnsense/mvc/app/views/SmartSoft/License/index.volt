@@ -55,7 +55,6 @@
 
 <div class="alert alert-info hidden" role="alert" id="responseMsg">
 </div>
-<div class="alert alert-warning hidden" id="message_warning"></div>
 
 <div id="certlist">
     <table id="grid-certlist" class="table table-condensed table-hover table-striped table-responsive">
