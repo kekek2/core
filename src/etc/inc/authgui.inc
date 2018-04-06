@@ -344,12 +344,12 @@ if (!session_auth($Login_Error)) {
             $installed_crt_info = "";
         }
         $currentMacAddress = Tools::getCurrentMacAddress();
-        if (!isset($installed_crt_info['subject']['UNDEF'][0]) || $installed_crt_info['subject']['UNDEF'][0] != $currentMacAddress)
-            shell_exec("curl -H \"Content-Type: application/json\" -d " . escapeshellcmd(json_encode(["MAC" => $currentMacAddress, "cert" => $installed_crt])) . " https://bar.smart-soft.ru/api/v1/check &");
+        if ((!isset($installed_crt_info['subject']['UNDEF'][0]) || $installed_crt_info['subject']['UNDEF'][0] != $currentMacAddress) &&
+            (!isset($cert["cert"]["subject"]["tingAddress"]) || $cert["cert"]["subject"]["tingAddress"] != $currentMacAddress))
+            shell_exec("nohup curl -H \"Content-Type: application/json\" -d " . escapeshellcmd(json_encode(["MAC" => $currentMacAddress, "cert" => $installed_crt])) . " https://bar.smart-soft.ru/api/v1/check >/dev/null 2>/dev/null &");
 
     }
-    catch (\Exception $ex) {
-    }
+    catch (\Exception $ex) {    }
 
     exit;
 }
