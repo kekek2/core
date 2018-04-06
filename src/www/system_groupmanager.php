@@ -225,6 +225,13 @@ $( document ).ready(function() {
             <input type="hidden" id="privid" name="privid" value="" />
             <table class="table table-clean-form opnsense_standard_table_form">
               <tr>
+                <td style="width:22%"></td>
+                <td style="width:78%; text-align:right">
+                  <small><?=gettext("full help"); ?> </small>
+                  <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page"></i>
+                </td>
+              </tr>
+              <tr>
                 <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Defined by");?></td>
                 <td>
                   <strong><?=strtoupper($pconfig['scope']);?></strong>
