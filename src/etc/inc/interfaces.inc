@@ -1079,7 +1079,7 @@ function interfaces_configure($verbose = false)
 
     interfaces_group_setup();
 
-    if ($reload) {
+    if ($reload == INTERFACE_RELOAD_ALL) {
         system_routing_configure('', $verbose);
         ipsec_configure_do($verbose);
         plugins_configure('dns', $verbose);
