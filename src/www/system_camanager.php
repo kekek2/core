@@ -696,12 +696,12 @@ $main_buttons = array(
         <table style="width:100%; border:0; cellpadding:0; cellspacing:0" class="table table-clean-form">
           <thead>
             <tr>
-              <th><?=gettext("Name");?></th>
-              <th><?=gettext("Internal");?></th>
-              <th><?=gettext("Issuer");?></th>
-              <th><?=gettext("Certificates");?></th>
-              <th><?=gettext("Distinguished Name");?></th>
-              <th></th>
+              <th style="width: 20%"><?=gettext("Name");?></th>
+              <th style="width: 7%"><?=gettext("Internal");?></th>
+              <th style="width: 7%"><?=gettext("Issuer");?></th>
+              <th style="width: 6%"><?=gettext("Certificates");?></th>
+              <th style="width: 40%"><?=gettext("Distinguished Name");?></th>
+              <th style="width: 20%"></th>
             </tr>
           </thead>
           <tbody>

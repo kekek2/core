@@ -1203,10 +1203,10 @@ $( document ).ready(function() {
           <table class="table table-clean-form">
             <thead>
               <tr>
-                <th><?=gettext("Name");?></th>
-                <th><?=gettext("Issuer");?></th>
-                <th><?=gettext("Distinguished Name");?></th>
-                <th><?=gettext("In Use");?></th>
+                <th style="width: 25%"><?=gettext("Name");?></th>
+                <th style="width: 10%"><?=gettext("Issuer");?></th>
+                <th style="width: 45%"><?=gettext("Distinguished Name");?></th>
+                <th style="width: 20%"><?=gettext("In Use");?></th>
               </tr>
             </thead>
             <tbody>
