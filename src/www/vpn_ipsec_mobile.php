@@ -408,7 +408,7 @@ foreach ($auth_servers as $auth_key => $auth_server) : ?>
                     <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Virtual Address Pool"); ?></td>
                     <td>
                         <input name="pool_enable" type="checkbox" id="pool_enable" value="yes" <?= !empty($pconfig['pool_address'])&&!empty($pconfig['pool_netbits']) ? "checked=\"checked\"" : "";?> onclick="pool_change()" />
-                        <?=gettext("Provide a virtual IP address to clients"); ?><br />
+                        <strong><?=gettext("Provide a virtual IP address to clients"); ?></strong><br />
                       <?=gettext("Network"); ?>:&nbsp;
                       <input name="pool_address" type="text" class="form-control unknown" id="pool_address" size="20" value="<?=$pconfig['pool_address'];?>" />
                       /
