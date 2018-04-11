@@ -10,6 +10,14 @@ done
 /usr/sbin/pw groupmod proxy -m squid
 /usr/local/sbin/squid -z -N > /dev/null 2>&1
 
+# remove corrupted certificate store
+if [ -d /var/squid/ssl_crtd ]; then
+    corrupted=`/usr/local/libexec/squid/security_file_certgen -s /var/squid/ssl_crtd -M 4MB 2>&1 < /dev/null | grep -c corrupted`
+    if [ "$corrupted" == "1" ]; then
+        rm -rf /var/squid/ssl_crtd
+    fi
+fi
+
 # remove ssl certificate store in case the user changed the CA
 if [ -f /usr/local/etc/squid/ca.pem.id ]; then
     current_cert=`cat /usr/local/etc/squid/ca.pem.id`
