@@ -392,8 +392,7 @@ $( document ).ready(function() {
                             </td>
                           </tr>
                         </table>
-                        <output class="hidden" for="help_for_address">
-                            <i id="typenote"></i>
+                        <output class="hidden" for="help_for_address" id="typenote">
                         </output>
                       </td>
                   </tr>
@@ -401,9 +400,9 @@ $( document ).ready(function() {
                       <td><a id="help_for_gateway" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Gateway");?></td>
                       <td>
                           <input name="gateway" type="text" class="form-control" id="gateway" value="<?=$pconfig['gateway'];?>" />
-                          <div class="hidden" for="help_for_gateway">
+                          <output class="hidden" for="help_for_gateway">
                             <?=gettext("For some interface types a gateway is required to configure an IP Alias (ppp/pppoe/tun), leave this field empty for all other interface types.");?>
-                          </div>
+                          </output>
                       </td>
                   </tr>
                   <tr id="noexpandrow">

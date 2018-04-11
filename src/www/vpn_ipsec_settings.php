@@ -202,9 +202,7 @@ if (isset($input_errors) && count($input_errors) > 0) {
                     <tr>
                       <td><a id="help_for_ipsec_debug" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPsec Debug"); ?></td>
                       <td>
-                        <output class="hidden" for="help_for_ipsec_debug">
-                                      <strong><?=gettext("Start IPsec in debug mode based on sections selected"); ?></strong> <br/>
-                        </output>
+                        <strong><?=gettext("Start IPsec in debug mode based on sections selected"); ?></strong> <br/>
 <?php                   foreach ($ipsec_loglevels as $lkey => $ldescr) :
 ?>
                         <?=$ldescr?>
