@@ -1244,7 +1244,7 @@ $( document ).ready(function() {
                   <?=$name;?>
 <?php
                   if (is_array($purpose)) :?>
-                  <br/><br/>
+                  <br/>
                   <?=gettext('CA:') ?> <?=$purpose['ca']; ?>,
                   <?=gettext('Server:') ?> <?=$purpose['server']; ?>
 <?php
@@ -1252,7 +1252,7 @@ $( document ).ready(function() {
                 </td>
                 <td><?=$caname;?>&nbsp;</td>
                 <td><?=$subj;?>&nbsp;<br />
-                  <table>
+                  <table style="width:100%; font-size: 9px">
                       <tr>
                           <td style="width:10%">&nbsp;</td>
                           <td style="width:20%"><?=gettext("Valid From")?>:</td>
