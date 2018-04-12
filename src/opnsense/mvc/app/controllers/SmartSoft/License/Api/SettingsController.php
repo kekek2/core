@@ -228,7 +228,7 @@ class SettingsController extends ApiControllerBase
                 return ["status" => "failure", "message" => gettext("Not specified the file name")];
             $key_file = file_get_contents($file->getTempName());
             if (!strstr($key_file, "BEGIN RSA PRIVATE KEY") || !strstr($key_file, "END RSA PRIVATE KEY")) {
-                return ["status" => "failure", "message" => gettext("This file not contain license.")];
+                return ["status" => "failure", "message" => gettext("The license is not imported.")];
             }
             $file->moveTo($this->installed_key_path);
             return ['status' => "OK", "message" => gettext("License imported successful")];
