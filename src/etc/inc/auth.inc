@@ -3,7 +3,7 @@
 /*
     Copyright (C) 2014-2016 Deciso B.V.
     Copyright (C) 2010 Ermal Luçi
-    Copyright (C) 2007, 2008 Scott Ullrich <sullrich@gmail.com>
+    Copyright (C) 2007-2008 Scott Ullrich <sullrich@gmail.com>
     Copyright (C) 2005-2006 Bill Marquette <bill.marquette@gmail.com>
     Copyright (C) 2006 Paul Taylor <paultaylor@winn-dixie.com>.
     Copyright (C) 2003-2006 Manuel Kasper <mk@neon1.net>.
@@ -169,7 +169,10 @@ if (function_exists("display_error_form") && !isset($config['system']['webgui'][
         }
         if ($found_host == false) {
             if (!security_checks_disabled()) {
-                display_error_form("501", "An HTTP_REFERER was detected other than what is defined in System -> Advanced (" . htmlspecialchars($_SERVER['HTTP_REFERER']) . ").  You can disable this check if needed in System -> Advanced -> Admin.");
+                display_error_form('501', sprintf(
+                    gettext('The HTTP_REFERER "%s" does not match the predefined settings. You can disable this check if needed under System: Settings: Administration.'),
+                    html_safe($_SERVER['HTTP_REFERER'])
+                ));
                 exit;
             }
             $security_passed = false;
@@ -196,14 +199,8 @@ function isAuthLocalIP($http_host)
 {
     global $config;
     $interface_list_ips = get_configured_ip_addresses();
-    foreach ($interface_list_ips as $ilips) {
+    foreach ($interface_list_ips as $ilips => $ifname) {
         if (strcasecmp($http_host, $ilips) == 0) {
-            return true;
-        }
-    }
-    $interface_list_ipv6s = get_configured_ipv6_addresses();
-    foreach ($interface_list_ipv6s as $ilipv6s) {
-        if (strcasecmp($http_host, $ilipv6s) == 0) {
             return true;
         }
     }
@@ -239,6 +236,8 @@ function index_users()
 {
     global $config;
 
+    $userindex = array();
+
     if (is_array($config['system']['user'])) {
         $i = 0;
         foreach($config['system']['user'] as $userent) {
@@ -247,8 +246,26 @@ function index_users()
         }
     }
 
-    return ($userindex);
-  }
+    return $userindex;
+}
+
+function getUserGroups($username)
+{
+    global $config;
+    $member_groups = array();
+    $user = getUserEntry($username);
+    if ($user !== false) {
+        $allowed_groups = local_user_get_groups($user);
+        if (isset($config['system']['group'])) {
+            foreach ($config['system']['group'] as $group) {
+                if (in_array($group['name'], $allowed_groups)) {
+                    $member_groups[] = $group['name'];
+                }
+            }
+        }
+    }
+    return $member_groups;
+}
 
 function &getUserEntry($name)
 {
@@ -283,6 +300,8 @@ function &getGroupEntry($name)
     if (isset($groupindex[$name])) {
         return $config['system']['group'][$groupindex[$name]];
     }
+
+    return array();
 }
 
 function &getGroupEntryByGID($gid)
@@ -308,7 +327,7 @@ function get_user_privileges(&$user)
        $privs = $user['priv'];
     }
 
-    $names = local_user_get_groups($user, true);
+    $names = local_user_get_groups($user);
 
     foreach ($names as $name) {
         $group = getGroupEntry($name);
@@ -360,7 +379,6 @@ function local_sync_accounts()
     }
 
     /* remove local groups to avoid gid conflicts */
-    $gids = array();
     $fd = popen('/usr/sbin/pw groupshow -a', 'r');
     if ($fd) {
         while (!feof($fd)) {
@@ -473,6 +491,9 @@ function local_user_set(&$user, $force_password = false)
         @mkdir("{$user_home}/.ssh", 0700);
         @chown("{$user_home}/.ssh", $user_name);
         $keys = base64_decode($user['authorizedkeys']);
+        $keys = preg_split('/[\n\r]+/', $keys);
+        $keys[] = '';
+        $keys = implode($keys, "\n");
         @file_put_contents("{$user_home}/.ssh/authorized_keys", $keys);
         @chown("{$user_home}/.ssh/authorized_keys", $user_name);
     } else {
@@ -494,9 +515,15 @@ function local_user_del($user)
     local_group_del_user($user);
 }
 
-function local_user_set_password(&$user, $password)
+function local_user_set_password(&$user, $password = null)
 {
     $cost = 10;
+
+    if ($password == null) {
+        /* generate a random password */
+        $bytes = openssl_random_pseudo_bytes(50);
+        $password = pack('H*',bin2hex($bytes));
+    }
 
     $hash = password_hash($password, PASSWORD_BCRYPT, [ 'cost' => $cost ]);
     if ($hash !== false) {
@@ -509,7 +536,7 @@ function local_user_set_password(&$user, $password)
     }
 }
 
-function local_user_get_groups($user, $all = false)
+function local_user_get_groups($user)
 {
     global $config;
 
@@ -521,7 +548,7 @@ function local_user_get_groups($user, $all = false)
 
     foreach ($config['system']['group'] as $group) {
         if (isset($group['member'])) {
-            if (in_array($user['uid'], $group['member']) || ($group['name'] == "all" && $all)) {
+            if (in_array($user['uid'], $group['member'])) {
                 $groups[] = $group['name'];
             }
         }
@@ -540,7 +567,7 @@ function local_user_set_groups($user, $new_groups = null)
         return;
     }
 
-    $cur_groups = local_user_get_groups($user, true);
+    $cur_groups = local_user_get_groups($user);
     $mod_groups = array();
 
     if (!is_array($new_groups)) {
@@ -557,7 +584,7 @@ function local_user_set_groups($user, $new_groups = null)
             // continue if group is already in current list or the groupname is invalid
             continue;
         }
-        $group = & $config['system']['group'][$groupindex[$groupname]];
+        $group = &config_read_array('system', 'group', $groupindex[$groupname]);
         $group['member'][] = $user['uid'];
         $mod_groups[] = $group;
     }
@@ -570,7 +597,7 @@ function local_user_set_groups($user, $new_groups = null)
         if (!isset($config['system']['group'][$groupindex[$groupname]])) {
             continue;
         }
-        $group = & $config['system']['group'][$groupindex[$groupname]];
+        $group = &config_read_array('system', 'group', $groupindex[$groupname]);
         if (is_array($group['member'])) {
             $index = array_search($user['uid'], $group['member']);
             array_splice($group['member'], $index, 1);
@@ -606,9 +633,9 @@ function local_group_del_user($user)
 function local_group_set($group, $reset = false)
 {
     if (!isset($group['name']) || !isset($group['gid'])) {
-        // input data invalid
-        return false;
+        return;
     }
+
     $group_name = $group['name'];
     $group_gid = $group['gid'];
     $group_members = '';
@@ -721,6 +748,8 @@ function auth_get_authserver($name)
             }
         }
     }
+
+    return false;
 }
 
 function auth_get_authserver_list()

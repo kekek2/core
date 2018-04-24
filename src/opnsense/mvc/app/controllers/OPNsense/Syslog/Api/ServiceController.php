@@ -56,7 +56,7 @@ class ServiceController extends ApiControllerBase
             $backend = new Backend();
 
             // generate template
-            $backend->configdRun("template reload OPNsense.Syslog");
+            $backend->configdRun("template reload OPNsense/Syslog");
 
             // (res)start daemon
             $backend->configdRun("syslog stop");
@@ -116,13 +116,21 @@ class ServiceController extends ApiControllerBase
             $this->sessionClose();
 
             $filter = new Filter();
-            $filter->add('logfilename', function($value){ return preg_replace("/[^0-9,a-z,A-Z,_]/", "", $value);});
+            $filter->add('logfilename', function($value){ return preg_replace("/[^0-9,a-z,A-Z,_,\-]/", "", $value);});
 
             $name = $this->request->getPost('logname');
             $name = $filter->sanitize($name, 'logfilename');
 
             $mdl = new Syslog();
             $fullname = $mdl->getLogFileName($name);
+
+            if(empty($fullname)) {
+                return array("status" => "failed", "message" => gettext("Not found"));
+            }
+
+            if(!$mdl->canClearLog($name)) {
+                return array("status" => "failed", "message" => gettext("Can not clear log"));
+            }
 
             $backend = new Backend();
             $backend->configdRun("syslog clearlog {$fullname}");
@@ -149,44 +157,54 @@ class ServiceController extends ApiControllerBase
 
             $mdl = new Syslog();
             $filename = $mdl->getLogFileName($logname);
-            $reverse = ($mdl->Reverse->__toString() == '1');
+            $reverse = $mdl->Reverse->__toString();
             $numentries = intval($mdl->NumEntries->__toString());
             $hostname = Config::getInstance()->toArray()['system']['hostname'];
 
             if(!file_exists($filename))
                 return array("status" => "ok", "data" => array(array('time' => gettext("No data found"), 'filter' => "", 'message' => "")), 'filters' => '');
 
+            $dump_filter = "";
+            $filters = preg_split('/\s+/', trim(preg_quote($filter,'/')));
+            foreach ($filters as $key => $pattern) {
+                if(trim($pattern) == '')
+                    continue;
+                if ($key > 0)
+                    $dump_filter .= "&&";
+                $dump_filter .= "/$pattern/";
+            }
+
             $logdata = array();
             $formatted = array();
             if($filename != '') {
                 $backend = new Backend();
-                $logdatastr = $backend->configdRun("syslog dumplog {$filename}");
+                $logdatastr = $backend->configdRun("syslog dumplog {$filename} {$numentries} {$reverse} {$dump_filter}");
                 $logdata = explode("\n", $logdatastr);
             }
 
-            $filters = preg_split('/\s+/', trim(preg_quote($filter,'/')));
-            foreach ($filters as $pattern) {
-                if(trim($pattern) == '')
-                    continue;
-                $logdata = preg_grep("/$pattern/", $logdata);
-            }
-
-            if($reverse)
-                $logdata = array_reverse($logdata);
-
-            $counter = 1;
             foreach ($logdata as $logent) {
                 if(trim($logent) == '')
                     continue;
 
-                $logent = preg_split("/\s+/", $logent, 6);
-                $entry_date_time = join(" ", array_slice($logent, 0, 3));
-                $entry_text = isset($logent[3]) ? (($logent[3] == $hostname) ? "" : $logent[3] . " ") : "";
-                $entry_text .= (isset($logent[4]) ?  $logent[4] : '') . (isset($logent[5]) ? " " . $logent[5] : '');
-                $formatted[] = array('time' => utf8_encode($entry_date_time), 'filter' => $filter, 'message' => utf8_encode($entry_text));
+                // extract timestamp
+                $datetime_pattern = $mdl->getDateTimePattern($logname);
+                $match = array();
+                $match_result = preg_match($datetime_pattern, $logent, $match);
+                $entry_date_time = '';
+                if($match_result == 1 && isset($match[1])) {
+                    $entry_date_time = $match[1];
+                }
+                if (!date_create($entry_date_time)) {
+                    $entry_date_time = "";
+                }
+                $entry_text = trim(substr($logent, strlen($entry_date_time)));
 
-                if(++$counter > $numentries)
-                    break; 
+                // cut off hostname
+                if(strpos($entry_text, $hostname) === 0) {
+                    $entry_text = trim(substr($entry_text, strlen($hostname)));
+                }
+
+                $formatted[] = array('time' => utf8_encode($entry_date_time), 'filter' => $filter, 'message' => utf8_encode($entry_text));
             }
 
             if(count($formatted) == 0)
@@ -206,7 +224,7 @@ class ServiceController extends ApiControllerBase
     public function downloadAction()
     {
         $filter = new Filter();
-        $filter->add('logfilename', function($value){ return preg_replace("/[^0-9,a-z,A-Z,_]/", "", $value);});
+        $filter->add('logfilename', function($value){ return preg_replace("/[^0-9,a-z,A-Z,_,\-]/", "", $value);});
 
         $name = $this->request->get('logname');
         $name = $filter->sanitize($name, 'logfilename');
@@ -221,7 +239,10 @@ class ServiceController extends ApiControllerBase
         $backend->configdRun("syslog dumplogtofile {$fullname} {$tmp}");
 
         $this->view->disable();
-        $this->response->setFileToSend($tmp, "{$config->system->hostname}-{$name}.log")->send();
+        $this->response->setFileToSend($tmp, "{$config->system->hostname}-{$name}.log");
+        $this->response->setContentType("text/plain","charset=utf-8");
+        $this->response->send();
         unlink($tmp);
+        die();
     }
 }

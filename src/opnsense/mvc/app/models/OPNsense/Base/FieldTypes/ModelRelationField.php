@@ -2,7 +2,6 @@
 
 /**
  *    Copyright (C) 2015 Deciso B.V.
- *
  *    All rights reserved.
  *
  *    Redistribution and use in source and binary forms, with or without
@@ -25,8 +24,8 @@
  *    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  *    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *    POSSIBILITY OF SUCH DAMAGE.
- *
  */
+
 namespace OPNsense\Base\FieldTypes;
 
 use Phalcon\Validation\Validator\InclusionIn;
@@ -83,32 +82,53 @@ class ModelRelationField extends BaseField
             self::$internalOptionList[$this->internalCacheKey] = array();
             foreach ($mdlStructure as $modelData) {
                 // only handle valid model sources
-                if (isset($modelData['source']) && isset($modelData['items']) && isset($modelData['display'])) {
-                    $className = str_replace(".", "\\", $modelData['source']);
-                    $modelObj = new $className;
-                    foreach ($modelObj->getNodeByReference($modelData['items'])->__items as $node) {
-                        $displayKey = $modelData['display'];
-                        if (isset($node->getAttributes()["uuid"]) && $node->$displayKey != null) {
-                            // check for filters and apply if found
-                            $isMatched = true;
-                            if (isset($modelData['filters'])) {
-                                foreach ($modelData['filters'] as $filterKey => $filterValue) {
-                                    $fieldData = $node->$filterKey;
-                                    if (!preg_match($filterValue, $fieldData) && $fieldData != null) {
-                                        $isMatched = false;
-                                        break;
-                                    }
-                                }
-                            }
-                            if ($isMatched) {
-                                $uuid = $node->getAttributes()['uuid'];
-                                self::$internalOptionList[$this->internalCacheKey][$uuid] =
-                                    $node->$displayKey->__toString();
+                if (!isset($modelData['source']) || !isset($modelData['items']) || !isset($modelData['display'])) {
+                    continue;
+                }
+
+                // handle optional/missing classes, i.e. from plugins
+                $className = str_replace('.', '\\', $modelData['source']);
+                if (!class_exists($className)) {
+                    continue;
+                }
+
+                $modelObj = new $className;
+
+                $groupKey = isset($modelData['group']) ? $modelData['group'] : null;
+                $displayKey = $modelData['display'];
+                $groups = array();
+
+                foreach ($modelObj->getNodeByReference($modelData['items'])->__items as $node) {
+                    if (!isset($node->getAttributes()['uuid']) || $node->$displayKey == null) {
+                        continue;
+                    }
+
+                    if (isset($modelData['filters'])) {
+                        foreach ($modelData['filters'] as $filterKey => $filterValue) {
+                            $fieldData = $node->$filterKey;
+                            if (!preg_match($filterValue, $fieldData) && $fieldData != null) {
+                                continue 2;
                             }
                         }
                     }
-                    unset($modelObj);
+
+                    if (!empty($groupKey)) {
+                        if ($node->$groupKey == null) {
+                            continue;
+                        }
+                        $group = $node->$groupKey->__toString();
+                        if (isset($groups[$group])) {
+                            continue;
+                        }
+                        $groups[$group] = 1;
+                    }
+
+                    $uuid = $node->getAttributes()['uuid'];
+                    self::$internalOptionList[$this->internalCacheKey][$uuid] =
+                        $node->$displayKey->__toString();
                 }
+
+                unset($modelObj);
             }
         }
     }

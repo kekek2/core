@@ -3,7 +3,7 @@
 /*
     Copyright (C) 2014-2015 Deciso B.V.
     Copyright (C) 2005-2006 Colin Smith <ethethlay@gmail.com>
-    Copyright (C) 2004-2005 Scott Ullrich
+    Copyright (C) 2004-2005 Scott Ullrich <sullrich@gmail.com>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -31,9 +31,7 @@
 require_once("guiconfig.inc");
 require_once("services.inc");
 require_once("system.inc");
-require_once("openvpn.inc");
 require_once("filter.inc");
-require_once("ipsec.inc");
 require_once("interfaces.inc");
 require_once("rrd.inc");
 
@@ -69,7 +67,7 @@ include("head.inc");
         <section class="col-xs-12">
           <div class="content-box">
             <div class="table-responsive">
-              <table class="table table-striped">
+              <table class="table table-clean-form">
               <thead>
                 <tr>
                   <td><?=gettext("Service");?></td>
@@ -85,8 +83,8 @@ include("head.inc");
                     <td><?=$service['name'];?></td>
                     <td><?=$service['description'];?></td>
                     <td>
-                      <?=get_service_status_icon($service, true, true);?>
-                      <?=get_service_control_links($service, false);?>
+                      <?=get_service_status_icon($service);?>
+                      <?=get_service_control_links($service);?>
                     </td>
                 </tr>
 <?php

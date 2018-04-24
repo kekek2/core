@@ -2,8 +2,8 @@
 
 /*
     Copyright (C) 2014-2016 Deciso B.V.
-    Copyright (C) 2013  Dagorlad
-    Copyright (C) 2012  Jim Pingle
+    Copyright (C) 2013 Dagorlad
+    Copyright (C) 2012 Jim Pingle <jimp@pfsense.org>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -35,10 +35,7 @@ require_once("system.inc");
 require_once("interfaces.inc");
 require_once("plugins.inc.d/ntpd.inc");
 
-if (!isset($config['ntpd']) || !is_array($config['ntpd'])) {
-    $config['ntpd'] = array();
-}
-$a_ntpd = &$config['ntpd'];
+$a_ntpd = &config_read_array('ntpd');
 
 $copy_fields = array('orphan', 'statsgraph', 'logpeer', 'logsys', 'clockstats', 'loopstats', 'interface',
                      'peerstats', 'noquery', 'noserve', 'kod', 'nomodify', 'nopeer', 'notrap', 'leapsec');
@@ -56,6 +53,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     // array types
     $pconfig['interface'] = !empty($pconfig['interface']) ? explode(",", $pconfig['interface']) : array();
+
+    // text types
+    $pconfig['custom_options'] = !empty($a_ntpd['custom_options']) ? $a_ntpd['custom_options'] : '';
 
     // parse timeservers
     $pconfig['timeservers_host'] = array();
@@ -100,21 +100,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 unset($a_ntpd[$fieldname]);
             }
         }
+
         if (empty($config['system']['timeservers'])) {
             unset($config['system']['timeservers']);
         }
 
-        if (!empty($a_ntpd['leapsec'])) {
+        if (!empty($pconfig['leapsec'])) {
             $a_ntpd['leapsec'] = base64_encode($a_ntpd['leapsec']);
-        } elseif(isset($config['ntpd']['leapsec'])) {
-            unset($config['ntpd']['leapsec']);
+        } elseif(isset($a_ntpd['leapsec'])) {
+            unset($a_ntpd['leapsec']);
+        }
+
+        if (!empty($pconfig['custom_options'])) {
+            $a_ntpd['custom_options'] = str_replace("\r\n", "\n", $pconfig['custom_options']);
+        } elseif (isset($a_ntpd['custom_options'])) {
+            unset($a_ntpd['custom_options']);
         }
 
         if (is_uploaded_file($_FILES['leapfile']['tmp_name'])) {
             $a_ntpd['leapsec'] = base64_encode(file_get_contents($_FILES['leapfile']['tmp_name']));
         }
+
         write_config("Updated NTP Server Settings");
         ntpd_configure_start();
+
         header(url_safe('Location: /services_ntpd.php'));
         exit;
     }
@@ -122,7 +131,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 $service_hook = 'ntpd';
 legacy_html_escape_form_data($pconfig);
+
 include("head.inc");
+
 ?>
 <body>
 
@@ -140,6 +151,13 @@ include("head.inc");
         $("#showleapsecbox").parent().hide();
         $("#showleapsec").show();
     });
+    $("#show_advanced_ntpd").click(function(event){
+      $("#showadvbox").hide();
+      $("#showadv").show();
+    });
+    if ($("#custom_options").val() != "") {
+        $("#show_advanced_ntpd").click();
+    }
 
     /**
      *  Aliases
@@ -187,7 +205,7 @@ include("head.inc");
         <div class="tab-content content-box col-xs-12">
           <form method="post" name="iform" id="iform" enctype="multipart/form-data" accept-charset="utf-8">
             <div class="table-responsive">
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <thead>
                   <tr>
                     <td width="22%">
@@ -227,17 +245,18 @@ include("head.inc");
                       endforeach;?>
                       </select>
                       <div class="hidden" for="help_for_interfaces">
+                        <small class="formhelp">
                         <?=gettext("Interfaces without an IP address will not be shown."); ?>
-                        <br />
                         <br /><?=gettext("Selecting no interfaces will listen on all interfaces with a wildcard."); ?>
                         <br /><?=gettext("Selecting all interfaces will explicitly listen on only the interfaces/IPs specified."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
                   <tr>
                     <td><a id="help_for_timeservers" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Time servers') ?></td>
                     <td>
-                      <table class="table table-striped table-condensed" id="timeservers_table">
+                      <table class="table table-clean-form table-condensed" id="timeservers_table">
                         <thead>
                           <tr>
                             <th></th>
@@ -278,11 +297,13 @@ include("head.inc");
                         </tfoot>
                       </table>
                       <div class="hidden" for="help_for_timeservers">
+                        <small class="formhelp">
                         <?=gettext('For best results three to five servers should be configured here.'); ?>
                         <br />
-                        <?= sprintf(gettext('The %sprefer%s option indicates that NTP should favor the use of this server more than all others.'),'<i>','</i>') ?>
+                        <?= gettext('The "prefer" option indicates that NTP should favor the use of this server more than all others.') ?>
                         <br />
-                        <?= sprintf(gettext('The %snoselect%s option indicates that NTP should not use this server for time, but stats for this server will be collected and displayed.'),'<i>','</i>') ?>
+                        <?= gettext('The "do not use" option indicates that NTP should not use this server for time, but stats for this server will be collected and displayed.') ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -291,8 +312,10 @@ include("head.inc");
                     <td>
                       <input name="orphan" type="text" value="<?=$pconfig['orphan']?>" />
                       <div class="hidden" for="help_for_orphan">
+                        <small class="formhelp">
                         <?=gettext("(0-15)");?><br />
                         <?=gettext("Orphan mode allows the system clock to be used when no other clocks are available. The number here specifies the stratum reported during orphan mode and should normally be set to a number high enough to insure that any other servers available to clients are preferred over this server. (default: 12)."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -301,7 +324,9 @@ include("head.inc");
                     <td>
                       <input name="statsgraph" type="checkbox" id="statsgraph" <?=!empty($pconfig['statsgraph']) ? " checked=\"checked\"" : ""; ?> />
                       <div class="hidden" for="help_for_statsgraph">
+                        <small class="formhelp">
                         <?=gettext("Enable rrd graphs of NTP statistics (default: disabled)."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -314,7 +339,9 @@ include("head.inc");
                       <input name="logsys" type="checkbox" <?=!empty($pconfig['logsys']) ? " checked=\"checked\"" : ""; ?> />
                       <?=gettext("Enable logging of system messages (default: disabled)."); ?>
                       <div class="hidden" for="help_for_syslog">
+                        <small class="formhelp">
                         <?=gettext("These options enable additional messages from NTP to be written to the System Log");?> (<a href="diag_logs_ntpd.php"><?=gettext("Status > System Logs > NTP"); ?></a>).
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -381,6 +408,19 @@ include("head.inc");
                         <textarea name="leapsec" cols="65" rows="7"><?=$pconfig['leapsec'];?></textarea><br />
                         <strong><?=gettext("Or");?></strong>, <?=gettext("select a file to upload:");?>
                         <input type="file" name="leapfile"/>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Advanced");?></td>
+                    <td>
+                      <div id="showadvbox" <?=!empty($pconfig['custom_options']) ? "style='display:none'" : ""; ?>>
+                        <input type="button" class="btn btn-default btn-xs" id="show_advanced_ntpd" value="<?=gettext("Advanced"); ?>" /> - <?=gettext("Show advanced option");?>
+                      </div>
+                      <div id="showadv" <?=empty($pconfig['custom_options']) ? "style='display:none'" : ""; ?>>
+                        <strong><?=gettext("Advanced");?><br /></strong>
+                        <textarea rows="6" cols="78" name="custom_options" id="custom_options"><?=$pconfig['custom_options'];?></textarea><br />
+                        <?= gettext('Enter any additional options you would like to add to the network time configuration here, separated by a space or newline.') ?>
                       </div>
                     </td>
                   </tr>

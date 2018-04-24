@@ -2,8 +2,9 @@
 
 /*
     Copyright (C) 2014-2016 Deciso B.V.
-    Copyright (C) 2014 Warren Baker (warren@decoy.co.za)
-    Copyright (C) 2003-2005 Bob Zoller <bob@kludgebox.com> and Manuel Kasper <mk@neon1.net>.
+    Copyright (C) 2014 Warren Baker <warren@decoy.co.za>
+    Copyright (C) 2003-2005 Bob Zoller <bob@kludgebox.com>
+    Copyright (C) 2003-2005 Manuel Kasper <mk@neon1.net>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -32,12 +33,7 @@ require_once("guiconfig.inc");
 require_once("services.inc");
 require_once("interfaces.inc");
 
-if (empty($config['unbound']['domainoverrides']) || !is_array($config['unbound']['domainoverrides'])) {
-    $config['unbound']['domainoverrides'] = array();
-}
-
-$a_domainOverrides = &$config['unbound']['domainoverrides'];
-
+$a_domainOverrides = &config_read_array('unbound', 'domainoverrides');
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (isset($_GET['id']) && !empty($a_domainOverrides[$_GET['id']])) {
@@ -112,7 +108,7 @@ include("head.inc");
           <div class="content-box">
             <form method="post" name="iform" id="iform">
               <div class="table-responsive">
-                <table class="table table-striped opnsense_standard_table_form">
+                <table class="table table-clean-form opnsense_standard_table_form">
                   <tr>
                     <td width="22%"><strong><?=gettext("Edit Domain Override entry");?></strong></td>
                     <td width="78%" align="right">
@@ -125,8 +121,10 @@ include("head.inc");
                     <td>
                       <input name="domain" type="text" id="domain" size="40" value="<?=$pconfig['domain'];?>" />
                       <div class="hidden" for="help_for_domain">
+                        <small class="formhelp">
                           <?=gettext("Domain to override (NOTE: this does not have to be a valid TLD!)"); ?><br />
                           <?=gettext("e.g."); ?> <em><?=gettext("test"); ?></em> <?=gettext("or"); ?> <em>mycompany.localdomain</em> <?=gettext("or"); ?> <em>1.168.192.in-addr.arpa</em>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -135,9 +133,11 @@ include("head.inc");
                     <td>
                         <input name="ip" type="text" id="ip" size="40" value="<?=$pconfig['ip'];?>" />
                         <div class="hidden" for="help_for_ip">
+                          <small class="formhelp">
                           <?=gettext("IP address of the authoritative DNS server for this domain"); ?><br />
                           <?=gettext("e.g."); ?> <em>192.168.100.100</em><br />
                           <?=gettext("To use a nondefault port for communication, append an '@' with the port number."); ?><br />
+                          </small>
                         </div>
                     </td>
                   </tr>
@@ -146,7 +146,9 @@ include("head.inc");
                     <td>
                       <input name="descr" type="text" id="descr" size="40" value="<?=$pconfig['descr'];?>" />
                       <div class="hidden" for="help_for_descr">
+                        <small class="formhelp">
                         <?=gettext("You may enter a description here for your reference (not parsed).");?>
+                        </small>
                       </div>
                     </td>
                   </tr>

@@ -2,7 +2,7 @@
 
 /*
     Copyright (C) 2014-2015 Deciso B.V.
-    Copyright (C) 2008 Shrew Soft Inc.
+    Copyright (C) 2008 Shrew Soft Inc. <mgrooms@shrew.net>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -28,11 +28,10 @@
 */
 
 require_once("guiconfig.inc");
-require_once("openvpn.inc");
+require_once("plugins.inc.d/openvpn.inc");
 require_once("services.inc");
 require_once("interfaces.inc");
 
-// define all fields used in this form
 $all_form_fields = "custom_options,disable,common_name,block,description
     ,tunnel_network,tunnel_networkv6,local_network,local_networkv6,remote_network
     ,remote_networkv6,gwredir,push_reset,dns_domain,dns_server1
@@ -40,11 +39,7 @@ $all_form_fields = "custom_options,disable,common_name,block,description
     ,netbios_enable,netbios_ntype,netbios_scope,wins_server1
     ,wins_server2,ovpn_servers";
 
-// read config.
-if (!isset($config['openvpn']['openvpn-csc'])) {
-    $config['openvpn']['openvpn-csc'] = array();
-}
-$a_csc = &$config['openvpn']['openvpn-csc'];
+$a_csc = &config_read_array('openvpn', 'openvpn-csc');
 
 $vpnid = 0;
 $act=null;
@@ -121,16 +116,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $a_csc[$id]['disable'] = true;
             }
             write_config();
-            openvpn_resync_csc();
+            openvpn_configure_csc();
         }
         header(url_safe('Location: /vpn_openvpn_csc.php'));
         exit;
     } else {
         /* perform validations */
-        if ($result = openvpn_validate_cidr($pconfig['tunnel_network'], 'IPv4 Tunnel Network')) {
+        if ($result = openvpn_validate_cidr($pconfig['tunnel_network'], 'IPv4 Tunnel Network', false, 'ipv4', true)) {
             $input_errors[] = $result;
         }
-        if ($result = openvpn_validate_cidr($pconfig['tunnel_networkv6'], 'IPv6 Tunnel Network', false, "ipv6")) {
+        if ($result = openvpn_validate_cidr($pconfig['tunnel_networkv6'], 'IPv6 Tunnel Network', false, 'ipv6', true)) {
             $input_errors[] = $result;
         }
         if ($result = openvpn_validate_cidr($pconfig['local_network'], 'IPv4 Local Network', true, "ipv4")) {
@@ -222,7 +217,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 @unlink('/var/etc/openvpn-csc/' . basename($old_csc_cn));
             }
             write_config();
-            openvpn_resync_csc();
+            openvpn_configure_csc();
 
             header(url_safe('Location: /vpn_openvpn_csc.php'));
             exit;

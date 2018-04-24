@@ -4,7 +4,7 @@
     Copyright (C) 2014-2015 Deciso B.V.
     Copyright (C) 2005 Bill Marquette <bill.marquette@gmail.com>.
     Copyright (C) 2003-2005 Manuel Kasper <mk@neon1.net>.
-    Copyright (C) 2004-2005 Scott Ullrich <geekgod@pfsense.com>.
+    Copyright (C) 2004-2005 Scott Ullrich <sullrich@gmail.com>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -51,13 +51,7 @@ function find_last_used_vhid() {
 
 
 // create new vip array if none existent
-if (!isset($config['virtualip']) || !is_array($config['virtualip'])) {
-    $config['virtualip'] = array();
-}
-if (!isset($config['virtualip']['vip']) || !is_array($config['virtualip']['vip'])) {
-    $config['virtualip']['vip'] = array();
-}
-$a_vip = &$config['virtualip']['vip'];
+$a_vip = &config_read_array('virtualip', 'vip');
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -70,7 +64,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $configId = $id;
     }
     $pconfig = array();
-    $pconfig['vhid'] = find_last_used_vhid() + 1;
     $form_fields = array('mode', 'vhid', 'advskew', 'advbase', 'password', 'subnet', 'subnet_bits'
                         , 'descr' ,'type', 'interface' );
 
@@ -112,9 +105,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $input_errors[] = gettext("A valid IP address must be specified.");
             } else {
                 $ignore_if = isset($id) ? $a_vip[$id]['interface'] : $pconfig['interface'];
-                if ($pconfig['mode'] == 'carp') {
-                    $ignore_if .= "_vip{$pconfig['vhid']}";
-                }
                 if (is_ipaddr_configured($pconfig['subnet'], $ignore_if)) {
                     $input_errors[] = gettext("This IP address is being used by another interface or VIP.");
                 }
@@ -150,19 +140,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if ($pconfig['mode'] == 'carp') {
             /* verify against reusage of vhids */
             foreach($config['virtualip']['vip'] as $vipId => $vip) {
-              if(isset($vip['vhid']) &&  $vip['vhid'] == $pconfig['vhid'] && $vip['interface'] == $pconfig['interface'] && $vipId <> $id) {
-                  $input_errors[] = sprintf(gettext("VHID %s is already in use on interface %s. Pick a unique number on this interface."),$pconfig['vhid'], convert_friendly_interface_to_friendly_descr($pconfig['interface']));
-              }
+               if (isset($vip['vhid']) &&  $vip['vhid'] == $pconfig['vhid'] && $vip['interface'] == $pconfig['interface'] && $vipId <> $id) {
+                   $input_errors[] = sprintf(gettext("VHID %s is already in use on interface %s. Pick a unique number on this interface."),$pconfig['vhid'], convert_friendly_interface_to_friendly_descr($pconfig['interface']));
+               }
             }
             if (empty($pconfig['password'])) {
                 $input_errors[] = gettext("You must specify a CARP password that is shared between the two VHID members.");
             }
-
+            if (empty($pconfig['vhid'])) {
+               $input_errors[] = gettext('A VHID must be selected for this CARP VIP.');
+            }
             if ($pconfig['interface'] == "lo0") {
                 $input_errors[] = gettext("For this type of vip localhost is not allowed.");
             }
         } else if ($pconfig['mode'] != 'ipalias' && $pconfig['interface'] == "lo0") {
             $input_errors[] = gettext("For this type of vip localhost is not allowed.");
+        } elseif ($pconfig['mode'] == 'ipalias' && !empty($pconfig['vhid'])) {
+            $carpvip_found = false;
+            foreach($config['virtualip']['vip'] as $vipId => $vip) {
+                if ($vip['interface'] == $pconfig['interface'] && $vip['vhid'] == $pconfig['vhid'] && $vip['mode'] == 'carp') {
+                    $carpvip_found = true ;
+                }
+            }
+            if (!$carpvip_found) {
+                $input_errors[] = sprintf(gettext("VHID %s must be defined on interface %s as a CARP VIP first."),$pconfig['vhid'], convert_friendly_interface_to_friendly_descr($pconfig['interface']));
+            }
         }
     }
 
@@ -250,12 +252,14 @@ $( document ).ready(function() {
         $("#advbase").attr('disabled', true);
         $("#noexpand").attr('disabled', true);
         $("#noexpandrow").addClass("hidden");
+        $("#max_vhid").attr('disabled', true);
 
         switch ($(this).val()) {
             case "ipalias":
               $("#type").prop("selectedIndex",0);
+              $("#vhid").attr('disabled', false);
               $("#subnet_bits").attr('disabled', false);
-              $("#typenote").html("<?=gettext("Please provide a single IP address.");?>");
+              $("#typenote").html("<?= html_safe(gettext('Please provide a single IP address.')) ?>");
               break;
             case "carp":
               $("#type").prop("selectedIndex",0);
@@ -264,25 +268,32 @@ $( document ).ready(function() {
               $("#vhid").attr('disabled', false);
               $("#advskew").attr('disabled', false);
               $("#advbase").attr('disabled', false);
-              $("#typenote").html("<?=gettext("This must be the network's subnet mask. It does not specify a CIDR range.");?>");
+              $("#max_vhid").attr('disabled', false);
+              $("#typenote").html("<?= html_safe(gettext('This must be the network\'s subnet mask. It does not specify a CIDR range.')) ?>");
               break;
             case "proxyarp":
               $("#type").attr('disabled', false);
               $("#subnet_bits").attr('disabled', false);
               $("#noexpand").attr('disabled', false);
               $("#noexpandrow").removeClass("hidden");
-              $("#typenote").html("<?=gettext("This is a CIDR block of proxy ARP addresses.");?>");
+              $("#typenote").html("<?= html_safe(gettext('This is a CIDR block of proxy ARP addresses.')) ?>");
               break;
             case "other":
               $("#type").attr('disabled', false);
               $("#subnet_bits").attr('disabled', false);
-              $("#typenote").html("<?=gettext("This must be the network's subnet mask. It does not specify a CIDR range.");?>");
+              $("#typenote").html("<?= html_safe(gettext('This must be the network\'s subnet mask. It does not specify a CIDR range.')) ?>");
               break;
         }
         // refresh selectpickers
         setTimeout(function(){
             $('.selectpicker').selectpicker('refresh');
           }, 100);
+    });
+
+    $("#max_vhid").click(function(event){
+        event.preventDefault();
+        $("#vhid").val($(this).data('vhid'));
+        $("#vhid").selectpicker('refresh');
     });
 
     // toggle initial mode change
@@ -302,7 +313,7 @@ $( document ).ready(function() {
         <section class="col-xs-12">
           <div class="content-box tab-content">
             <form method="post" name="iform" id="iform">
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <thead></thead>
                 <tbody>
                   <tr>
@@ -317,12 +328,14 @@ $( document ).ready(function() {
                     <td>
                       <select id="mode" name="mode" class="selectpicker" data-width="auto" data-live-search="true">
                         <option value="ipalias" <?=$pconfig['mode'] == "ipalias" ? "selected=\"selected\"" : ""; ?>><?=gettext("IP Alias");?></option>
-                        <option value="carp" <?=$pconfig['mode'] == "carp" ? "selected=\"selected\"" : ""; ?>><?=gettext("carp");?></option>
+                        <option value="carp" <?=$pconfig['mode'] == "carp" ? "selected=\"selected\"" : ""; ?>><?=gettext("CARP");?></option>
                         <option value="proxyarp" <?=$pconfig['mode'] == "proxyarp" ? "selected=\"selected\"" : ""; ?>><?=gettext("Proxy ARP");?></option>
                         <option value="other" <?=$pconfig['mode'] == "other" ? "selected=\"selected\"" : ""; ?>><?=gettext("Other");?></option>
                       </select>
                       <div class="hidden" for="help_for_mode">
+                        <small class="formhelp">
                         <?=gettext("Proxy ARP and other type Virtual IPs cannot be bound to by anything running on the firewall, such as IPsec, OpenVPN, etc. Use a CARP or IP Alias type address for these cases.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -381,7 +394,9 @@ $( document ).ready(function() {
                           </tr>
                         </table>
                         <div class="hidden" for="help_for_address">
+                            <small class="formhelp">
                             <i id="typenote"></i>
+                            </small>
                         </div>
                       </td>
                   </tr>
@@ -390,7 +405,9 @@ $( document ).ready(function() {
                       <td>
                           <input id="noexpand" name="noexpand" type="checkbox" class="form-control unknown" id="noexpand" <?= !empty($pconfig['noexpand']) ? "checked=\"checked\"" : "" ; ?> />
                           <div class="hidden" for="help_for_noexpand">
+                            <small class="formhelp">
                             <?=gettext("Disable expansion of this entry into IPs on NAT lists (e.g. 192.168.1.0/24 expands to 256 entries.");?>
+                            </small>
                           </div>
                   </tr>
                   <tr>
@@ -398,7 +415,9 @@ $( document ).ready(function() {
                     <td>
                       <input type='password'  name='password' id="password" value="<?=$pconfig['password'];?>" />
                       <div class="hidden" for="help_for_password">
+                        <small class="formhelp">
                         <?=gettext("Enter the VHID group password.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -406,14 +425,20 @@ $( document ).ready(function() {
                     <td><a id="help_for_vhid" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("VHID Group");?></td>
                     <td>
                       <select id='vhid' name='vhid' class="selectpicker" data-size="10" data-width="auto">
+                          <option value=""><?= gettext('none') ?></option>
                         <?php for ($i = 1; $i <= 255; $i++): ?>
                           <option value="<?=$i;?>" <?= $i == $pconfig['vhid'] ?  "selected=\"selected\"" : ""; ?>>
                             <?=$i;?>
                           </option>
                         <?php endfor; ?>
                       </select>
+                      <button type="button" data-vhid="<?=find_last_used_vhid() + 1;?>" id="max_vhid" class="btn btn-default btn-cs">
+                        <?=gettext("Select an unassigned VHID");?>
+                      </button>
                       <div class="hidden" for="help_for_vhid">
+                        <small class="formhelp">
                         <?=gettext("Enter the VHID group that the machines will share.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -438,8 +463,9 @@ $( document ).ready(function() {
                       </select>
 
                       <div class="hidden" for="help_for_adv">
-                        <br/>
+                        <small class="formhelp">
                         <?=gettext("The frequency that this machine will advertise. 0 usually means master. Otherwise the lowest combination of both values in the cluster determines the master.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -448,7 +474,9 @@ $( document ).ready(function() {
                     <td>
                       <input name="descr" type="text" class="form-control unknown" id="descr" size="40" value="<?=$pconfig['descr'];?>" />
                       <div class="hidden" for="help_for_adv">
+                        <small class="formhelp">
                         <?=gettext("You may enter a description here for your reference (not parsed).");?>
+                        </small>
                       </div>
                     </td>
                   </tr>

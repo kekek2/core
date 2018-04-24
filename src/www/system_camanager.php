@@ -2,7 +2,7 @@
 
 /*
     Copyright (C) 2014-2015 Deciso B.V.
-    Copyright (C) 2008 Shrew Soft Inc.
+    Copyright (C) 2008 Shrew Soft Inc. <mgrooms@shrew.net>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -131,19 +131,9 @@ function ca_inter_create(&$ca, $keylen, $lifetime, $dn, $caref, $digest_alg = 's
 
 $ca_keylens = array( "512", "1024", "2048", "4096", "8192");
 $openssl_digest_algs = array("sha1", "sha224", "sha256", "sha384", "sha512");
-
-if (!is_array($config['cert'])) {
-    $config['cert'] = array();
-}
-if (!isset($config['crl']) || !is_array($config['crl'])) {
-    $config['crl'] = array();
-}
-
-if (!isset($config['ca']) || !is_array($config['ca'])) {
-    $config['ca'] = array();
-}
-
-$a_ca =& $config['ca'];
+$a_ca = &config_read_array('ca');
+$a_cert = &config_read_array('cert');
+$a_crl = &config_read_array('crl');
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (isset($a_ca[$_GET['id']])) {
@@ -237,7 +227,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             header(url_safe('Location: /system_camanager.php'));
             exit;
         }
-        $a_cert =& $config['cert'];
         $index = count($a_cert) - 1;
         for (; $index >=0; $index--) {
             if (isset($a_cert[$index]['caref']) && isset($a_ca[$id]['refid']) && $a_cert[$index]['caref'] == $a_ca[$id]['refid']) {
@@ -245,7 +234,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
         }
 
-        $a_crl =& $config['crl'];
         $index = count($a_crl) - 1;
         for (; $index >=0; $index--) {
             if ($a_crl[$index]['caref'] == $a_ca[$id]['refid']) {
@@ -332,6 +320,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
         }
 
+        if (isset($pconfig['serial']) && $pconfig['serial'] !== '' &&
+            ((string)((int)$pconfig['serial']) != $pconfig['serial'] || $pconfig['serial'] < 1)) {
+            $input_errors[] = gettext('The serial number must be a number greater than zero or left blank.');
+        }
+
         /* save modifications */
         if (count($input_errors) == 0) {
             $ca = array();
@@ -349,7 +342,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
 
             if (!empty($pconfig['serial'])) {
-                $ca['serial'] = $pconfig['serial'];
+                $ca['serial'] = $pconfig['serial'] - 1;
             }
 
             if (isset($id)) {
@@ -483,7 +476,7 @@ $main_buttons = array(
         <form method="post" name="iform" id="iform">
           <input type="hidden" name="id" id="id" value="<?=isset($id) ? $id :"";?>"/>
           <input type="hidden" name="act" id="action" value="<?=$act;?>"/>
-          <table class="table table-striped opnsense_standard_table_form">
+          <table class="table table-clean-form opnsense_standard_table_form">
             <tr>
               <td width="22%"></td>
               <td  width="78%" align="right">
@@ -515,7 +508,7 @@ $main_buttons = array(
             </tr>
           </table>
           <!-- existing ca -->
-          <table id="existing" class="table table-striped opnsense_standard_table_form">
+          <table id="existing" class="table table-clean-form opnsense_standard_table_form">
             <thead>
               <tr>
                 <th colspan="2"><?=gettext("Existing Certificate Authority");?></th>
@@ -527,7 +520,9 @@ $main_buttons = array(
                 <td width="78%">
                   <textarea name="cert" cols="65" rows="7" id="cert"><?=isset($pconfig['cert']) ? $pconfig['cert'] : "";?></textarea>
                   <div class="hidden" for="help_for_cert">
+                    <small class="formhelp">
                     <?=gettext("Paste a certificate in X.509 PEM format here.");?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -539,7 +534,9 @@ $main_buttons = array(
                 <td width="78%">
                   <textarea name="key" id="key" cols="65" rows="7"><?= isset($pconfig['key']) ? $pconfig['key'] : "";?></textarea>
                   <div class="hidden" for="help_for_key">
+                    <small class="formhelp">
                     <?=gettext("Paste the private key for the above certificate here. This is optional in most cases, but required if you need to generate a Certificate Revocation List (CRL).");?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -548,14 +545,16 @@ $main_buttons = array(
                 <td>
                   <input name="serial" type="text" id="serial" size="20" value="<?=$pconfig['serial'];?>"/>
                   <div class="hidden" for="help_for_serial">
+                    <small class="formhelp">
                     <?=gettext("Enter a decimal number to be used as the serial number for the next certificate to be created using this CA.");?>
+                    </small>
                   </div>
                 </td>
               </tr>
               </tbody>
             </table>
             <!-- internal ca -->
-            <table  id="internal" class="table table-striped opnsense_standard_table_form">
+            <table  id="internal" class="table table-clean-form opnsense_standard_table_form">
               <thead>
                 <tr>
                   <th colspan="2"><?=gettext("Internal Certificate Authority");?></th>
@@ -600,7 +599,9 @@ $main_buttons = array(
                     endforeach; ?>
                     </select>
                     <div class="hidden" for="help_for_digest_alg">
+                      <small class="formhelp">
                       <?= gettext("NOTE: It is recommended to use an algorithm stronger than SHA1 when possible.") ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -632,9 +633,11 @@ $main_buttons = array(
                   <td>
                     <input name="dn_state" type="text" size="40" value="<?=$pconfig['dn_state'];?>"/>
                     <div class="hidden" for="help_for_digest_dn_state">
+                      <small class="formhelp">
                       <em><?=gettext("ex:");?></em>
                       &nbsp;
                       <?=gettext("Sachsen");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -643,9 +646,11 @@ $main_buttons = array(
                   <td>
                     <input name="dn_city" type="text" size="40" value="<?=$pconfig['dn_city'];?>"/>
                     <div class="hidden" for="help_for_digest_dn_city">
+                      <small class="formhelp">
                       <em><?=gettext("ex:");?></em>
                       &nbsp;
                       <?=gettext("Leipzig");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -654,9 +659,11 @@ $main_buttons = array(
                   <td>
                     <input name="dn_organization" type="text" size="40" value="<?=$pconfig['dn_organization'];?>"/>
                     <div class="hidden" for="help_for_digest_dn_organization">
+                      <small class="formhelp">
                       <em><?=gettext("ex:");?></em>
                       &nbsp;
                       <?=gettext("My Company Inc");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -665,9 +672,11 @@ $main_buttons = array(
                   <td>
                     <input name="dn_email" type="text" size="25" value="<?=$pconfig['dn_email'];?>"/>
                     <div class="hidden" for="help_for_digest_dn_email">
+                      <small class="formhelp">
                       <em><?=gettext("ex:");?></em>
                       &nbsp;
                       <?=gettext("admin@mycompany.com");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -676,9 +685,11 @@ $main_buttons = array(
                   <td>
                     <input name="dn_commonname" type="text" size="25" value="<?=$pconfig['dn_commonname'];?>"/>
                     <div class="hidden" for="help_for_digest_dn_commonname">
+                      <small class="formhelp">
                       <em><?=gettext("ex:");?></em>
                       &nbsp;
                       <?=gettext("internal-ca");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -701,7 +712,7 @@ $main_buttons = array(
           <input type="hidden" name="id" id="id" value="<?=isset($id) ? $id :"";?>"/>
           <input type="hidden" name="act" id="action" value="<?=$act;?>"/>
         </form>
-        <table width="100%" border="0" cellpadding="0" cellspacing="0" summary="" class="table table-striped">
+        <table width="100%" border="0" cellpadding="0" cellspacing="0" summary="" class="table table-clean-form">
           <thead>
             <tr>
               <th><?=gettext("Name");?></th>
@@ -734,7 +745,7 @@ $main_buttons = array(
 
               $certcount = 0;
 
-              foreach ($config['cert'] as $cert) {
+              foreach ($a_cert as $cert) {
                   if ($cert['caref'] == $ca['refid']) {
                       $certcount++;
                   }

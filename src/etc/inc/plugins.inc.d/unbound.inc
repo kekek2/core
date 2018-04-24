@@ -1,7 +1,7 @@
 <?php
 
 /*
-    Copyright (C) 2015-2016 Franco Fichtner <franco@opnsense.org>
+    Copyright (C) 2015-2017 Franco Fichtner <franco@opnsense.org>
     Copyright (C) 2015 Manuel Faux <mfaux@conf.at>
     Copyright (C) 2014 Warren Baker <warren@decoy.co.za>
     Copyright (C) 2004-2007 Scott Ullrich <sullrich@gmail.com>
@@ -36,6 +36,15 @@ function unbound_enabled()
     return isset($config['unbound']['enable']);
 }
 
+function unbound_configure()
+{
+    return array(
+        'dns' => array('unbound_configure_do'),
+        'hosts' => array('unbound_hosts_generate:0'),
+        'newwanip' => array('unbound_configure_do:2'),
+    );
+}
+
 function unbound_services()
 {
     $services = array();
@@ -46,7 +55,7 @@ function unbound_services()
 
     $pconfig = array();
     $pconfig['name'] = 'unbound';
-    $pconfig['description'] = gettext('DNS Resolver');
+    $pconfig['description'] = gettext('Unbound DNS');
     $pconfig['php']['restart'] = array('unbound_configure_do');
     $pconfig['php']['start'] = array('unbound_configure_do');
     $pconfig['pidfile'] = '/var/run/unbound.pid';
@@ -60,18 +69,12 @@ function unbound_xmlrpc_sync()
     $result = array();
 
     $result[] = array(
-        'description' => gettext('DNS Resolver'),
+        'description' => gettext('Unbound DNS'),
         'section' => 'unbound',
         'id' => 'dnsresolver',
     );
 
     return $result;
-}
-
-function unbound_configure()
-{
-    /* XXX stub that prevents unbound from starting again on bootup */
-    return array();
 }
 
 function unbound_optimization()
@@ -104,7 +107,6 @@ function unbound_optimization()
         $optimization['key_cache_slabs'] = "key-cache-slabs: 4";
     }
 
-
     // More outgoing connections per thread otherwise assign a default of 4096 for a single thread
     if ($numprocs > 0) {
         $or = (1024/$numprocs) - 50;
@@ -113,58 +115,22 @@ function unbound_optimization()
         $optimization['outgoing_range'] = "outgoing-range: {4096}";
     }
 
-    /*
-     * Larger socket buffer for busy servers
-     * Check that it is set to 4MB (by default the OS has it configured to 4MB)
-     */
-    if (isset($config['sysctl']['item'])) {
-        foreach ($config['sysctl']['item'] as $tunable) {
-            if ($tunable['tunable'] == 'kern.ipc.maxsockbuf') {
-                $so = floor(($tunable['value']/1024/1024)-1);
-                // Check to ensure that the number is not a negative
-                if ($so > 0) {
-                    $optimization['so_rcvbuf'] = "so-rcvbuf: {$so}m";
-                } else {
-                    unset($optimization['so_rcvbuf']);
-                }
-            }
-        }
-        // Safety check in case kern.ipc.maxsockbuf is not available.
-        if (!isset($optimization['so_rcvbuf'])) {
-            $optimization['so_rcvbuf'] = "#so-rcvbuf: 4m";
-        }
-    }
-
     return $optimization;
-}
-
-function unbound_bootstrap_root()
-{
-    global $g;
-
-    if (!is_dir($g['unbound_chroot_path'])) {
-        mkdir($g['unbound_chroot_path']);
-        chown($g['unbound_chroot_path'], 'unbound');
-        chgrp($g['unbound_chroot_path'], 'unbound');
-    }
 }
 
 function unbound_generate_config()
 {
-    global $config, $g;
-
-    // Bootstrap needed for /var MFS
-    unbound_bootstrap_root();
+    global $config;
 
     // Setup optimization
     $optimization = unbound_optimization();
 
     // Setup DNSSEC support
     if (isset($config['unbound']['dnssec'])) {
-        $module_config = "validator iterator";
-        $anchor_file = "auto-trust-anchor-file: {$g['unbound_chroot_path']}/root.key";
+        $module_config = 'validator iterator';
+        $anchor_file = 'auto-trust-anchor-file: /var/unbound/root.key';
     } else {
-        $module_config = "iterator";
+        $module_config = 'iterator';
     }
 
     // Setup DNS Rebinding
@@ -205,7 +171,7 @@ EOF;
     $bindints = "";
     if (!empty($config['unbound']['active_interface'])) {
         $active_interfaces = explode(",", $config['unbound']['active_interface']);
-        foreach($active_interfaces as $ubif) {
+        foreach ($active_interfaces as $ubif) {
             $intip = get_interface_ip($ubif);
             if (!empty($intip)) {
                 $bindints .= "interface: $intip\n";
@@ -226,7 +192,7 @@ EOF;
     if (!empty($config['unbound']['outgoing_interface'])) {
         $outgoingints = "# Outgoing interfaces to be used\n";
         $outgoing_interfaces = explode(",", $config['unbound']['outgoing_interface']);
-        foreach($outgoing_interfaces as $outif) {
+        foreach ($outgoing_interfaces as $outif) {
             $outip = get_interface_ip($outif);
             if (!empty($outip)) {
                 $outgoingints .= "outgoing-interface: $outip\n";
@@ -280,32 +246,27 @@ EOF;
     $verbosity = isset($config['unbound']['log_verbosity']) ? $config['unbound']['log_verbosity'] : 1;
     $msgcachesize = !empty($config['unbound']['msgcachesize']) ? $config['unbound']['msgcachesize'] : 4;
     $rrsetcachesize = $msgcachesize * 2;
-    $dnssecstripped = !empty($config['unbound']['dnssecstripped']) ? "yes" : "no";
+    $dnssecstripped = !empty($config['unbound']['dnssecstripped']) ? 'yes' : 'no';
+    $serveexpired = !empty($config['unbound']['serveexpired']) ? 'yes' : 'no';
 
     if (isset($config['unbound']['regdhcp'])) {
         // include dynamic leases
-        @touch("{$g['unbound_chroot_path']}/dhcpleases.conf");
-        $include_dhcpleases = "include: {$g['unbound_chroot_path']}/dhcpleases.conf";
+        @touch('/var/unbound/dhcpleases.conf');
+        $include_dhcpleases = 'include: /var/unbound/dhcpleases.conf';
     } else {
-        $include_dhcpleases = "";
+        $include_dhcpleases = '';
     }
 
     // Set up forwarding if it configured
     if (isset($config['unbound']['forwarding'])) {
         $dnsservers = array();
         if (isset($config['system']['dnsallowoverride'])) {
-            $ns = array_unique(get_nameservers());
-            foreach($ns as $nameserver) {
-                if ($nameserver) {
-                    $dnsservers[] = $nameserver;
-                }
+            foreach (get_nameservers() as $nameserver) {
+                $dnsservers[] = $nameserver;
             }
         } else {
-            $ns = array_unique(get_dns_servers());
-            foreach($ns as $nameserver) {
-                if ($nameserver) {
-                    $dnsservers[] = $nameserver;
-                }
+            foreach (get_dns_servers() as $nameserver) {
+                $dnsservers[] = $nameserver;
             }
         }
 
@@ -316,7 +277,7 @@ forward-zone:
     name: "."
 
 EOD;
-            foreach($dnsservers as $dnsserver) {
+            foreach ($dnsservers as $dnsserver) {
                 $forward_conf .= "\tforward-addr: $dnsserver\n";
             }
         }
@@ -333,10 +294,10 @@ EOD;
 # Server configuration
 ##
 server:
-chroot: {$g['unbound_chroot_path']}
-username: "unbound"
-directory: "{$g['unbound_chroot_path']}"
-pidfile: "/var/run/unbound.pid"
+chroot: /var/unbound
+username: unbound
+directory: /var/unbound
+pidfile: /var/run/unbound.pid
 use-syslog: yes
 port: {$port}
 verbosity: {$verbosity}
@@ -352,6 +313,7 @@ module-config: "{$module_config}"
 cache-max-ttl: {$cache_max_ttl}
 cache-min-ttl: {$cache_min_ttl}
 harden-dnssec-stripped: {$dnssecstripped}
+serve-expired: {$serveexpired}
 outgoing-num-tcp: {$outgoing_num_tcp}
 incoming-num-tcp: {$incoming_num_tcp}
 num-queries-per-thread: {$num_queries_per_thread}
@@ -382,16 +344,16 @@ prefetch-key: {$prefetch_key}
 {$private_domains}
 
 # Access lists
-include: {$g['unbound_chroot_path']}/access_lists.conf
+include: /var/unbound/access_lists.conf
 
 # Static host entries
-include: {$g['unbound_chroot_path']}/host_entries.conf
+include: /var/unbound/host_entries.conf
 
 # DHCP leases (if configured)
 {$include_dhcpleases}
 
 # Domain overrides
-include: {$g['unbound_chroot_path']}/domainoverrides.conf
+include: /var/unbound/domainoverrides.conf
 
 {$custom_options}
 
@@ -400,111 +362,125 @@ include: {$g['unbound_chroot_path']}/domainoverrides.conf
 ###
 # Remote Control Config
 ###
-include: {$g['unbound_chroot_path']}/remotecontrol.conf
+include: /var/unbound/remotecontrol.conf
 
 EOD;
 
-    file_put_contents("{$g['unbound_chroot_path']}/unbound.conf", $unboundconf);
+    file_put_contents('/var/unbound/unbound.conf', $unboundconf);
 
     return 0;
 }
 
-function unbound_remote_control_setup() {
-    global $g;
-
-    if (!file_exists("{$g['unbound_chroot_path']}/remotecontrol.conf") || !file_exists("{$g['unbound_chroot_path']}/unbound_control.key")) {
+function unbound_remote_control_setup()
+{
+    if (!file_exists('/var/unbound/remotecontrol.conf') || !file_exists('/var/unbound/unbound_control.key')) {
         $remotcfg = <<<EOF
 remote-control:
     control-enable: yes
     control-interface: 127.0.0.1
     control-port: 953
-    server-key-file: "{$g['unbound_chroot_path']}/unbound_server.key"
-    server-cert-file: "{$g['unbound_chroot_path']}/unbound_server.pem"
-    control-key-file: "{$g['unbound_chroot_path']}/unbound_control.key"
-    control-cert-file: "{$g['unbound_chroot_path']}/unbound_control.pem"
+    server-key-file: /var/unbound/unbound_server.key
+    server-cert-file: /var/unbound/unbound_server.pem
+    control-key-file: /var/unbound/unbound_control.key
+    control-cert-file: /var/unbound/unbound_control.pem
 
 EOF;
 
-        file_put_contents("{$g['unbound_chroot_path']}/remotecontrol.conf", $remotcfg);
+        file_put_contents('/var/unbound/remotecontrol.conf', $remotcfg);
 
-        unbound_execute('unbound-control-setup');
+        mwexecf(
+            'chroot -u unbound -g unbound / %s -d %s',
+            array('/usr/local/sbin/unbound-control-setup', '/var/unbound')
+        );
     }
 }
 
-function unbound_configure_do($verbose = false)
+function unbound_interface($interface)
 {
     global $config;
 
-    unbound_execute('stop');
+    if (empty($interface)) {
+        /* emulate non-interface reload */
+        return true;
+    }
+
+    if (!empty($config['unbound']['active_interface'])) {
+        foreach (explode(',', $config['unbound']['active_interface']) as $used) {
+            if ($used == $interface) {
+                return true;
+            }
+        }
+    }
+
+    if (!empty($config['unbound']['outgoing_interface'])) {
+        foreach (explode(',', $config['unbound']['outgoing_interface']) as $used) {
+            if ($used == $interface) {
+                return true;
+            }
+        }
+    }
+
+    /*
+     * We can ignore this request as we don't listen here
+     * or always listen on :: / 0.0.0.0 so that a reload
+     * is not necessary.
+     */
+    return false;
+}
+
+function unbound_configure_do($verbose = false, $interface = '')
+{
+    global $config;
+
+    if (!unbound_interface($interface)) {
+        return;
+    }
+
+    killbypid('/var/run/unbound_dhcpd.pid', 'TERM', true);
+    killbypid('/var/run/unbound.pid', 'TERM', true);
 
     if (!isset($config['unbound']['enable'])) {
         return;
     }
 
     if ($verbose) {
-        echo 'Starting DNS Resolver...';
+        echo 'Starting Unbound DNS...';
         flush();
     }
 
-    unbound_bootstrap_root();
-    unbound_execute('unbound-anchor');
+    mwexecf(
+        'chroot -u unbound -g unbound / %s -a %s',
+        array('/usr/local/sbin/unbound-anchor', '/var/unbound/root.key'),
+        true
+    );
+
     unbound_remote_control_setup();
     unbound_generate_config();
-    unbound_execute('start');
+
+    $domain = $config['system']['domain'];
+    if (isset($config['unbound']['regdhcpdomain'])) {
+        $domain = $config['unbound']['regdhcpdomain'];
+    }
+    killbypid('/var/run/unbound_dhcpd.pid', 'TERM', true);
+    if (isset($config['unbound']['regdhcp'])) {
+        mwexecf('/usr/local/opnsense/scripts/dns/unbound_dhcpd.py /domain %s', $domain);
+    }
+    mwexecf('/usr/local/sbin/unbound -c %s', '/var/unbound/unbound.conf');
 
     if ($verbose) {
         echo "done.\n";
     }
 }
 
-function unbound_execute($cmd)
+function unbound_add_domain_overrides($pvt = false)
 {
-    global $g, $config;
-
-    switch ($cmd) {
-        case 'start':
-            $domain = $config['system']['domain'];
-            if (isset($config['unbound']['regdhcpdomain'])) {
-                $domain = $config['unbound']['regdhcpdomain'];
-            }
-            killbypid('/var/run/unbound_dhcpd.pid', 'TERM', true);
-            if (isset($config['unbound']['regdhcp'])) {
-                mwexecf('/usr/local/opnsense/scripts/dns/unbound_dhcpd.py /domain %s', $domain);
-            }
-            mwexecf('/usr/local/sbin/unbound -c %s', "{$g['unbound_chroot_path']}/unbound.conf");
-            break;
-        case 'stop':
-            killbypid('/var/run/unbound_dhcpd.pid', 'TERM', true);
-            killbypid('/var/run/unbound.pid', 'TERM', true);
-            break;
-        case 'reload':
-            killbypid('/var/run/unbound.pid', 'HUP');
-            break;
-        case 'unbound-anchor':
-            mwexecf(
-                'chroot -u unbound -g unbound / %s -a %s',
-                array('/usr/local/sbin/unbound-anchor', "{$g['unbound_chroot_path']}/root.key")
-            );
-            break;
-        case 'unbound-control-setup':
-            mwexecf(
-                'chroot -u unbound -g unbound / %s -d %s',
-                array('/usr/local/sbin/unbound-control-setup', $g['unbound_chroot_path'])
-            );
-            break;
-        default:
-            break;
-    }
-}
-
-function unbound_add_domain_overrides($pvt=false) {
-    global $config, $g;
+    global $config;
 
     $domains = $config['unbound']['domainoverrides'];
 
     $sorted_domains = msort($domains, "domain");
     $result = array();
-    foreach($sorted_domains as $domain) {
+    foreach ($sorted_domains as $domain) {
         $domain_key = current($domain);
         if (!isset($result[$domain_key])) {
             $result[$domain_key] = array();
@@ -514,14 +490,17 @@ function unbound_add_domain_overrides($pvt=false) {
 
     // Domain overrides that have multiple entries need multiple stub-addr: added
     $domain_entries = "";
-    foreach($result as $domain=>$ips) {
+    foreach ($result as $domain => $ips) {
         if ($pvt == true) {
             $domain_entries .= "private-domain: \"$domain\"\n";
             $domain_entries .= "domain-insecure: \"$domain\"\n";
+            if (preg_match('/.+\.in-addr\.arpa\.?$/', $domain)) {
+                $domain_entries .= "local-zone: \"$domain\" typetransparent\n";
+            }
         } else {
             $domain_entries .= "stub-zone:\n";
             $domain_entries .= "\tname: \"$domain\"\n";
-            foreach($ips as $ip) {
+            foreach ($ips as $ip) {
                 $domain_entries .= "\tstub-addr: $ip\n";
             }
             $domain_entries .= "\tstub-prime: no\n";
@@ -531,13 +510,13 @@ function unbound_add_domain_overrides($pvt=false) {
     if ($pvt == true) {
         return $domain_entries;
     } else {
-        file_put_contents("{$g['unbound_chroot_path']}/domainoverrides.conf", $domain_entries);
+        file_put_contents('/var/unbound/domainoverrides.conf', $domain_entries);
     }
 }
 
 function unbound_add_host_entries()
 {
-    global $config, $g;
+    global $config;
 
     $unbound_entries = "local-zone: \"{$config['system']['domain']}\" transparent\n";
 
@@ -558,23 +537,41 @@ function unbound_add_host_entries()
     }
 
     foreach ($interfaces as $interface) {
+        if ($interface == 'lo0') {
+            continue;
+        }
         $if = get_real_interface($interface);
-        if (does_interface_exist($if)) {
-            $laddr = find_interface_ip($if);
-            if (is_ipaddrv4($laddr)) {
-                $unbound_entries .= "local-data-ptr: \"{$laddr} {$config['system']['hostname']}.{$config['system']['domain']}\"\n";
-                $unbound_entries .= "local-data: \"{$config['system']['hostname']}.{$config['system']['domain']} A {$laddr}\"\n";
-                $unbound_entries .= "local-data: \"{$config['system']['hostname']} A {$laddr}\"\n";
+        if (!does_interface_exist($if)) {
+            continue;
+        }
+        $laddr = find_interface_ip($if);
+        if (is_ipaddrv4($laddr)) {
+            $domain = $config['system']['domain'];
+            if (isset($config['dhcpd'][$interface]['enable']) && !empty($config['dhcpd'][$interface]['domain'])) {
+                $domain = $config['dhcpd'][$interface]['domain'];
             }
-            $laddr6 = find_interface_ipv6($if);
-            if (is_ipaddrv6($laddr6)) {
-                $unbound_entries .= "local-data-ptr: \"{$laddr6} {$config['system']['hostname']}.{$config['system']['domain']}\"\n";
-                $unbound_entries .= "local-data: \"{$config['system']['hostname']}.{$config['system']['domain']} AAAA {$laddr6}\"\n";
-                $unbound_entries .= "local-data: \"{$config['system']['hostname']} AAAA {$laddr6}\"\n";
+            $unbound_entries .= "local-data-ptr: \"{$laddr} {$config['system']['hostname']}.{$domain}\"\n";
+            $unbound_entries .= "local-data: \"{$config['system']['hostname']}.{$domain} A {$laddr}\"\n";
+            $unbound_entries .= "local-data: \"{$config['system']['hostname']} A {$laddr}\"\n";
+        }
+        $laddr6 = find_interface_ipv6($if);
+        if (is_ipaddrv6($laddr6)) {
+            $domain = $config['system']['domain'];
+            if (isset($config['dhcpdv6'][$interface]['enable']) && !empty($config['dhcpdv6'][$interface]['domain'])) {
+                $domain = $config['dhcpdv6'][$interface]['domain'];
             }
+            $unbound_entries .= "local-data-ptr: \"{$laddr6} {$config['system']['hostname']}.{$domain}\"\n";
+            $unbound_entries .= "local-data: \"{$config['system']['hostname']}.{$domain} AAAA {$laddr6}\"\n";
+            $unbound_entries .= "local-data: \"{$config['system']['hostname']} AAAA {$laddr6}\"\n";
+        }
+        if (empty($config['unbound']['noreglladdr6'])) {
             $lladdr6 = find_interface_ipv6_ll($if);
             if (is_ipaddrv6($lladdr6)) {
-                $unbound_entries .= "local-data: \"{$config['system']['hostname']}.{$config['system']['domain']} AAAA {$lladdr6}\"\n";
+                $domain = $config['system']['domain'];
+                if (isset($config['dhcpdv6'][$interface]['enable']) && !empty($config['dhcpdv6'][$interface]['domain'])) {
+                    $domain = $config['dhcpdv6'][$interface]['domain'];
+                }
+                $unbound_entries .= "local-data: \"{$config['system']['hostname']}.{$domain} AAAA {$lladdr6}\"\n";
                 $unbound_entries .= "local-data: \"{$config['system']['hostname']} AAAA {$lladdr6}\"\n";
             }
         }
@@ -585,7 +582,7 @@ function unbound_add_host_entries()
     if (isset($config['unbound']['hosts'])) {
         $added_item = array();
 
-        foreach($config['unbound']['hosts'] as $host) {
+        foreach ($config['unbound']['hosts'] as $host) {
             if ($host['host'] != "") {
                 $host['host'] = $host['host'].".";
             }
@@ -664,8 +661,7 @@ function unbound_add_host_entries()
         }
     }
 
-    unbound_bootstrap_root();
-    file_put_contents("{$g['unbound_chroot_path']}/host_entries.conf", $unbound_entries);
+    file_put_contents('/var/unbound/host_entries.conf', $unbound_entries);
 }
 
 // Generation of Unbound statistics
@@ -698,9 +694,9 @@ EOF;
     return $stats;
 }
 
-// Unbound Access lists
-function unbound_acls_config() {
-    global $g, $config;
+function unbound_acls_config()
+{
+    global $config;
 
     $aclcfg = "access-control: 127.0.0.1/32 allow\n";
     $aclcfg .= "access-control: ::1 allow\n";
@@ -712,7 +708,7 @@ function unbound_acls_config() {
     }
 
     $bindints = "";
-    foreach($active_interfaces as $ubif => $ifdesc) {
+    foreach ($active_interfaces as $ubif => $ifdesc) {
         $ifip = get_interface_ip($ubif);
         if (!empty($ifip)) {
             $subnet_bits = get_interface_subnet($ubif);
@@ -733,9 +729,9 @@ function unbound_acls_config() {
 
     // Configure the custom ACLs
     if (isset($config['unbound']['acls'])) {
-        foreach($config['unbound']['acls'] as $unbound_acl) {
+        foreach ($config['unbound']['acls'] as $unbound_acl) {
             $aclcfg .= "#{$unbound_acl['aclname']}\n";
-            foreach($unbound_acl['row'] as $network) {
+            foreach ($unbound_acl['row'] as $network) {
                 if ($unbound_acl['aclaction'] == "allow snoop") {
                     $unbound_acl['aclaction'] = "allow_snoop";
                 }
@@ -745,8 +741,7 @@ function unbound_acls_config() {
     }
 
     // Write out Access list
-    unbound_bootstrap_root();
-    file_put_contents("{$g['unbound_chroot_path']}/access_lists.conf", $aclcfg);
+    file_put_contents('/var/unbound/access_lists.conf', $aclcfg);
 }
 
 function unbound_hosts_generate()
@@ -758,5 +753,6 @@ function unbound_hosts_generate()
     }
 
     unbound_add_host_entries();
-    unbound_execute('reload');
+
+    killbypid('/var/run/unbound.pid', 'HUP');
 }

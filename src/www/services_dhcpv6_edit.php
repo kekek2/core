@@ -64,6 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $input_errors = array();
     $pconfig = $_POST;
+
     // handle identifiers and actions
     if (!empty($pconfig['if']) && !empty($config['interfaces'][$pconfig['if']])) {
         $if = $pconfig['if'];
@@ -71,15 +72,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (!empty($config['dhcpdv6'][$if]['staticmap'][$pconfig['id']])) {
         $id = $pconfig['id'];
     }
-    if (empty($config['dhcpdv6']) || !is_array($config['dhcpdv6'])) {
-        $config['dhcpdv6'] = array();
-    }
-    if (empty($config['dhcpdv6'][$if]) || !is_array($config['dhcpdv6'][$if])) {
-        $config['dhcpdv6'][$if] = array();
-    }
-    if (empty($config['dhcpdv6'][$if]['staticmap']) || !is_array($config['dhcpdv6'][$if]['staticmap'])) {
-        $config['dhcpdv6'][$if]['staticmap'] = array();
-    }
+
+    config_read_array('dhcpdv6', $if, 'staticmap');
+
     /* input validation */
     $reqdfields = explode(" ", "duid");
     $reqdfieldsn = array(gettext("DUID Identifier"));
@@ -105,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     /* check for overlaps */
-    $a_maps = &$config['dhcpdv6'][$if]['staticmap'];
+    $a_maps = &config_read_array('dhcpdv6', $if, 'staticmap');
     foreach ($a_maps as $mapent) {
         if (isset($id) && ($a_maps[$id] === $mapent)) {
             continue;
@@ -162,7 +157,7 @@ include("head.inc");
           <div class="content-box">
             <form method="post" name="iform" id="iform">
               <div class="table-responsive">
-                <table class="table table-striped opnsense_standard_table_form">
+                <table class="table table-clean-form opnsense_standard_table_form">
                   <tr>
                     <td width="22%" valign="top"><strong><?=gettext("Static DHCPv6 Mapping");?></strong></td>
                     <td width="78%" align="right">
@@ -175,9 +170,11 @@ include("head.inc");
                     <td>
                       <input name="duid" type="text" value="<?=$pconfig['duid'];?>" />
                       <div class="hidden" for="help_for_duid">
+                        <small class="formhelp">
                         <?=gettext("Enter a DUID Identifier in the following format: ");?><br />
                         "<?= gettext('DUID-LLT - ETH -- TIME --- ---- ADDR ----') ?>" <br />
                         "xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx"
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -186,9 +183,11 @@ include("head.inc");
                     <td>
                       <input name="ipaddrv6" type="text" value="<?=$pconfig['ipaddrv6'];?>" />
                       <div class="hidden" for="help_for_ipaddrv6">
+                        <small class="formhelp">
                         <?=gettext("If an IPv6 address is entered, the address must be outside of the pool.");?>
                         <br />
                         <?=gettext("If no IPv6 address is given, one will be dynamically allocated from the pool.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -197,7 +196,9 @@ include("head.inc");
                     <td>
                       <input name="hostname" type="text" value="<?=$pconfig['hostname'];?>" />
                       <div class="hidden" for="help_for_hostname">
+                        <small class="formhelp">
                         <?=gettext("Name of the host, without domain part.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -206,7 +207,9 @@ include("head.inc");
                     <td>
                       <input name="domain" type="text" value="<?=$pconfig['domain'];?>" />
                       <div class="hidden" for="help_for_domain">
+                        <small class="formhelp">
                         <?=gettext("The default is to use the domain name of this system as the default domain name provided by DHCP. You may specify an alternate domain name here.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -216,7 +219,9 @@ include("head.inc");
                     <td>
                       <input name="filename" type="text" value="<?=$pconfig['filename'];?>" />
                       <div class="hidden" for="help_for_filename">
+                        <small class="formhelp">
                         <?= gettext('Name of the file that should be loaded when this host boots off of the network, overrides setting on main page.') ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -225,7 +230,9 @@ include("head.inc");
                     <td>
                       <input name="rootpath" type="text" value="<?=$pconfig['rootpath'];?>" />
                       <div class="hidden" for="help_for_rootpath">
+                        <small class="formhelp">
                         <?= gettext('Enter the root-path-string, overrides setting on main page.') ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -236,7 +243,9 @@ include("head.inc");
                     <td>
                       <input name="descr" type="text" value="<?=$pconfig['descr'];?>" />
                       <div class="hidden" for="help_for_descr">
+                        <small class="formhelp">
                         <?=gettext("You may enter a description here "."for your reference (not parsed).");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -244,7 +253,7 @@ include("head.inc");
                     <td></td>
                     <td>
                       <input name="Submit" type="submit" class="formbtn btn btn-primary" value="<?=gettext("Save");?>" />
-                      <input type="button" class="formbtn btn btn-default" value="<?=gettext("Cancel");?>" onclick="window.location.href='/services_dhcpv6.php'" />
+                      <input type="button" class="formbtn btn btn-default" value="<?=gettext("Cancel");?>" onclick="window.location.href='/services_dhcpv6.php?if=<?= html_safe($if) ?>'" />
                       <?php if (isset($id)): ?>
                       <input name="id" type="hidden" value="<?=$id;?>" />
                       <?php endif; ?>

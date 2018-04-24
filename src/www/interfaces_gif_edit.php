@@ -30,16 +30,9 @@
 require_once("guiconfig.inc");
 require_once("system.inc");
 require_once("interfaces.inc");
-require_once("openvpn.inc");
 require_once("services.inc");
 
-if (!isset($config['gifs']) || !is_array($config['gifs'])) {
-    $config['gifs'] = array();
-}
-if (!isset($config['gifs']['gif']) || !is_array($config['gifs']['gif'])) {
-    $config['gifs']['gif'] = array();
-}
-$a_gifs = &$config['gifs']['gif'];
+$a_gifs = &config_read_array('gifs', 'gif');
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -161,7 +154,7 @@ include("head.inc");
         <div class="content-box">
           <div class="table-responsive">
             <form method="post" name="iform" id="iform">
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <thead>
                   <tr>
                     <td width="22%"><strong><?=gettext("GIF configuration");?></strong></td>
@@ -195,7 +188,9 @@ include("head.inc");
                       endforeach;?>
                       </select>
                       <div class="hidden" for="help_for_if">
+                        <small class="formhelp">
                         <?=gettext("The interface here serves as the local address to be used for the gif tunnel."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -204,7 +199,9 @@ include("head.inc");
                     <td>
                       <input name="remote-addr" type="text" value="<?=$pconfig['remote-addr'];?>" />
                       <div class="hidden" for="help_for_remote-addr">
+                        <small class="formhelp">
                         <?=gettext("Peer address where encapsulated gif packets will be sent. "); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -213,7 +210,9 @@ include("head.inc");
                     <td>
                       <input name="tunnel-local-addr" type="text" value="<?=$pconfig['tunnel-local-addr'];?>" />
                       <div class="hidden" for="help_for_tunnel-local-addr">
+                        <small class="formhelp">
                         <?=gettext("Local gif tunnel endpoint"); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -239,7 +238,9 @@ include("head.inc");
                         </tr>
                       </table>
                       <div class="hidden" for="help_for_tunnel-remote-addr">
+                        <small class="formhelp">
                         <?=gettext("Remote gif address endpoint. The subnet part is used for determining the network that is tunnelled."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -248,7 +249,9 @@ include("head.inc");
                     <td>
                       <input name="link0" type="checkbox" id="link0" <?=!empty($pconfig['link0']) ? "checked=\"checked\"" :"";?> />
                       <div class="hidden" for="help_for_link0">
+                        <small class="formhelp">
                         <?=gettext("Specify if route caching can be enabled. Be careful with these settings on dynamic networks."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -257,7 +260,9 @@ include("head.inc");
                     <td>
                       <input name="link1" type="checkbox" id="link1" <?=!empty($pconfig['link1']) ? "checked=\"checked\"" : "";?> />
                       <div class="hidden" for="help_for_link1">
+                        <small class="formhelp">
                         <?=gettext("Note that the ECN friendly behavior violates RFC2893. This should be used in mutual agreement with the peer."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -266,7 +271,9 @@ include("head.inc");
                     <td>
                       <input name="descr" type="text" value="<?=$pconfig['descr'];?>" />
                       <div class="hidden" for="help_for_descr">
+                        <small class="formhelp">
                         <?=gettext("You may enter a description here for your reference (not parsed)."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>

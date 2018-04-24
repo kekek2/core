@@ -28,20 +28,13 @@
 */
 
 require_once("guiconfig.inc");
-require_once("ipsec.inc");
+require_once("plugins.inc.d/ipsec.inc");
 require_once("filter.inc");
 require_once("services.inc");
 require_once("interfaces.inc");
 
-if (!isset($config['ipsec']) || !is_array($config['ipsec'])) {
-    $config['ipsec'] = array();
-}
-
-if (!is_array($config['ipsec']['mobilekey'])) {
-    $config['ipsec']['mobilekey'] = array();
-} else {
-    ipsec_mobilekey_sort();
-}
+config_read_array('ipsec', 'mobilekey');
+ipsec_mobilekey_sort();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['act']) && isset($_POST['id']) && is_numericint($_POST['id']) && $_POST['act'] == "del") {
@@ -55,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif (isset($_POST['apply'])) {
         // apply changes
-        ipsec_configure();
+        ipsec_configure_do();
         filter_configure();
         $savemsg = get_std_save_message();
         clear_subsystem_dirty('ipsec');
@@ -118,7 +111,7 @@ if (is_subsystem_dirty('ipsec')) {
         <div class="tab-content content-box col-xs-12">
           <form method="post">
             <div class="table-responsive">
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <tr>
                   <td><?=gettext("Identifier"); ?></td>
                   <td><?=gettext("Pre-Shared Key"); ?></td>

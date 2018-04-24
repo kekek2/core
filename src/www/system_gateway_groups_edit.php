@@ -28,18 +28,10 @@
 */
 
 require_once("guiconfig.inc");
-require_once("ipsec.inc");
 require_once("services.inc");
 require_once("interfaces.inc");
 
-if (!is_array($config['gateways'])) {
-    $config['gateways'] = array();
-}
-
-if (!is_array($config['gateways']['gateway_group'])) {
-    $config['gateways']['gateway_group'] = array();
-}
-$a_gateway_groups = &$config['gateways']['gateway_group'];
+$a_gateway_groups = &config_read_array('gateways', 'gateway_group');
 $a_gateways = return_gateways_array();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -77,8 +69,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (empty($pconfig['name'])) {
         $input_errors[] = gettext("A valid gateway group name must be specified.");
     }
-    if (!is_validaliasname($pconfig['name'])) {
-        $input_errors[] = gettext("The gateway name must not contain invalid characters.");
+
+    $valid = is_validaliasname($pconfig['name']);
+    if ($valid === false) {
+        $input_errors[] = sprintf(gettext('The name must be less than 32 characters long and may only consist of the following characters: %s'), 'a-z, A-Z, 0-9, _');
+    } elseif ($valid === null) {
+        $input_errors[] = sprintf(gettext('The name cannot be the internally reserved keyword "%s".'), $pconfig['name']);
     }
 
     if (!empty($pconfig['name'])) {
@@ -153,9 +149,9 @@ include("head.inc");
 <script type="text/javascript">
 $( document ).ready(function() {
     // force protocol on initial selection (only relevant for new items)
-    $(".act-tier-change").change(function(){
+    $("select.act-tier-change").change(function(){
       var proto = $(this).data('proto');
-      $(".act-tier-change").each(function(){
+      $("select.act-tier-change").each(function(){
             if ($(this).data('proto') != proto) {
                 $(this).val('0');
             }

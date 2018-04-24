@@ -3,8 +3,9 @@
 /*
     Copyright (C) 2014 Deciso B.V.
     Copyright (c) 2007 Scott Dale
-    Copyright (C) 2004-2005 T. Lechat <dev@lechat.org>, Manuel Kasper <mk@neon1.net>
-    and Jonathan Watt <jwatt@jwatt.org>.
+    Copyright (C) 2004-2005 T. Lechat <dev@lechat.org>
+    Copyright (C) 2004-2005 Manuel Kasper <mk@neon1.net>
+    Copyright (C) 2004-2005 Jonathan Watt <jwatt@jwatt.org>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -205,11 +206,6 @@ function getServerDateItems($inDate)
     // use intval to strip leading zero from minutes and seconds
     //   so JavaScript won't try to interpret them in octal
     //   (use intval instead of ltrim, which translates '00' to '')
-}
-
-function clockDateString($inDate)
-{
-    return date('Y. F j l', $inDate);    // eg "Monday, January 1, 2002"
 }
 
 function clockTimeString($inDate, $showSeconds)

@@ -1,7 +1,6 @@
 <!--
-/**
-*    Copyright (C) 2015 Deciso B.V. - J.Schellevis
-*
+/*
+*    Copyright (C) 2015 Jos Schellevis <jos@opnsense.org>
 *    All rights reserved.
 *
 *    Redistribution and use in source and binary forms, with or without
@@ -24,7 +23,6 @@
 *    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 *    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *    POSSIBILITY OF SUCH DAMAGE.
-*
 */
 -->
 
@@ -74,6 +72,7 @@
     });
 
     // create our chart
+    d3.selectAll('.nvtooltip').remove(); // force removal of tooltips
     nv.addGraph(function () {
         chart = nv.models.lineWithFocusChart()
                 .margin( {left:70})
@@ -197,7 +196,7 @@
                     rrd_name = subitem + '-' + category;
 
                     // create dropdown menu
-                    tabs+='<a data-toggle="dropdown" href="#" class="dropdown-toggle pull-right visible-lg-inline-block visible-md-inline-block visible-xs-inline-block visible-sm-inline-block" role="button" style="border-left: 1px dashed lightgray;">';
+                    tabs+='<a data-toggle="dropdown" href="#" class="dropdown-toggle pull-right visible-lg-inline-block visible-md-inline-block visible-xs-inline-block visible-sm-inline-block" role="button">';
                     tabs+='<b><span class="caret"></span></b>';
                     tabs+='</a>';
                     tabs+='<a data-toggle="tab" onclick="$(\'#'+rrd_name+'\').click();" class="visible-lg-inline-block visible-md-inline-block visible-xs-inline-block visible-sm-inline-block" style="border-right:0px;"><b>'+category[0].toUpperCase() + category.slice(1)+'</b></a>';
@@ -209,12 +208,12 @@
                         subitem=data["data"][category][count];
                         rrd_name = subitem + '-' + category;
 
-                        if (subitem==active_subitem) {
-                            tabs += '<li class="active"><a data-toggle="tab" class="rrd-item" onclick="getdata(\''+rrd_name+'\',0,0,120,0);" id="'+rrd_name+'"><i class="fa fa-check-square"></i> ' + subitem[0].toUpperCase() + subitem.slice(1) + '</a></li>';
+                        if (subitem==active_subitem && category==active_category) {
+                            tabs += '<li class="active"><a data-toggle="tab" class="rrd-item" onclick="getdata(\''+rrd_name+'\',0,0,120,0);" id="'+rrd_name+'">' + subitem[0].toUpperCase() + subitem.slice(1) + '</a></li>';
                             rrd=rrd_name;
                             getdata(rrd_name,0,0,120,false,0); // load initial data
                         } else {
-                            tabs += '<li><a data-toggle="tab" class="rrd-item"  onclick="getdata(\''+rrd_name+'\',0,0,120,0);" id="'+rrd_name+'"><i class="fa fa-check-square"></i> ' + subitem[0].toUpperCase() + subitem.slice(1) + '</a></li>';
+                            tabs += '<li><a data-toggle="tab" class="rrd-item"  onclick="getdata(\''+rrd_name+'\',0,0,120,0);" id="'+rrd_name+'">' + subitem[0].toUpperCase() + subitem.slice(1) + '</a></li>';
                         }
                     }
                     tabs+='</ul>';
@@ -229,7 +228,7 @@
                         var rrd_item_name = $(this).attr('id').split('-')[0].toLowerCase();
                         $.map(data, function(value, key){
                             if (key.toLowerCase() == rrd_item_name) {
-                                rrd_item.html('<i class="fa fa-check-square"></i> ' + value['descr']);
+                                rrd_item.html(value['descr']);
                             }
 
                         });
@@ -580,8 +579,6 @@
 
 </script>
 
-
-
 <div class="tab-content">
     <div id="tab_1" class="tab-pane fade in">
         <div class="panel panel-primary">
@@ -598,7 +595,6 @@
                         <div class="col-md-12"></div>
                         <div class="col-md-4">
                             <b>{{ lang._('Zoom level') }}:</b>
-
                             <form onChange="UpdateOptions()">
                                 <div class="btn-group btn-group-xs" data-toggle="buttons" id="zoom">
                                     <!-- The zoom buttons are generated based upon the current dataset -->
@@ -607,7 +603,6 @@
                         </div>
                         <div class="col-md-2">
                             <b>{{ lang._('Inverse') }}:</b>
-
                             <form onChange="UpdateOptions()">
                                 <div class="btn-group btn-group-xs" data-toggle="buttons">
                                     <label class="btn btn-default active">
@@ -622,7 +617,6 @@
                         </div>
                         <div class="col-md-4">
                             <b>{{ lang._('Resolution') }}:</b>
-
                             <form onChange="UpdateOptions()">
                                 <div class="btn-group btn-group-xs" data-toggle="buttons">
                                     <label class="btn btn-default active">
@@ -642,7 +636,6 @@
                         </div>
                         <div class="col-md-2">
                             <b>{{ lang._('Show Tables') }}:</b>
-
                             <form onChange="UpdateOptions()">
                                 <div class="btn-group btn-group-xs" data-toggle="buttons">
                                     <label class="btn btn-default active">
@@ -658,10 +651,7 @@
                     </div>
                 </div>
             </div>
-
         </div>
-
-        <!--<div id="stepsize"></div>-->
 
         <!-- place holder for the chart itself -->
         <div class="panel panel-default">
@@ -708,8 +698,6 @@
                 </div>
             </div>
         </div>
-
-
     </div>
 
     <div id="chart_details_table" class="col-md-12" style="display: none;">
@@ -717,7 +705,6 @@
             <div class="panel-heading">
                 <h3 class="panel-title">
                   {{ lang._('Current View - Details') }}
-
                 </h3>
             </div>
             <div class="panel-body">
@@ -744,7 +731,6 @@
 
                 <div class="table-responsive">
                     <table class="table table-condensed table-hover table-striped">
-
                         <thead>
                         <tr id="table_view_heading" class="active">
                             <!-- Dynamic data -->
@@ -756,8 +742,6 @@
                     </table>
                 </div>
             </div>
-
         </div>
     </div>
-
 </div>

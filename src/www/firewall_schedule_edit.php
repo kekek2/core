@@ -2,7 +2,7 @@
 
 /*
     Copyright (C) 2014-2015 Deciso B.V.
-    Copyright (C) 2004 Scott Ullrich
+    Copyright (C) 2004 Scott Ullrich <sullrich@gmail.com>
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
     All rights reserved.
 
@@ -82,11 +82,7 @@ function schedule_sort()
 $dayArray = array (gettext('Mon'),gettext('Tues'),gettext('Wed'),gettext('Thur'),gettext('Fri'),gettext('Sat'),gettext('Sun'));
 $monthArray = array (gettext('January'),gettext('February'),gettext('March'),gettext('April'),gettext('May'),gettext('June'),gettext('July'),gettext('August'),gettext('September'),gettext('October'),gettext('November'),gettext('December'));
 
-
-if (!isset($config['schedules']['schedule'])) {
-    $config['schedules']['schedule'] = array();
-}
-$a_schedules = &$config['schedules']['schedule'];
+$a_schedules = &config_read_array('schedules', 'schedule');
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // input record id, if valid
@@ -107,7 +103,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['name'] = $a_schedules[$configId]['name'];
     $pconfig['descr'] = $a_schedules[$configId]['descr'];
     $pconfig['timerange'] = isset($a_schedules[$configId]['timerange']) ? $a_schedules[$configId]['timerange'] : array();
-    $pconfig['schedlabel'] = isset($a_schedules[$configId]['schedlabel']) ? $a_schedules[$configId]['schedlabel'] : uniqid();
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['id']) && isset($a_schedules[$_POST['id']])) {
         $id = $_POST['id'];
@@ -115,18 +110,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = $_POST;
 
     // validate
-    if(strtolower($pconfig['name']) == "lan")
-        $input_errors[] = gettext("Schedule may not be named LAN.");
-    if(strtolower($pconfig['name']) == "wan")
-        $input_errors[] = gettext("Schedule may not be named WAN.");
-    if(strtolower($pconfig['name']) == "")
-        $input_errors[] = gettext("Schedule name cannot be blank.");
-    $x = is_validaliasname($pconfig['name']);
-    if (!isset($x)) {
-        $input_errors[] = gettext("Reserved word used for schedule name.");
-    } elseif ($x == false) {
-        $input_errors[] = gettext("The schedule name may only consist of the characters a-z, A-Z, 0-9");
+    if (strtolower($pconfig['name']) == 'lan') {
+        $input_errors[] = gettext('Schedule may not be named LAN.');
     }
+    if (strtolower($pconfig['name']) == 'wan') {
+        $input_errors[] = gettext('Schedule may not be named WAN.');
+    }
+    if (empty($pconfig['name'])) {
+        $input_errors[] = gettext('Schedule may not use a blank name.');
+    }
+
+    $valid = is_validaliasname($pconfig['name']);
+    if ($valid === false) {
+        $input_errors[] = sprintf(gettext('The schedule name must be less than 32 characters long and may only consist of the following characters: %s'), 'a-z, A-Z, 0-9, _');
+    } elseif ($valid === null) {
+        $input_errors[] = sprintf(gettext('The schedule name cannot be the internally reserved keyword "%s".'), $pconfig['name']);
+    }
+
     /* check for name conflicts */
     foreach ($a_schedules as $schedId => $schedule) {
         if ((!isset($id) || $schedId != $id) && $schedule['name'] == $pconfig['name']) {
@@ -156,7 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $timehourstr = $pconfig['starttime' . $x];
         $timehourstr .= "-";
         $timehourstr .= $pconfig['stoptime' . $x];
-        $timedescrstr = htmlentities($pconfig['timedescr' . $x], ENT_QUOTES, 'UTF-8');
+        $timedescrstr = $pconfig['timedescr' . $x];
         $dashpos = strpos($timestr, '-');
         if ($dashpos === false) {
               $timeparts['position'] = $timestr;
@@ -197,7 +197,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $schedule['name'] = $pconfig['name'];
         $schedule['descr'] = $pconfig['descr'];
         $schedule['timerange'] = $pconfig['timerange'];
-        $schedule['schedlabel'] = $pconfig['schedlabel'];
 
         if (isset($id)) {
             $a_schedules[$id] = $schedule;
@@ -631,15 +630,15 @@ function insertElements(tempFriendlyTime, starttimehour, starttimemin, stoptimeh
     tr.appendChild(td);
 
     td = d.createElement("td");
-    td.innerHTML="<input type='text' readonly name='starttime" + schCounter + "' id='starttime" + schCounter + "' style=' word-wrap:break-word; width:100%; border:0px solid;' value='" + starttimehour + ":" + starttimemin + "' />";
+    td.innerHTML="<input type='text' readonly='readonly' name='starttime" + schCounter + "' id='starttime" + schCounter + "' style=' word-wrap:break-word; width:100%; border:0px solid;' value='" + starttimehour + ":" + starttimemin + "' />";
     tr.appendChild(td);
 
     td = d.createElement("td");
-    td.innerHTML="<input type='text' readonly name='stoptime" + schCounter + "' id='stoptime" + schCounter + "' style=' word-wrap:break-word; width:100%; border:0px solid;' value='" + stoptimehour + ":" + stoptimemin + "' />";
+    td.innerHTML="<input type='text' readonly='readonly' name='stoptime" + schCounter + "' id='stoptime" + schCounter + "' style=' word-wrap:break-word; width:100%; border:0px solid;' value='" + stoptimehour + ":" + stoptimemin + "' />";
     tr.appendChild(td);
 
     td = d.createElement("td");
-    td.innerHTML="<input type='text' readonly name='timedescr" + schCounter + "' id='timedescr" + schCounter + "' style=' word-wrap:break-word; width:100%; border:0px solid;' value='" + tempdescr + "' />";
+    td.innerHTML="<input type='text' readonly='readonly' name='timedescr" + schCounter + "' id='timedescr" + schCounter + "' style=' word-wrap:break-word; width:100%; border:0px solid;' value='" + tempdescr + "' />";
     tr.appendChild(td);
 
     td = d.createElement("td");
@@ -786,7 +785,6 @@ function removeRow(el) {
           <section class="col-xs-12">
             <div class="content-box tab-content">
               <form method="post" name="iform" id="iform">
-                <input type="hidden" name="schedlabel" value="<?=$pconfig['schedlabel'];?>"/>
                   <table class="table table-clean-form opnsense_standard_table_form">
                     <tbody>
                       <tr>
@@ -797,7 +795,7 @@ function removeRow(el) {
                         </td>
                       </tr>
                       <tr>
-                        <td><a id="help_for_name" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Schedule Name");?></td>
+                        <td><i class="fa fa-info-circle text-muted"></i> <?= gettext('Name') ?></td>
                         <td>
 <?php
                             if (is_schedule_inuse($pconfig['name']) && isset($id)): ?>
@@ -809,9 +807,6 @@ function removeRow(el) {
 <?php
                             else: ?>
                           <input name="name" type="text" id="name" value="<?=$pconfig['name'];?>" />
-                          <div class="hidden" for="help_for_name">
-                            <?=gettext("The name of the alias may only consist of the characters a-z, A-Z and 0-9");?>
-                          </div>
 <?php
                             endif; ?>
                         </td>
@@ -820,8 +815,10 @@ function removeRow(el) {
                         <td><a id="help_for_description" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description");?></td>
                         <td>
                           <input name="descr" type="text" id="descr" value="<?=$pconfig['descr'];?>" /><br />
-                          <div class="hidden" for="help_for_name">
+                          <div class="hidden" for="help_for_description">
+                            <small class="formhelp">
                             <?=gettext("You may enter a description here for your reference (not parsed).");?>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -921,8 +918,9 @@ function removeRow(el) {
                             } //end for loop
 ?>
                           <div class="hidden" for="help_for_month">
-                            <br />
+                            <small class="formhelp">
                             <?=gettext("Click individual date to select that date only. Click the appropriate weekday Header to select all occurrences of that weekday.");?>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -974,8 +972,9 @@ function removeRow(el) {
                             </tr>
                           </table>
                           <div class="hidden" for="help_for_time">
-                            <br />
+                          <small class="formhelp">
                           <?=gettext("Select the time range for the day(s) selected on the Month(s) above. A full day is 0:00-23:59.")?>
+                          </small>
                           </div>
                         </td>
                       </tr>
@@ -984,7 +983,9 @@ function removeRow(el) {
                         <td>
                           <input name="timerangedescr" type="text" id="timerangedescr"/>
                           <div class="hidden" for="help_for_timerange_desc">
+                            <small class="formhelp">
                             <?=gettext("You may enter a description here for your reference (not parsed).")?>
+                            </small>
                           </div>
                         </td>
                       </tr>

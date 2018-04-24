@@ -63,19 +63,30 @@ function saveFormToEndpoint(url,formid,callback_ok, disable_dialog) {
             // if there are validation issues, update our screen and show a dialog.
             if (data['validations'] != undefined) {
                 if (!disable_dialog) {
+                    var detailsid = "errorfrm"+Math.floor((Math.random() * 10000000) + 1);
+                    var errorMessage = $('<div></div>');
+                    errorMessage.append('Please correct validation errors in form <br />');
+                    errorMessage.append('<i class="fa fa-bug pull-right" aria-hidden="true" data-toggle="collapse" '+
+                                        'data-target="#'+detailsid+'" aria-expanded="false" aria-controls="'+detailsid+'"></i>');
+                    errorMessage.append('<div class="collapse" id="'+detailsid+'"><hr/><pre></pre></div>');
+
                     // validation message box is optional, form is already updated using handleFormValidation
                     BootstrapDialog.show({
                         type:BootstrapDialog.TYPE_WARNING,
                         title: 'Input validation',
-                        message: 'Please correct validation errors in form',
+                        message: errorMessage,
                         buttons: [{
                             label: 'Dismiss',
                             action: function(dialogRef){
                                 dialogRef.close();
                             }
-                        }]
-
+                        }],
+                        onshown: function(){
+                            // set debug information
+                            $("#"+detailsid + " > pre").html(JSON.stringify(data, null, 2));
+                        }
                     });
+
                 }
             } else if ( callback_ok != undefined ) {
                 // execute callback function
@@ -127,15 +138,17 @@ function mapDataToFormUI(data_get_map) {
  */
 function updateServiceStatusUI(status) {
 
-    var status_html = '<span class="glyphicon glyphicon-play btn ';
+    var status_html = '<span class="label label-opnsense label-opnsense-sm ';
 
     if (status == "running") {
-        status_html += 'btn-success' ;
+        status_html += 'label-success';
     } else if (status == "stopped") {
-        status_html += 'btn-danger' ;
+        status_html += 'label-danger';
+    } else {
+        status_html += 'hidden';
     }
 
-    status_html += '"></span>';
+    status_html += '"><i class="fa fa-play fa-fw"/></span>';
 
     $('#service_status_container').html(status_html);
 }
@@ -215,6 +228,7 @@ function addMultiSelectClearUI() {
     });
 }
 
+
 /**
  * setup form help buttons
  */
@@ -230,50 +244,125 @@ function initFormHelpUI() {
         $('[id*="show_all_help"]').toggleClass("fa-toggle-on fa-toggle-off");
         $('[id*="show_all_help"]').toggleClass("text-success text-danger");
         if ($('[id*="show_all_help"]').hasClass("fa-toggle-on")) {
+            if (window.sessionStorage) {
+                sessionStorage.setItem('all_help_preset', 1);
+            }
             $('[for*="help_for"]').addClass("show");
             $('[for*="help_for"]').removeClass("hidden");
         } else {
             $('[for*="help_for"]').addClass("hidden");
             $('[for*="help_for"]').removeClass("show");
+            if (window.sessionStorage) {
+                sessionStorage.setItem('all_help_preset', 0);
+            }
         }
         event.preventDefault();
     });
+    if (window.sessionStorage && sessionStorage.getItem('all_help_preset') == 1) {
+        // show all help messages when preset was stored
+        $('[id*="show_all_help"]').toggleClass("fa-toggle-on fa-toggle-off");
+        $('[id*="show_all_help"]').toggleClass("text-success text-danger");
+        $('[for*="help_for"]').addClass("show");
+        $('[for*="help_for"]').removeClass("hidden");
+    }
 }
 
 /**
  * handle advanced show/hide
  */
 function initFormAdvancedUI() {
-    $('[data-advanced*="true"]').hide(function(){
-        $('[data-advanced*="true"]').after("<tr data-advanced='hidden_row'></tr>"); // the table row is added to keep correct table striping
-    });
+    if (window.sessionStorage && sessionStorage.getItem('show_advanced_preset') == 1) {
+        // show advanced options when preset was stored
+        $('[id*="show_advanced"]').toggleClass("fa-toggle-on fa-toggle-off");
+        $('[id*="show_advanced"]').toggleClass("text-success text-danger");
+    } else {
+        $('[data-advanced*="true"]').hide(function(){
+            $('[data-advanced*="true"]').after("<tr data-advanced='hidden_row'></tr>"); // the table row is added to keep correct table striping
+        });
+    }
+
     $('[id*="show_advanced"]').click(function() {
         $('[id*="show_advanced"]').toggleClass("fa-toggle-on fa-toggle-off");
         $('[id*="show_advanced"]').toggleClass("text-success text-danger");
         if ($('[id*="show_advanced"]').hasClass("fa-toggle-on")) {
             $('[data-advanced*="true"]').show();
             $('[data-advanced*="hidden_row"]').remove(); // the table row is deleted to keep correct table striping
+            if (window.sessionStorage) {
+                sessionStorage.setItem('show_advanced_preset', 1);
+            }
         } else {
             $('[data-advanced*="true"]').after("<tr data-advanced='hidden_row'></tr>").hide(); // the table row is added to keep correct table striping
+            if (window.sessionStorage) {
+                sessionStorage.setItem('show_advanced_preset', 0);
+            }
         }
     });
 }
 
 /**
- * standard remove items dialog, wrapper around BootstrapDialog
+ * standard dialog when information is required, wrapper around BootstrapDialog
  */
-function stdDialogRemoveItem(message, callback) {
-    BootstrapDialog.confirm({
-        title: 'Remove',
+function stdDialogInform(title, message, close, callback, type) {
+     var types = {
+         "danger": BootstrapDialog.TYPE_DANGER,
+         "default": BootstrapDialog.TYPE_DEFAULT,
+         "info": BootstrapDialog.TYPE_INFO,
+         "primary": BootstrapDialog.TYPE_PRIMARY,
+         "success": BootstrapDialog.TYPE_SUCCESS,
+         "warning": BootstrapDialog.TYPE_WARNING
+    };
+    if (!(type in types)) {
+        type = 'info';
+    }
+    BootstrapDialog.show({
+        title: title,
         message: message,
-        type:BootstrapDialog.TYPE_DANGER,
-        btnCancelLabel: 'Cancel',
-        btnOKLabel: 'Yes',
-        btnOKClass: 'btn-primary',
+        type: types[type],
+        buttons: [{
+            label: close,
+            action: function (dialogRef) {
+                if (typeof callback !== 'undefined') {
+                    callback();
+                }
+                dialogRef.close();
+            }
+        }]
+    });
+}
+
+/**
+ * standard dialog when confirmation is required, wrapper around BootstrapDialog
+ */
+function stdDialogConfirm(title, message, accept, decline, callback, type) {
+     var types = {
+         "danger": BootstrapDialog.TYPE_DANGER,
+         "default": BootstrapDialog.TYPE_DEFAULT,
+         "info": BootstrapDialog.TYPE_INFO,
+         "primary": BootstrapDialog.TYPE_PRIMARY,
+         "success": BootstrapDialog.TYPE_SUCCESS,
+         "warning": BootstrapDialog.TYPE_WARNING
+    };
+    if (!(type in types)) {
+        type = 'warning';
+    }
+    BootstrapDialog.confirm({
+        title: title,
+        message: message,
+        type: types[type],
+        btnCancelLabel: decline,
+        btnOKLabel: accept,
+        btnOKClass: 'btn-' + type,
         callback: function(result) {
-            if(result) {
+            if (result) {
                 callback();
             }
         }
     });
+}
+
+/**
+ * wrapper for backwards compatibility (do not use)
+ */
+function stdDialogRemoveItem(message, callback) {
+    stdDialogConfirm('Remove', message, 'Yes', 'Cancel', callback);
 }

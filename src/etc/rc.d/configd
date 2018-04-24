@@ -9,7 +9,9 @@
 
 . /etc/rc.subr
 
-name=configd
+name="configd"
+rcvar="configd_enable"
+: ${configd_enable="YES"}
 pidfile="/var/run/${name}.pid"
 
 start_precmd=configd_prestart
@@ -38,7 +40,7 @@ configd_prestart()
 configd_poststart()
 {
 	# give the daemon some time to initilize it's configuration
-	sleep 1
+	sleep 2
 }
 
 # kill configd

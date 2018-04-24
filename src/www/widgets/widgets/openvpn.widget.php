@@ -27,14 +27,13 @@
 */
 
 require_once("guiconfig.inc");
-require_once("openvpn.inc");
-
+require_once("plugins.inc.d/openvpn.inc");
 
 $servers = openvpn_get_active_servers();
 $sk_servers = openvpn_get_active_servers("p2p");
 $clients = openvpn_get_active_clients();
-?>
 
+?>
 <script type="text/javascript">
     $( document ).ready(function() {
         // link kill buttons
@@ -151,6 +150,10 @@ if ($DisplayNote) {
     echo "<br /><b>".gettext('NOTE:')."</b> ".gettext("You need to bind each OpenVPN client to enable its management daemon: use 'Local port' setting in the OpenVPN client screen");
 }
 
-if ((empty($clients)) && (empty($servers)) && (empty($sk_servers))) {
-    echo gettext("No OpenVPN instance defined");
-}
+if ((empty($clients)) && (empty($servers)) && (empty($sk_servers))): ?>
+    <table class="table table-striped table-condensed">
+      <tr>
+        <td><?= gettext('No OpenVPN instance defined or enabled.') ?></td>
+      </tr>
+    </table>
+<?php endif;

@@ -31,13 +31,10 @@
 require_once("guiconfig.inc");
 require_once("filter.inc");
 require_once("logs.inc");
+require_once("system.inc");
 
+$a_filter = &config_read_array('filter', 'rule');
 
-if (!isset($config['filter']['rule'])) {
-    $config['filter']['rule'] = array();
-}
-
-$a_filter = &$config['filter']['rule'];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_GET['if'])) {
         $current_if = htmlspecialchars($_GET['if']);
@@ -50,22 +47,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = $pconfig['id'];
     }
     if (isset($pconfig['apply'])) {
+        system_cron_configure();
         filter_configure();
         clear_subsystem_dirty('filter');
-        $savemsg = sprintf(
-            gettext(
-                'The settings have been applied and the rules are now reloading ' .
-                'in the background. You can monitor the reload progress %shere%s.'
-            ),
-            '<a href="status_filter_reload.php">',
-            '</a>'
-        );
+        $savemsg = gettext('The settings have been applied and the rules are now reloading in the background.');
     } elseif (isset($pconfig['act']) && $pconfig['act'] == 'del' && isset($id)) {
         // delete single item
         if (!empty($a_filter[$id]['associated-rule-id'])) {
             // unlink nat entry
             if (isset($config['nat']['rule'])) {
-                $a_nat = &$config['nat']['rule'];
+                $a_nat = &config_read_array('nat', 'rule');
                 foreach ($a_nat as &$natent) {
                     if ($natent['associated-rule-id'] == $a_filter[$id]['associated-rule-id']) {
                         $natent['associated-rule-id'] = '';
@@ -85,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach ($pconfig['rule'] as $rulei) {
             // unlink nat entry
             if (isset($config['nat']['rule'])) {
-                $a_nat = &$config['nat']['rule'];
+                $a_nat = &config_read_array('nat', 'rule');
                 foreach ($a_nat as &$natent) {
                     if ($natent['associated-rule-id'] == $a_filter[$rulei]['associated-rule-id']) {
                         $natent['associated-rule-id'] = '';
@@ -134,6 +125,11 @@ if (isset($_GET['if'])) {
     $selected_if = htmlspecialchars($_GET['if']);
 } else {
     $selected_if = "FloatingRules";
+}
+if (isset($_GET['category'])) {
+    $selected_category = !is_array($_GET['category']) ? array($_GET['category']) : $_GET['category'];
+} else {
+    $selected_category = array();
 }
 
 include("head.inc");
@@ -242,12 +238,39 @@ $( document ).ready(function() {
           $(this).css("background-color", $("#fw_category").data('stripe_color'));
         }
       });
+
+      // hook into tab changes, keep selected category/categories when following link
+      $(".top_tab").each(function(){
+          var add_link = "";
+          if (selected_values.length > 0) {
+              add_link = "&" + $.param({'category': selected_values});
+          }
+          if ($(this).is('A')) {
+              if ($(this).data('link') == undefined) {
+                  // move link to data tag
+                  $(this).data('link', $(this).attr('href'));
+              }
+              $(this).attr('href', $(this).data('link') + add_link);
+          } else if ($(this).is('OPTION')) {
+            if ($(this).data('link') == undefined) {
+                // move link to data tag
+                $(this).data('link', $(this).val());
+            }
+            $(this).val($(this).data('link') + add_link);
+          }
+      });
   });
+  $("#fw_category").change();
 
   // hide category search when not used
   if ($("#fw_category > option").length == 0) {
       $("#fw_category").addClass('hidden');
   }
+
+  // select All
+  $("#selectAll").click(function(){
+      $(".rule_select").prop("checked", $(this).prop("checked"));
+  });
 
 });
 </script>
@@ -262,34 +285,15 @@ $( document ).ready(function() {
         <?php print_info_box_apply(gettext("The firewall rule configuration has been changed.<br />You must apply the changes in order for them to take effect."));?>
         <?php endif; ?>
         <section class="col-xs-12">
-<?php
-           // create tabs per interface + floating
-           $iflist_tabs = array();
-           $iflist_tabs['FloatingRules'] = 'Floating';
-           foreach (legacy_config_get_interfaces(array("enable" => true)) as $if => $ifdetail) {
-               $iflist_tabs[$if] = strtoupper($ifdetail['descr']);
-           }
-
-          $tab_array = array();
-          foreach ($iflist_tabs as $ifent => $ifname) {
-            $active = false;
-            // mark active if selected or mark floating active when none is selected
-            if ($ifent == $selected_if) {
-                $active = true;
-            }
-            $tab_array[] = array($ifname, $active, "firewall_rules.php?if={$ifent}");
-          }
-          display_top_tabs($tab_array);
-?>
           <div class="content-box">
             <form action="firewall_rules.php?if=<?=$selected_if;?>" method="post" name="iform" id="iform">
               <input type="hidden" id="id" name="id" value="" />
               <input type="hidden" id="action" name="act" value="" />
               <div class="table-responsive" >
-                <table class="table table-striped table-hover" id="rules">
+                <table class="table table-clean-form table-hover" id="rules">
                   <thead>
                     <tr>
-                      <th>&nbsp;</th>
+                      <th><input type="checkbox" id="selectAll"></th>
                       <th>&nbsp;</th>
                       <th><?=gettext("Proto");?></th>
                       <th><?=gettext("Source");?></th>
@@ -445,7 +449,7 @@ $( document ).ready(function() {
 ?>
                   <tr class="rule" data-category="<?=!empty($filterent['category']) ? $filterent['category'] : "";?>">
                     <td>
-                      <input type="checkbox" name="rule[]" value="<?=$i;?>"  />
+                      <input class="rule_select" type="checkbox" name="rule[]" value="<?=$i;?>"  />
                     </td>
                     <td>
                       <a href="#" class="act_toggle" id="toggle_<?=$i;?>" data-toggle="tooltip" title="<?=(empty($filterent['disabled'])) ? gettext("disable rule") : gettext("enable rule");?>"><span class="glyphicon <?=$iconfn;?>"></span></a>
@@ -605,17 +609,17 @@ $( document ).ready(function() {
                       // if for some reason (broken config) a rule is in there which doesn't have a related nat rule
                       // make sure we are able to delete it.
                       if (isset($filterent['type'])):?>
-                      <a href="firewall_rules_edit.php?id=<?=$i;?>" data-toggle="tooltip" title="<?=gettext("edit rule");?>" class="btn btn-default btn-xs">
+                      <a href="firewall_rules_edit.php?if=<?=$selected_if;?>&id=<?=$i;?>" data-toggle="tooltip" title="<?=gettext("Edit rule");?>" class="btn btn-default btn-xs">
                         <span class="glyphicon glyphicon-pencil"></span>
                       </a>
 <?php
                       endif;?>
-                      <a id="del_<?=$i;?>" title="<?=gettext("delete rule"); ?>" data-toggle="tooltip"  class="act_delete btn btn-default btn-xs">
+                      <a id="del_<?=$i;?>" title="<?=gettext("Delete rule"); ?>" data-toggle="tooltip"  class="act_delete btn btn-default btn-xs">
                         <span class="fa fa-trash text-muted"></span>
                       </a>
 <?php
                       if (isset($filterent['type'])):?>
-                      <a href="firewall_rules_edit.php?dup=<?=$i;?>" class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("clone rule");?>">
+                      <a href="firewall_rules_edit.php?if=<?=$selected_if;?>&dup=<?=$i;?>" class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("Clone rule");?>">
                         <span class="fa fa-clone text-muted"></span>
                       </a>
 <?php
@@ -644,7 +648,7 @@ $( document ).ready(function() {
                 <?php endif; ?>
                   <tr>
                     <td colspan="5">
-                      <select class="selectpicker" data-live-search="true" data-size="5"  multiple placeholder="<?=gettext("select category");?>" id="fw_category">
+                      <select class="selectpicker" data-live-search="true" data-size="5"  multiple placeholder="<?=gettext("Select category");?>" id="fw_category">
 <?php
                         // collect unique list of categories and append to option list
                         $categories = array();
@@ -654,20 +658,20 @@ $( document ).ready(function() {
                             }
                         }
                         foreach ($categories as $category):?>
-                        <option value="<?=$category;?>"><?=$category;?></option>
+                        <option value="<?=$category;?>" <?=in_array($category, $selected_category) ? "selected=\"selected\"" : "" ;?>><?=$category;?></option>
 <?php
                         endforeach;?>
                       </select>
                     </td>
                     <td colspan="5" class="hidden-xs hidden-sm"></td>
                     <td>
-                      <a type="submit" id="move_<?=$i;?>" name="move_<?=$i;?>_x" data-toggle="tooltip" title="<?=gettext("move selected rules to end");?>" class="act_move btn btn-default btn-xs">
+                      <a type="submit" id="move_<?=$i;?>" name="move_<?=$i;?>_x" data-toggle="tooltip" title="<?=gettext("Move selected rules to end");?>" class="act_move btn btn-default btn-xs">
                         <span class="glyphicon glyphicon-arrow-left"></span>
                       </a>
-                      <a id="del_x" title="<?=gettext("delete selected rules"); ?>" data-toggle="tooltip"  class="act_delete btn btn-default btn-xs">
+                      <a id="del_x" title="<?=gettext("Delete selected rules"); ?>" data-toggle="tooltip"  class="act_delete btn btn-default btn-xs">
                         <span class="fa fa-trash text-muted"></span>
                       </a>
-                      <a href="firewall_rules_edit.php?if=<?=$selected_if;?>" class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("add new rule");?>">
+                      <a href="firewall_rules_edit.php?if=<?=$selected_if;?>" class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("Add new rule");?>">
                         <span class="glyphicon glyphicon-plus"></span>
                       </a>
                     </td>

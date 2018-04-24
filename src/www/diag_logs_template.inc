@@ -2,8 +2,8 @@
 
 /*
     Copyright (C) 2014-2015 Deciso B.V.
-    Copyright (C) 2012 Seth Mos
-    Copyright (C) 2004-2009 Scott Ullrich
+    Copyright (C) 2012 Seth Mos <seth.mos@dds.nl>
+    Copyright (C) 2004-2009 Scott Ullrich <sullrich@gmail.com>
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
     All rights reserved.
 
@@ -36,7 +36,7 @@ require_once("services.inc");
 
 /* expects $logfile to point to the system path */
 
-require_once 'diag_logs_common.inc';
+require_once 'diag_logs_squid.inc';
 
 $filtertext = '';
 $nentries = 50;

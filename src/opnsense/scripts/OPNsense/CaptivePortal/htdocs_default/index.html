@@ -171,20 +171,12 @@
           <!-- User option 1: login needed with name and password -->
           <div id="login_password" class="hidden">
               <form class="form-signin">
-                  <div class="form-group">
-                      <h4 class="form-signin-heading">Пожалуйста, войдите в систему</h2>
-                  </div>
-                  <div class="form-group">
-                      <label for="inputUsername" class="sr-only">имя пользователя</label>
-                      <input type="text" id="inputUsername" class="form-control" placeholder="имя пользователя" required autofocus>
-                  </div>
-                  <div class="form-group">
-                      <label for="inputPassword" class="sr-only">пароль</label>
-                      <input type="password" id="inputPassword" class="form-control" placeholder="пароль" required>
-                  </div>
-                  <div class="form-group text-center">
-                      <button class="btn btn-primary" id="signin" type="button">Войти</button>
-                  </div>
+                  <h2 class="form-signin-heading">Пожалуйста, войдите в систему</h2>
+                  <label for="inputUsername" class="sr-only">имя пользователя</label>
+                  <input type="text" id="inputUsername" class="form-control" placeholder="имя пользователя" required autofocus autocomplete="none" autocapitalize="none" autocorrect="off">
+                  <label for="inputPassword" class="sr-only">пароль</label>
+                  <input type="password" id="inputPassword" class="form-control" placeholder="пароль" required>
+                  <button class="btn btn-primary btn-block" id="signin" type="button">Войти</button>
               </form>
           </div>
           <!-- User option 2: login needed, without username, password -->

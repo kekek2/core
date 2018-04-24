@@ -6,6 +6,7 @@ const LICENSE_API_URL = 'https://bar.smart-soft.ru/api/v' . LICENSE_API_VER;
 require_once("guiconfig.inc");
 
 include("head.inc");
+use SmartSoft\Core\Tools;
 
 $openssl_config_path = '/usr/local/etc/ssl/opnsense.cnf';
 $openssl_config_args = [
@@ -23,13 +24,29 @@ $temporary_crt_info = false;
 $installed_crt_modules_path = "{$ting_crt_dir}/ting-client.module.*.crt";
 $installed_crt_modules_info = [];
 
-function getCurrentMacAddress() {
-    $ifconfig = shell_exec("cat /var/run/dmesg.boot | grep 'Ethernet address:' | head -n 1 | awk '{print $4}'");
-    preg_match("/([0-9A-F]{2}[:-]){5}([0-9A-F]{2})/i", $ifconfig, $ifconfig);
-    if (isset($ifconfig[0])) {
-        return trim(strtoupper($ifconfig[0]));
+function getCrtInfo($crt_info)
+{
+    $ret = "";
+    if (isset($crt_info['subject']['UNDEF'])) {
+        if (isset($crt_info['subject']['UNDEF'][2]) && $crt_info['subject']['UNDEF'][2] != "" )
+            $ret .= "<td>" . $crt_info['subject']['UNDEF'][2] . "</td>\n                    ";
+
+        if (!isset($crt_info['subject']['UNDEF'][0]))
+            $ret .= "<td>" . gettext("Can not validate certificate") . "</td>";
+        elseif ($crt_info['subject']['UNDEF'][0] != Tools::getCurrentMacAddress())
+            $ret .= "<td>" . gettext("License is not valid for this device") . "</td>";
+        else
+            $ret .= "<td></td>";
+
+    } elseif (isset($crt_info['subject']['tingModule'])) {
+        $ret .= $crt_info['subject']['tingModule'];
+
+        if ($crt_info['subject']['tingAddress'] != Tools::getCurrentMacAddress())
+            $ret .= "<td>" . gettext("License is not valid for this device") . "</td>";
+        else
+            $ret .= "<td></td>";
     }
-    return false;
+    return $ret . "\n";
 }
 
 if (file_exists($installed_crt_path) && file_exists($installed_key_path)) {
@@ -69,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
 
-            $company = ($code == '200' && preg_match('/^\w{0,48}$/', $body)) ? '' : $body;
+            $company = ($code == '200' && preg_match('/^\w{0,48}$/', $body)) ? $body : " ";
             $company = preg_replace('/[^\w\d- ]/', '', $company);
 
             $pkey = openssl_get_privatekey("file://{$installed_key_path}");
@@ -78,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'C'  => 'RU',
                 'ST' => ' ',
                 'O'  => $company,
-                'tingAddress' => getCurrentMacAddress(),
+                'tingAddress' => Tools::getCurrentMacAddress(),
                 'tingLicense' => $licenseKey,
                 'tingModule'  => $module,
             ];
@@ -174,32 +191,13 @@ if ($installed_crt_info) {
                   <td width="22%"><?=gettext('Expires at')?></td>
                   <td><?php echo strftime("%Y-%m-%d", $installed_crt_info['validTo_time_t']); ?></td>
                   <td>CORE</td>
+                  <?php echo getCrtInfo($installed_crt_info);?>
                 </tr>
                 <?php foreach ($installed_crt_modules_info as $module_info) { ?>
                   <tr>
                     <td></td>
                     <td><?php echo strftime("%Y-%m-%d", $module_info['validTo_time_t']); ?></td>
-                    <td>
-                        <?php
-
-                        if (isset($module_info['subject']['UNDEF'])) {
-                            if (isset($module_info['subject']['UNDEF'][2]))
-                                echo $module_info['subject']['UNDEF'][2];
-
-                            if (!isset($module_info['subject']['UNDEF'][0]))
-                                echo " " . gettext("Can not validate certificate");
-                            elseif ($module_info['subject']['UNDEF'][0] != getCurrentMacAddress())
-                                echo " " . gettext("License is not valid for this device");
-
-                        } elseif (isset($module_info['subject']['tingModule'])) {
-                            echo $module_info['subject']['tingModule'];
-
-                            if ($module_info['subject']['tingAddress'] != getCurrentMacAddress())
-                                echo " " . gettext("License is not valid for this device");
-                        }
-
-                        ?>
-                    </td>
+                    <?php echo getCrtInfo($module_info); ?>
                   </tr>
                 <?php } ?>
               <?php } ?>

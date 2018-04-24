@@ -1,7 +1,7 @@
 <?php
+
 /**
- *    Copyright (C) 2015 J. Schellevis - Deciso B.V.
- *
+ *    Copyright (C) 2015 Jos Schellevis <jos@opnsense.org>
  *    All rights reserved.
  *
  *    Redistribution and use in source and binary forms, with or without
@@ -24,8 +24,8 @@
  *    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  *    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *    POSSIBILITY OF SUCH DAMAGE.
- *
  */
+
 namespace OPNsense\Proxy\Api;
 
 use \OPNsense\Base\ApiMutableModelControllerBase;
@@ -243,57 +243,71 @@ class SettingsController extends ApiMutableModelControllerBase
         return $result;
     }
 
-    public function encode($node, $list)
-    {
-        if (!isset($node['forward']['acl']))
-            return $node;
-        $IDN = new \idna_convert();
-        $new_list = [];
-        foreach (explode(",", $node['forward']['acl'][$list]) as $site)
-            $new_list[] = $IDN->encode($site);
-        $node['forward']['acl'][$list] = implode(",", $new_list);
-        return $node;
-    }
-    
-    public function decode($node, $list)
-    {
-        $IDN = new \idna_convert();
-        foreach ($node['forward']['acl'][$list] as $site => $selected)
-        {
-            unset($node['forward']['acl'][$list][$site]);
-            $cyr = $IDN->decode($site);
-            $node['forward']['acl'][$list][$cyr] = ['value' => $cyr, 'selected' => $selected['selected']];
-        }
-        return $node;
-    }
-
+    /**
+     * get action
+     * @return array
+     */
     public function getAction()
     {
-        // define list of configurable settings
-        $result = array();
-        if ($this->request->isGet()) {
-            $result[static::$internalModelName] = $this->decode($this->decode($this->getModelNodes(), 'whiteList'), 'blackList');
+        $result = parent::getAction();
+        if (isset($result['proxy']['forward']['acl']['whiteList'])) {
+            $result['proxy']['forward']['acl']['whiteList'] = self::decode($result['proxy']['forward']['acl']['whiteList']);
+        }
+        if (isset($result['proxy']['forward']['acl']['blackList'])) {
+            $result['proxy']['forward']['acl']['blackList'] = self::decode($result['proxy']['forward']['acl']['blackList']);
+        }
+        if (isset($result['proxy']['forward']['icap']['exclude'])) {
+            $result['proxy']['forward']['icap']['exclude'] = self::decode($result['proxy']['forward']['icap']['exclude']);
         }
         return $result;
     }
-    
 
+    /**
+     * set action
+     * @return array status
+     */
     public function setAction()
     {
-        $result = array("result"=>"failed");
-        if ($this->request->isPost()) {
-            // load model and update with provided data
-            $mdl = $this->getModel();
-            $mdl->setNodes($this->encode($this->encode($this->request->getPost(static::$internalModelName), 'whiteList'), 'blackList'));
-            $result = $this->validate();
-            if (empty($result['result'])) {
-                $errorMessage = $this->setActionHook();
-                if (!empty($errorMessage)) {
-                    $result['error'] = $errorMessage;
-                } else {
-                    return $this->save();
-                }
+        $result = parent::setAction();
+        $mdlProxy = $this->getModel();
+        if (isset($mdlProxy->forward->acl->whiteList)) {
+            $mdlProxy->forward->acl->whiteList = self::decode($mdlProxy->forward->acl->whiteList);
+        }
+        if (isset($mdlProxy->forward->acl->blackList)) {
+            $mdlProxy->forward->acl->blackList = self::decode($mdlProxy->forward->acl->blackList);
+        }
+        if (isset($mdlProxy->forward->icap->exclude)) {
+            $mdlProxy->forward->icap->exclude = self::decode($mdlProxy->forward->icap->exclude);
+        }
+        return $result;
+    }
+
+    /**
+     * Encode a given UTF-8 domain name
+     * @param    string   Domain name (UTF-8 or UCS-4)
+     * @return   string   Encoded Domain name (ACE string)
+     */
+    public static function encode($domains)
+    {
+        $result = array();
+        foreach (explode(",", $domains) as $domain) {
+            if ($domain != "") {
+                $result[] = ($domain[0] == "." ? "." : "") . idn_to_ascii($domain);
             }
+        }
+        return implode(",", $result);
+    }
+
+    /**
+     * Decode a given ACE domain name
+     * @param    string   Domain name (ACE string)
+     * @return   string   Decoded Domain name (UTF-8 or UCS-4)
+     */
+    public static function decode($domains)
+    {
+        $result = array();
+        foreach ($domains as $domain => $element) {
+            $result[idn_to_utf8($domain)] = array('value' => idn_to_utf8($element['value']), 'selected' => $element['selected']);
         }
         return $result;
     }

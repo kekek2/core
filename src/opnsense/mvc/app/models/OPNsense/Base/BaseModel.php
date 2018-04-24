@@ -96,7 +96,13 @@ abstract class BaseModel
         } else {
             $result = array();
             foreach ($xmlNode->children() as $childNode) {
-                $result[$childNode->getName()] = $this->parseOptionData($childNode);
+                // item keys can be overwritten using value attributes
+                if (!isset($childNode->attributes()['value'])) {
+                    $itemKey = (string)$childNode->getName();
+                } else {
+                    $itemKey = (string)$childNode->attributes()['value'];
+                }
+                $result[$itemKey] = $this->parseOptionData($childNode);
             }
         }
         return $result;
@@ -105,6 +111,8 @@ abstract class BaseModel
     /**
      * fetch reflection class (cached by field type)
      * @param $classname classname to construct
+     * @return array
+     * @throws ModelException
      */
     private function getNewField($classname)
     {
@@ -463,8 +471,10 @@ abstract class BaseModel
         $fromDom = dom_import_simplexml($source_node[0]);
 
         // remove old model data and write new
-        foreach ($toDom->getElementsByTagName($fromDom->nodeName) as $oldNode) {
-            $toDom->removeChild($oldNode);
+        foreach ($toDom->childNodes as $childNode) {
+            if ($childNode->nodeName == $fromDom->nodeName) {
+                $toDom->removeChild($childNode);
+            }
         }
         $toDom->appendChild($toDom->ownerDocument->importNode($fromDom, true));
     }
@@ -491,7 +501,7 @@ abstract class BaseModel
         if ($messages->count() > 0) {
             $exception_msg = "";
             foreach ($messages as $msg) {
-                $exception_msg_part = "[".str_replace("\\", ".", get_class($this)).".".$msg-> getField(). "] ";
+                $exception_msg_part = "[".get_class($this).":".$msg->getField()."] ";
                 $exception_msg_part .= $msg->getMessage();
                 $exception_msg .= "$exception_msg_part\n";
                 // always log validation errors

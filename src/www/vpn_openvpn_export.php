@@ -1,10 +1,10 @@
 <?php
 
 /*
-    Copyright (C) 2010 Ermal Luci
+    Copyright (C) 2010 Ermal Luçi
     Copyright (C) 2009 Scott Ullrich <sullrich@gmail.com>
-    Copyright (C) 2008 Shrew Soft Inc
-    Copyright (C) 2003-2004 Manuel Kasper
+    Copyright (C) 2008 Shrew Soft Inc. <mgrooms@shrew.net>
+    Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -30,10 +30,71 @@
 */
 
 require_once("guiconfig.inc");
-require_once("openvpn.inc");
+require_once("plugins.inc.d/openvpn.inc");
 require_once("services.inc");
 require_once("filter.inc");
 require_once("interfaces.inc");
+
+function filter_generate_port(& $rule, $target = "source", $isnat = false) {
+    $src = "";
+
+    if (isset($rule['protocol'])) {
+        $rule['protocol'] = strtolower($rule['protocol']);
+    }
+    if (isset($rule['protocol']) && in_array($rule['protocol'], array("tcp","udp","tcp/udp"))) {
+        if (!empty($rule[$target]['port'])) {
+            $port = alias_expand(str_replace('-', ':', $rule[$target]['port']));
+            if (!empty($port)) {
+                $src = " port " . $port;
+            }
+        }
+    }
+
+    return $src;
+}
+
+function filter_generate_address(&$FilterIflist, &$rule, $target = 'source', $isnat = false)
+{
+    global $config;
+
+    $src = '';
+
+    if (isset($rule[$target]['any'])) {
+        $src = "any";
+    } elseif (!empty($rule[$target]['network'])) {
+        $network_name = $rule[$target]['network'];
+        $matches = "";
+        if ($network_name == '(self)') {
+            $src = "(self)";
+        } elseif (preg_match("/^(wan|lan|opt[0-9]+)ip$/", $network_name, $matches)) {
+            if (empty($FilterIflist[$matches[1]]['if'])) {
+                // interface non-existent or in-active
+                return null;
+            }
+            $src = "({$FilterIflist["{$matches[1]}"]['if']})";
+        } else {
+            if (empty($FilterIflist[$network_name]['if'])) {
+                // interface non-existent or in-active
+                return null;
+            }
+            $src = "({$FilterIflist[$network_name]['if']}:network)";
+        }
+        if (isset($rule[$target]['not'])) {
+            $src = " !{$src}";
+        }
+    } elseif ($rule[$target]['address']) {
+        $expsrc = alias_expand($rule[$target]['address']);
+        if (isset($rule[$target]['not'])) {
+            $not = "!";
+        } else {
+            $not = "";
+        }
+        $src = " {$not} {$expsrc}";
+    }
+    $src .= filter_generate_port($rule, $target, $isnat);
+
+    return $src;
+}
 
 function openvpn_client_export_prefix($srvid, $usrid = null, $crtid = null)
 {
@@ -186,7 +247,7 @@ function openvpn_client_export_config($srvid, $usrid, $crtid, $useaddr, $verifys
     $conf .= "auth {$digest}{$nl}";
     $conf .= "tls-client{$nl}";
     $conf .= "client{$nl}";
-    if (!empty($settings['reneg-sec'])) {
+    if (isset($settings['reneg-sec']) && $settings['reneg-sec'] != "") {
         $conf .= "reneg-sec {$settings['reneg-sec']}{$nl}";
     }
     if (($expformat != "inlinedroid") && ($expformat != "inlineios")) {
@@ -300,7 +361,7 @@ function openvpn_client_export_config($srvid, $usrid, $crtid, $useaddr, $verifys
     if (is_array($server_cert) && ($server_cert['crt'])) {
         $purpose = cert_get_purpose($server_cert['crt'], true);
         if ($purpose['server'] == 'Yes') {
-            $conf .= "ns-cert-type server{$nl}";
+            $conf .= "remote-cert-tls server{$nl}";
         }
     }
 
@@ -629,7 +690,7 @@ function openvpn_client_export_sharedkey_config($srvid, $useaddr, $proxy, $zipco
     $conf .= "auth {$digest}\n";
     $conf .= "pull\n";
     $conf .= "resolv-retry infinite\n";
-    if (!empty($settings['reneg-sec'])) {
+    if (isset($settings['reneg-sec']) && $settings['reneg-sec'] != "") {
         $conf .= "reneg-sec {$settings['reneg-sec']}\n";
     }
     $conf .= "remote {$server_host} {$server_port}\n";
@@ -690,6 +751,11 @@ function openvpn_client_export_sharedkey_config($srvid, $useaddr, $proxy, $zipco
         file_put_contents("{$tempdir}/{$prefix}.ovpn", $conf);
         $shkeyfile = "{$tempdir}/{$shkeyfile}";
         file_put_contents("{$shkeyfile}", base64_decode($settings['shared_key']));
+        if (!empty($proxy['passwdfile'])) {
+            $pwdfle = "{$proxy['user']}\n";
+            $pwdfle .= "{$proxy['password']}\n";
+            file_put_contents("{$tempdir}/{$proxy['passwdfile']}", $pwdfle);
+        }
         exec("cd {$tempdir}/.. && /usr/local/bin/zip -r /tmp/{$prefix}-config.zip {$prefix}");
         // Remove temporary directory
         exec("rm -rf {$tempdir}");
@@ -749,7 +815,7 @@ function openvpn_client_export_find_port_forwards($targetip, $targetport, $targe
 {
     global $config;
 
-    $FilterIflist = filter_generate_optcfg_array();
+    $FilterIflist = legacy_config_get_interfaces(array("enable" => true));
     $destinations = array();
 
     if (!isset($config['nat']['rule'])) {
@@ -765,7 +831,7 @@ function openvpn_client_export_find_port_forwards($targetip, $targetport, $targe
             $dest['proto'] = $natent['protocol'];
 
             // Could be multiple ports... But we can only use one.
-            $dports = is_port($natent['destination']['port']) ? array($natent['destination']['port']) : filter_expand_alias_array($natent['destination']['port']);
+            $dports = is_port($natent['destination']['port']) ? array($natent['destination']['port']) : filter_core_get_port_alias($natent['destination']['port']);
             $dest['port'] = $dports[0];
 
             // Could be network or address ...
@@ -1171,7 +1237,7 @@ include("head.inc");
                 } else {
                     params['openvpnmanager'] = 0;
                 }
-                params['advancedoptions'] = escape($("#advancedoptions").val());
+                params['advancedoptions'] = $("#advancedoptions").val();
                 params['verifyservercn'] = $("#verifyservercn").val();
                 if ($(this).data('type') == 'cert') {
                     params['crtid'] = $(this).data('id');
@@ -1513,7 +1579,7 @@ if (isset($savemsg)) {
                     <a href="https://play.google.com/store/apps/details?id=de.blinkt.openvpn"><?= gettext("OpenVPN For Android") ?></a> - <?=gettext("Recommended client for Android")?><br/>
                     <a href="http://www.featvpn.com/"><?= gettext("FEAT VPN For Android") ?></a> - <?=gettext("For older versions of Android")?><br/>
                     <?= gettext("OpenVPN Connect") ?>: <a href="https://play.google.com/store/apps/details?id=net.openvpn.openvpn"><?=gettext("Android (Google Play)")?></a> or <a href="https://itunes.apple.com/us/app/openvpn-connect/id590379981"><?=gettext("iOS (App Store)")?></a> - <?= gettext("Recommended client for iOS") ?><br/>
-                    <a href="http://code.google.com/p/tunnelblick/"><?= gettext("Tunnelblick") ?></a> - <?= gettext("Free client for OSX") ?>
+                    <a href="https://tunnelblick.net"><?= gettext("Tunnelblick") ?></a> - <?= gettext("Free client for OSX") ?>
                   </td>
                 </tr>
               </table>

@@ -1,7 +1,7 @@
 {#
 
-Copyright (c) 2015-2016 Franco Fichtner <franco@opnsense.org>
-Copyright (c) 2015–2016 Deciso B.V.
+Copyright (c) 2015-2017 Franco Fichtner <franco@opnsense.org>
+Copyright (c) 2015-2016 Deciso B.V.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -14,7 +14,7 @@ this list of conditions and the following disclaimer.
 this list of conditions and the following disclaimer in the documentation
 and/or other materials provided with the distribution.
 
-THIS SOFTWARE IS PROVIDED “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES,
+THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
 INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
 AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
 AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
@@ -38,7 +38,7 @@ POSSIBILITY OF SUCH DAMAGE.
             $('#updatelist').show();
         }
         $("#checkupdate_progress").addClass("fa fa-spinner fa-pulse");
-        $('#updatestatus').html("{{ lang._('Checking... (may take up to 30 seconds)') }}");
+        $('#updatestatus').html("{{ lang._('Checking, please wait...') }}");
     }
 
     /**
@@ -65,18 +65,18 @@ POSSIBILITY OF SUCH DAMAGE.
 
                 // unhide upgrade button
                 $("#upgrade").attr("style","");
-                $("#audit").attr("style","display:none");
+                $("#audit_all").attr("style","display:none");
 
                 // show upgrade list
                 $('#update_status').hide();
                 $('#updatelist').show();
-                $('#updatelist').empty();
+                $('#updatelist > tbody').empty();
                 $('#updatetab > a').tab('show');
-                $("#updatelist").html("<tr><th>{{ lang._('Package Name') }}</th>" +
+                $("#updatelist > thead").html("<tr><th>{{ lang._('Package Name') }}</th>" +
                 "<th>{{ lang._('Current Version') }}</th><th>{{ lang._('New Version') }}</th>" +
                 "<th>{{ lang._('Required Action') }}</th></tr>");
                 $.each(data['all_packages'], function (index, row) {
-                    $('#updatelist').append('<tr><td>'+row['name']+'</td>' +
+                    $('#updatelist > tbody').append('<tr><td>'+row['name']+'</td>' +
                     '<td>'+row['old']+'</td><td>'+row['new']+'</td><td>' +
                     row['reason'] + '</td></tr>');
 
@@ -96,7 +96,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 $('#update_status').hide();
                 $('#updatelist').show();
                 $("#upgrade").attr("style","display:none");
-                $("#audit").attr("style","");
+                $("#audit_all").attr("style","");
 
                 // update list so plugins sync as well (all)
                 packagesInfo(true);
@@ -111,13 +111,17 @@ POSSIBILITY OF SUCH DAMAGE.
         $('#updatelist').hide();
         $('#update_status').show();
         $('#updatetab > a').tab('show');
-        $('#updatestatus').html("{{ lang._('Upgrading...') }}");
-        $("#audit").attr("style","display:none");
-        $("#upgrade").attr("style","");
-        $("#upgrade_progress").addClass("fa fa-spinner fa-pulse");
+        $('#updatestatus').html("{{ lang._('Updating, please wait...') }}");
+        $("#audit_all").attr("style","display:none");
+        maj_suffix = '';
+        if ($.upgrade_action == 'maj') {
+            maj_suffix = '_maj';
+        }
+        $("#upgrade" + maj_suffix).attr("style","");
+        $("#upgrade_progress" + maj_suffix).addClass("fa fa-spinner fa-pulse");
 
         ajaxCall('/api/core/firmware/upgrade',{upgrade:$.upgrade_action},function() {
-            $('#updatelist').empty();
+            $('#updatelist > tbody, thead').empty();
             setTimeout(trackStatus, 500);
         });
     }
@@ -125,18 +129,33 @@ POSSIBILITY OF SUCH DAMAGE.
     /**
      * perform audit, install poller to update status
      */
-    function audit() {
-        $.upgrade_action = 'audit';
+    function audit($type) {
+        $.upgrade_action = $type;
         $('#updatelist').hide();
         $('#update_status').show();
         $('#updatetab > a').tab('show');
-        $('#updatestatus').html("{{ lang._('Auditing...') }}");
-        $("#audit").attr("style","");
+        $('#updatestatus').html("{{ lang._('Auditing, please wait...') }}");
+        $("#audit_all").attr("style","");
+        $("#audit_progress").removeClass("caret");
         $("#audit_progress").addClass("fa fa-spinner fa-pulse");
 
-        ajaxCall('/api/core/firmware/audit', {}, function () {
-            $('#updatelist').empty();
+        ajaxCall('/api/core/firmware/' + $type, {}, function () {
+            $('#updatelist > tbody, thead').empty();
             setTimeout(trackStatus, 500);
+        });
+    }
+
+    /**
+     * read package details from backend
+     */
+    function details(package)
+    {
+        ajaxCall('/api/core/firmware/details/' + package, {}, function (data, status) {
+            var details = "{{ lang._('Sorry, plugin details are currently not available.') }}";
+            if (data['details'] != undefined) {
+                details = data['details'];
+            }
+            stdDialogInform("{{ lang._('Plugin details') }}", details, "{{ lang._('Close') }}");
         });
     }
 
@@ -150,17 +169,7 @@ POSSIBILITY OF SUCH DAMAGE.
             if (data['license'] != undefined) {
                 license = data['license'];
             }
-            BootstrapDialog.show({
-                type:BootstrapDialog.TYPE_INFO,
-                title: "{{ lang._('License details') }}",
-                message: license,
-                buttons: [{
-                    label: "{{ lang._('Close') }}",
-                    action: function(dialogRef){
-                        dialogRef.close();
-                    }
-                }]
-            });
+            stdDialogInform("{{ lang._('License details') }}", license, "{{ lang._('Close') }}");
         });
     }
 
@@ -188,6 +197,38 @@ POSSIBILITY OF SUCH DAMAGE.
     }
 
     /**
+     * perform package action that requires reboot confirmation
+     */
+    function action_may_reboot(pkg_act, pkg_name)
+    {
+        if (pkg_act == 'reinstall' && (pkg_name == 'kernel' || pkg_name == 'base')) {
+            reboot_msg = "{{ lang._('The firewall will reboot directly after this set reinstall.') }}";
+
+            // reboot required, inform the user.
+            BootstrapDialog.show({
+                type:BootstrapDialog.TYPE_WARNING,
+                title: "{{ lang._('Reboot required') }}",
+                message: reboot_msg,
+                buttons: [{
+                    label: "{{ lang._('OK') }}",
+                    cssClass: 'btn-warning',
+                    action: function(dialogRef){
+                        dialogRef.close();
+                        action(pkg_act, pkg_name);
+                    }
+                },{
+                    label: "{{ lang._('Abort') }}",
+                    action: function(dialogRef){
+                        dialogRef.close();
+                    }
+                }]
+            });
+        } else {
+            action(pkg_act, pkg_name);
+        }
+    }
+
+    /**
      * perform package action, install poller to update status
      */
     function action(pkg_act, pkg_name)
@@ -195,11 +236,11 @@ POSSIBILITY OF SUCH DAMAGE.
         $('#updatelist').hide();
         $('#update_status').show();
         $('#updatetab > a').tab('show');
-        $('#updatestatus').html("{{ lang._('Executing...') }}");
+        $('#updatestatus').html("{{ lang._('Executing, please wait...') }}");
         $.upgrade_action = 'action';
 
         ajaxCall('/api/core/firmware/'+pkg_act+'/'+pkg_name,{},function() {
-            $('#updatelist').empty();
+            $('#updatelist > tbody, thead').empty();
             setTimeout(trackStatus, 500);
         });
     }
@@ -207,21 +248,27 @@ POSSIBILITY OF SUCH DAMAGE.
     /**
      *  check if a reboot is required, warn user or just upgrade
      */
-    function upgrade_ui(){
+    function upgrade_ui()
+    {
         if ( $.upgrade_needs_reboot == "1" ) {
+            reboot_msg = "{{ lang._('The firewall will reboot directly after this firmware update.') }}";
+            if ($.upgrade_action == 'maj') {
+                reboot_msg = "{{ lang._('The firewall will download all firmware sets and reboot multiple times for this upgrade. All operating system files and packages will be reinstalled as a consequence. This may take several minutes to complete.') }}";
+            }
             // reboot required, inform the user.
             BootstrapDialog.show({
                 type:BootstrapDialog.TYPE_WARNING,
-                title: 'Reboot required',
-                message: 'The firewall will be rebooted directly after this firmware update.',
+                title: "{{ lang._('Reboot required') }}",
+                message: reboot_msg,
                 buttons: [{
-                    label: 'Ok',
+                    label: "{{ lang._('OK') }}",
+                    cssClass: 'btn-warning',
                     action: function(dialogRef){
                         dialogRef.close();
                         upgrade();
                     }
                 },{
-                    label: 'Abort',
+                    label: "{{ lang._('Abort') }}",
                     action: function(dialogRef){
                         dialogRef.close();
                     }
@@ -234,12 +281,12 @@ POSSIBILITY OF SUCH DAMAGE.
 
     function rebootWait() {
         $.ajax({
-            url: document.url,
+            url: '/',
             timeout: 2500
         }).fail(function () {
             setTimeout(rebootWait, 2500);
         }).done(function () {
-            $(location).attr('href',"/");
+            $(location).attr('href', '/');
         });
     }
 
@@ -253,10 +300,13 @@ POSSIBILITY OF SUCH DAMAGE.
                 $('#update_status').scrollTop($('#update_status')[0].scrollHeight);
             }
             if (data['status'] == 'done') {
+                $("#upgrade_progress_maj").removeClass("fa fa-spinner fa-pulse");
                 $("#upgrade_progress").removeClass("fa fa-spinner fa-pulse");
                 $("#audit_progress").removeClass("fa fa-spinner fa-pulse");
+                $("#audit_progress").addClass("caret");
+                $("#upgrade_maj").attr("style","display:none");
                 $("#upgrade").attr("style","display:none");
-                $("#audit").attr("style","");
+                $("#audit_all").attr("style","");
                 if ($.upgrade_action == 'pkg') {
                     // update UI and delay update to avoid races
                     updateStatusPrepare(true);
@@ -265,7 +315,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     if ($.upgrade_action == 'audit') {
                         $('#updatestatus').html("{{ lang._('Audit done.') }}");
                     } else if ($.upgrade_action == 'action') {
-                        $('#updatestatus').html("{{ lang._('Done.') }}");
+                        $('#updatestatus').html("{{ lang._('Action done.') }}");
                     } else {
                         $('#updatestatus').html("{{ lang._('Upgrade done.') }}");
                     }
@@ -300,16 +350,9 @@ POSSIBILITY OF SUCH DAMAGE.
      */
     function packagesInfo(changelog_display) {
         ajaxGet('/api/core/firmware/info', {}, function (data, status) {
-            $('#packageslist').empty();
-            $('#pluginlist').empty();
+            $('#packageslist > tbody').empty();
+            $('#pluginlist > tbody').empty();
             var installed = {};
-
-            $("#packageslist").html("<tr><th>{{ lang._('Name') }}</th>" +
-            "<th>{{ lang._('Version') }}</th><th>{{ lang._('Size') }}</th>" +
-            "<th>{{ lang._('License') }}</th><th>{{ lang._('Comment') }}</th><th></th></tr>");
-            $("#pluginlist").html("<tr><th>{{ lang._('Name') }}</th>" +
-            "<th>{{ lang._('Version') }}</th><th>{{ lang._('Size') }}</th>" +
-            "<th>{{ lang._('Comment') }}</th><th></th></tr>");
 
             var local_count = 0;
             var plugin_count = 0;
@@ -325,7 +368,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 } else {
                     return 1;
                 }
-                $('#packageslist').append(
+                $('#packageslist > tbody').append(
                     '<tr>' +
                     '<td>' + row['name'] + '</td>' +
                     '<td>' + row['version'] + '</td>' +
@@ -351,7 +394,7 @@ POSSIBILITY OF SUCH DAMAGE.
             });
 
             if (local_count == 0) {
-                $('#packageslist').append(
+                $('#packageslist > tbody').append(
                     '<tr><td colspan=5>{{ lang._('No packages were found on your system. Please call for help.') }}</td></tr>'
                 );
             }
@@ -360,16 +403,27 @@ POSSIBILITY OF SUCH DAMAGE.
                 if (row['provided'] == "1") {
                     plugin_count += 1;
                 }
-                orphaned_text = '';
-                if (row['provided'] == "0") {
-                    orphaned_text = ' ({{ lang._('orphaned') }})';
+                status_text = '';
+                bold_on = '';
+                bold_off = '';
+                if (row['installed'] == "1") {
+                    status_text = ' ({{ lang._('installed') }})';
+                    bold_on = '<b>';
+                    bold_off = '</b>';
                 }
-                $('#pluginlist').append(
-                    '<tr>' + '<td>' + row['name'] + orphaned_text + '</td>' +
-                    '<td>' + row['version'] + '</td>' +
-                    '<td>' + row['flatsize'] + '</td>' +
-                    '<td>' + row['comment'] + '</td>' +
-                    '<td>' + (row['installed'] == "1" ?
+                if (row['provided'] == "0") {
+                    // this state overwrites installed on purpose
+                    status_text = ' ({{ lang._('orphaned') }})';
+                }
+                $('#pluginlist > tbody').append(
+                    '<tr>' + '<td>' + bold_on + row['name'] + status_text + bold_off + '</td>' +
+                    '<td>' + bold_on + row['version'] + bold_off + '</td>' +
+                    '<td>' + bold_on + row['flatsize'] + bold_off + '</td>' +
+                    '<td>' + bold_on + row['comment'] + bold_off + '</td>' +
+                    '<td><button class="btn btn-default btn-xs act_details" data-package="' + row['name'] + '" ' +
+                        ' data-toggle="tooltip" title="More about ' + row['name'] + '">' +
+                        '<span class="fa fa-info-circle"></span></button>' +
+                        (row['installed'] == "1" ?
                         '<button class="btn btn-default btn-xs act_remove" data-package="' + row['name'] + '" '+
                         '  data-toggle="tooltip" title="Remove ' + row['name'] + '">' +
                         '<span class="fa fa-trash">' +
@@ -383,15 +437,14 @@ POSSIBILITY OF SUCH DAMAGE.
             });
 
             if (plugin_count == 0) {
-                $('#pluginlist').append(
+                $('#pluginlist > tbody').append(
                     '<tr><td colspan=5>{{ lang._('Check for updates to view available plugins.') }}</td></tr>'
                 );
             }
 
             if (changelog_display) {
-                $('#updatelist').empty();
-
-                $("#updatelist").html("<tr><th>{{ lang._('Version') }}</th>" +
+                $("#updatelist > tbody").empty();
+                $("#updatelist > thead").html("<tr><th>{{ lang._('Version') }}</th>" +
                 "<th>{{ lang._('Date') }}</th><th></th></tr>");
 
                 installed_version = data['product_version'].replace(/[_-].*/, '');
@@ -399,14 +452,19 @@ POSSIBILITY OF SUCH DAMAGE.
                 $.each(data['changelog'], function(index, row) {
                     changelog_count += 1;
 
-                    installed_text = '';
+                    status_text = '';
+                    bold_on = '';
+                    bold_off = '';
+
                     if (installed_version == row['version']) {
-                        installed_text = ' ({{ lang._('installed') }})';
+                        status_text = ' ({{ lang._('installed') }})';
+                        bold_on = '<b>';
+                        bold_off = '</b>';
                     }
 
-                    $('#updatelist').append(
+                    $('#updatelist > tbody').append(
                         '<tr' + (changelog_count > changelog_max ? ' class="changelog-hidden" style="display: none;" ' : '' ) +
-                        '><td>' + row['version'] + installed_text + '</td><td>' + row['date'] + '</td>' +
+                        '><td>' + bold_on + row['version'] + status_text + bold_off + '</td><td>' + bold_on + row['date'] + bold_off + '</td>' +
                         '<td><button class="btn btn-default btn-xs act_changelog" data-version="' + row['version'] + '" ' +
                         'data-toggle="tooltip" title="View ' + row['version'] + '">' +
                         '<span class="fa fa-book"></span></button></td></tr>'
@@ -414,13 +472,13 @@ POSSIBILITY OF SUCH DAMAGE.
                 });
 
                 if (!data['changelog'].length) {
-                    $('#updatelist').append(
+                    $('#updatelist > tbody').append(
                         '<tr><td colspan=3>{{ lang._('Check for updates to view changelog history.') }}</td></tr>'
                     );
                 }
 
                 if (changelog_count > changelog_max) {
-                    $('#updatelist').append(
+                    $('#updatelist > tbody').append(
                         '<tr class= "changelog-full"><td colspan=3><a id="changelog-act" href="#">{{ lang._('Click to view full changelog history.') }}</a></td></tr>'
                     );
                     $("#changelog-act").click(function(event) {
@@ -435,7 +493,7 @@ POSSIBILITY OF SUCH DAMAGE.
             // link buttons to actions
             $(".act_reinstall").click(function(event) {
                 event.preventDefault();
-                action('reinstall', $(this).data('package'));
+                action_may_reboot('reinstall', $(this).data('package'));
             });
             $(".act_unlock").click(function(event) {
                 event.preventDefault();
@@ -448,6 +506,10 @@ POSSIBILITY OF SUCH DAMAGE.
             $(".act_remove").click(function(event) {
                 event.preventDefault();
                 action('remove', $(this).data('package'));
+            });
+            $(".act_details").click(function(event) {
+                event.preventDefault();
+                details($(this).data('package'));
             });
             $(".act_install").click(function(event) {
                 event.preventDefault();
@@ -470,11 +532,42 @@ POSSIBILITY OF SUCH DAMAGE.
         // link event handlers
         $('#checkupdate').click(updateStatus);
         $('#upgrade').click(upgrade_ui);
-        $('#audit').click(audit);
-        // show upgrade message if there
-        if ($('#message').html() != '') {
-            $('#message').attr('style', '');
-        }
+        $('#audit').click(function () { audit('audit'); });
+        $('#health').click(function () { audit('health'); });
+        $('#upgrade_maj').click(function () {
+            $.upgrade_needs_reboot = 1;
+            $.upgrade_action = 'maj';
+            upgrade_ui();
+        });
+        $('#checkupdate_maj').click(function () {
+            $("#checkupdate_progress_maj").addClass("fa fa-spinner fa-pulse");
+            // empty call refreshes changelogs in the background
+            ajaxCall('/api/core/firmware/changelog/update', {}, function () {
+                $("#checkupdate_progress_maj").removeClass("fa fa-spinner fa-pulse");
+                BootstrapDialog.show({
+                    type:BootstrapDialog.TYPE_WARNING,
+                    title: "{{ lang._('Upgrade instructions') }}",
+                    message: $('#firmware-message').html(),
+                    buttons: [{
+<?php if (file_exists('/usr/local/opnsense/firmware-upgrade')): ?>
+                        label: "{{ lang._('Unlock upgrade') }}",
+                        cssClass: 'btn-warning',
+                        action: function (dialogRef) {
+                            dialogRef.close();
+                            $("#upgrade_maj").attr("style","");
+                            changelog($('#firmware-upgrade').text());
+                        }
+                    },{
+<?php endif ?>
+                        label: "{{ lang._('Close') }}",
+                        action: function (dialogRef) {
+                            dialogRef.close();
+                        }
+                    }]
+                });
+                packagesInfo(true);
+            });
+        });
 
         // populate package information
         packagesInfo(true);
@@ -545,6 +638,20 @@ POSSIBILITY OF SUCH DAMAGE.
                 );
                 $("#firmware_flavour").selectpicker('refresh');
                 $("#firmware_flavour").change();
+
+                $.each(firmwareoptions.families, function(key, value) {
+                    var selected = false;
+                    if (key == firmwareconfig['type']) {
+                        selected = true;
+                    }
+                    $("#firmware_type").append($("<option/>")
+                            .attr("value",key)
+                            .text(value)
+                            .prop('selected', selected)
+                    );
+                });
+                $("#firmware_type").selectpicker('refresh');
+                $("#firmware_type").change();
             });
         });
 
@@ -575,6 +682,7 @@ POSSIBILITY OF SUCH DAMAGE.
             var confopt = {};
             confopt.mirror = $("#firmware_mirror_value").val();
             confopt.flavour = $("#firmware_flavour_value").val();
+            confopt.type = $("#firmware_type").val();
             if ($("#firmware_mirror option:selected").data("has_subscription") == true) {
                 confopt.subscription = $("#firmware_mirror_subscription").val();
             } else {
@@ -620,88 +728,116 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="container-fluid">
     <div class="row">
-        <div id="message" style="display:none" class="alert alert-warning" role="alert"><?= @file_get_contents('/usr/local/opnsense/firmware-message') ?></div>
+<?php if (file_exists('/usr/local/opnsense/firmware-message')): ?>
+        <div id="firmware-upgrade" style="display:none;"><?= @file_get_contents('/usr/local/opnsense/firmware-upgrade') ?></div>
+        <div id="firmware-message" style="display:none;"><?= str_replace(PHP_EOL, ' ', @file_get_contents('/usr/local/opnsense/firmware-message')) ?></div>
+        <div class="alert alert-warning" role="alert" style="min-height: 65px;">
+            <button class='btn btn-primary pull-right' id="upgrade_maj" style="display:none;">{{ lang._('Upgrade now') }} <i id="upgrade_progress_maj"></i> </button>
+            <button class='btn pull-right' id="checkupdate_maj" style="margin-right: 8px;">{{ lang._('Check for upgrade') }} <i id="checkupdate_progress_maj"></i></button>
+            <div style="margin-top: 8px;">{{ lang._('This software release has reached its designated end of life.') }}</div>
+        </div>
+<?php endif ?>
         <div class="alert alert-info" role="alert" style="min-height: 65px;">
-            <button class='btn btn-primary pull-right' id="upgrade" style="display:none"><i id="upgrade_progress" class=""></i> {{ lang._('Upgrade now') }}</button>
-            <button class='btn btn-primary pull-right' id="audit"><i id="audit_progress" class=""></i> {{ lang._('Audit now') }}</button>
-            <button class='btn btn-default pull-right' id="checkupdate" style="margin-right: 8px;"><i id="checkupdate_progress" class=""></i> {{ lang._('Check for updates')}}</button>
+            <button class='btn btn-primary pull-right' id="upgrade" style="display:none">{{ lang._('Update now') }} <i id="upgrade_progress"></i></button>
+            <div class="btn-group pull-right">
+                <button type="button" id="audit_all" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
+                    {{ lang._('Audit now') }} <i id="audit_progress" class="caret"></i>
+                </button>
+                <ul class="dropdown-menu" role="menu">
+                    <li><a id="audit" href="#">Security</a></li>
+                    <li><a id="health" href="#">Health</a></li>
+                </ul>
+            </div>
+            <button class='btn btn-default pull-right' id="checkupdate" style="margin-right: 8px;">{{ lang._('Check for updates') }} <i id="checkupdate_progress"></i></button>
             <div style="margin-top: 8px;" id="updatestatus">{{ lang._('Click to check for updates.')}}</div>
         </div>
     </div>
     <div class="row">
         <div class="col-md-12" id="content">
             <ul class="nav nav-tabs" data-tabs="tabs">
-                <li id="packagestab" class="active"><a data-toggle="tab" href="#packages">{{ lang._('Packages') }}</a></li>
+                <li id="updatetab" class="active"><a data-toggle="tab" href="#updates">{{ lang._('Updates') }}</a></li>
                 <li id="plugintab"><a data-toggle="tab" href="#plugins">{{ lang._('Plugins') }}</a></li>
-                <li id="updatetab"><a data-toggle="tab" href="#updates">{{ lang._('Updates') }}</a></li>
-                <li id="progresstab"><a data-toggle="tab" href="#progress">{{ lang._('Progress') }}</a></li>
+                <li id="packagestab"><a data-toggle="tab" href="#packages">{{ lang._('Packages') }}</a></li>
                 <li id="settingstab"><a data-toggle="tab" href="#settings">{{ lang._('Settings') }}</a></li>
             </ul>
             <div class="tab-content content-box tab-content">
-                <div id="packages" class="tab-pane fade in active">
-                    <table class="table table-striped table-condensed table-responsive" id="packageslist">
+                <div id="updates" class="tab-pane fade in active">
+                    <textarea name="output" id="update_status" class="form-control" rows="25" wrap="hard" readonly="readonly" style="max-width:100%; font-family: monospace; display: none;"></textarea>
+                    <table class="table table-striped table-condensed table-responsive" id="updatelist">
+                        <thead>
+                        </thead>
+                        <tbody></tbody>
                     </table>
                 </div>
                 <div id="plugins" class="tab-pane fade in">
                     <table class="table table-striped table-condensed table-responsive" id="pluginlist">
+                      <thead>
+                        <tr>
+                          <th>{{ lang._('Name') }}</th>
+                          <th>{{ lang._('Version') }}</th>
+                          <th>{{ lang._('Size') }}</th>
+                          <th>{{ lang._('Comment') }}</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                      </tbody>
                     </table>
                 </div>
-                <div id="updates" class="tab-pane fade in">
-                    <table class="table table-striped table-condensed table-responsive" id="updatelist">
+                <div id="packages" class="tab-pane fade in">
+                    <table class="table table-striped table-condensed table-responsive" id="packageslist">
+                        <thead>
+                          <tr>
+                              <th>{{ lang._('Name') }}</th>
+                              <th>{{ lang._('Version') }}</th>
+                              <th>{{ lang._('Size') }}</th>
+                              <th>{{ lang._('License') }}</th>
+                              <th>{{ lang._('Comment') }}</th>
+                              <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
                     </table>
-                </div>
-                <div id="progress" class="tab-pane fade in">
-                    <textarea name="output" id="update_status" class="form-control" rows="20" wrap="hard" readonly style="max-width:100%; font-family: monospace;"></textarea>
                 </div>
                 <div id="settings" class="tab-pane fade in">
                     <table class="table table-striped table-responsive">
                         <tbody>
-                        <tr>
-                            <td style="width: 150px;"><a id="help_for_mirror" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> {{ lang._('Firmware Mirror') }}</td>
-                            <td>
-                                <select class="selectpicker" id="firmware_mirror">
-                                </select>
-                                <div style="display:none;" id="firmware_mirror_other">
-                                    <input type="text" id="firmware_mirror_value">
-                                </div>
-                                <div class="hidden" for="help_for_mirror">
-                                    <strong>
-                                        {{ lang._("Select an alternate firmware mirror.") }}
-                                    </strong>
-                                </div>
-                            </td>
-                            <td>
-                                <form method="post" enctype="multipart/form-data" id="repoform">
-                                    <input name="repofile" type="file" id="repofile" /><br/>
-                                </form>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="width: 150px;"><a id="help_for_mirror_subscription" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> {{ lang._('Subscription') }}</td>
-                            <td>
-                                <input type="text" id="firmware_mirror_subscription">
-                                <div class="hidden" for="help_for_mirror_subscription">
-                                    <strong>
-                                        {{ lang._("Provide subscription key.") }}
-                                    </strong>
-                                </div>
-                            </td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td></td>
-                            <td>
-                                <button class="btn btn-primary" id="change_mirror" type="button"><i id="change_mirror_progress" class=""></i> {{ lang._('Save') }}</button>
-                            </td>
-                            <td>
-                                <button class="btn btn-primary" id="upload" type="button"><i id="upload_progress" class=""></i> {{ lang._('Upload repository') }}</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td colspan="3">
-                                {{ lang._('In order to apply these settings a firmware update must be performed after save, which can include a reboot of the system.') }}
-                            </td>
-                        </tr>
+                            <tr>
+                                <td style="width: 150px;"><a id="help_for_mirror" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> {{ lang._('Firmware Mirror') }}</td>
+                                <td>
+                                    <select class="selectpicker" id="firmware_mirror">
+                                    </select>
+                                    <div style="display:none;" id="firmware_mirror_other">
+                                        <input type="text" id="firmware_mirror_value">
+                                    </div>
+                                    <div class="hidden" for="help_for_mirror">
+                                        {{ lang._('Select an alternate firmware mirror.') }}
+                                    </div>
+                                </td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td>
+                                    <button class="btn btn-primary" id="change_mirror" type="button">{{ lang._('Save') }} <i id="change_mirror_progress"></i></button>
+                                </td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td>
+                                    <button class="btn btn-primary" id="change_mirror" type="button"><i id="change_mirror_progress" class=""></i> {{ lang._('Save') }}</button>
+                                </td>
+                                <td>
+                                    <button class="btn btn-primary" id="upload" type="button"><i id="upload_progress" class=""></i> {{ lang._('Upload repository') }}</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="3">
+                                    {{ lang._('In order to apply these settings a firmware update must be performed after save, which can include a reboot of the system.') }}
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>

@@ -2055,7 +2055,7 @@ th {
 .table-condensed > tbody > tr > td,
 .table-condensed > tfoot > tr > th,
 .table-condensed > tfoot > tr > td {
-  padding: 5px; }
+  padding: 5px !important; }
 
 .table-bordered {
   border: 1px solid #eee; }
@@ -5661,12 +5661,52 @@ body {
 .collapse .list-group-item:last-child {
   border-bottom: none; }
 
-.nav-tabs > li.active {
-  background: #FFF !important; }
+.dropdown-menu > li > a,
+.dropdown-header {
+  padding: 3px 10px; }
+
+.nav-tabs {
+  margin-right: 1px;
+  border-bottom: 1px solid #999999; }
+
+.nav-tabs > li {
+  border-radius: 0px;
+  border-top-right-radius: 10px;
+  margin-right: 2px; }
 
 .nav-tabs > li > a {
+  background: #FBFBFB;
   border-radius: 0px;
+  border-top-right-radius: 10px;
   margin-right: 0px; }
+
+.nav-tabs > li > a,
+.nav-tabs > li > a:hover,
+.nav-tabs > li > a:focus {
+  border-right: 1px solid #eeeeee;
+  border-top: 1px solid #eeeeee;
+  border-left: 1px solid #eeeeee;
+  border-bottom: 1px solid #999999; }
+
+.nav-tabs > li.active > a {
+  background: #FFF !important; }
+
+.nav-tabs > li.active > a,
+.nav-tabs > li.active > a:hover,
+.nav-tabs > li.active > a:focus {
+  border-right: 1px solid #999999;
+  border-top: 1px solid #999999;
+  border-left: 1px solid #999999; }
+
+.nav-tabs > li > a.visible-lg-inline-block:not(.pull-right) {
+  border-top-right-radius: 0px !important;
+  padding-left: 10px !important;
+  padding-right: 5px !important; }
+
+.nav-tabs > li > a.visible-lg-inline-block.pull-right {
+  border-left: 0px !important;
+  padding-left: 5px !important;
+  padding-right: 10px !important; }
 
 .nav-tabs.nav-justified {
   border-right: 1px solid #E5E5E5; }
@@ -5789,6 +5829,20 @@ table {
 .navbar-brand {
   padding: 10px 20px; }
 
+.label-opnsense {
+  border: 1px solid transparent;
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 12px;
+  line-height: 1.5;
+  border-radius: 3px; }
+
+.label-opnsense-sm {
+  padding: 5px 10px; }
+
+.label-opnsense-xs {
+  padding: 1px 5px; }
+
 ::-webkit-scrollbar {
   width: 8px; }
 
@@ -5826,6 +5880,10 @@ select {
 
 /* TING FLAVORED */
 
+#ting-search .input-group-addon {
+  background: #2b2b2b;
+}
+
 .table-clean-form {
   border-top: 1px solid #f6f6f6; }
 .table-clean-form > thead > tr > th,
@@ -5847,9 +5905,11 @@ select {
 .table-clean-form > tfoot > tr > td {
   border-top: none; }
 
-.table-clean-form > tbody > tr > td > a.showhelp > i.fa-info-circle {
+.table-clean-form > tbody > tr > td > a.showhelp > i.fa-info-circle,
+.table-clean-form > tbody > tr > td > div > a.showhelp > i.fa-info-circle {
   color: #777777; }
-.table-clean-form > tbody > tr > td > i.fa-info-circle.text-muted {
+.table-clean-form > tbody > tr > td > i.fa-info-circle.text-muted,
+.table-clean-form > tbody > tr > td > div > i.fa-info-circle.text-muted {
   color: #DDDDDD; }
 
 .table-clean-form thead > tr > td small.formhelp,

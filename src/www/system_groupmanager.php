@@ -2,7 +2,7 @@
 
 /*
     Copyright (C) 2014-2016 Deciso B.V.
-    Copyright (C) 2008 Shrew Soft Inc.
+    Copyright (C) 2008 Shrew Soft Inc. <mgrooms@shrew.net>
     Copyright (C) 2005 Paul Taylor <paultaylor@winn-dixie.com>.
     Copyright (C) 2003-2005 Manuel Kasper <mk@neon1.net>.
     All rights reserved.
@@ -31,10 +31,7 @@
 
 require_once("guiconfig.inc");
 
-if (!isset($config['system']['group'])) {
-    $config['system']['group'] = array();
-}
-$a_group = &$config['system']['group'];
+$a_group = &config_read_array('system', 'group');
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (isset($a_group[$_GET['groupid']])) {
@@ -91,8 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $input_errors[] = gettext("The group name contains invalid characters.");
         }
 
-        if (strlen($pconfig['name']) > 16) {
-            $input_errors[] = gettext("The group name is longer than 16 characters.");
+        if (strlen($pconfig['name']) > 32) {
+            $input_errors[] = gettext("The group name is longer than 32 characters.");
         }
 
         if (count($input_errors) == 0 && !isset($id)) {
@@ -136,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
             /* Refresh users in this group since their privileges may have changed. */
             if (is_array($group['member'])) {
-                $a_user = &$config['system']['user'];
+                $a_user = &config_read_array('system', 'user');
                 foreach ($a_user as & $user) {
                     if (in_array($user['uid'], $group['member'])) {
                         local_user_set($user);
@@ -237,7 +234,7 @@ $( document ).ready(function() {
               <tr>
                 <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Group name");?></td>
                 <td>
-                  <input name="name" type="text" maxlength="16" value="<?=$pconfig['name'];?>" <?=$pconfig['scope'] == "system" ? "readonly=\"readonly\"" : "";?> />
+                  <input name="name" type="text" maxlength="32" value="<?=$pconfig['name'];?>" <?=$pconfig['scope'] == "system" ? "readonly=\"readonly\"" : "";?> />
                 </td>
               </tr>
               <tr>

@@ -32,10 +32,7 @@ require_once("interfaces.inc");
 require_once("filter.inc");
 require_once("logs.inc");
 
-if (!isset($config['nat']['onetoone'])) {
-    $config['nat']['onetoone'] = array();
-}
-$a_1to1 = &$config['nat']['onetoone'];
+$a_1to1 = &config_read_array('nat', 'onetoone');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pconfig = $_POST;
@@ -176,9 +173,13 @@ $main_buttons = array(
         $("#action").val("toggle");
         $("#iform").submit();
     });
+    // select All
+    $("#selectAll").click(function(){
+        $(".rule_select").prop("checked", $(this).prop("checked"));
+    });
+
     // watch scroll position and set to last known on page load
     watchScrollPosition();
-
   });
   </script>
 
@@ -201,10 +202,10 @@ $main_buttons = array(
             <form method="post" name="iform" id="iform">
               <input type="hidden" id="id" name="id" value="" />
               <input type="hidden" id="action" name="action" value="" />
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <thead>
                   <tr>
-                    <th>&nbsp;</th>
+                    <th><input type="checkbox" id="selectAll"></th>
                     <th>&nbsp;</th>
                     <th><?=gettext("Interface"); ?></th>
                     <th><?=gettext("External IP"); ?></th>
@@ -221,7 +222,7 @@ $main_buttons = array(
 ?>
                   <tr <?=isset($natent['disabled'])?"class=\"text-muted\"":"";?> valign="top" ondblclick="document.location='firewall_nat_1to1_edit.php?id=<?=$i;?>';">
                     <td>
-                      <input type="checkbox" name="rule[]" value="<?=$i;?>" />
+                      <input class="rule_select" type="checkbox" name="rule[]" value="<?=$i;?>" />
                     </td>
                     <td>
                       <a href="#" type="submit" id="toggle_<?=$i;?>" data-toggle="tooltip" title="<?=(!isset($natent['disabled'])) ? gettext("disable rule") : gettext("enable rule");?>" class="act_toggle">
@@ -236,7 +237,7 @@ $main_buttons = array(
                       <?=htmlspecialchars(convert_friendly_interface_to_friendly_descr(isset($natent['interface']) ? $natent['interface'] : "wan"));?>
                     </td>
                     <td>
-                      <?=isset($natent['external']) ? $natent['external'] : "";?><?=isset($natent['source']) ? strstr(pprint_address($natent['source']), '/') : "";?>
+                      <?=isset($natent['external']) ? $natent['external'] : "";?><?=isset($natent['source']) && strpos($natent['external'], '/') === false ? strstr(pprint_address($natent['source']), '/') : "";?>
 <?php                 if (isset($natent['external']['address']) && is_alias($natent['external']['address'])): ?>
                       &nbsp;<a href="/firewall_aliases_edit.php?name=<?=htmlspecialchars($natent['external']['address']);?>"><i class="fa fa-list"></i> </a>
 <?php                 endif; ?>

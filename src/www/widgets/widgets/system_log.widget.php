@@ -49,13 +49,11 @@ function dump_log($system_logfile, $syslogEntriesToFetch)
 {
   global $config;
 
-  $logdatastr = configd_run("syslog dumplog {$system_logfile}");
-  $logdata = explode("\n", $logdatastr);
   $reverse = ($config['OPNsense']['Syslog']['Reverse'] == '1');
-  if($reverse)
-    $logdata = array_reverse($logdata);
 
-  $counter = 1;
+  $logdatastr = configd_run("syslog dumplog {$system_logfile} {$syslogEntriesToFetch} {$reverse}");
+  $logdata = explode("\n", $logdatastr);
+
   foreach ($logdata as $logent) {
     if(trim($logent) == '')
       continue;
@@ -68,9 +66,6 @@ function dump_log($system_logfile, $syslogEntriesToFetch)
     echo "<td>{$entry_date_time}</td>\n";
     echo "<td>{$entry_text}</td>\n";
     echo "</tr>\n";
-
-    if(++$counter > $syslogEntriesToFetch)
-      break; 
   }
 }
 

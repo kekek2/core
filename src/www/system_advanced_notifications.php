@@ -177,7 +177,9 @@ include("head.inc");
                 <td>
                   <input name="name" type="text" value="<?=$pconfig['name']; ?>"/>
                   <div class="hidden" for="help_for_name">
+                    <small class="formhelp">
                     <?=gettext("Enter the name to register with the Growl server (default: PHP-Growl)."); ?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -254,9 +256,9 @@ include("head.inc");
                 <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Secure SMTP Connection"); ?></td>
                 <td>
                   <input type="checkbox" id="smtpssl" name="smtpssl" <?=!empty($pconfig['smtpssl']) ? "checked=\"checked\"" : "";?> />
-                  <?=gettext('Enable SMTP over SSL/TLS');?><br />
+                  <strong><?=gettext('Enable SMTP over SSL/TLS');?></strong><br />
                   <input type="checkbox" id="smtptls" name="smtptls" <?=!empty($pconfig['smtptls']) ? "checked=\"checked\"" : "";?> />
-                  <?=gettext('Enable STARTTLS');?><br />
+                  <strong><?=gettext('Enable STARTTLS');?></strong><br />
                 </td>
               </tr>
               <tr>
@@ -313,7 +315,7 @@ include("head.inc");
                 <td><a id="help_for_disablebeep" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Startup/Shutdown Sound"); ?></td>
                 <td>
                   <input name="disablebeep" type="checkbox" id="disablebeep" value="yes" <?=!empty($pconfig['disablebeep']) ? "checked=\"checked\"" : "";?>/>
-                  <?=gettext("Disable the startup/shutdown beep"); ?>
+                  <strong><?=gettext("Disable the startup/shutdown beep"); ?></strong>
                   <br />
                   <div class="hidden" for="help_for_disablebeep">
                     <small class="formhelp">

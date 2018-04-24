@@ -2,7 +2,6 @@
 
 /**
  *    Copyright (C) 2015 Deciso B.V.
- *
  *    All rights reserved.
  *
  *    Redistribution and use in source and binary forms, with or without
@@ -25,13 +24,11 @@
  *    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  *    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *    POSSIBILITY OF SUCH DAMAGE.
- *
  */
+
 namespace OPNsense\Base;
 
 use OPNsense\Core\Config;
-use OPNsense\Base\ViewTranslator;
-use Phalcon\Mvc\Controller;
 
 /**
  * Class ControllerBase implements core controller for OPNsense framework
@@ -39,24 +36,6 @@ use Phalcon\Mvc\Controller;
  */
 class ControllerBase extends ControllerRoot
 {
-    /**
-     * translate a text
-     * @return ViewTranslator
-     */
-    public function getTranslator()
-    {
-        $lang_encoding = self::getLangEncode();
-
-        $ret = new ViewTranslator(array(
-            'directory' => '/usr/local/share/locale',
-            'defaultDomain' => 'OPNsense',
-            'locale' => $lang_encoding,
-        ));
-
-        self::setLocale($lang_encoding);
-        return $ret;
-    }
-
     /**
      * convert xml form definition to simple data structure to use in our Volt templates
      *
@@ -74,7 +53,7 @@ class ControllerBase extends ControllerRoot
                     }
                     $tab = array();
                     $tab[] = $node->attributes()->id;
-                    $tab[] = $node->attributes()->description;
+                    $tab[] = gettext((string)$node->attributes()->description);
                     if (isset($node->subtab)) {
                         $tab["subtabs"] = $this->parseFormNode($node);
                     } else {
@@ -85,7 +64,7 @@ class ControllerBase extends ControllerRoot
                 case "subtab":
                     $subtab = array();
                     $subtab[] = $node->attributes()->id;
-                    $subtab[] = $node->attributes()->description;
+                    $subtab[] = gettext((string)$node->attributes()->description);
                     $subtab[] = $this->parseFormNode($node);
                     $result[] = $subtab;
                     break;
@@ -97,12 +76,7 @@ class ControllerBase extends ControllerRoot
                 case "hint":
                 case "label":
                     // translate text items if gettext is enabled
-                    if (function_exists("gettext")) {
-                        $result[$key] = gettext((string)$node);
-                    } else {
-                        $result[$key] = (string)$node;
-                    }
-
+                    $result[$key] = gettext((string)$node);
                     break;
                 default:
                     // default behavior, copy in value as key/value data
@@ -161,8 +135,9 @@ class ControllerBase extends ControllerRoot
             }
 
             // check for valid csrf on post requests
-            if ($this->request->isPost() && !$this->security->checkToken()) {
+            if ($this->request->isPost() && !$this->security->checkToken(null, null, false)) {
                 // post without csrf, exit.
+                $this->response->setStatusCode(403, "Forbidden");
                 return false;
             }
 
@@ -178,10 +153,14 @@ class ControllerBase extends ControllerRoot
         }
 
         // include csrf for volt view rendering.
-        $this->view->setVars([
-            'csrf_tokenKey' => $this->security->getTokenKey(),
-            'csrf_token' => $this->security->getToken()
-        ]);
+        $csrf_token = $this->session->get('$PHALCON/CSRF$');
+        $csrf_tokenKey = $this->session->get('$PHALCON/CSRF/KEY$');
+        if (empty($csrf_token) || empty($csrf_tokenKey)) {
+            // when there's no token in our session, request a new one
+            $csrf_token = $this->security->getToken();
+            $csrf_tokenKey = $this->security->getTokenKey();
+        }
+        $this->view->setVars(['csrf_tokenKey' => $csrf_tokenKey, 'csrf_token' => $csrf_token]);
 
         // link menu system to view, append /ui in uri because of rewrite
         $menu = new Menu\MenuSystem();
@@ -189,21 +168,40 @@ class ControllerBase extends ControllerRoot
         // add interfaces to "Interfaces" menu tab... kind of a hack, may need some improvement.
         $cnf = Config::getInstance();
 
-        // set translator
-        $this->view->setVar('lang', $this->getTranslator());
+        $this->view->setVar('lang', $this->translator);
         $this->view->menuSystem = $menu->getItems("/ui".$this->router->getRewriteUri());
+        /* XXX generating breadcrumbs requires getItems() call */
+        $this->view->menuBreadcrumbs = $menu->getBreadcrumbs();
 
         // set theme in ui_theme template var, let template handle its defaults (if there is no theme).
-        if ($cnf->object()->theme != null && !empty($cnf->object()->theme) &&
+        if ($cnf->object()->theme->count() > 0 && !empty($cnf->object()->theme) &&
             is_dir('/usr/local/opnsense/www/themes/'.(string)$cnf->object()->theme)
         ) {
             $this->view->ui_theme = $cnf->object()->theme;
+        }
+
+        $product_vars = json_decode(file_get_contents('/usr/local/opnsense/firmware-product'), true);
+        foreach ($product_vars as $product_key => $product_var) {
+            $this->view->$product_key = $product_var;
         }
 
         // info about the current user and box
         $this->view->session_username = !empty($_SESSION['Username']) ? $_SESSION['Username'] : '(unknown)';
         $this->view->system_hostname = $cnf->object()->system->hostname;
         $this->view->system_domain = $cnf->object()->system->domain;
+
+        if (isset($this->view->menuBreadcrumbs[0]['name'])) {
+            $output = array();
+            foreach ($this->view->menuBreadcrumbs as $crumb) {
+                $output[] = gettext($crumb['name']);
+            }
+            $this->view->title = join(': ', $output);
+            $output = array();
+            foreach (array_reverse($this->view->menuBreadcrumbs) as $crumb) {
+                $output[] = gettext($crumb['name']);
+            }
+            $this->view->headTitle = join(' | ', $output);
+        }
 
         // append ACL object to view
         $this->view->acl = new \OPNsense\Core\ACL();

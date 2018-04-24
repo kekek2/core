@@ -30,16 +30,9 @@
 require_once("guiconfig.inc");
 require_once("system.inc");
 require_once("interfaces.inc");
-require_once("openvpn.inc");
 require_once("services.inc");
 
-if (!isset($config['gres']) || !is_array($config['gres'])) {
-    $config['gres'] = array();
-}
-if (!isset($config['gres']['gre']) || !is_array($config['gres']['gre'])) {
-    $config['gres']['gre'] = array();
-}
-$a_gres = &$config['gres']['gre'];
+$a_gres = &config_read_array('gres', 'gre');
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // read form data
@@ -136,7 +129,7 @@ include("head.inc");
         <div class="content-box">
           <div class="table-responsive">
             <form method="post" name="iform" id="iform">
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <thead>
                   <tr>
                     <td width="22%"><strong><?=gettext("GRE configuration");?></strong></td>
@@ -172,7 +165,9 @@ include("head.inc");
                       endforeach;?>
                       </select>
                       <div class="hidden" for="help_for_if">
+                        <small class="formhelp">
                           <?=gettext("The interface here serves as the local address to be used for the GRE tunnel.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -181,7 +176,9 @@ include("head.inc");
                     <td>
                       <input name="remote-addr" type="text" value="<?=$pconfig['remote-addr'];?>" />
                       <div class="hidden" for="help_for_remote-addr">
+                        <small class="formhelp">
                         <?=gettext("Peer address where encapsulated GRE packets will be sent.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -190,7 +187,9 @@ include("head.inc");
                     <td>
                       <input name="tunnel-local-addr" type="text" value="<?=$pconfig['tunnel-local-addr'];?>" />
                       <div class="hidden" for="help_for_tunnel-local-addr">
+                        <small class="formhelp">
                         <?=gettext("Local GRE tunnel endpoint");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -216,7 +215,9 @@ include("head.inc");
                         </tr>
                       </table>
                       <div class="hidden" for="help_for_tunnel-remote-addr">
+                        <small class="formhelp">
                         <?=gettext("Remote GRE address endpoint. The subnet part is used for the determining the network that is tunneled.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -225,7 +226,9 @@ include("head.inc");
                     <td>
                       <input name="link0" type="checkbox" id="link0" <?= !empty($pconfig['link0']) ? "checked=\"checked\"" : "";?> />
                       <div class="hidden" for="help_for_link0">
+                        <small class="formhelp">
                         <?=gettext("Specify which encapsulation method the tunnel should use.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -234,10 +237,12 @@ include("head.inc");
                     <td>
                       <input name="link1" type="checkbox" id="link1" <?= !empty($pconfig['link1']) ? "checked=\"checked\"" : "";?> />
                       <div class="hidden" for="help_for_link1">
+                        <small class="formhelp">
                         <?=gettext("For correct operation, the GRE device needs a route to the destination ".
                        "that is less specific than the one over the tunnel. (Basically, there ".
                        "needs to be a route to the decapsulating host that does not run over the ".
                        "tunnel, as this would be a loop.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -246,7 +251,9 @@ include("head.inc");
                     <td>
                       <input name="link2" type="checkbox" id="link2" <?= !empty($pconfig['link2']) ? "checked=\"checked\"" : "";?> />
                       <div class="hidden" for="help_for_link2">
+                        <small class="formhelp">
                         <?=gettext("Check this box for WCCP encapsulation version 2, or leave unchecked for version 1.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -255,7 +262,9 @@ include("head.inc");
                     <td>
                       <input name="descr" type="text" value="<?=$pconfig['descr'];?>" />
                       <div class="hidden" for="help_for_descr">
+                        <small class="formhelp">
                         <?=gettext("You may enter a description here for your reference (not parsed)."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>

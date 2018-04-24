@@ -4,7 +4,7 @@
     Copyright (C) 2014-2015 Deciso B.V.
     Copyright (C) 2005 Bill Marquette <bill.marquette@gmail.com>.
     Copyright (C) 2003-2005 Manuel Kasper <mk@neon1.net>.
-    Copyright (C) 2004-2005 Scott Ullrich <geekgod@pfsense.com>.
+    Copyright (C) 2004-2005 Scott Ullrich <sullrich@gmail.com>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -40,7 +40,7 @@ require_once("logs.inc");
 function deleteVIPEntry($id) {
     global $config;
     $input_errors = array();
-    $a_vip = &$config['virtualip']['vip'];
+    $a_vip = &config_read_array('virtualip', 'vip');
     /* make sure no inbound NAT mappings reference this entry */
     if (isset($config['nat']['rule'])) {
         foreach ($config['nat']['rule'] as $rule) {
@@ -86,31 +86,6 @@ function deleteVIPEntry($id) {
         }
     }
 
-    if ($a_vip[$id]['mode'] == "ipalias") {
-        $subnet = gen_subnet($a_vip[$id]['subnet'], $a_vip[$id]['subnet_bits']) . "/" . $a_vip[$id]['subnet_bits'];
-        $found_if = false;
-        $found_carp = false;
-        $found_other_alias = false;
-
-        if ($subnet == $if_subnet)
-          $found_if = true;
-
-        $vipiface = $a_vip[$id]['interface'];
-        foreach ($a_vip as $vip_id => $vip) {
-            if ($vip_id != $id) {
-                if ($vip['interface'] == $vipiface && ip_in_subnet($vip['subnet'], $subnet)) {
-                    if ($vip['mode'] == "carp") {
-                        $found_carp = true;
-                    } else if ($vip['mode'] == "ipalias") {
-                        $found_other_alias = true;
-                    }
-                }
-            }
-        }
-        if ($found_carp === true && $found_other_alias === false && $found_if === false) {
-            $input_errors[] = sprintf(gettext("This entry cannot be deleted because it is still referenced by a CARP IP with the description %s."), $vip['descr']);
-        }
-    }
     if (count($input_errors) == 0) {
         // Special case since every proxyarp vip is handled by the same daemon.
         if ($a_vip[$id]['mode'] == "proxyarp") {
@@ -128,10 +103,7 @@ function deleteVIPEntry($id) {
     return $input_errors;
 }
 
-if (!isset($config['virtualip']['vip'])) {
-    $config['virtualip']['vip'] = array();
-}
-$a_vip = &$config['virtualip']['vip'];
+$a_vip = &config_read_array('virtualip', 'vip');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pconfig = $_POST;
@@ -263,6 +235,11 @@ $main_buttons = array(
       $("#action").val("move");
       $("#iform").submit();
     });
+
+    // select All
+    $("#selectAll").click(function(){
+        $(".rule_select").prop("checked", $(this).prop("checked"));
+    });
   });
   </script>
   <?php include("fbegin.inc"); ?>
@@ -284,10 +261,10 @@ $main_buttons = array(
             <form method="post" name="iform" id="iform">
               <input type="hidden" id="id" name="id" value="" />
               <input type="hidden" id="action" name="act" value="" />
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <thead>
                   <tr>
-                    <td></td>
+                    <td><input type="checkbox" id="selectAll"></td>
                     <td><?=gettext("Virtual IP address");?></td>
                     <td><?=gettext("Interface");?></td>
                     <td><?=gettext("Type");?></td>
@@ -304,7 +281,7 @@ $main_buttons = array(
                     if(!empty($vipent['subnet']) || !empty($vipent['range']) || !empty($vipent['subnet_bits']) || (isset($vipent['range']['from']) && !empty($vipent['range']['from']))): ?>
                   <tr ondblclick="document.location='firewall_virtual_ip_edit.php?id=<?=$i;?>';">
                     <td>
-                      <input type="checkbox" name="rule[]" value="<?=$i;?>"  />
+                      <input class="rule_select" type="checkbox" name="rule[]" value="<?=$i;?>"  />
                     </td>
                     <td>
                       <?=($vipent['type'] == "single" || $vipent['type'] == "network") && !empty($vipent['subnet_bits']) ? $vipent['subnet']."/".$vipent['subnet_bits'] : "";?>

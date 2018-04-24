@@ -3,7 +3,7 @@
 /*
     Copyright (C) 2015-2016 Franco Fichtner <franco@opnsense.org>
     Copyright (C) 2014 Deciso B.V.
-    Copyright (C) 2004 Scott Ullrich
+    Copyright (C) 2004 Scott Ullrich <sullrich@gmail.com>
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
     All rights reserved.
 
@@ -34,6 +34,7 @@ require_once("config.inc");
 
 /* CSRF BEGIN: CHECK MUST BE EXECUTED FIRST; NO EXCEPTIONS */
 require_once('csrf.inc');
+header('X-Frame-Options: SAMEORIGIN');
 /* CSRF END: THANK YOU FOR YOUR COOPERATION */
 
 function get_current_theme()
@@ -54,23 +55,6 @@ function html_safe($text)
     /* gettext() embedded in JavaScript can cause syntax errors */
     return htmlspecialchars($text, ENT_QUOTES | ENT_HTML401);
 }
-
-header("X-Frame-Options: SAMEORIGIN");
-
-/* set language */
-$lang = 'en_US';
-if (!empty($config['system']['language'])) {
-    $lang = $config['system']['language'];
-}
-
-$lang_encoding = $lang . '.UTF-8';
-$textdomain = 'OPNsense';
-
-putenv('LANG=' . $lang_encoding);
-setlocale(LC_ALL, $lang_encoding);
-textdomain($textdomain);
-bindtextdomain($textdomain, '/usr/local/share/locale');
-bind_textdomain_codeset($textdomain, $lang_encoding);
 
 require_once("authgui.inc");
 
@@ -253,7 +237,8 @@ function print_service_banner($service)
             }
             print_alert_box(
                 gettext('You are currently running in LiveCD mode. A reboot will reset the configuration.') .' ' .
-                (is_process_running('sshd') ? gettext('SSH remote login is enabled for the users "root" and ' .
+                (!isset($config['system']['ssh']['noauto']) && is_process_running('sshd') ?
+                gettext('SSH remote login is enabled for the users "root" and ' .
                 '"installer" using the same password.') : gettext('SSH remote login is disabled.'))
             );
         default:
@@ -261,20 +246,13 @@ function print_service_banner($service)
     }
 }
 
-function get_std_save_message()
+function get_std_save_message($raw = false)
 {
-    $filter_related = false;
-    $filter_pages = array("nat", "filter");
-    $to_return = gettext("The changes have been applied successfully.");
-    foreach($filter_pages as $fp) {
-        if (stristr($_SERVER['SCRIPT_FILENAME'], $fp)) {
-            $filter_related = true;
-        }
+    if ($raw == true) {
+        return 'The changes have been applied successfully.';
     }
-    if ($filter_related) {
-        $to_return .= "<br />" . gettext("You can also <a href=\"status_filter_reload.php\">monitor</a> the filter reload progress.");
-    }
-    return $to_return;
+
+    return gettext('The changes have been applied successfully.');
 }
 
 function get_specialnets($only_enabled=false)
@@ -415,7 +393,7 @@ function pconfig_to_address(&$adr, $padr, $pmask, $pnot=false, $pbeginport=0, $p
     if (is_alias($pbeginport)) {
         $adr['port'] = $pbeginport;
     } elseif (($pbeginport != 0) && ($pbeginport != "any")) {
-        if ($pbeginport != $pendport) {
+        if ($pbeginport != $pendport && !empty($pendport)) {
             $adr['port'] = $pbeginport . "-" . $pendport;
         } else {
             $adr['port'] = $pbeginport;
@@ -435,80 +413,6 @@ function is_specialnet($net)
         }
     }
     return false;
-}
-
-
-
-/****f* guiconfig/display_top_tabs
- * NAME
- *   display_top_tabs - display tabs with rounded edges
- * INPUTS
- *   $text      - array of tabs
- * RESULT
- *   null
- ******/
-function display_top_tabs(& $tab_array, $no_drop_down = false)
-{
-    global $config;
-
-    $tab_array_char_limit = 92;
-
-    /*  does the user have access to this tab?
-     *  master user has access to everything.
-     *  if the user does not have access, simply
-     *  unset the tab item.
-     */
-    foreach ($tab_array as $tab_id => $ta){
-        if (!isAllowedPage($ta[2])) {
-            unset ($tab_array[$tab_id]);
-        }
-    }
-
-    $tabcharcount = 0;
-    foreach ($tab_array as $ta) {
-        $tabcharcount = $tabcharcount + strlen($ta[0]);
-    }
-
-    if ($no_drop_down == true) {
-        $tabcharcount = 0;
-        unset($tab_array_char_limit);
-    }
-
-    // If the character count of the tab names is > 670
-    // then show a select item dropdown menubox.
-    if ($tabcharcount > $tab_array_char_limit) {
-        echo "<h2>".gettext("Currently viewing: ")."</h2>";
-        echo "<select class=\"selectpicker\" name=\"TabSelect\" onchange=\"tabs_will_go(this)\" data-live-search=\"true\" data-style=\"btn-default\">\n";
-        foreach ($tab_array as $ta) {
-            if ($ta[1]=="true") {
-                $selected = " selected=\"selected\"";
-            } else {
-                $selected = "";
-            }
-            // Onclick in option will not work in some browser
-            // echo "<option onclick=\"document.location='{$ta[2]}';\"{$selected}>{$ta['0']}</option>\n";
-            echo "<option value=\"{$ta[2]}\"{$selected}>{$ta['0']}</option>\n";
-        }
-        echo "</select>\n<p>&nbsp;</p>";
-        echo "<script type=\"text/javascript\">";
-        echo "\n//<![CDATA[\n";
-        echo " function tabs_will_go(obj){ document.location = obj.value; }\n";
-        echo "//]]>\n";
-        echo "</script>";
-    }  else {
-        echo "<!-- Tabbed bar code-->\n";
-        echo "<ul class=\"nav nav-tabs nav-justified\" role=\"tablist\">\n";
-        $tabscounter = 0;
-        foreach ($tab_array as $ta) {
-            if ($ta[1] == true) {
-                echo "  <li class=\"active\"><a href=\"{$ta[2]}\" role=\"tab\">{$ta[0]}</a></li>\n";
-            } else {
-                echo "  <li><a href=\"{$ta[2]}\" role=\"tab\">{$ta[0]}</a></li>\n";
-            }
-            $tabscounter++;
-        }
-        echo "</ul>\n";
-    }
 }
 
 $timezone = $config['system']['timezone'];

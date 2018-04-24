@@ -33,10 +33,7 @@ require_once("filter.inc");
 require_once("logs.inc");
 
 // init config and get reference
-if (!isset($config['nat']['rule']) || !is_array($config['nat']['rule'])) {
-    $config['nat']['rule'] = array();
-}
-$a_nat = &$config['nat']['rule'];
+$a_nat = &config_read_array('nat', 'rule');
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // load form data from config
@@ -62,8 +59,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['local-port'] = 80;
     if (isset($configId)) {
         // copy 1-on-1
-        foreach (array('protocol','target','local-port','descr','interface','associated-rule-id','nosync'
-                      ,'natreflection','created','updated','ipprotocol') as $fieldname) {
+        foreach (array('protocol','target','local-port','descr','interface','associated-rule-id','nosync',
+                      'natreflection','created','updated','ipprotocol','tag','tagged','poolopts') as $fieldname) {
             if (isset($a_nat[$configId][$fieldname])) {
                 $pconfig[$fieldname] = $a_nat[$configId][$fieldname];
             } else {
@@ -121,7 +118,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $pconfig['src'] = "any";
     }
     // init empty fields
-    foreach (array("dst","dstmask","srcmask","dstbeginport","dstendport","target","local-port","natreflection","descr","disabled","nosync", "ipprotocol") as $fieldname) {
+    foreach (array('dst','dstmask','srcmask','dstbeginport','dstendport','target',
+        'local-port','natreflection','descr','disabled','nosync','ipprotocol',
+        'tag','tagged','poolopts') as $fieldname) {
         if (!isset($pconfig[$fieldname])) {
             $pconfig[$fieldname] = null;
         }
@@ -159,8 +158,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     do_input_validation($pconfig, $reqdfields, $reqdfieldsn, $input_errors);
 
-    if (!isset($pconfig['nordr']) && ($pconfig['target'] && !is_ipaddroralias($pconfig['target']))) {
-        $input_errors[] = sprintf(gettext("\"%s\" is not a valid redirect target IP address or host alias."), $pconfig['target']);
+    if (!isset($pconfig['nordr']) && ($pconfig['target'] && !is_ipaddroralias($pconfig['target']) && !is_subnet($pconfig['target']))) {
+        $input_errors[] = sprintf(gettext("\"%s\" is not a valid redirect target IP address, network or host alias."), $pconfig['target']);
     }
     if (!empty($pconfig['srcbeginport']) && $pconfig['srcbeginport'] != 'any' && !is_portoralias($pconfig['srcbeginport']))
         $input_errors[] = sprintf(gettext("%s is not a valid start source port. It must be a port alias or integer between 1 and 65535."), $pconfig['srcbeginport']);
@@ -217,12 +216,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $natent['interface'] = $pconfig['interface'];
         $natent['ipprotocol'] = $pconfig['ipprotocol'];
         $natent['descr'] = $pconfig['descr'];
+        $natent['tag'] = $pconfig['tag'];
+        $natent['tagged'] = $pconfig['tagged'];
+        $natent['poolopts'] = $pconfig['poolopts'];
+
         if (!empty($pconfig['associated-rule-id'])) {
             $natent['associated-rule-id'] = $pconfig['associated-rule-id'];
         } else {
             $natent['associated-rule-id'] = null;
         }
-
 
         // form processing logic
         $natent['disabled'] = !empty($pconfig['disabled']) ? true:false;
@@ -312,7 +314,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 if ($filterentid === false) {
                     $filterent['associated-rule-id'] = $natent['associated-rule-id'];
                 } else {
-                    $filterent =& $config['filter']['rule'][$filterentid];
+                    $filterent = &config_read_array('filter', 'rule', $filterentid);
                 }
             }
             pconfig_to_address($filterent['source'], $pconfig['src'],
@@ -425,9 +427,12 @@ $( document ).ready(function() {
     $("#nordr").change(function(){
         if ($("#nordr").prop('checked')) {
           $(".act_no_rdr").addClass("hidden");
+          $(".act_no_rdr :input").prop( "disabled", true );
         } else {
           $(".act_no_rdr").removeClass("hidden");
+          $(".act_no_rdr :input").prop( "disabled", false );
         }
+        $(".act_no_rdr .selectpicker").selectpicker('refresh');
     });
 
     // trigger initial form change
@@ -491,6 +496,19 @@ $( document ).ready(function() {
         $('#dstendport').prop('selectedIndex', $("#dstbeginport").prop('selectedIndex') );
         $('#dstendport').selectpicker('refresh');
         $('#dstendport').change();
+        // on new entry, align redirect target port to dst target
+        if ($("#entryid").length == 0) {
+            $('#localbeginport').prop('selectedIndex', $("#dstbeginport").prop('selectedIndex') );
+            $('#localbeginport').change();
+        }
+    });
+
+    $("input[for='dstbeginport']").change(function(){
+        // on new entry, align redirect target port to dst target
+        if ($("#entryid").length == 0) {
+            $("input[for='localbeginport']").val($(this).val());
+            $("input[for='localbeginport']").change();
+        }
     });
 
     // IPv4/IPv6 select
@@ -507,7 +525,7 @@ $( document ).ready(function() {
         <section class="col-xs-12">
           <div class="content-box">
             <form method="post" name="iform" id="iform">
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <tr>
                   <td width="22%"><?=gettext("Edit Redirect entry"); ?></td>
                   <td  width="78%" align="right">
@@ -520,8 +538,10 @@ $( document ).ready(function() {
                   <td>
                     <input name="disabled" type="checkbox" id="disabled" value="yes" <?= !empty($pconfig['disabled']) ? "checked=\"checked\"" : ""; ?> />
                     <div class="hidden" for="help_for_disabled">
+                      <small class="formhelp">
                       <strong><?=gettext("Disable this rule"); ?></strong><br />
                       <?=gettext("Set this option to disable this rule without removing it from the list."); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -530,8 +550,10 @@ $( document ).ready(function() {
                   <td>
                     <input type="checkbox" name="nordr" id="nordr" <?= !empty($pconfig['nordr']) ? "checked=\"checked\"" : ""; ?> />
                     <div class="hidden" for="help_for_nordr">
+                      <small class="formhelp">
                       <?=gettext("Enabling this option will disable redirection for traffic matching this rule."); ?>
                       <br /><?=gettext("Hint: this option is rarely needed, don't use this unless you know what you're doing."); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -549,8 +571,10 @@ $( document ).ready(function() {
                       </select>
                     </div>
                     <div class="hidden" for="help_for_interface">
+                      <small class="formhelp">
                       <?=gettext("Choose which interface this rule applies to."); ?><br />
                       <?=gettext("Hint: in most cases, you'll want to use WAN here."); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -567,7 +591,9 @@ $( document ).ready(function() {
                     endforeach; ?>
                     </select>
                     <div class="hidden" for="help_for_ipv46">
+                      <small class="formhelp">
                       <?=gettext("Select the Internet Protocol version this rule applies to");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -585,8 +611,10 @@ $( document ).ready(function() {
               </select>
                     </div>
                     <div class="hidden" for="help_for_proto">
+                      <small class="formhelp">
                       <?=gettext("Choose which IP protocol " ."this rule should match."); ?><br/>
                       <?=gettext("Hint: in most cases, you should specify"); ?> <em><?=gettext("TCP"); ?></em> &nbsp;<?=gettext("here."); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -595,7 +623,9 @@ $( document ).ready(function() {
                   <td>
                     <input type="button" class="btn btn-default" value="<?=gettext("Advanced"); ?>" id="showadvancedboxsrc" />
                     <div class="hidden" for="help_for_source">
+                      <small class="formhelp">
                       <?=gettext("Show source address and port range"); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -604,7 +634,9 @@ $( document ).ready(function() {
                     <td>
                       <input name="srcnot" type="checkbox" id="srcnot" value="yes" <?= !empty($pconfig['srcnot']) ? "checked=\"checked\"" : "";?> />
                       <div class="hidden" for="help_for_src_invert">
+                        <small class="formhelp">
                         <?=gettext("Use this option to invert the sense of the match."); ?>
+                        </small>
                       </div>
                     </td>
                 </tr>
@@ -705,11 +737,13 @@ $( document ).ready(function() {
                       </tbody>
                     </table>
                     <div class="hidden" for="help_for_srcport">
+                      <small class="formhelp">
                       <?=gettext("When using the TCP or UDP protocols, specify the source port or port range for this rule"); ?>.
                       <b><?=gettext("This is usually"); ?>
                         <em><?=gettext("random"); ?></em>
                          <?=gettext("and almost never equal to the destination port range (and should usually be 'any')"); ?>.
                        </b>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -718,7 +752,9 @@ $( document ).ready(function() {
                   <td>
                     <input name="dstnot" type="checkbox" id="dstnot" value="yes" <?= !empty($pconfig['dstnot']) ? "checked=\"checked\"" : "";?> />
                     <div class="hidden" for="help_for_dst_invert">
+                      <small class="formhelp">
                       <?=gettext("Use this option to invert the sense of the match."); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -849,7 +885,9 @@ $( document ).ready(function() {
                       </tbody>
                     </table>
                     <div class="hidden" for="help_for_dstport">
+                      <small class="formhelp">
                       <?=gettext("When using the TCP or UDP protocols, specify the port or port range for the destination of the packet for this mapping."); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -860,7 +898,7 @@ $( document ).ready(function() {
                       <tr>
                         <td>
                           <select name="target" id="target" class="selectpicker" data-live-search="true" data-size="5" data-width="auto">
-                            <option data-other=true value="<?=$pconfig['target'];?>" <?=!is_alias($pconfig['target']) ? "selected=\"selected\"" : "";?>><?=gettext("Single host"); ?></option>
+                            <option data-other=true value="<?=$pconfig['target'];?>" <?=!is_alias($pconfig['target']) ? "selected=\"selected\"" : "";?>><?=gettext("Single host or Network"); ?></option>
                             <optgroup label="<?=gettext("Aliases");?>">
 <?php
                               foreach (legacy_list_aliases("network") as $alias):?>
@@ -881,9 +919,11 @@ $( document ).ready(function() {
                       </tr>
                     </table>
                     <div class="hidden" for="help_for_localip">
+                      <small class="formhelp">
                       <?=gettext("Enter the internal IP address of " .
                       "the server on which you want to map the ports."); ?><br/>
                       <?=gettext("e.g."); ?> <em>192.168.1.12</em>
+                      </small>
                     </div>
                 </tr>
                 <tr class="act_no_rdr">
@@ -918,11 +958,51 @@ $( document ).ready(function() {
                       </tbody>
                     </table>
                     <div class="hidden" for="help_for_localbeginport">
+                      <small class="formhelp">
                       <?=gettext("Specify the port on the machine with the " .
                       "IP address entered above. In case of a port range, specify " .
                       "the beginning port of the range (the end port will be calculated " .
                       "automatically)."); ?><br />
                       <?=gettext("Hint: this is usually identical to the 'from' port above"); ?>
+                      </small>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="act_no_rdr">
+                  <td><a id="help_for_poolopts" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Pool Options:");?></td>
+                  <td>
+                    <select name="poolopts" class="selectpicker">
+                      <option value="" <?=empty($pconfig['poolopts']) ? "selected=\"selected\"" : ""; ?>>
+                        <?=gettext("Default");?>
+                      </option>
+                      <option value="round-robin" <?=$pconfig['poolopts'] == "round-robin" ? "selected=\"selected\"" : ""; ?>>
+                        <?=gettext("Round Robin");?>
+                      </option>
+                      <option value="round-robin sticky-address" <?=$pconfig['poolopts'] == "round-robin sticky-address" ? "selected=\"selected\"" : ""; ?>>
+                        <?=gettext("Round Robin with Sticky Address");?>
+                      </option>
+                      <option value="random" <?=$pconfig['poolopts'] == "random" ? "selected=\"selected\"" : ""; ?>>
+                        <?=gettext("Random");?>
+                      </option>
+                      <option value="random sticky-address" <?=$pconfig['poolopts'] == "random sticky-address" ? "selected=\"selected\"" : ""; ?>>
+                        <?=gettext("Random with Sticky Address");?>
+                      </option>
+                      <option value="source-hash" <?=$pconfig['poolopts'] == "source-hash" ? "selected=\"selected\"" : ""; ?>>
+                        <?=gettext("Source Hash");?>
+                      </option>
+                      <option value="bitmask" <?=$pconfig['poolopts'] == "bitmask" ? "selected=\"selected\"" : ""; ?>>
+                        <?=gettext("Bitmask");?>
+                      </option>
+                    </select>
+                    <div class="hidden" for="help_for_poolopts">
+                      <small class="formhelp">
+                      <?=gettext("Only Round Robin types work with Host Aliases. Any type can be used with a Subnet.");?><br />
+                      * <?=gettext("Round Robin: Loops through the translation addresses.");?><br />
+                      * <?=gettext("Random: Selects an address from the translation address pool at random.");?><br />
+                      * <?=gettext("Source Hash: Uses a hash of the source address to determine the translation address, ensuring that the redirection address is always the same for a given source.");?><br />
+                      * <?=gettext("Bitmask: Applies the subnet mask and keeps the last portion identical; 10.0.1.50 -&gt; x.x.x.50.");?><br />
+                      * <?=gettext("Sticky Address: The Sticky Address option can be used with the Random and Round Robin pool types to ensure that a particular source address is always mapped to the same translation address.");?><br />
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -931,15 +1011,41 @@ $( document ).ready(function() {
                   <td>
                     <input name="descr" type="text" class="formfld unknown" id="descr" size="40" value="<?=$pconfig['descr'];?>" />
                     <div class="hidden" for="help_for_descr">
+                      <small class="formhelp">
                       <?=gettext("You may enter a description here " ."for your reference (not parsed)."); ?>
+                      </small>
                     </div>
+                </tr>
+                <tr>
+                    <td><a id="help_for_tag" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a>  <?=gettext("Set local tag"); ?></td>
+                    <td>
+                      <input name="tag" type="text" value="<?=$pconfig['tag'];?>" />
+                      <div class="hidden" for="help_for_tag">
+                        <small class="formhelp">
+                        <?= gettext("You can mark a packet matching this rule and use this mark to match on other NAT/filter rules.") ?>
+                        </small>
+                      </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td><a id="help_for_tagged" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Match local tag"); ?>   </td>
+                    <td>
+                      <input name="tagged" type="text" value="<?=$pconfig['tagged'];?>" />
+                      <div class="hidden" for="help_for_tagged">
+                        <small class="formhelp">
+                        <?=gettext("You can match packet on a mark placed before on another rule.")?>
+                        </small>
+                      </div>
+                    </td>
                 </tr>
                 <tr>
                   <td><a id="help_for_nosync" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a>  <?=gettext("No XMLRPC Sync"); ?></td>
                   <td>
                     <input type="checkbox" value="yes" name="nosync" <?=!empty($pconfig['nosync']) ? "checked=\"checked\"" :"";?> />
                     <div class="hidden" for="help_for_nosync">
+                      <small class="formhelp">
                       <?=gettext("Hint: This prevents the rule on Master from automatically syncing to other CARP members. This does NOT prevent the rule from being overwritten on Slave.");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -994,7 +1100,9 @@ $( document ).ready(function() {
                       <option value="pass"><?=gettext("Pass"); ?></option>
                     </select>
                     <div class="hidden" for="help_for_fra">
+                      <small class="formhelp">
                       <?=gettext("NOTE: The \"pass\" selection does not work properly with Multi-WAN. It will only work on an interface containing the default gateway.")?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -1040,7 +1148,7 @@ $( document ).ready(function() {
                     <input name="Submit" type="submit" class="btn btn-primary" value="<?=gettext("Save"); ?>" />
                     <input type="button" class="btn btn-default" value="<?=gettext("Cancel");?>" onclick="window.location.href='/firewall_nat.php'" />
                     <?php if (isset($id)): ?>
-                    <input name="id" type="hidden" value="<?=$id;?>" />
+                    <input id="entryid" name="id" type="hidden" value="<?=$id;?>" />
                     <?php endif; ?>
                     <?php if (isset($after)) : ?>
                     <input name="after" type="hidden" value="<?=$after;?>" />

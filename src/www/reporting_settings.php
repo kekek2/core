@@ -3,7 +3,7 @@
 /*
     Copyright (C) 2014-2015 Deciso B.V.
     Copyright (C) 2007 Seth Mos <seth.mos@dds.nl>
-    Copyright (C) 2004-2009 Scott Ullrich
+    Copyright (C) 2004-2009 Scott Ullrich <sullrich@gmail.com>
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
     All rights reserved.
 
@@ -35,27 +35,29 @@ require_once("rrd.inc");
 require_once("system.inc");
 require_once("services.inc");
 
+$rrdcfg = &config_read_array('rrd');
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = array();
-    $pconfig['rrdenable'] = isset($config['rrd']['enable']);
+    $pconfig['rrdenable'] = isset($rrdcfg['enable']);
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pconfig = $_POST;
-    if (!empty($_POST['action']) && $_POST['action'] == "ResetRRD") {
+    if (!empty($pconfig['action']) && $pconfig['action'] == "ResetRRD") {
         $savemsg = gettext('RRD data has been cleared.');
         configd_run("systemhealth flush *");
-    } elseif (!empty($_POST['action']) && $_POST['action'] == "flush_file") {
+    } elseif (!empty($pconfig['action']) && $pconfig['action'] == "flush_file") {
         $savemsg = gettext('RRD report has been cleared.');
-        configd_run("systemhealth flush ". escapeshellarg($_POST['filename']));
-    } elseif (!empty($_POST['action']) && $_POST['action'] == "flush_netflow") {
+        configd_run("systemhealth flush ". escapeshellarg($pconfig['filename']));
+    } elseif (!empty($pconfig['action']) && $pconfig['action'] == "flush_netflow") {
         $savemsg = gettext('All local netflow data has been cleared.');
         configd_run("netflow flush");
     } else {
-        $config['rrd']['enable'] = !empty($_POST['rrdenable']);
+        $rrdcfg['enable'] = !empty($pconfig['rrdenable']);
         $savemsg = get_std_save_message();
         write_config();
     }
 
-    enable_rrd_graphing();
+    rrd_configure();
     setup_gateways_monitor();
 }
 
@@ -64,12 +66,12 @@ if (!is_array($all_rrd_files)) {
     $all_rrd_files = array();
 }
 ksort($all_rrd_files);
+
 legacy_html_escape_form_data($pconfig);
 
 include("head.inc");
+
 ?>
-
-
 <body>
 <script type="text/javascript">
 //<![CDATA[
@@ -219,4 +221,6 @@ $(document).ready(function() {
       </div>
     </div>
   </section>
-<?php include("foot.inc"); ?>
+<?php
+
+include("foot.inc");

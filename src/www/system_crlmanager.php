@@ -2,7 +2,7 @@
 
 /*
     Copyright (C) 2014-2015 Deciso B.V.
-    Copyright (C) 2010 Jim Pingle
+    Copyright (C) 2010 Jim Pingle <jimp@pfsense.org>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -28,42 +28,10 @@
 */
 
 require_once('guiconfig.inc');
-require_once('openvpn.inc');
+require_once('services.inc');
 
-function openvpn_refresh_crls()
+function cert_unrevoke($cert, &$crl)
 {
-    global $config;
-
-    openvpn_create_dirs();
-
-    if (isset($config['openvpn']['openvpn-server']) && is_array($config['openvpn']['openvpn-server'])) {
-        foreach ($config['openvpn']['openvpn-server'] as $settings) {
-            if (empty($settings) || isset($settings['disable'])) {
-                continue;
-            }
-            // Write the settings for the keys
-            switch($settings['mode']) {
-                case 'p2p_tls':
-                case 'server_tls':
-                case 'server_tls_user':
-                case 'server_user':
-                    if (!empty($settings['crlref'])) {
-                        $crl = lookup_crl($settings['crlref']);
-                        crl_update($crl);
-                        $fpath = "/var/etc/openvpn/server{$settings['vpnid']}.crl-verify";
-                        file_put_contents($fpath, base64_decode($crl['text']));
-                        @chmod($fpath, 0644);
-                    }
-                    break;
-            }
-        }
-    }
-}
-
-
-
-function cert_unrevoke($cert, & $crl) {
-    global $config;
     if (!is_crl_internal($crl)) {
         return false;
     }
@@ -83,26 +51,18 @@ function cert_unrevoke($cert, & $crl) {
             return true;
         }
     }
+
     return false;
 }
-// openssl_crl_status messages from certs.inc
-global $openssl_crl_status;
 
 // prepare config types
-if (!isset($config['ca']) || !is_array($config['ca'])) {
-    $config['ca'] = array();
-}
-if (!isset($config['cert']) || !is_array($config['cert'])) {
-    $config['cert'] = array();
-}
-if (!isset($config['crl']) || !is_array($config['crl'])) {
-    $config['crl'] = array();
-}
-$a_crl =& $config['crl'];
-
+$a_crl = &config_read_array('crl');
+$a_cert = &config_read_array('cert');
+$a_ca = &config_read_array('ca');
 
 $thiscrl = false;
-$act=null;
+$act = null;
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // locate cert by refid, returns false when not found
     if (isset($_GET['id'])) {
@@ -369,7 +329,7 @@ include("head.inc");
         if ($act == "new") :?>
           <form method="post" name="iform" id="iform">
             <input type="hidden" name="act" id="action" value="<?=$act;?>"/>
-            <table class="table table-striped opnsense_standard_table_form">
+            <table class="table table-clean-form opnsense_standard_table_form">
 <?php
               if (!isset($id)) :?>
               <tr>
@@ -394,7 +354,7 @@ include("head.inc");
                 <td>
                   <select name='caref' id='caref' class="selectpicker">
 <?php
-                  foreach ($config['ca'] as $ca):?>
+                  foreach ($a_ca as $ca):?>
                     <option value="<?=$ca['refid'];?>" <?=$pconfig['caref'] == $ca['refid'] ? "selected=\"selected\"" : "";?>>
                       <?=htmlentities($ca['descr']);?>
                     </option>
@@ -405,7 +365,7 @@ include("head.inc");
               </tr>
             </table>
             <!-- import existing -->
-            <table id="existing" class="table table-striped opnsense_standard_table_form">
+            <table id="existing" class="table table-clean-form opnsense_standard_table_form">
               <thead>
                 <tr>
                   <th colspan="2"><?=gettext("Existing Certificate Revocation List");?></th>
@@ -417,14 +377,16 @@ include("head.inc");
                   <td width="78%">
                     <textarea name="crltext" id="crltext" cols="65" rows="7" class="formfld_crl"><?=$pconfig['crltext'];?></textarea>
                     <div class="hidden" for="help_for_crltext">
+                      <small class="formhelp">
                       <?=gettext("Paste a Certificate Revocation List in X.509 CRL format here.");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
               </tbody>
             </table>
             <!-- create internal -->
-            <table id="internal" class="table table-striped opnsense_standard_table_form">
+            <table id="internal" class="table table-clean-form opnsense_standard_table_form">
               <thead>
                 <tr>
                   <th colspan="2"><?=gettext("Internal Certificate Revocation List");?></th>
@@ -436,7 +398,9 @@ include("head.inc");
                   <td width="78%">
                     <input name="lifetime" type="text" id="lifetime" size="5" value="<?=$pconfig['lifetime'];?>"/>
                     <div class="hidden" for="help_for_lifetime">
+                      <small class="formhelp">
                       <?=gettext("Default: 9999");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -445,14 +409,16 @@ include("head.inc");
                   <td>
                     <input name="serial" type="text" id="serial" size="5" value="<?=$pconfig['serial'];?>"/>
                     <div class="hidden" for="help_for_serial">
+                      <small class="formhelp">
                       <?=gettext("Default: 0");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
               </tbody>
             </table>
 
-            <table class="table table-striped opnsense_standard_table_form">
+            <table class="table table-clean-form opnsense_standard_table_form">
               <tr>
                 <td width="22%">&nbsp;</td>
                 <td width="78%">
@@ -469,7 +435,7 @@ include("head.inc");
 <?php
           elseif ($act == "editimported") :?>
           <form method="post" name="iform" id="iform">
-            <table id="editimported" class="table table-striped opnsense_standard_table_form">
+            <table id="editimported" class="table table-clean-form opnsense_standard_table_form">
               <tr>
                 <th colspan="2"><?=gettext("Edit Imported Certificate Revocation List");?></th>
               </tr>
@@ -484,7 +450,9 @@ include("head.inc");
                 <td>
                   <textarea name="crltext" id="crltext" cols="65" rows="7" class="formfld_crl"><?=$thiscrl['text'];?></textarea>
                   <div class="hidden" for="help_for_crltext">
+                    <small class="formhelp">
                     <?=gettext("Paste a Certificate Revocation List in X.509 CRL format here.");?>
+                    </small>
                   </div>
                 </td>
               </tr>
@@ -528,7 +496,7 @@ include("head.inc");
                 </tr>
 <?php
               else :
-                foreach ($thiscrl['cert'] as $i => $cert) :?>
+                foreach ($thiscrl['cert'] as $cert) :?>
                 <tr>
                   <td><?=$cert['descr']; ?></td>
                   <td><?=$openssl_crl_status[$cert["reason"]]; ?></td>
@@ -543,9 +511,20 @@ include("head.inc");
                 endforeach;
               endif;
               $ca_certs = array();
-              foreach ($config['cert'] as $cert) {
-                  if (isset($cert['caref']) && isset($thiscrl['caref'])  && $cert['caref'] == $thiscrl['caref']) {
-                      $ca_certs[] = $cert;
+              foreach ($a_cert as $cert) {
+                  if (isset($cert['caref']) && isset($thiscrl['caref']) && $cert['caref'] == $thiscrl['caref']) {
+                      $revoked = false;
+                      if (isset($thiscrl['cert'])) {
+                          foreach ($thiscrl['cert'] as $revoked_cert) {
+                              if ($cert['refid'] == $revoked_cert['refid']) {
+                                  $revoked = true;
+                                  break;
+                              }
+                          }
+                      }
+                      if (!$revoked) {
+                          $ca_certs[] = $cert;
+                      }
                   }
               }
               if (count($ca_certs) == 0) :?>
@@ -600,7 +579,7 @@ include("head.inc");
           </form>
 <?php
           else :?>
-          <form method="post" id="iform" class="table table-striped">
+          <form method="post" id="iform" class="table table-clean-form">
             <input type="hidden" name="id" id="id" value=""/>
             <input type="hidden" name="act" id="action" value=""/>
             <table class="table table-striped">
@@ -621,7 +600,7 @@ include("head.inc");
                     $ca_crl_map[$crl['caref']][] = $crl['refid'];
                 }
 
-                foreach ($config['ca'] as $ca) :?>
+                foreach ($a_ca as $ca) :?>
                 <tr>
                   <td colspan="4"> <?=htmlspecialchars($ca['descr']);?></td>
                   <td>
@@ -648,7 +627,7 @@ include("head.inc");
                 <tr>
                   <td><?=htmlspecialchars($tmpcrl['descr']); ?></td>
                   <td><?=$internal ? gettext("YES") : gettext("NO"); ?></td>
-                  <td><?=$internal ? (isset($tmpcrl['cert']) && count($tmpcrl['cert'])) : gettext("Unknown (imported)"); ?></td>
+                  <td><?=$internal ? (isset($tmpcrl['cert']) ? count($tmpcrl['cert']) : 0) : gettext("Unknown (imported)"); ?></td>
                   <td><?=$inuse ? gettext("YES") : gettext("NO"); ?></td>
                   <td>
                     <a href="system_crlmanager.php?act=exp&amp;id=<?=$tmpcrl['refid'];?>" class="btn btn-default btn-xs">

@@ -30,16 +30,9 @@
 require_once("guiconfig.inc");
 require_once("system.inc");
 require_once("interfaces.inc");
-require_once("openvpn.inc");
 require_once("services.inc");
 
-if (!isset($config['vlans']) || !is_array($config['vlans'])) {
-    $config['vlans'] = array();
-}
-if (!isset($config['vlans']['vlan']) || !is_array($config['vlans']['vlan'])) {
-    $config['vlans']['vlan'] = array();
-}
-$a_vlans = &$config['vlans']['vlan'];
+$a_vlans = &config_read_array('vlans', 'vlan');
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // read form data
@@ -49,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['if'] = isset($a_vlans[$id]['if']) ? $a_vlans[$id]['if'] : null;
     $pconfig['vlanif'] = isset($a_vlans[$id]['vlanif']) ? $a_vlans[$id]['vlanif'] : null;
     $pconfig['tag'] = isset($a_vlans[$id]['tag']) ? $a_vlans[$id]['tag'] : null;
+    $pconfig['pcp'] = isset($a_vlans[$id]['pcp']) ? $a_vlans[$id]['pcp'] : 0;
     $pconfig['descr'] = isset($a_vlans[$id]['descr']) ? $a_vlans[$id]['descr'] : null;
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // validate / save form data
@@ -67,6 +61,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     if ($pconfig['tag'] && (!is_numericint($pconfig['tag']) || ($pconfig['tag'] < '1') || ($pconfig['tag'] > '4094'))) {
         $input_errors[] = gettext("The VLAN tag must be an integer between 1 and 4094.");
+    }
+
+    if (isset($pconfig['pcp']) && (!is_numericint($pconfig['pcp']) || $pconfig['pcp'] < 0 || $pconfig['pcp'] > 7)) {
+        $input_errors[] = gettext("The VLAN priority must be an integer between 0 and 7.");
     }
 
     if (!does_interface_exist($pconfig['if'])) {
@@ -99,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (count($input_errors) == 0) {
         $confif = "";
         if (isset($id)) {
-            if (($a_vlans[$id]['if'] != $pconfig['if']) || ($a_vlans[$id]['tag'] != $pconfig['tag'])) {
+            if (($a_vlans[$id]['if'] != $pconfig['if']) || ($a_vlans[$id]['tag'] != $pconfig['tag']) || ($a_vlans[$id]['pcp'] != $pconfig['pcp'])) {
                 if (!empty($a_vlans[$id]['vlanif'])) {
                     $confif = convert_real_interface_to_friendly_interface_name($a_vlans[$id]['vlanif']);
                     legacy_interface_destroy($a_vlans[$id]['vlanif']);
@@ -115,6 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $vlan = array();
         $vlan['if'] = $_POST['if'];
         $vlan['tag'] = $_POST['tag'];
+        $vlan['pcp'] = $pconfig['pcp'];
         $vlan['descr'] = $_POST['descr'];
         $vlan['vlanif'] = "{$_POST['if']}_vlan{$_POST['tag']}";
         $vlan['vlanif'] = interface_vlan_configure($vlan);
@@ -151,7 +150,7 @@ include("head.inc");
         <div class="content-box">
           <div class="table-responsive">
             <form method="post" name="iform" id="iform">
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <thead>
                   <tr>
                     <td width="22%"><strong><?=gettext("Interface VLAN Edit");?></strong></td>
@@ -180,14 +179,24 @@ include("head.inc");
                             continue;
                         }?>
                         <option value="<?=$ifn;?>" <?=$ifn == $pconfig['if'] ? " selected=\"selected\"" : "";?>>
-                          <?=htmlspecialchars($ifn);?>  ( <?= !empty($ifinfo['mac']) ? $ifinfo['mac'] :"" ;?> )
+                          <?=htmlspecialchars($ifn);?>
+                          ( <?= !empty($ifinfo['mac']) ? $ifinfo['mac'] :"" ;?> )
+<?php
+                          if (!empty($ifinfo['friendly'])):?>
+                          [
+                          <?=!empty($config['interfaces'][$ifinfo['friendly']]['descr']) ? htmlspecialchars($config['interfaces'][$ifinfo['friendly']]['descr']) : $ifinfo['friendly'];?>
+                          ]
+<?php
+                          endif;?>
                         </option>
 <?php
                       endforeach;?>
 
                       </select>
                       <div class="hidden" for="help_for_if">
+                        <small class="formhelp">
                         <?=gettext("Only VLAN capable interfaces will be shown.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -196,7 +205,24 @@ include("head.inc");
                     <td>
                       <input name="tag" type="text" value="<?=$pconfig['tag'];?>" />
                       <div class="hidden" for="help_for_tag">
+                        <small class="formhelp">
                         <?=gettext("802.1Q VLAN tag (between 1 and 4094)");?>
+                        </small>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><a id="help_for_pcp" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("VLAN priority");?></td>
+                    <td>
+                      <select name="pcp">
+<? foreach (interfaces_vlan_priorities() as $pcp => $priority): ?>
+                        <option value="<?=$pcp;?>"<?=($pconfig['pcp'] == $pcp ? ' selected="selected"' : '');?>><?=htmlspecialchars($priority);?></option>
+<? endforeach ?>
+                      </select>
+                      <div class="hidden" for="help_for_pcp">
+                        <small class="formhelp">
+                        <?=gettext('802.1Q VLAN PCP (priority code point)');?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -205,7 +231,9 @@ include("head.inc");
                     <td>
                       <input name="descr" type="text" value="<?=$pconfig['descr'];?>" />
                       <div class="hidden" for="help_for_descr">
+                        <small class="formhelp">
                         <?=gettext("You may enter a description here for your reference (not parsed).");?>
+                        </small>
                       </div>
                     </td>
                   </tr>

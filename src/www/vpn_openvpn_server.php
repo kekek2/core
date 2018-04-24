@@ -2,7 +2,7 @@
 
 /*
     Copyright (C) 2014-2015 Deciso B.V.
-    Copyright (C) 2008 Shrew Soft Inc.
+    Copyright (C) 2008 Shrew Soft Inc. <mgrooms@shrew.net>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -28,14 +28,11 @@
 */
 
 require_once("guiconfig.inc");
-require_once("openvpn.inc");
+require_once("plugins.inc.d/openvpn.inc");
 require_once("services.inc");
 require_once("interfaces.inc");
 
-if (!isset($config['openvpn']['openvpn-server'])) {
-    $config['openvpn']['openvpn-server'] = array();
-}
-$a_server = &$config['openvpn']['openvpn-server'];
+$a_server = &config_read_array('openvpn', 'openvpn-server');
 
 $act = null;
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -67,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             ,serverbridge_interface,serverbridge_dhcp_start,serverbridge_dhcp_end
             ,dns_server1,dns_server2,dns_server3,dns_server4,ntp_server1
             ,ntp_server2,netbios_enable,netbios_ntype,netbios_scope,wins_server1
-            ,wins_server2,no_tun_ipv6,push_register_dns,dns_domain
+            ,wins_server2,no_tun_ipv6,push_register_dns,dns_domain,local_group
             ,client_mgmt_port,verbosity_level,caref,crlref,certref,dh_length
             ,cert_depth,strictusercn,digest,disable,duplicate_cn,vpnid,reneg-sec,use-common-name";
 
@@ -149,8 +146,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             } else {
                 $a_server[$id]['disable'] = true;
             }
-            openvpn_resync('server', $a_server[$id]);
             write_config();
+            openvpn_configure_single($a_server[$id]['vpnid']);
         }
         header(url_safe('Location: /vpn_openvpn_server.php'));
         exit;
@@ -318,7 +315,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $input_errors[] = gettext("The Server Bridge DHCP range is invalid (start higher than end).");
             }
         }
-        if (!empty($pconfig['reneg-sec']) && (string)((int)$pconfig['reneg-sec']) != $pconfig['reneg-sec']) {
+        if (isset($pconfig['reneg-sec']) && $pconfig['reneg-sec'] != "" && (string)((int)$pconfig['reneg-sec']) != $pconfig['reneg-sec']) {
             $input_errors[] = gettext("Renegotiate time should contain a valid number of seconds.");
         }
         do_input_validation($pconfig, $reqdfields, $reqdfieldsn, $input_errors);
@@ -335,7 +332,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $copy_fields = "mode,protocol,dev_mode,local_port,description,crypto,digest,engine
                 ,tunnel_network,tunnel_networkv6,remote_network,remote_networkv6
                 ,gwredir,local_network,local_networkv6,maxclients,compression
-                ,passtos,client2client,dynamic_ip,pool_enable,topology_subnet
+                ,passtos,client2client,dynamic_ip,pool_enable,topology_subnet,local_group
                 ,serverbridge_dhcp,serverbridge_interface,serverbridge_dhcp_start
                 ,serverbridge_dhcp_end,dns_domain,dns_server1,dns_server2,dns_server3
                 ,dns_server4,push_register_dns,ntp_server1,ntp_server2,netbios_enable
@@ -401,9 +398,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $a_server[] = $server;
             }
 
-            openvpn_resync('server', $server);
             write_config();
-            openvpn_resync_csc(); // dump client specific overrides, the required set may have changed
+
+            openvpn_configure_single($server['vpnid']);
+            openvpn_configure_csc();
 
             header(url_safe('Location: /vpn_openvpn_server.php'));
             exit;
@@ -606,8 +604,7 @@ $( document ).ready(function() {
                     </tr>
                     <tr>
                       <td class="vncellreq">
-                        <a id="help_for_disable" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a>
-                        <b><?=gettext("Disabled"); ?></b>
+                        <a id="help_for_disable" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Disabled"); ?>
                       </td>
                       <td>
                         <div>
@@ -618,6 +615,17 @@ $( document ).ready(function() {
                         <?=gettext("Set this option to disable this server without removing it from the list"); ?>.
                           </small>
                         </div >
+                      </td>
+                    </tr>
+                    <tr>
+                      <td width="22%" ><a id="help_for_description" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description"); ?></td>
+                      <td>
+                        <input name="description" type="text" class="form-control unknown" size="30" value="<?=htmlspecialchars($pconfig['description']);?>" />
+                        <div class="hidden" for="help_for_description">
+                        <small class="helpform">
+                            <?=gettext("You may enter a description here for your reference (not parsed)"); ?>.
+                        </small>
+                        </div>
                       </td>
                     </tr>
                     <tr>
@@ -662,6 +670,24 @@ $( document ).ready(function() {
 <?php
                         endforeach; ?>
                         </select>
+                      </td>
+                    </tr>
+                    <tr class="opt_mode opt_mode_server_user opt_mode_server_tls_user" style="display:none">
+                      <td><a id="help_for_local_group" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('Enforce local group') ?></td>
+                      <td>
+                        <select name='local_group' id="local_group" class="form-control">
+                          <option value="" <?= empty($pconfig['local_group']) ? 'selected="selected"' : '' ?>>(<?= gettext('none') ?>)</option>
+<?php
+                        foreach (config_read_array('system', 'group') as $group):
+                            $selected = $pconfig['local_group'] == $group['name'] ? 'selected="selected"' : ''; ?>
+                          <option value="<?= $group['name'] ?>" <?= $selected ?>><?= $group['name'] ?></option>
+<?php
+                        endforeach; ?>
+                        </select>
+                        <div class="hidden" for="help_for_local_group">
+                          <?= gettext('Restrict access to users in the selected local group. Please be aware ' .
+                            'that other authentication backends will refuse to authenticate when using this option.') ?>
+                        </div>
                       </td>
                     </tr>
                     <tr>
@@ -718,7 +744,7 @@ $( document ).ready(function() {
                         }
                                                     $grouplist = return_gateway_groups_array();
                         foreach ($grouplist as $name => $group) {
-                            if ($group['ipprotocol'] != inet) {
+                            if ($group['ipprotocol'] != "inet") {
                                 continue;
                             }
                             if ($group[0]['vip'] <> "") {
@@ -746,17 +772,6 @@ $( document ).ready(function() {
                       <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Local port");?></td>
                       <td>
                         <input name="local_port" type="text" class="form-control unknown" size="5" value="<?=$pconfig['local_port'];?>" />
-                      </td>
-                    </tr>
-                    <tr>
-                      <td width="22%" ><a id="help_for_description" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description"); ?></td>
-                      <td>
-                        <input name="description" type="text" class="form-control unknown" size="30" value="<?=htmlspecialchars($pconfig['description']);?>" />
-                        <div class="hidden" for="help_for_description">
-                          <small class="helpform">
-                            <?=gettext("You may enter a description here for your reference (not parsed)"); ?>.
-                          </small>
-                        </div>
                       </td>
                     </tr>
                   </table>
@@ -1184,7 +1199,7 @@ endif; ?>
                       </td>
                     </tr>
                     <tr class="opt_mode opt_mode_p2p_tls opt_mode_p2p_shared_key opt_mode_server_tls opt_mode_server_user opt_mode_server_tls_user opt_gwredir">
-                      <td width="22%" ><a id="help_for_local_networkv6" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a><?=gettext("IPv6 Local Network"); ?></td>
+                      <td width="22%" ><a id="help_for_local_networkv6" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPv6 Local Network"); ?></td>
                       <td>
                         <input name="local_networkv6" type="text" class="form-control unknown" size="40" value="<?=$pconfig['local_networkv6'];?>" />
                         <div class="hidden" for="help_for_local_networkv6">
@@ -1199,7 +1214,7 @@ endif; ?>
                         </div>
                       </td>
                     </tr>
-                    <tr class="opt_mode opt_mode_p2p_tls opt_mode_p2p_shared_key">
+                    <tr class="opt_mode opt_mode_p2p_tls opt_mode_p2p_shared_key opt_mode_server_tls opt_mode_server_user opt_mode_server_tls_user">
                       <td width="22%" ><a id="help_for_remote_network" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPv4 Remote Network"); ?></td>
                       <td>
                         <input name="remote_network" type="text" class="form-control unknown" size="40" value="<?=$pconfig['remote_network'];?>" />
@@ -1216,7 +1231,7 @@ endif; ?>
                         </div>
                       </td>
                     </tr>
-                    <tr class="opt_mode opt_mode_p2p_tls opt_mode_p2p_shared_key">
+                    <tr class="opt_mode opt_mode_p2p_tls opt_mode_p2p_shared_key opt_mode_server_tls opt_mode_server_user opt_mode_server_tls_user">
                       <td width="22%" ><a id="help_for_remote_networkv6" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPv6 Remote Network"); ?></td>
                       <td>
                         <input name="remote_networkv6" type="text" class="form-control unknown" size="40" value="<?=$pconfig['remote_networkv6'];?>" />
@@ -1544,8 +1559,7 @@ endif; ?>
                         <textarea rows="6" cols="78" name="custom_options" id="custom_options"><?=$pconfig['custom_options'];?></textarea><br />
                         <div class="hidden" for="help_for_custom_options">
                           <small class="helpform">
-                            <?=gettext("Enter any additional options you would like to add to the OpenVPN server configuration here, separated by a semicolon"); ?><br />
-                            <?=gettext("EXAMPLE: push \"route 10.0.0.0 255.255.255.0\""); ?>;
+                          <?=gettext("Enter any additional options you would like to add to the configuration file here."); ?>
                           </small>
                         </div>
                       </td>

@@ -34,25 +34,6 @@ label           :   dialog label
 
 #}
 
-{%- macro base_dialog_header(header_text) %}
-      </tbody>
-    </table>
-  </div>
-  <div class="table-responsive">
-    <table class="table table-striped table-condensed">
-        <colgroup>
-            <col class="col-md-3"/>
-            <col class="col-md-{{ 12-3-msgzone_width|default(5) }}"/>
-            <col class="col-md-{{ msgzone_width|default(5) }}"/>
-        </colgroup>
-        <thead>
-          <tr colspan="3">
-            <th><h2>{{header_text}}</h2></th>
-          </tr>
-        </thead>
-        <tbody>
-{%- endmacro %}
-
 {# Volt templates in php7 have issues with scope sometimes, copy input values to make them more unique #}
 {% set base_dialog_id=id %}
 {% set base_dialog_fields=fields %}
@@ -85,7 +66,7 @@ label           :   dialog label
             <div class="modal-body">
                 <form id="frm_{{base_dialog_id}}">
                   <div class="table-responsive">
-                    <table class="table table-striped table-condensed">
+                    <table class="table table-clean-form table-condensed">
                         <colgroup>
                             <col class="col-md-3"/>
                             <col class="col-md-{{ 12-3-msgzone_width|default(5) }}"/>
@@ -101,17 +82,37 @@ label           :   dialog label
                         </tr>
                         {% endif %}
                         {% for field in base_dialog_fields|default({})%}
+                            {# looks a bit buggy in the volt templates, field parameters won't reset properly here #}
                             {% set advanced=false %}
                             {% set help=false %}
-                            {% set style=false %}
                             {% set hint=false %}
                             {% set style=false %}
                             {% set maxheight=false %}
                             {% set width=false %}
                             {% set allownew=false %}
+                            {% set readonly=false %}
                             {% if field['type'] == 'header' %}
                               {# close table and start new one with header #}
-                              {{ base_dialog_header(field['label']) }}
+
+{#- macro base_dialog_header(field) #}
+      </tbody>
+    </table>
+  </div>
+  <div class="table-responsive {{field['style']|default('')}}">
+    <table class="table table-clean-form table-condensed">
+        <colgroup>
+            <col class="col-md-3"/>
+            <col class="col-md-{{ 12-3-msgzone_width|default(5) }}"/>
+            <col class="col-md-{{ msgzone_width|default(5) }}"/>
+        </colgroup>
+        <thead>
+          <tr colspan="3">
+            <th><h2>{{field['label']}}</h2></th>
+          </tr>
+        </thead>
+        <tbody>
+{#- endmacro #}
+
                             {% else %}
                               {{ partial("layout_partials/form_input_tr",field)}}
                             {% endif %}

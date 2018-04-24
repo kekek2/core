@@ -33,11 +33,6 @@ require_once("config.inc");
 require_once("services.inc");
 require_once("interfaces.inc");
 
-function leasecmp($a, $b)
-{
-    return strcmp($a[$_GET['order']], $b[$_GET['order']]);
-}
-
 function adjust_gmt($dt)
 {
     global $config;
@@ -48,15 +43,10 @@ function adjust_gmt($dt)
     }
 
     foreach ($dhcpd as $dhcpditem) {
-        $dhcpleaseinlocaltime = $dhcpditem['dhcpleaseinlocaltime'];
-        if ($dhcpleaseinlocaltime == "yes") {
-            break;
+        if (isset($dhcpditem['dhcpleaseinlocaltime']) && $dhcpleaseinlocaltime == "yes") {
+            $ts = strtotime($dt . " GMT");
+            return strftime("%Y/%m/%d %I:%M:%S%p", $ts);
         }
-    }
-
-    if ($dhcpleaseinlocaltime == "yes") {
-        $ts = strtotime($dt . " GMT");
-        return strftime("%Y/%m/%d %I:%M:%S%p", $ts);
     }
 
     return $dt;
@@ -76,6 +66,8 @@ function remove_duplicate($array, $field)
 
 $interfaces = legacy_config_get_interfaces(array('virtual' => false));
 $leasesfile = services_dhcpd_leasesfile();
+
+$wol_installed = trim(configd_run('firmware plugin wol'));
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $awk = "/usr/bin/awk";
@@ -245,9 +237,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
     }
 
-    if ($_GET['order']) {
-        usort($leases, "leasecmp");
-    }
+    $order = ( $_GET['order'] ) ? $_GET['order'] : 'ip';
+    usort($leases,
+        function ($a, $b) use ($order) {
+            $cmp = strnatcasecmp($a[$order], $b[$order]);
+            if ($cmp === 0) {
+                $cmp = strnatcasecmp($a['ip'], $b['ip']);
+            }
+            return $cmp;
+        }
+    );
+
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($_POST['deleteip']) && is_ipaddr($_POST['deleteip'])) {
         // delete dhcp lease
@@ -356,15 +356,15 @@ include("head.inc");?>
             <table class="table table-striped">
               <thead>
                 <tr>
-                    <td class="act_sort" data-field="if"><?=gettext("Interface"); ?></td>
+                    <td><?=gettext("Interface"); ?></td>
                     <td class="act_sort" data-field="ip"><?=gettext("IP address"); ?></td>
                     <td class="act_sort" data-field="mac"><?=gettext("MAC address"); ?></td>
                     <td class="act_sort" data-field="hostname"><?=gettext("Hostname"); ?></td>
-                    <td class="act_sort" data-field="desc"><?=gettext("Description"); ?></td>
+                    <td class="act_sort" data-field="descr"><?=gettext("Description"); ?></td>
                     <td class="act_sort" data-field="start"><?=gettext("Start"); ?></td>
                     <td class="act_sort" data-field="end"><?=gettext("End"); ?></td>
-                    <td class="act_sort" data-field="status"><?=gettext("Status"); ?></td>
-                    <td class="act_sort" data-field="type"><?=gettext("Lease type"); ?></td>
+                    <td class="act_sort" data-field="online"><?=gettext("Status"); ?></td>
+                    <td class="act_sort" data-field="act"><?=gettext("Lease type"); ?></td>
                     <td>&nbsp;</td>
                 </tr>
               </thead>
@@ -385,7 +385,7 @@ include("head.inc");?>
                   $lip = ip2ulong($data['ip']);
                   if ($data['act'] == "static") {
                       foreach ($dhcpd as $dhcpif => $dhcpifconf) {
-                          if(is_array($dhcpifconf['staticmap'])) {
+                          if(isset($dhcpifconf['staticmap']) && is_array($dhcpifconf['staticmap'])) {
                               foreach ($dhcpifconf['staticmap'] as $staticent) {
                                   if ($data['ip'] == $staticent['ipaddr']) {
                                       $data['int'] = htmlspecialchars($interfaces[$dhcpif]['descr']);
@@ -417,9 +417,16 @@ include("head.inc");?>
                   <td><?=$data['int'];?></td>
                   <td><?=$data['ip'];?></td>
                   <td>
+<?php
+                      if ($wol_installed): ?>
                       <a href="services_wol.php?if=<?=$data['if'];?>&amp;mac=<?=$data['mac'];?>" title="<?=gettext("send Wake on LAN packet to this MAC address");?>">
                         <?=$data['mac'];?>
                       </a>
+<?php
+                      else: ?>
+                        <?=$data['mac'];?>
+<?php
+                      endif; ?>
                       <br />
                       <small><i><?=!empty($mac_man[$mac_hi]) ? $mac_man[$mac_hi] : "";?></i></small>
                   </td>
@@ -437,9 +444,13 @@ include("head.inc");?>
                       </a>
 <?php
                     endif;?>
+<?php
+                    if ($wol_installed): ?>
                     <a class="btn btn-default btn-xs" href="services_wol_edit.php?if=<?=$data['if'];?>&amp;mac=<?=$data['mac'];?>&amp;descr=<?=$data['hostname'];?>">
                       <span class="glyphicon glyphicon-flash" data-toggle="tooltip"  title="<?=gettext("add a Wake on LAN mapping for this MAC address");?>" alt="add"></span>
                     </a>
+<?php
+                    endif;?>
 <?php
                     if (($data['type'] == "dynamic") && ($data['online'] != "online")):?>
 

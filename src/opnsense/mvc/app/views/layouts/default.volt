@@ -13,7 +13,7 @@
     <meta name="copyright" content="" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 
-    <title>{{title|default("OPNsense") }}</title>
+    <title>{{headTitle|default("OPNsense") }} | {{system_hostname}}.{{system_domain}}</title>
     {% set theme_name = ui_theme|default('opnsense') %}
 
     <!-- include (theme) style -->
@@ -43,7 +43,8 @@
     <link rel="stylesheet" href="/ui/css/font-awesome.min.css">
 
     <!-- JQuery -->
-    <script type="text/javascript" src="/ui/js/jquery-1.12.0.min.js"></script>
+    <script type="text/javascript" src="/ui/js/jquery-3.2.1.min.js"></script>
+    <script type="text/javascript" src="/ui/js/jquery-migrate-3.0.1.min.js"></script>
     <script type="text/javascript">
             // setup default scripting after page loading.
             $( document ).ready(function() {
@@ -94,6 +95,48 @@
                             }
                         });
                     }
+                });
+                // Side menu navigation for long item lists, when top level items tend to scroll above visible the area
+                // they will clip on top of the menu system. Scroll out will move them back into their normal positions.
+                $("#navigation").scroll(function(){
+                    var collapsed_menu_item = $("#mainmenu .collapse.in").first();
+                    if (collapsed_menu_item.position().top < 5) {
+                        var top_pos = parseInt($("header").height());
+                        $("#mainmenu .collapse.in").each(function(){
+                            var menuref = $('a[href="#'+$(this).attr('id')+'"]');
+                            if (!menuref.hasClass('mainmenu_clipped_on_top')) {
+                                menuref.addClass('mainmenu_clipped_on_top');
+                                menuref.data('__original_style__', {
+                                  'z-index': menuref.css('z-index'),
+                                  'width': menuref.css('width'),
+                                  'position': menuref.css('position'),
+                                  'background': menuref.css('background'),
+                                  'top': menuref.css('top')
+                                });
+                            }
+                            menuref.css('z-index', 10);
+                            menuref.css('top', top_pos);
+                            menuref.css('width', collapsed_menu_item.outerWidth() + 'px');
+                            menuref.css('position', 'fixed');
+                            menuref.css('background', '#fff');
+                            top_pos += menuref.outerHeight();
+                        });
+                    } else {
+                        // scroll-back, move menu items back in normal location
+                        $(".mainmenu_clipped_on_top").each(function(){
+                            var menuref = $(this);
+                            $.each(menuref.data('__original_style__'), function(key, value){
+                                menuref.css(key, value);
+                            });
+                            $(this).removeClass('mainmenu_clipped_on_top');
+                        });
+                    }
+                });
+                // Side menu navigation, always force selected item in center when the menu contains more items then fits the view area
+                $(".list-group-item.active").each(function(){
+                    var navbar_center = ($( window ).height() - $(".collapse.navbar-collapse").height())/2;
+                    var x = $(this).offset().top - navbar_center;
+                    $('html,aside').scrollTop(x);
                 });
 
                 initFormHelpUI();
@@ -221,6 +264,20 @@
         <!-- Bootgrind (grid system from http://www.jquery-bootgrid.com/ )  -->
         <link rel="stylesheet" type="text/css" href="/ui/css/jquery.bootgrid.css"/>
         <script type="text/javascript" src="/ui/js/jquery.bootgrid.js"></script>
+        <script>
+        /* patch translations into bootgrid library */
+        Object.assign(
+            jQuery.fn.bootgrid.prototype.constructor.Constructor.defaults.labels,
+            {
+                'all': "{{ lang._('All') }}",
+                'infos': "{{ lang._('Showing %s to %s of %s entries') | format('{{ctx.start}}','{{ctx.end}}','{{ctx.total}}') }}",
+                'loading': "{{ lang._('Loading...') }}",
+                'noResults': "{{ lang._('No results found!') }}",
+                'refresh': "{{ lang._('Refresh') }}",
+                'search': "{{ lang._('Search') }}"
+            }
+        )
+        </script>
 
         <!-- Bootstrap type ahead -->
         <script type="text/javascript" src="/ui/js/bootstrap3-typeahead.min.js"></script>
@@ -241,7 +298,7 @@
             <img class="brand-logo" src="/ui/themes/{{ui_theme|default('opnsense')}}/build/images/ting-green.png" height="30" alt="logo"/>
           </a>
           <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navigation">
-            <span class="sr-only">Toggle navigation</span>
+            <span class="sr-only">{{ lang._('Toggle navigation') }}</span>
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
@@ -249,7 +306,17 @@
         </div>
         <div class="collapse navbar-collapse">
           <ul class="nav navbar-nav navbar-right">
-            <li id="menu_messages"></li>
+            <?php if($lang->getLocale() == 'en_US.UTF-8') { ?>
+              <li>
+                <form class="navbar-form" id="ting-search" role="search">
+                  <div class="input-group">
+                    <div class="input-group-addon"><i class="fa fa-search"></i></div>
+                    <input type="text" style="width: 250px;" class="form-control" tabindex="1" data-provide="typeahead" id="menu_search_box">
+                  </div>
+                </form>
+              </li>
+            <?php } ?>
+            <li id="menu_messages"><a href="#">{{session_username}}@{{system_hostname}}.{{system_domain}}</a></li>
             <li><a href="/index.php?logout"><span class="fa fa-sign-out fa-fw"></span>{{ lang._('Logout') }}</a></li>
           </ul>
         </div>
@@ -258,43 +325,26 @@
   </header>
 
   <main class="page-content col-sm-9 col-sm-push-3 col-lg-10 col-lg-push-2">
-
-    <!-- menu system -->
-    {{ partial("layout_partials/base_menu_system") }}
-
-    <div class="row">
-            <!-- page header -->
-      <header class="page-content-head">
-        <div class="container-fluid">
+      <!-- menu system -->
+      {{ partial("layout_partials/base_menu_system") }}
+      <div class="row">
+        <!-- page header -->
+        <header class="page-content-head">
+          <div class="container-fluid">
             <ul class="list-inline">
-              <li class="__mb"><h1>{{title | default("")}}</h1></li>
-
-              <li class="btn-group-container" id="service_status_container">
-                                <!-- placeholder for service status buttons -->
-              </li>
+              <li><h1>{{title | default("")}}</h1></li>
+              <li class="btn-group-container" id="service_status_container"></li>
             </ul>
-        </div>
-      </header>
-            <!-- page content -->
-      <section class="page-content-main">
-        <div class="container-fluid">
-          <div class="row">
-              <section class="col-xs-12">
-                  <div id="messageregion"></div>
-                      {{ content() }}
-              </section>
           </div>
-        </div>
-      </section>
-
-    </div>
-
-  </main>
+        </header>
+      </div>
+    </main>
 
     <!-- bootstrap script -->
-  <script type="text/javascript" src="/ui/js/bootstrap.min.js"></script>
-  <script type="text/javascript" src="/ui/js/bootstrap-select.min.js"></script>
+    <script type="text/javascript" src="/ui/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="/ui/js/bootstrap-select.min.js"></script>
     <!-- bootstrap dialog -->
     <script src="/ui/js/bootstrap-dialog.min.js"></script>
-    </body>
+
+  </body>
 </html>

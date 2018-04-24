@@ -1,8 +1,8 @@
 <?php
 
 /*
-    Copyright (C) 2014-2016 Franco Fichtner <franco@opnsense.org>
-    Copyright (C) 2010 Ermal Luci
+    Copyright (C) 2014-2017 Franco Fichtner <franco@opnsense.org>
+    Copyright (C) 2010 Ermal Luçi
     Copyright (C) 2005-2006 Colin Smith <ethethlay@gmail.com>
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
     All rights reserved.
@@ -30,16 +30,23 @@
 */
 
 /*
- * Best case this shouldn't be here but DNS (and DHCP)
- * are deeply tied into several internals in system.inc
- * and services.inc.  services.inc itself has always
- * been a workaround for holding multiple features away
- * from system.inc, but its movable parts belong to
- * system.inc, while all services belong to their own
- * files.  Maybe eventually this will change...
+ * Base services are slowly being converted into plugins,
+ * hooks are created and expanded to accomodate for their
+ * feature set, which allows us to build a better plugin
+ * system in general.
+ *
+ * Ideally this may allow us to remove all service-relevant
+ * parts from system.inc and services.inc so that the latter
+ * will eventually become obsolete.
+ *
+ * The goal may not be to remove all of the base system
+ * as plugins, but the things listed below are viable
+ * targets in the future:
  */
-require_once('dyndns.class');
 require_once('plugins.inc.d/dnsmasq.inc');
+require_once('plugins.inc.d/ipsec.inc');
+require_once('plugins.inc.d/openvpn.inc');
+require_once('plugins.inc.d/openssh.inc');
 require_once('plugins.inc.d/unbound.inc');
 
 function generate_ipv6_from_mac($mac)
@@ -97,9 +104,7 @@ function services_radvd_configure($blacklist = array())
 
     killbypid('/var/run/radvd.pid', 'TERM', true);
 
-    if (!isset($config['dhcpdv6']) || !is_array($config['dhcpdv6'])) {
-        $config['dhcpdv6'] = array();
-    }
+    config_read_array('dhcpdv6');
 
     $radvdconf = "# Automatically Generated, do not edit\n";
 
@@ -113,7 +118,7 @@ function services_radvd_configure($blacklist = array())
         } elseif (isset($blacklist[$dhcpv6if])) {
             /* Do not put in the config an interface which is down */
             continue;
-        } elseif ($dhcpv6ifconf['ramode'] == "disabled") {
+        } elseif (!isset($dhcpv6ifconf['ramode']) || $dhcpv6ifconf['ramode'] == 'disabled') {
             continue;
         }
 
@@ -131,8 +136,6 @@ function services_radvd_configure($blacklist = array())
             continue;
         }
 
-        $ifcfgsnv6 = get_interface_subnetv6($dhcpv6if);
-        $subnetv6 = gen_subnetv6($ifcfgipv6, $ifcfgsnv6);
         $radvdifs[$realif] = 1;
 
         $radvdconf .= "# Generated for DHCPv6 Server $dhcpv6if\n";
@@ -154,43 +157,78 @@ function services_radvd_configure($blacklist = array())
                 $radvdconf .= "\tAdvDefaultPreference medium;\n";
                 break;
         }
+
         switch($dhcpv6ifconf['ramode']) {
             case "managed":
             case "assist":
                 $radvdconf .= "\tAdvManagedFlag on;\n";
                 $radvdconf .= "\tAdvOtherConfigFlag on;\n";
                 break;
-        }
-        $radvdconf .= "\tprefix {$subnetv6}/{$ifcfgsnv6} {\n";
-        $radvdconf .= "\t\tDeprecatePrefix ". (!empty($dhcpv6ifconf['rainterface']) ? "off" : "on").";\n";
-        switch($dhcpv6ifconf['ramode']) {
-            case "managed":
-                $radvdconf .= "\t\tAdvOnLink on;\n";
-                $radvdconf .= "\t\tAdvAutonomous off;\n";
-                $radvdconf .= "\t\tAdvRouterAddr on;\n";
+            case "stateless":
+                $radvdconf .= "\tAdvManagedFlag off;\n";
+                $radvdconf .= "\tAdvOtherConfigFlag on;\n";
                 break;
-            case "router":
-                $radvdconf .= "\t\tAdvOnLink off;\n";
-                $radvdconf .= "\t\tAdvAutonomous off;\n";
-                $radvdconf .= "\t\tAdvRouterAddr on;\n";
-                break;
-            case "assist":
-            case "unmanaged":
-                $radvdconf .= "\t\tAdvOnLink on;\n";
-                $radvdconf .= "\t\tAdvAutonomous on;\n";
-                $radvdconf .= "\t\tAdvRouterAddr on;\n";
+            default:
                 break;
         }
-        $radvdconf .= "\t};\n";
+
+        $stanzas = array();
+        $ifcfgsnv6 = get_interface_subnetv6($dhcpv6if);
+        $subnetv6 = gen_subnetv6($ifcfgipv6, $ifcfgsnv6);
+        $stanzas[] = "{$subnetv6}/{$ifcfgsnv6}";
+
+        $viparr = &config_read_array('virtualip', 'vip');
+        foreach ($viparr as $vip) {
+            if ($vip['interface'] == $dhcpv6if && is_ipaddrv6($vip['subnet'])) {
+                $ifcfgsnv6 = $vip['subnet_bits'];
+                $subnetv6 = gen_subnetv6($vip['subnet'], $ifcfgsnv6);
+                $stanzas[] = "{$subnetv6}/{$ifcfgsnv6}";
+            }
+        }
+
+        foreach ($stanzas as $stanza) {
+            $radvdconf .= "\tprefix {$stanza} {\n";
+            $radvdconf .= "\t\tDeprecatePrefix ". (!empty($dhcpv6ifconf['rainterface']) ? "off" : "on").";\n";
+            switch($dhcpv6ifconf['ramode']) {
+                case "managed":
+                    $radvdconf .= "\t\tAdvOnLink on;\n";
+                    $radvdconf .= "\t\tAdvAutonomous off;\n";
+                    $radvdconf .= "\t\tAdvRouterAddr on;\n";
+                    break;
+                case "router":
+                    $radvdconf .= "\t\tAdvOnLink off;\n";
+                    $radvdconf .= "\t\tAdvAutonomous off;\n";
+                    $radvdconf .= "\t\tAdvRouterAddr on;\n";
+                    break;
+                case "assist":
+                case "unmanaged":
+                case "stateless":
+                    $radvdconf .= "\t\tAdvOnLink on;\n";
+                    $radvdconf .= "\t\tAdvAutonomous on;\n";
+                    $radvdconf .= "\t\tAdvRouterAddr on;\n";
+                    break;
+                default:
+                    break;
+            }
+            $radvdconf .= "\t};\n";
+        }
 
         if (!empty($dhcpv6ifconf['rainterface'])) {
             $radvdconf .= "\troute ::/0 {\n";
             $radvdconf .= "\t\tRemoveRoute off;\n";
             $radvdconf .= "\t};\n";
-        } else {
+        } elseif (empty($dhcpv6ifconf['ranodefault'])) {
             $radvdconf .= "\troute ::/0 {\n";
             $radvdconf .= "\t\tRemoveRoute on;\n";
             $radvdconf .= "\t};\n";
+        }
+
+        if (!empty($dhcpv6ifconf['raroutes'])) {
+            foreach (explode(',', $dhcpv6ifconf['raroutes']) as $raroute) {
+                $radvdconf .= "\troute {$raroute} {\n";
+                $radvdconf .= "\t\tRemoveRoute on;\n";
+                $radvdconf .= "\t};\n";
+            }
         }
 
         /* add DNS servers */
@@ -243,20 +281,19 @@ function services_radvd_configure($blacklist = array())
         $radvdifs[$realif] = 1;
 
         $dnslist = array();
+        $subnetv6 = '::';
+        $ifcfgsnv6 = '64';
 
         $ifcfgipv6 = get_interface_ipv6($if);
-        if (!is_ipaddrv6($ifcfgipv6)) {
-            $subnetv6 = "::";
-            $ifcfgsnv6 = "64";
-        } else {
-            if (isset($config['dnsmasq']['enable']) || isset($config['unbound']['enable'])) {
-                $dnslist[] = $ifcfgipv6;
-            }
+
+        if (is_ipaddrv6($ifcfgipv6)) {
             $ifcfgsnv6 = get_interface_subnetv6($if);
             $subnetv6 = gen_subnetv6($ifcfgipv6, $ifcfgsnv6);
         }
 
-        if (!empty($config['system']['dnsserver'])) {
+        if ((isset($config['dnsmasq']['enable']) || isset($config['unbound']['enable'])) && is_ipaddrv6($ifcfgipv6)) {
+            $dnslist[] = $ifcfgipv6;
+        } elseif (!empty($config['system']['dnsserver'])) {
             foreach($config['system']['dnsserver'] as $server) {
                 if (is_ipaddrv6($server)) {
                     $dnslist[] = $server;
@@ -300,33 +337,27 @@ function services_radvd_configure($blacklist = array())
 
 function services_dhcpd_leasesfile()
 {
-    global $g;
-
-    return "{$g['dhcpd_chroot_path']}/var/db/dhcpd.leases";
+    return '/var/dhcpd/var/db/dhcpd.leases';
 }
 
 function services_dhcpdv6_leasesfile()
 {
-    global $g;
-
-    return "{$g['dhcpd_chroot_path']}/var/db/dhcpd6.leases";
+    return '/var/dhcpd/var/db/dhcpd6.leases';
 }
 
 function services_dhcpd_configure($family = 'all', $blacklist = array(), $verbose = false)
 {
-    global $g;
-
     $dirs = array('/dev', '/etc', '/lib', '/run', '/usr', '/usr/local/sbin', '/var/db', '/var/run');
 
     foreach ($dirs as $dir) {
-        mwexecf('/bin/mkdir -p %s', "{$g['dhcpd_chroot_path']}{$dir}");
+        mwexecf('/bin/mkdir -p %s', "/var/dhcpd{$dir}");
     }
 
-    if (mwexecf('/sbin/mount -uw %s', "{$g['dhcpd_chroot_path']}/dev", true)) {
-        mwexecf('/sbin/mount -t devfs devfs %s', "{$g['dhcpd_chroot_path']}/dev");
+    if (mwexecf('/sbin/mount -uw %s', '/var/dhcpd/dev', true)) {
+        mwexecf('/sbin/mount -t devfs devfs %s', '/var/dhcpd/dev');
     }
 
-    mwexecf('/usr/sbin/chown -R dhcpd:dhcpd %s', $g['dhcpd_chroot_path']);
+    mwexecf('/usr/sbin/chown -R dhcpd:dhcpd %s', '/var/dhcpd');
 
     if ($family == 'all' || $family == 'inet') {
         services_dhcpdv4_configure($verbose);
@@ -357,12 +388,12 @@ function is_dhcpv4_server_enabled()
 
 function services_dhcpdv4_configure($verbose = false)
 {
-    global $config, $g;
+    global $config;
 
     $need_ddns_updates = false;
     $ddns_zones = array();
 
-    killbypid("{$g['dhcpd_chroot_path']}/var/run/dhcpd.pid", 'TERM', true);
+    killbypid('/var/dhcpd/var/run/dhcpd.pid', 'TERM', true);
 
     if (!is_dhcpv4_server_enabled()) {
         return;
@@ -665,6 +696,11 @@ EOPP;
               && (empty($dhcpifconf['maxleasetime']) || $poolconf['maxleasetime'] != $dhcpifconf['maxleasetime'])) {
                 $dhcpdconf .= "    max-lease-time {$poolconf['maxleasetime']};\n";
             }
+            // interface MTU
+            if (!empty($poolconf['interface_mtu'])
+              && (empty($dhcpifconf['interface_mtu']) || $poolconf['interface_mtu'] != $dhcpifconf['interface_mtu'])) {
+                $dhcpdconf .= "    option interface-mtu {$poolconf['interface_mtu']};\n";
+            }
 
             // netbios-name*
             if (!empty($poolconf['winsserver'][0])
@@ -730,6 +766,10 @@ EOD;
         // max-lease-time
         if (!empty($dhcpifconf['maxleasetime'])) {
             $dhcpdconf .= "  max-lease-time {$dhcpifconf['maxleasetime']};\n";
+        }
+        // interface MTU
+        if (!empty($dhcpifconf['interface_mtu'])) {
+            $dhcpdconf .= "  option interface-mtu {$dhcpifconf['interface_mtu']};\n";
         }
 
         // netbios-name*
@@ -892,13 +932,13 @@ EOD;
         $dhcpdconf .= services_dhcpd_zones($ddns_zones);
     }
 
-    @file_put_contents("{$g['dhcpd_chroot_path']}/etc/dhcpd.conf", $dhcpdconf);
-    @touch("{$g['dhcpd_chroot_path']}/var/db/dhcpd.leases");
-    @unlink("{$g['dhcpd_chroot_path']}/var/run/dhcpd.pid");
+    @file_put_contents('/var/dhcpd/etc/dhcpd.conf', $dhcpdconf);
+    @touch('/var/dhcpd/var/db/dhcpd.leases');
+    @unlink('/var/dhcpd/var/run/dhcpd.pid');
 
     /* fire up dhcpd in a chroot */
     if (count($dhcpdifs) > 0) {
-        mwexec("/usr/local/sbin/dhcpd -user dhcpd -group dhcpd -chroot {$g['dhcpd_chroot_path']} -cf /etc/dhcpd.conf -pf /var/run/dhcpd.pid " . join(" ", $dhcpdifs));
+        mwexec('/usr/local/sbin/dhcpd -user dhcpd -group dhcpd -chroot /var/dhcpd -cf /etc/dhcpd.conf -pf /var/run/dhcpd.pid ' . join(' ', $dhcpdifs));
     }
 
     if ($verbose) {
@@ -989,20 +1029,17 @@ function is_dhcpv6_server_enabled()
 
 function services_dhcpdv6_configure($blacklist = array(), $verbose = false)
 {
-    global $config, $g;
+    global $config;
 
-    killbypid("{$g['dhcpd_chroot_path']}/var/run/dhcpdv6.pid", 'TERM', true);
+    killbypid('/var/dhcpd/var/run/dhcpdv6.pid', 'TERM', true);
     killbypid('/var/run/dhcpleases6.pid', 'TERM', true);
 
     if (!is_dhcpv6_server_enabled()) {
         return;
     }
 
-    $syscfg = $config['system'];
-    if (!isset($config['dhcpdv6']) || !is_array($config['dhcpdv6'])) {
-        $config['dhcpdv6'] = array();
-    }
-    $dhcpdv6cfg = $config['dhcpdv6'];
+    $syscfg = config_read_array('system');
+    $dhcpdv6cfg = config_read_array('dhcpdv6');
     $Iflist = get_configured_interface_list();
 
     if ($verbose) {
@@ -1146,17 +1183,19 @@ EOD;
 
         if (is_ipaddrv6($ifcfgipv6)) {
             $dhcpdv6conf .= "\nsubnet6 {$subnetv6}/{$ifcfgsnv6}";
-        } else {
+        } elseif (!empty($dhcpv6ifconf['range']['from'])) {
             $subnet6 = gen_subnetv6($dhcpv6ifconf['range']['from'], "64");
             $dhcpdv6conf .= "\nsubnet6 {$subnet6}/64";
         }
         $dhcpdv6conf .= " {\n";
 
-        $dhcpdv6conf .= <<<EOD
+        if (!empty($dhcpv6ifconf['range']['from'])) {
+            $dhcpdv6conf .= <<<EOD
   range6 {$dhcpv6ifconf['range']['from']} {$dhcpv6ifconf['range']['to']};
 $dnscfgv6
 
 EOD;
+        }
 
         if (!empty($dhcpv6ifconf['prefixrange']['from']) && is_ipaddrv6($dhcpv6ifconf['prefixrange']['from']) && is_ipaddrv6($dhcpv6ifconf['prefixrange']['to'])) {
             $dhcpdv6conf .= "  prefix6 {$dhcpv6ifconf['prefixrange']['from']} {$dhcpv6ifconf['prefixrange']['to']}/{$dhcpv6ifconf['prefixrange']['prefixlength']};\n";
@@ -1255,21 +1294,19 @@ EOD;
             }
         }
 
-        if (isset($config['dhcpdv6'][$dhcpv6if]['ramode']) && $config['dhcpdv6'][$dhcpv6if]['ramode'] <> "unmanaged") {
-            if (preg_match("/poes/si", $dhcpv6if)) {
-                /* magic here */
-                $dhcpdv6ifs = array_merge($dhcpdv6ifs, get_pppoes_child_interfaces($dhcpv6if));
-            } else {
-                $realif = get_real_interface($dhcpv6if, "inet6");
-                if (stristr("$realif", "bridge")) {
-                    $mac = get_interface_mac($realif);
-                    $v6address = generate_ipv6_from_mac($mac);
-                    /* Create link local address for bridges */
-                    mwexec("/sbin/ifconfig {$realif} inet6 {$v6address}");
-                }
-                $realif = escapeshellcmd($realif);
-                $dhcpdv6ifs[] = $realif;
+        if (preg_match("/poes/si", $dhcpv6if)) {
+            /* magic here */
+            $dhcpdv6ifs = array_merge($dhcpdv6ifs, get_pppoes_child_interfaces($dhcpv6if));
+        } else {
+            $realif = get_real_interface($dhcpv6if, "inet6");
+            if (stristr("$realif", "bridge")) {
+                $mac = get_interface_mac($realif);
+                $v6address = generate_ipv6_from_mac($mac);
+                /* create link local address for bridges */
+                mwexec("/sbin/ifconfig {$realif} inet6 {$v6address}");
             }
+            $realif = escapeshellcmd($realif);
+            $dhcpdv6ifs[] = $realif;
         }
     }
 
@@ -1280,15 +1317,14 @@ EOD;
         $dhcpdv6conf .= "\nddns-update-style none;\n";
     }
 
-    @file_put_contents("{$g['dhcpd_chroot_path']}/etc/dhcpdv6.conf", $dhcpdv6conf);
-    @touch("{$g['dhcpd_chroot_path']}/var/db/dhcpd6.leases");
-    @unlink("{$g['dhcpd_chroot_path']}/var/run/dhcpdv6.pid");
+    @file_put_contents('/var/dhcpd/etc/dhcpdv6.conf', $dhcpdv6conf);
+    @touch('/var/dhcpd/var/db/dhcpd6.leases');
+    @unlink('/var/dhcpd/var/run/dhcpdv6.pid');
 
     /* fire up dhcpd in a chroot */
     if (count($dhcpdv6ifs) > 0) {
-        mwexec("/usr/local/sbin/dhcpd -6 -user dhcpd -group dhcpd -chroot {$g['dhcpd_chroot_path']} -cf /etc/dhcpdv6.conf -pf /var/run/dhcpdv6.pid " .
-          join(" ", $dhcpdv6ifs));
-        mwexec("/usr/local/sbin/dhcpleases6 -c \"/usr/local/bin/php -f /usr/local/sbin/prefixes.php|/bin/sh\" -l {$g['dhcpd_chroot_path']}/var/db/dhcpd6.leases");
+        mwexec('/usr/local/sbin/dhcpd -6 -user dhcpd -group dhcpd -chroot /var/dhcpd -cf /etc/dhcpdv6.conf -pf /var/run/dhcpdv6.pid ' . join(' ', $dhcpdv6ifs));
+        mwexec('/usr/local/sbin/dhcpleases6 -c "/usr/local/bin/php -f /usr/local/sbin/prefixes.php|/bin/sh" -l /var/dhcpd/var/db/dhcpd6.leases');
     }
 
     if ($verbose) {
@@ -1304,7 +1340,7 @@ function services_dhcrelay_configure($verbose = false)
 
     killbypid('/var/run/dhcrelay.pid', 'TERM', true);
 
-    $dhcrelaycfg = &$config['dhcrelay'];
+    $dhcrelaycfg = &config_read_array('dhcrelay');
 
     if (!isset($dhcrelaycfg['enable'])) {
         return;
@@ -1423,7 +1459,7 @@ function services_dhcrelay6_configure($verbose = false)
 
     killbypid('/var/run/dhcrelay6.pid', 'TERM', true);
 
-    $dhcrelaycfg = &$config['dhcrelay6'];
+    $dhcrelaycfg = &config_read_array('dhcrelay6');
 
     if (!isset($dhcrelaycfg['enable'])) {
         return;
@@ -1529,271 +1565,44 @@ function services_dhcrelay6_configure($verbose = false)
     }
 }
 
-function services_dyndns_list()
-{
-    return array(
-      'citynetwork' => 'City Network',
-      'cloudflare' => 'CloudFlare',
-      'custom' => 'Custom',
-      'custom-v6' => 'Custom (v6)',
-      'dhs' => 'DHS',
-      'dnsexit' => 'DNSexit',
-      'dnsomatic' => 'DNS-O-Matic',
-      'duckdns' => 'Duck DNS',
-      'dyndns' => 'DynDNS (dynamic)',
-      'dyndns-static' => 'DynDNS (static)',
-      'dyndns-custom' => 'DynDNS (custom)',
-      'dyns' => 'DyNS',
-      'easydns' => 'easyDNS',
-      'eurodns' => 'EuroDNS',
-      'freedns' => 'freeDNS',
-      'gratisdns' => 'GratisDNS',
-      'he-net' => 'HE.net',
-      'he-net-v6' => 'HE.net (v6)',
-      'he-net-tunnelbroker' => 'HE.net Tunnelbroker',
-      'loopia' => 'Loopia',
-      'namecheap' => 'Namecheap',
-      'noip' => 'No-IP',
-      'noip-free' => 'No-IP (free)',
-      'ods' => 'ODS.org',
-      'opendns' => 'OpenDNS',
-      'ovh-dynhost' => 'OVH DynHOST',
-      'route53' => 'Route 53',
-      'selfhost' => 'SelfHost',
-      'zoneedit' => 'ZoneEdit',
-    );
-}
-
-function services_dyndns_configure_client($conf)
-{
-    if (!isset($conf['enable'])) {
-        return;
-    }
-
-    $dns = new updatedns($dnsService = $conf['type'],
-        $dnsHost = $conf['host'],
-        $dnsUser = $conf['username'],
-        $dnsPass = $conf['password'],
-        $dnsWilcard = $conf['wildcard'],
-        $dnsMX = $conf['mx'],
-        $dnsIf = "{$conf['interface']}",
-        $dnsBackMX = NULL,
-        $dnsServer = NULL,
-        $dnsPort = NULL,
-        $dnsUpdateURL = "{$conf['updateurl']}",
-        $forceUpdate = $conf['force'],
-        $dnsZoneID=$conf['zoneid'],
-        $dnsTTL=$conf['ttl'],
-        $dnsResultMatch = "{$conf['resultmatch']}",
-        $dnsRequestIf = "{$conf['requestif']}",
-        $dnsID = "{$conf['id']}",
-        $dnsVerboseLog = $conf['verboselog'],
-        $curlIpresolveV4 = $conf['curl_ipresolve_v4'],
-        $curlSslVerifypeer = $conf['curl_ssl_verifypeer']
-    );
-}
-
-function services_dyndns_configure($int = '', $verbose = false)
+function get_dyndns_ip($int, $ipver = 4)
 {
     global $config;
 
-    if (isset($config['dyndnses']['dyndns'])) {
-        $dyndnscfg = $config['dyndnses']['dyndns'];
-        $gwgroups = return_gateway_groups_array();
-        if (is_array($dyndnscfg)) {
-            if ($verbose) {
-                echo 'Starting dynamic DNS clients...';
-                flush();
-            }
+    $ip_address = $ipver == 6 ? get_interface_ipv6($int) : get_interface_ip($int);
 
-            foreach ($dyndnscfg as $dyndns) {
-                if ((empty($int)) || ($int == $dyndns['interface']) || (is_array($gwgroups[$dyndns['interface']]))) {
-                    $dyndns['verboselog'] = isset($dyndns['verboselog']);
-                    $dyndns['curl_ipresolve_v4'] = isset($dyndns['curl_ipresolve_v4']);
-                    $dyndns['curl_ssl_verifypeer'] = isset($dyndns['curl_ssl_verifypeer']);
-                    services_dyndns_configure_client($dyndns);
-                    sleep(1);
-                }
-            }
-
-            if ($verbose) {
-                echo "done.\n";
-            }
-        }
-    }
-
-    return 0;
-}
-
-function dyndnsCheckIP($int)
-{
-    global $config;
-
-    $ip_address = get_interface_ip($int);
-
-    if (is_private_ip($ip_address)) {
+    if ($ipver == 6 || is_private_ip($ip_address)) {
         $gateways_status = return_gateways_status(true);
-        // If the gateway for this interface is down, then the external check cannot work.
-        // Avoid the long wait for the external check to timeout.
-        if (stristr($gateways_status[$config['interfaces'][$int]['gateway']]['status'],"down")) {
-            return "down";
+        /*
+         * If the gateway for this interface is down, then the external
+         * check cannot work. Avoid the long wait for the external check
+         * to timeout.
+         */
+        if (stristr($gateways_status[$config['interfaces'][$int]['gateway']]['status'], 'down')) {
+            return 'down';
         }
-        $hosttocheck = "http://checkip.dyndns.org";
+        /* Chinese alternative is http://ip.3322.net/ */
+        $hosttocheck = $ipver == 6 ? 'http://checkipv6.dyndns.org' : 'http://checkip.dyndns.org';
         $ip_ch = curl_init($hosttocheck);
         curl_setopt($ip_ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ip_ch, CURLOPT_SSL_VERIFYPEER, FALSE);
         curl_setopt($ip_ch, CURLOPT_INTERFACE, $ip_address);
-        curl_setopt($ip_ch, CURLOPT_CONNECTTIMEOUT, '30');
-        curl_setopt($ip_ch, CURLOPT_TIMEOUT, 120);
-        curl_setopt($ip_ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-        $ip_result_page = curl_exec($ip_ch);
+        curl_setopt($ip_ch, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_setopt($ip_ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ip_ch, CURLOPT_IPRESOLVE, $ipver == 6 ? CURL_IPRESOLVE_V6 : CURL_IPRESOLVE_V4);
+        $ip_result = curl_exec($ip_ch);
+        if ($ip_result !== false) {
+            preg_match('=<body>Current IP Address: (.*)</body>=siU', $ip_result, $matches);
+            $ip_address = trim($matches[1]);
+        } else {
+            log_error('Aborted IP detection: ' . curl_error($ip_ch));
+        }
         curl_close($ip_ch);
-        $ip_result_decoded = urldecode($ip_result_page);
-        preg_match('=Current IP Address: (.*)</body>=siU', $ip_result_decoded, $matches);
-        $ip_address = trim($matches[1]);
+        if (($ipver == 6 && !is_ipaddrv6($ip_address)) || ($ipver != 6 && !is_ipaddrv4($ip_address))) {
+            return 'down';
+        }
     }
+
     return $ip_address;
-}
-
-function services_dnsupdate_process($int = '', $updatehost = '', $forced = false)
-{
-    global $config;
-
-    if (isset($config['dnsupdates']['dnsupdate'])) {
-        $notify_text = "";
-        foreach ($config['dnsupdates']['dnsupdate'] as $i => $dnsupdate) {
-            if (!isset($dnsupdate['enable'])) {
-                continue;
-            } elseif (!empty($int) && $int != $dnsupdate['interface']) {
-                continue;
-            } elseif (!empty($updatehost) && ($updatehost != $dnsupdate['host'])) {
-                continue;
-            }
-
-            $if = get_real_interface($dnsupdate['interface']);
-
-            if (isset($dnsupdate['usepublicip'])) {
-                $wanip = dyndnsCheckIP($dnsupdate['interface']);
-            } else {
-                $wanip = get_interface_ip($dnsupdate['interface']);
-            }
-
-            $wanipv6 = get_interface_ipv6($dnsupdate['interface']);
-            $cacheFile = "/conf/dyndns_{$dnsupdate['interface']}_rfc2136_" . escapeshellarg($dnsupdate['host']) . "_{$dnsupdate['server']}.cache";
-            $currentTime = time();
-
-            if ($wanip || $wanipv6) {
-                $keyname = $dnsupdate['keyname'];
-                /* trailing dot */
-                if (substr($keyname, -1) != ".") {
-                    $keyname .= ".";
-                }
-
-                $hostname = $dnsupdate['host'];
-                /* trailing dot */
-                if (substr($hostname, -1) != ".") {
-                    $hostname .= ".";
-                }
-
-                /* write private key file
-                   this is dumb - public and private keys are the same for HMAC-MD5,
-                   but nsupdate insists on having both */
-                $fd = fopen("/var/etc/K{$i}{$keyname}+157+00000.private", "w");
-                $privkey = <<<EOD
-Private-key-format: v1.2
-Algorithm: 157 (HMAC)
-Key: {$dnsupdate['keydata']}
-
-EOD;
-                fwrite($fd, $privkey);
-                fclose($fd);
-
-                /* write public key file */
-                if ($dnsupdate['keytype'] == "zone") {
-                    $flags = 257;
-                    $proto = 3;
-                } elseif ($dnsupdate['keytype'] == "host") {
-                    $flags = 513;
-                    $proto = 3;
-                } elseif ($dnsupdate['keytype'] == "user") {
-                    $flags = 0;
-                    $proto = 2;
-                }
-
-                $fd = fopen("/var/etc/K{$i}{$keyname}+157+00000.key", "w");
-                fwrite($fd, "{$keyname} IN KEY {$flags} {$proto} 157 {$dnsupdate['keydata']}\n");
-                fclose($fd);
-
-                /* generate update instructions */
-                $upinst = "";
-                if (!empty($dnsupdate['server'])) {
-                    $upinst .= "server {$dnsupdate['server']}\n";
-                }
-
-                if (file_exists($cacheFile)) {
-                    list($cachedipv4, $cacheTimev4) = explode("|", file_get_contents($cacheFile));
-                }
-                if (file_exists("{$cacheFile}.ipv6")) {
-                    list($cachedipv6, $cacheTimev6) = explode("|", file_get_contents("{$cacheFile}.ipv6"));
-                }
-
-                // 25 Days
-                $maxCacheAgeSecs = 25 * 24 * 60 * 60;
-                $need_update = false;
-
-                /* Update IPv4 if we have it. */
-                if (is_ipaddrv4($wanip)) {
-                    if (($wanip != $cachedipv4) || (($currentTime - $cacheTimev4) > $maxCacheAgeSecs) || $forced) {
-                        $upinst .= "update delete {$dnsupdate['host']}. A\n";
-                        $upinst .= "update add {$dnsupdate['host']}. {$dnsupdate['ttl']} A {$wanip}\n";
-                        $notify_text .= sprintf(gettext('Dynamic DNS updated IP Address (A) for %s on %s (%s) to %s'), $dnsupdate['host'], convert_real_interface_to_friendly_descr($if), $if, $wanip) . "\n";
-                        @file_put_contents($cacheFile, "{$wanip}|{$currentTime}");
-                        log_error("Dynamic DNS: updating cache file {$cacheFile}: {$wanip}");
-                        $need_update = true;
-                    } else {
-                        log_error("Dynamic DNS: Not updating {$dnsupdate['host']} A record because the IP address has not changed.");
-                    }
-                } else {
-                    @unlink($cacheFile);
-                }
-
-                /* Update IPv6 if we have it. */
-                if (is_ipaddrv6($wanipv6)) {
-                    if (($wanipv6 != $cachedipv6) || (($currentTime - $cacheTimev6) > $maxCacheAgeSecs) || $forced) {
-                        $upinst .= "update delete {$dnsupdate['host']}. AAAA\n";
-                        $upinst .= "update add {$dnsupdate['host']}. {$dnsupdate['ttl']} AAAA {$wanipv6}\n";
-                        $notify_text .= sprintf(gettext('Dynamic DNS updated IPv6 Address (AAAA) for %s on %s (%s) to %s'), $dnsupdate['host'], convert_real_interface_to_friendly_descr($if), $if, $wanipv6) . "\n";
-                        @file_put_contents("{$cacheFile}.ipv6", "{$wanipv6}|{$currentTime}");
-                        log_error("Dynamic DNS: updating cache file {$cacheFile}.ipv6: {$wanipv6}");
-                        $need_update = true;
-                    } else {
-                        log_error("Dynamic DNS: Not updating {$dnsupdate['host']} AAAA record because the IPv6 address has not changed.");
-                    }
-                } else {
-                    @unlink("{$cacheFile}.ipv6");
-                }
-
-                $upinst .= "\n";  /* mind that trailing newline! */
-
-                if ($need_update) {
-                    @file_put_contents("/var/etc/nsupdatecmds{$i}", $upinst);
-                    unset($upinst);
-                    /* invoke nsupdate */
-                    $cmd = "/usr/local/bin/nsupdate -k /var/etc/K{$i}{$keyname}+157+00000.key";
-                    if (isset($dnsupdate['usetcp']))
-                      $cmd .= " -v";
-                    $cmd .= " /var/etc/nsupdatecmds{$i}";
-                    mwexec_bg($cmd);
-                    unset($cmd);
-                }
-            }
-        }
-        if (!empty($notify_text)) {
-            notify_all_remote($notify_text);
-        }
-    }
-
-    return 0;
 }
 
 function is_apinger_enabled()
@@ -1819,7 +1628,7 @@ function is_apinger_enabled()
 
 function services_get()
 {
-    global $config, $g;
+    global $config;
 
     $services = array();
 
@@ -1859,7 +1668,7 @@ function services_get()
         $pconfig['description'] = gettext("DHCP Server");
         $pconfig['php']['restart'] = array('services_dhcpdv4_configure');
         $pconfig['php']['start'] = array('services_dhcpdv4_configure');
-        $pconfig['pidfile'] = "{$g['dhcpd_chroot_path']}/var/run/dhcpd.pid";
+        $pconfig['pidfile'] = '/var/dhcpd/var/run/dhcpd.pid';
         $services[] = $pconfig;
     }
 
@@ -1869,7 +1678,7 @@ function services_get()
         $pconfig['description'] = gettext("DHCPv6 Server");
         $pconfig['php']['restart'] = array('services_dhcpdv6_configure');
         $pconfig['php']['start'] = array('services_dhcpdv6_configure');
-        $pconfig['pidfile'] = "{$g['dhcpd_chroot_path']}/var/run/dhcpdv6.pid";
+        $pconfig['pidfile'] = '/var/dhcpd/var/run/dhcpdv6.pid';
         $services[] = $pconfig;
     }
 
@@ -1880,15 +1689,6 @@ function services_get()
         $pconfig['php']['restart'] = array('setup_gateways_monitor');
         $pconfig['php']['start'] = array('setup_gateways_monitor');
         $pconfig['pidfile'] = '/var/run/apinger.pid';
-        $services[] = $pconfig;
-    }
-
-    if (isset($config['system']['ssh']['enabled'])) {
-        $pconfig = array();
-        $pconfig['name'] = 'sshd';
-        $pconfig['description'] = gettext('Secure Shell Daemon');
-        $pconfig['configd']['restart'] = array('sshd restart');
-        $pconfig['configd']['start'] = array('sshd restart');
         $services[] = $pconfig;
     }
 
@@ -1930,10 +1730,8 @@ function services_get()
         'name' => 'configd',
     );
 
-    if (function_exists('plugins_services')) {
-        foreach (plugins_services() as $service) {
-            $services[] = $service;
-        }
+    foreach (plugins_services() as $service) {
+        $services[] = $service;
     }
 
     uasort($services, function ($a, $b) {
@@ -1943,32 +1741,21 @@ function services_get()
     return $services;
 }
 
-function find_service_by_name($names, $filter = array())
+function find_service_by_name($name, $filter = array())
 {
-    if (!is_array($names)) {
-        $names = array($names);
-    }
-
     $services = services_get();
 
     foreach ($services as $service) {
-        foreach ($names as $name) {
-            if ($service['name'] != $name) {
-                continue;
-            }
-            if (!count($filter)) {
-                /* force match if filter wasn't set (standard behaviour) */
-                $filter['name'] = $name;
-            }
-            foreach ($filter as $key => $value) {
-                if (isset($service[$key]) && $service[$key] == $value) {
-                    /*
-                     * First match wins, $names is only used
-                     * to probe similar services that exclude
-                     * each other.
-                     */
-                    return $service;
-                }
+        if ($service['name'] != $name) {
+            continue;
+        }
+        if (!count($filter)) {
+            /* force match if filter wasn't set (standard behaviour) */
+            $filter['name'] = $name;
+        }
+        foreach ($filter as $key => $value) {
+            if (isset($service[$key]) && $service[$key] == $value) {
+                return $service;
             }
         }
     }
@@ -1990,26 +1777,25 @@ function get_service_status($service)
 }
 
 
-function get_service_status_icon($service, $withtext = true, $smallicon = false)
+function get_service_status_icon($service, $xs = false)
 {
-    $output = "";
+    $output = '';
+
     if (get_service_status($service)) {
-        $statustext = gettext("Running");
-        $output .= '<span class="btn btn-success glyphicon glyphicon-play" title="'.sprintf(gettext('%s Service is'),$service['name']).' '.$statustext.'" data-toggle="tooltip"></span>' . PHP_EOL;
+        $output .= '<span class="label label-opnsense label-opnsense-%s label-success"><i class="fa fa-play fa-fw"></i></span>' . PHP_EOL;
     } else {
-        $statustext = gettext("Stopped") ;
-        $output .= '<span class="btn btn-danger glyphicon glyphicon-stop" title="'.sprintf(gettext('%s Service is'),$service['name']).' '.$statustext.'" data-toggle="tooltip"></span>' . PHP_EOL;
+        $output .= '<span class="label label-opnsense label-opnsense-%s label-danger"><i class="fa fa-stop fa-fw"></i></span>' . PHP_EOL;
     }
-    return $output;
+
+    return sprintf($output, $xs ? 'xs' : 'sm');
 }
 
-function get_service_control_links($service, $addname = false)
+function get_service_control_links($service, $xs = false)
 {
     $service_id = isset($service['id']) ? $service['id'] : '';
-    $service_title = $addname ? $service['name'] . ' ' : '';
 
     $template  = '<span data-service_id="%s" data-service_action="%s" data-service="%s" ';
-    $template .= 'data-toggle="tooltip" title="%s" class="btn btn-default %s %s"></span>' . PHP_EOL;
+    $template .= 'class="btn btn-%s btn-default %s"><i class="%s"></i></span>' . PHP_EOL;
 
     $output = '';
 
@@ -2019,19 +1805,19 @@ function get_service_control_links($service, $addname = false)
             $service_id,
             'restart',
             $service['name'],
-            sprintf(gettext('Restart %sService'), $service_title),
+            $xs ? 'xs' : 'sm',
             'srv_status_act',
-            'glyphicon glyphicon-refresh'
+            'fa fa-refresh fa-fw'
         );
-	if (empty($service['nocheck'])) {
+        if (empty($service['nocheck'])) {
             $output .= sprintf(
                 $template,
                 $service_id,
                 'stop',
                 $service['name'],
-                sprintf(gettext('Stop %sService'), $service_title),
+                $xs ? 'xs' : 'sm',
                 'srv_status_act',
-                'glyphicon glyphicon-stop'
+                'fa fa-stop fa-fw'
             );
         }
     } else {
@@ -2040,9 +1826,9 @@ function get_service_control_links($service, $addname = false)
             $service_id,
             'start',
             $service['name'],
-            sprintf(gettext('Start %sService'), $service_title),
+            $xs ? 'xs' : 'sm',
             'srv_status_act',
-            'glyphicon glyphicon-play'
+            'fa fa-play fa-fw'
         );
     }
 
@@ -2053,11 +1839,7 @@ function is_radvd_enabled()
 {
     global $config;
 
-    if (!isset($config['dhcpdv6']) || !is_array($config['dhcpdv6'])) {
-        $config['dhcpdv6'] = array();
-    }
-
-    $dhcpdv6cfg = $config['dhcpdv6'];
+    $dhcpdv6cfg = config_read_array('dhcpdv6');
     $Iflist = get_configured_interface_list();
 
     /* handle manually configured DHCP6 server settings first */

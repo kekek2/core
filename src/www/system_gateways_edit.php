@@ -57,9 +57,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!isset($pconfig['name'])) {
         $input_errors[] = gettext("A valid gateway name must be specified.");
     }
-    if (!is_validaliasname($pconfig['name'])) {
-        $input_errors[] = gettext("The gateway name must not contain invalid characters.");
+
+    $valid = is_validaliasname($pconfig['name']);
+    if ($valid === false) {
+        $input_errors[] = sprintf(gettext('The name must be less than 32 characters long and may only consist of the following characters: %s'), 'a-z, A-Z, 0-9, _');
+    } elseif ($valid === null) {
+        $input_errors[] = sprintf(gettext('The name cannot be the internally reserved keyword "%s".'), $pconfig['name']);
     }
+
     /* skip system gateways which have been automatically added */
     if (!empty($pconfig['gateway']) && !is_ipaddr($pconfig['gateway']) &&
         $pconfig['attribute'] !== "system" && $pconfig['gateway'] != "dynamic"
@@ -316,20 +321,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (count($input_errors) == 0) {
-        if (!isset($config['gateways']) || !is_array($config['gateways'])) {
-            $config['gateways'] = array();
-        }
-
-        if (!isset($config['gateways']['gateway_item']) || !is_array($config['gateways']['gateway_item'])) {
-            $config['gateways']['gateway_item'] = array();
-        }
         // A result of obfuscating the list of gateways is that over here we need to map things back that should
         // be aligned with the configuration. Not going to fix this now.
         if (isset($a_gateways[$id]['attribute']) && is_numeric($a_gateways[$id]['attribute']) ) {
             $realid = $a_gateways[$id]['attribute'];
         }
 
-        $a_gateway_item = &$config['gateways']['gateway_item'];
+        $a_gateway_item = &config_read_array('gateways', 'gateway_item');
         $reloadif = "";
         $gateway = array();
 
@@ -439,9 +437,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($_REQUEST['isAjax'])) {
             header("HTTP/1.0 500 Internal Server Error");
             header("Content-type: text/plain");
-            foreach ($input_errors as $error) {
-                echo("$error\n");
-            }
+            echo implode("\n\n", $input_errors);
             exit;
         }
 
@@ -575,7 +571,9 @@ $( document ).ready(function() {
                   <td>
                     <input name="disabled" type="checkbox" id="disabled" value="yes" <?= !empty($pconfig['disabled']) ? "checked=\"checked\"" : ""; ?> />
                     <div class="hidden" for="help_for_disabled">
+                      <small class="formhelp">
                       <?=gettext("Set this option to disable this gateway without removing it from the list.");?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -736,10 +734,10 @@ $( document ).ready(function() {
                         </thead>
                         <tbody>
                             <tr>
-                              <td>
+                              <td style="padding-left: 0px !important;">
                                 <input name="latencylow" type="text" value="<?=$pconfig['latencylow'];?>" />
                               </td>
-                              <td>
+                              <td style="padding-left: 0px !important;">
                                 <input name="latencyhigh" type="text" value="<?=$pconfig['latencyhigh'];?>" />
                               </td>
                             </tr>
@@ -764,10 +762,10 @@ $( document ).ready(function() {
                         </thead>
                         <tbody>
                             <tr>
-                              <td>
+                              <td style="padding-left: 0px !important;">
                                 <input name="losslow" type="text" value="<?=$pconfig['losslow'];?>" />
                               </td>
-                              <td>
+                              <td style="padding-left: 0px !important;">
                                 <input name="losshigh" type="text" value="<?=$pconfig['losshigh'];?>" />
                               </td>
                             </tr>

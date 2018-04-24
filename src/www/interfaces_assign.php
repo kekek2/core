@@ -2,7 +2,7 @@
 
 /*
     Copyright (C) 2014-2015 Deciso B.V.
-    Copyright (C) Jim McBeath
+    Copyright (C) 2004 Jim McBeath
     Copyright (C) 2003-2005 Manuel Kasper <mk@neon1.net>
     All rights reserved.
 
@@ -33,9 +33,21 @@ require_once("filter.inc");
 require_once("rrd.inc");
 require_once("system.inc");
 require_once("interfaces.inc");
-require_once("ipsec.inc");
-require_once("openvpn.inc");
 require_once("services.inc");
+
+function link_interface_to_vlans($int)
+{
+    global $config;
+
+    if (isset($config['vlans']['vlan'])) {
+        foreach ($config['vlans']['vlan'] as $vlan) {
+            if ($int == $vlan['if']) {
+                interfaces_bring_up($int);
+            }
+        }
+    }
+}
+
 
 function list_interfaces() {
     global $config;
@@ -172,7 +184,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // no validation errors, delete entry
             unset($config['interfaces'][$id]['enable']);
             $realid = get_real_interface($id);
-            interface_bring_down($id, true);   /* down the interface */
+            interface_bring_down($id);   /* down the interface */
 
             unset($config['interfaces'][$id]);  /* delete the specified OPTn or LAN*/
 
@@ -204,7 +216,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if(!empty($config['interfaces']['lan']) && !empty($config['dhcpd']['wan']) && !empty($config['dhcpd']['wan']) ) {
                 unset($config['dhcpd']['wan']);
             }
-            link_interface_to_vlans($realid, "update");
+            link_interface_to_vlans($realid);
             header(url_safe('Location: /interfaces_assign.php'));
             exit;
         }
@@ -266,7 +278,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               if (!is_array($ifport) && ($ifname == 'lan' || $ifname == 'wan' || substr($ifname, 0, 3) == 'opt')) {
                   $reloadif = false;
                   if (!empty($config['interfaces'][$ifname]['if']) && $config['interfaces'][$ifname]['if'] <> $ifport) {
-                      interface_bring_down($ifname, true);
+                      interface_bring_down($ifname);
                       /* Mark this to be reconfigured in any case. */
                       $reloadif = true;
                   }
@@ -312,7 +324,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           if ($changes > 0) {
               // reload filter, rrd when interfaces have changed (original from apply action)
               filter_configure();
-              enable_rrd_graphing();
+              rrd_configure();
           }
           header(url_safe('Location: /interfaces_assign.php'));
           exit;
@@ -324,9 +336,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $interfaces = list_interfaces();
 legacy_html_escape_form_data($interfaces);
 $unused_interfaces= array();
+$all_interfaces = legacy_config_get_interfaces();
 foreach ($interfaces as $portname => $portinfo) {
     $portused = false;
-    foreach (legacy_config_get_interfaces() as $ifname => $ifdata) {
+    foreach ($all_interfaces as $ifname => $ifdata) {
         if ($ifdata['if'] == $portname) {
             $portused = true;
             break;
@@ -411,9 +424,13 @@ include("head.inc");
                           </select>
                         </td>
                         <td>
-                          <button title="<?=gettext("delete interface");?>" data-toggle="tooltip" data-id="<?=$ifname;?>" class="btn btn-default act_delete" type="submit">
-                            <span class="fa fa-trash text-muted"></span>
+<?php
+                          if (empty($iface['lock'])): ?>
+                          <button title="<?= html_safe(gettext('Delete interface')) ?>" data-toggle="tooltip" data-id="<?=$ifname;?>" class="btn btn-default act_delete" type="submit">
+                            <span class="fa fa-trash"></span>
                           </button>
+<?php
+                          endif ?>
                         </td>
                       </tr>
 <?php
@@ -436,14 +453,14 @@ include("head.inc");
                           </button>
                         </td>
                       </tr>
+<?php
+                      endif; ?>
                       <tr>
                         <td colspan="2"></td>
                         <td>
                           <input name="Submit" type="submit" class="btn btn-primary" value="<?=gettext("Save"); ?>" />
                         </td>
                       </tr>
-<?php
-                      endif; ?>
                     </tbody>
                   </table>
                 </div>

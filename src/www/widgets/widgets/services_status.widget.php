@@ -4,7 +4,7 @@
     Copyright (C) 2014 Deciso B.V.
     Copyright (C) 2007 Sam Wenham
     Copyright (C) 2005-2006 Colin Smith <ethethlay@gmail.com>
-    Copyright (C) 2004-2005 Scott Ullrich
+    Copyright (C) 2004-2005 Scott Ullrich <sullrich@gmail.com>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,6 @@
 require_once("guiconfig.inc");
 require_once("services.inc");
 require_once("system.inc");
-require_once("ipsec.inc");
 require_once("interfaces.inc");
 
 $services = services_get();
@@ -72,7 +71,7 @@ if (isset($_POST['servicestatusfilter'])) {
     <tr>
       <th><?= gettext('Service') ?></th>
       <th><?= gettext('Description') ?></th>
-      <th><?= gettext('Status') ?></th>
+      <th style="width:100px;"><?= gettext('Status') ?></th>
     </tr>
   </thead>
   <tbody>
@@ -86,8 +85,9 @@ if (isset($_POST['servicestatusfilter'])) {
         <tr>
           <td><?=$service['name'];?></td>
           <td><?=$service['description'];?></td>
-          <td><?=str_replace('btn ', 'btn btn-xs ', get_service_status_icon($service, false, true));?>
-              <?=str_replace('btn ', 'btn btn-xs ', get_service_control_links($service));?>
+          <td style="white-space: nowrap;">
+             <?= get_service_status_icon($service, true) ?>
+             <?= get_service_control_links($service, true) ?>
           </td>
         </tr>
 <?php

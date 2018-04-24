@@ -31,17 +31,66 @@ function filter_core_bootstrap($fw)
     global $config;
     // set defaults
     $filter_rule_defaults = array();
-    $filter_rule_defaults['pass'] = array("type" => "pass", "log" => ($config['OPNsense']['Syslog']['Firewall']['LogDefaultPass'] == 1));
-    $filter_rule_defaults['block'] = array("type" => "block", "log" => ($config['OPNsense']['Syslog']['Firewall']['LogDefaultBlock'] == 1));
+    $filter_rule_defaults['pass'] = array(
+      "type" => "pass",
+      "log" => ($config['OPNsense']['Syslog']['Firewall']['LogDefaultPass'] == 1),
+      "disablereplyto" => 1 // don't generate "reply-to" tags on internal rules by default
+    );
+    $filter_rule_defaults['block'] = array(
+      "type" => "block",
+      "log" => ($config['OPNsense']['Syslog']['Firewall']['LogDefaultBlock'] == 1),
+      "disablereplyto" => 1 // don't generate "reply-to" tags on internal rules by default
+    );
 
     // setup system filter rules
     filter_core_rules_system($fw, $filter_rule_defaults);
+}
+
+
+/**
+ * Initialize firewall plugin system with interfaces and gateways
+ * @return \OPNsense\Firewall\Plugin
+ */
+function filter_core_get_initialized_plugin_system()
+{
+    $fw = new \OPNsense\Firewall\Plugin();
+    $cnfint = legacy_config_get_interfaces(array("enable" => true));
+    $ifdetails = legacy_interfaces_details();
+    foreach ($cnfint as $key => &$value) {
+        // to set "reply-to" we need to know the gateway for our interface, let's collect it here and pass it on to
+        // setInterfaceMapping()
+        $value['gateway'] = get_interface_gateway($key);
+        $value['gatewayv6'] = get_interface_gateway_v6($key);
+        // In some cases we need to know if there currently are addresses configured on an interface, we pass
+        // the relevant ifconfig data to our interfacemapping (prevents "could not parse host specification" on load)
+        if (!empty($ifdetails[$value['if']])) {
+            $value['ifconfig'] = array();
+            $value['ifconfig']['ipv4'] = $ifdetails[$value['if']]['ipv4'];
+            $value['ifconfig']['ipv6'] = $ifdetails[$value['if']]['ipv6'];
+        }
+    }
+    // init interfaces and gateways
+    $fw->setInterfaceMapping($cnfint);
+    $fw->setGateways(return_gateways_array(false, true));
+    $fw->setGatewayGroups(return_gateway_groups_array());
+    return $fw;
 }
 
 function filter_core_antilockout_ports()
 {
     global $config;
     $lockout_ports = array();
+    /*
+     * XXX Some issues here:
+     *
+     * 1. Why does the webgui nolockout control the ssh lockout?
+     * 2. Both webgui and openssh are plugins, their code should
+     *    reside in the respective plugins.inc.d file once anti-
+     *    lockout is fully pluggable.
+     * 3. Openssh opens the port when install media is detected
+     *    and no ssh has ever been configured.  This is in line
+     *    with how the plugin behaves, but probably looks odd.
+     */
     if (!isset($config['system']['webgui']['noantilockout'])) {
         if (empty($config['system']['webgui']['port'])) {
             $lockout_ports[] = $config['system']['webgui']['protocol'] == "https" ? "443" : "80";
@@ -51,11 +100,123 @@ function filter_core_antilockout_ports()
         if ($config['system']['webgui']['protocol'] == "https" && !isset($config['system']['webgui']['disablehttpredirect'])) {
             $lockout_ports[] = "80";
         }
-        if (isset($config['system']['ssh']['enabled'])) {
+        if (isset($config['system']['ssh']['enabled']) ||
+            (!isset($config['system']['ssh']['noauto']) && is_install_media() && is_process_running('sshd'))) {
             $lockout_ports[] = empty($config['system']['ssh']['port']) ? "22" : $config['system']['ssh']['port'];
         }
     }
     return $lockout_ports;
+}
+
+
+/**
+ *   fetch a remote list of ports, eventually we might be better of dropping this functionality because of the
+ *   disadvantages it has (network dependency on filter load).
+ */
+function filter_core_get_url_port_alias($name)
+{
+    global $config;
+    $alias_content = "";
+    $urltable_prefix = "/var/db/aliastables/";
+    $urltable_filename = $urltable_prefix . $name . ".txt";
+    if (!file_exists($urltable_prefix)) {
+        mkdir($urltable_prefix);
+    }
+    if (!empty($config['aliases']['alias'])) {
+        foreach ($config['aliases']['alias'] as $alias) {
+            if ($alias['name'] == $name) {
+                 $urls = array();
+                 if (!empty($alias["url"])) {
+                     $urls = array($alias["url"]);
+                 } elseif (!empty($alias["aliasurl"][0])) {
+                     $urls = $alias["aliasurl"];
+                 }
+                 if (file_exists($urltable_filename) && filesize($urltable_filename)) {
+                     $alias_content = file_get_contents($urltable_filename);
+                 } else {
+                     $arrContextOptions = array();
+                     if (!isset($config['system']['checkaliasesurlcert'])) {
+                         $arrContextOptions['ssl'] = array("verify_peer"=>false,"verify_peer_name"=>false);
+                     }
+                     foreach ($urls as $url) {
+                        if (is_URL($url)) {
+                            $content = @file_get_contents($url, false, stream_context_create($arrContextOptions));
+                            foreach (preg_split('/[\n\r]+/', $content, -1, PREG_SPLIT_NO_EMPTY) as $line) {
+                                if ((string)((int)$line) === $line && $line >= 1 && $line <= 65535) {
+                                    $alias_content .= $line. "\n";
+                                }
+                            }
+                         }
+                     }
+                     if (!empty($alias_content)) {
+                         file_put_contents($urltable_filename, $alias_content);
+                     }
+                 }
+                 break;
+            }
+        }
+    }
+    return preg_replace("/\n/", " ", $alias_content);
+}
+
+/**
+ * recursively collect port alias(es) contents
+ * @param $aliasname string alias name or null to fetch all aliases
+ * @param $aliases aliases already parsed (prevent deadlock)
+ * @return array containing ports
+ */
+function filter_core_get_port_alias($aliasname, $aliases=array())
+{
+    global $config;
+
+    $response = array();
+    $aliases[] = $aliasname;
+    if (isset($config['aliases']['alias'])) {
+        foreach ($config['aliases']['alias'] as $aliased) {
+            if ($aliasname == $aliased['name'] && $aliased['type'] == 'port') {
+                foreach (explode(" ", $aliased['address']) as $address) {
+                    if (is_alias($address)) {
+                        if (!in_array($address, $aliases)) {
+                            foreach (filter_core_get_port_alias($address, $aliases) as $port) {
+                                if (!in_array($port, $response)) {
+                                    $response[] = $port;
+                                }
+                            }
+                        }
+                    } elseif ((is_port($address) || is_portrange($address)) && !in_array($address, $response)) {
+                        $response[] = $address ;
+                    }
+                }
+            }
+        }
+    }
+    return $response;
+}
+
+
+/**
+ * Collect vpn networks for outbound rules
+ */
+function filter_core_get_default_nat_outbound_networks()
+{
+    global $config;
+    $result = array("127.0.0.0/8");
+    // Add openvpn networks
+    foreach (array('openvpn-server', 'openvpn-client') as $section) {
+        if (!empty($config['openvpn'][$section])) {
+            foreach ($config['openvpn'][$section] as $ovpn) {
+                if (!isset($ovpn['disable']) && !empty($ovpn['tunnel_network'])) {
+                    $result[] = $ovpn['tunnel_network'];
+                }
+            }
+        }
+    }
+    // Add ipsec network pool if specified
+    if (!empty($config['ipsec']['client']['pool_address']) && !empty($config['ipsec']['client']['pool_netbits'])) {
+        $tonathosts[] = "{$config['ipsec']['client']['pool_address']}/{$config['ipsec']['client']['pool_netbits']}";
+    }
+
+    return $result;
 }
 
 /**
@@ -117,7 +278,7 @@ function filter_core_rules_system($fw, $defaults)
     // CARP defaults
     $carp_disabled = empty($config['hasync']) && empty($config['virtualip']['vip']);
     $fw->registerFilterRule(1,
-      array('protocol' => 'carp', 'from' => '(self)', 'direction' => 'in', 'disabled' => $carp_disabled),
+      array('protocol' => 'carp', 'from' => '(self)', 'direction' => 'in', 'disabled' => !$carp_disabled),
       $defaults['block']
     );
     $fw->registerFilterRule(1,array('protocol' => 'carp'),$defaults['pass']);
@@ -144,9 +305,10 @@ function filter_core_rules_system($fw, $defaults)
     $fw->registerFilterRule(1,array('from' => '<virusprot>', 'label' => 'virusprot overload table'),$defaults['block']);
 
     // block bogons and private nets
-    $bogontmpl = array('type' => 'block', 'log' => ($config['OPNsense']['Syslog']['Firewall']['LogBogons'] == 1));
+    $bogontmpl = array('type' => 'block', 'log' => ($config['OPNsense']['Syslog']['Firewall']['LogBogons'] == 1), 'disablereplyto' => 1);
     $privtmpl = array('type' => 'block', 'log' => ($config['OPNsense']['Syslog']['Firewall']['LogPrivateNets'] == 1),
-      'from' => '10.0.0.0/8,127.0.0.0/8,100.64.0.0/10,172.16.0.0/12,192.168.0.0/16,fc00::/7');
+      'from' => '10.0.0.0/8,127.0.0.0/8,100.64.0.0/10,172.16.0.0/12,192.168.0.0/16,fc00::/7',
+      'disablereplyto' => 1);
     foreach ($fw->getInterfaceMapping() as $intf => $intfinfo) {
         $fw->registerFilterRule(5,
           array('from' => "<bogons>", 'direction' => 'in', 'interface' => $intf,
@@ -182,11 +344,18 @@ function filter_core_rules_system($fw, $defaults)
                     'interface' => $intf, 'label' =>'allow dhcpv6 client in ' . $intfinfo['descr']),
               $defaults['pass']
             );
-            $fw->registerFilterRule(1,
-              array('protocol' => 'udp', 'from_port' => 546,'to_port' => 547, 'direction' => 'out',
-                    'interface' => $intf, 'label' =>'allow dhcpv6 client in ' . $intfinfo['descr']),
-              $defaults['pass']
+            $dhcpv6_opts = array(
+                'label' => 'allow dhcpv6 client in ' . $intfinfo['descr'],
+                'direction' => 'out',
+                'interface' => $intf,
+                'protocol' => 'udp',
+                'from_port' => 546,
+                'to_port' => 547,
             );
+            if (isset($intfinfo['dhcp6vlanprio'])) {
+                 $dhcpv6_opts['set-prio'] = $intfinfo['dhcp6vlanprio'];
+            }
+            $fw->registerFilterRule(1, $dhcpv6_opts, $defaults['pass']);
         }
         // IPv4
         switch (empty($intfinfo['ipaddr']) ? "" : $intfinfo['ipaddr']) {
@@ -353,6 +522,38 @@ function filter_core_rules_system($fw, $defaults)
                 'protocol' => 'gre', 'label' =>'allow pptpd', 'quick' => false),
           $defaults['pass']
         );
+    }
+
+    // [out from this Firewall, using the selected gateway].
+    // Our default setting has been to force traffic leaving a specific interface to use the associated gateway.
+    // This behaviour can be disabled, so settings can be customized using manual firewall rules.
+    if (empty($config['system']['pf_disable_force_gw'])) {
+        foreach ($fw->getInterfaceMapping() as $ifdescr => $ifcfg) {
+            if (!isset($ifcfg['virtual']) && $ifcfg['if'] != 'lo0') {
+                $intf_has_v4 = false;
+                $intf_has_v6 = false;
+                foreach (legacy_getall_interface_addresses($ifcfg['if']) as $addr) {
+                    $intf_has_v4 = $intf_has_v4 || is_subnetv4($addr);
+                    $intf_has_v6 = $intf_has_v6 || is_subnetv6($addr);
+                }
+                foreach ($fw->getInterfaceGateways($ifcfg['if']) as $gwname) {
+                    $gwproto = $fw->getGateway($gwname)['proto'];
+                    // only try to add gateway rules for traffic leaving this interface when the correct protocol is
+                    // assigned to the interface (e.g. no ipv4 gateway when :network doesn't resolve to an ipv4 network)
+                    if (($gwproto == 'inet' && $intf_has_v4) || ($gwproto == 'inet6' && $intf_has_v6)) {
+                        $fw->registerFilterRule(100000,
+                          array('from' => $ifcfg['if'], 'direction' => 'out', 'gateway' => $gwname,
+                            'destination' => array('network'=> $ifdescr, "not" => true),
+                            'statetype' => 'keep',
+                            'allowopts' => true,
+                            'quick' => false,
+                            'label' => "let out anything from firewall host itself"),
+                          $defaults['pass']
+                        );
+                    }
+                }
+            }
+        }
     }
 
 }

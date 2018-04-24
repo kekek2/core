@@ -3,7 +3,7 @@
 /*
     Copyright (C) 2014 Deciso B.V.
     Copyright (C) 2009 Janne Enberg <janne.enberg@lietu.net>
-    Copyright (C) 2004 Scott Ullrich
+    Copyright (C) 2004 Scott Ullrich <sullrich@gmail.com>
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
     All rights reserved.
 
@@ -70,11 +70,8 @@ function delete_id($id, &$array)
     }
 }
 
-if (!isset($config['nat']['rule']) || !is_array($config['nat']['rule'])) {
-    $config['nat']['rule'] = array();
-}
 
-$a_nat = &$config['nat']['rule'];
+$a_nat = &config_read_array('nat', 'rule');
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pconfig = $_POST;
     if (isset($pconfig['id']) && isset($a_nat[$pconfig['id']])) {
@@ -241,6 +238,11 @@ $( document ).ready(function() {
     $("#iform").submit();
   });
 
+  // select All
+  $("#selectAll").click(function(){
+      $(".rule_select").prop("checked", $(this).prop("checked"));
+  });
+
   // watch scroll position and set to last known on page load
   watchScrollPosition();
 });
@@ -260,7 +262,7 @@ $( document ).ready(function() {
               <input type="hidden" id="id" name="id" value="" />
               <input type="hidden" id="action" name="act" value="" />
               <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-clean-form">
                   <thead>
                     <tr>
                       <td colspan="5"> </td>
@@ -270,7 +272,7 @@ $( document ).ready(function() {
                       <td colspan="2"> </td>
                     </tr>
                     <tr>
-                      <th width="2%">&nbsp;</th>
+                      <th width="2%"><input type="checkbox" id="selectAll"></th>
                       <th width="2%">&nbsp;</th>
                       <th width="2%">&nbsp;</th>
                       <th><?=gettext("If");?></th>
@@ -318,7 +320,7 @@ $( document ).ready(function() {
 ?>
                     <tr <?=isset($natent['disabled'])?"class=\"text-muted\"":"";?> ondblclick="document.location='firewall_nat_edit.php?id=<?=$nnats;?>';">
                       <td>
-                        <input type="checkbox" name="rule[]" value="<?=$nnats;?>"  />
+                        <input class="rule_select" type="checkbox" name="rule[]" value="<?=$nnats;?>"  />
                       </td>
                       <td>
 <?php                 if (isset($natent['nordr'])): ?>

@@ -29,20 +29,22 @@
 
 require_once("guiconfig.inc");
 require_once("filter.inc");
-require_once("ipsec.inc");
+require_once("plugins.inc.d/ipsec.inc");
 require_once("services.inc");
 require_once("interfaces.inc");
 
-if (!isset($config['ipsec']) || !is_array($config['ipsec'])) {
-    $config['ipsec'] = array();
-}
+config_read_array('ipsec');
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // fetch form data
     $pconfig  = array();
-    $pconfig['noinstalllanspd'] = isset($config['system']['noinstalllanspd']);
     $pconfig['disablevpnrules'] = isset($config['system']['disablevpnrules']);
     $pconfig['preferoldsa_enable'] = isset($config['ipsec']['preferoldsa']);
+    if (!empty($config['ipsec']['passthrough_networks'])) {
+        $pconfig['passthrough_networks'] = explode(',', $config['ipsec']['passthrough_networks']);
+    } else {
+        $pconfig['passthrough_networks'] = array();
+    }
     foreach ($ipsec_loglevels as $lkey => $ldescr) {
         if (!empty($config['ipsec']["ipsec_{$lkey}"])) {
             $pconfig["ipsec_{$lkey}"] = $config['ipsec']["ipsec_{$lkey}"];
@@ -51,46 +53,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
     }
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // save form data
     $pconfig = $_POST;
-    if (isset($pconfig['noinstalllanspd']) && $pconfig['noinstalllanspd'] == "yes") {
-        $config['system']['noinstalllanspd'] = true;
-    } elseif (isset($config['system']['noinstalllanspd'])) {
-        unset($config['system']['noinstalllanspd']);
-    }
-    if (!empty($pconfig['disablevpnrules'])) {
-        $config['system']['disablevpnrules'] = true;
-    }  elseif (isset($config['system']['disablevpnrules'])) {
-        unset($config['system']['disablevpnrules']);
-    }
-    if (isset($pconfig['preferoldsa_enable']) && $pconfig['preferoldsa_enable'] == "yes") {
-        $config['ipsec']['preferoldsa'] = true;
-    } elseif (isset($config['ipsec']['preferoldsa'])) {
-        unset($config['ipsec']['preferoldsa']);
-    }
-    if (isset($config['ipsec']) && is_array($config['ipsec'])) {
-        foreach ($ipsec_loglevels as $lkey => $ldescr) {
-            if (empty($_POST["ipsec_{$lkey}"])) {
-                if (isset($config['ipsec']["ipsec_{$lkey}"])) {
-                    unset($config['ipsec']["ipsec_{$lkey}"]);
-                }
-            } else {
-                $config['ipsec']["ipsec_{$lkey}"] = $_POST["ipsec_{$lkey}"];
+    // validate
+    $input_errors = array();
+    if (!empty($pconfig['passthrough_networks'])) {
+        foreach ($pconfig['passthrough_networks'] as $ptnet) {
+            if (!is_subnet($ptnet)) {
+                $input_errors[] = sprintf(gettext('Entry "%s" is not a valid network.'), $ptnet);
             }
         }
+    } else {
+        $pconfig['passthrough_networks'] = array();
     }
 
-    write_config();
-    $savemsg = get_std_save_message();
-    filter_configure();
-    ipsec_configure();
+    // save form data
+    if (count($input_errors) == 0) {
+        if (!empty($pconfig['disablevpnrules'])) {
+            $config['system']['disablevpnrules'] = true;
+        }  elseif (isset($config['system']['disablevpnrules'])) {
+            unset($config['system']['disablevpnrules']);
+        }
+        if (isset($pconfig['preferoldsa_enable']) && $pconfig['preferoldsa_enable'] == "yes") {
+            $config['ipsec']['preferoldsa'] = true;
+        } elseif (isset($config['ipsec']['preferoldsa'])) {
+            unset($config['ipsec']['preferoldsa']);
+        }
+        if (isset($config['ipsec']) && is_array($config['ipsec'])) {
+            foreach ($ipsec_loglevels as $lkey => $ldescr) {
+                if (empty($pconfig["ipsec_{$lkey}"])) {
+                    if (isset($config['ipsec']["ipsec_{$lkey}"])) {
+                        unset($config['ipsec']["ipsec_{$lkey}"]);
+                    }
+                } else {
+                    $config['ipsec']["ipsec_{$lkey}"] = $pconfig["ipsec_{$lkey}"];
+                }
+            }
+        }
+
+        if (count($pconfig['passthrough_networks'])) {
+            $config['ipsec']['passthrough_networks'] = implode(',', $pconfig['passthrough_networks']);
+        } elseif (isset($config['ipsec']['passthrough_networks'])) {
+            unset($config['ipsec']['passthrough_networks']);
+        }
+
+        write_config();
+        $savemsg = get_std_save_message();
+        filter_configure();
+        ipsec_configure_do();
+    }
 }
 
 $service_hook = 'ipsec';
+legacy_html_escape_form_data($pconfig);
 
 include("head.inc");
 
 ?>
+
+<!-- JQuery Tokenize (http://zellerda.com/projects/tokenize) -->
+<script type="text/javascript" src="/ui/js/jquery.tokenize.js"></script>
+<link rel="stylesheet" type="text/css" href="/ui/css/jquery.tokenize.css" />
+
+<script type="text/javascript" src="/ui/js/opnsense_ui.js"></script>
+
+ <script type="text/javascript">
+    $( document ).ready(function() {
+        formatTokenizersUI();
+    });
+</script>
 
 <body>
 <?php include("fbegin.inc"); ?>
@@ -110,23 +140,12 @@ if (isset($input_errors) && count($input_errors) > 0) {
           <div class="tab-content content-box col-xs-12">
               <form method="post" name="iform" id="iform">
                 <div class="table-responsive">
-                  <table class="table table-striped opnsense_standard_table_form">
+                  <table class="table table-clean-form opnsense_standard_table_form">
                     <tr>
                       <td ><strong><?=gettext("IPsec Advanced Settings"); ?></strong></td>
                       <td align="right">
                         <small><?=gettext("full help"); ?> </small>
                         <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td><a id="help_for_noinstalllanspd" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("LAN security associations"); ?></td>
-                      <td>
-                        <input name="noinstalllanspd" type="checkbox" id="noinstalllanspd" value="yes" <?=!empty($pconfig['noinstalllanspd']) ? "checked=\"checked\""  : "";?> />
-                        <strong><?=gettext("Do not install LAN SPD"); ?></strong>
-                        <div class="hidden" for="help_for_noinstalllanspd">
-                            <?=gettext("By default, if IPsec is enabled negating SPD are inserted to provide protection. " .
-                                                  "This behaviour can be changed by enabling this setting which will prevent installing these SPDs."); ?>
-                        </div>
                       </td>
                     </tr>
                     <tr>
@@ -142,18 +161,35 @@ if (isset($input_errors) && count($input_errors) > 0) {
                         <input name="preferoldsa_enable" type="checkbox" id="preferoldsa_enable" value="yes" <?= !empty($pconfig['preferoldsa_enable']) ? "checked=\"checked\"" : "";?> />
                         <strong><?=gettext("Prefer older IPsec SAs"); ?></strong>
                         <div class="hidden" for="help_for_preferoldsa_enable">
+                          <small class="formhelp">
                             <?=gettext("By default, if several SAs match, the newest one is " .
                                                   "preferred if it's at least 30 seconds old. Select this " .
                                                   "option to always prefer old SAs over new ones."); ?>
+                          </small>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td><a id="help_for_passthrough_networks" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Passthrough networks"); ?></td>
+                      <td>
+                        <select name="passthrough_networks[]" multiple="multiple" class="tokenize" data-width="348px" data-allownew="true" data-nbdropdownelements="10">
+<?php
+                        foreach ($pconfig['passthrough_networks'] as $ptnet):?>
+                          <option value="<?=$ptnet;?>" selected="selected"><?=$ptnet;?></option>
+<?php                   endforeach; ?>
+                        </select>
+                        <div class="hidden" for="help_for_passthrough_networks">
+                          <small class="formhelp">
+                            <?=gettext("This exempts traffic for one or more subnets from getting processed by the IPsec stack in the kernel. ".
+                                        "When sending all traffic to the remote location, you probably want to add your lan network(s) here"); ?>
+                          </small>
                         </div>
                       </td>
                     </tr>
                     <tr>
                       <td><a id="help_for_ipsec_debug" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPsec Debug"); ?></td>
                       <td>
-                        <div class="hidden" for="help_for_ipsec_debug">
-                                      <strong><?=gettext("Start IPsec in debug mode based on sections selected"); ?></strong> <br/>
-                        </div>
+                        <strong><?=gettext("Start IPsec in debug mode based on sections selected"); ?></strong> <br/>
 <?php                   foreach ($ipsec_loglevels as $lkey => $ldescr) :
 ?>
                         <?=$ldescr?>
@@ -170,7 +206,9 @@ endforeach; ?>
 <?php
 endforeach; ?>
                         <div class="hidden" for="help_for_ipsec_debug">
-                        <?=gettext("Launch IPsec in debug mode so that more verbose logs will be generated to aid in troubleshooting."); ?>
+                          <small class="formhelp">
+                          <?=gettext("Launch IPsec in debug mode so that more verbose logs will be generated to aid in troubleshooting."); ?>
+                          </small>
                         </div>
                       </td>
                     </tr>

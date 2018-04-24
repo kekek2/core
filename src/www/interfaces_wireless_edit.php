@@ -41,13 +41,7 @@ function clone_inuse($cloneif) {
     return false;
 }
 
-if (!isset($config['wireless']) || !is_array($config['wireless'])) {
-    $config['wireless'] = array();
-}
-if (!isset($config['wireless']['clone']) || !is_array($config['wireless']['clone'])) {
-    $config['wireless']['clone'] = array();
-}
-$a_clones = &$config['wireless']['clone'];
+$a_clones = &config_read_array('wireless', 'clone');
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -142,7 +136,7 @@ include("head.inc");
       <section class="col-xs-12">
         <div class="content-box tab-content">
           <form method="post" name="iform" id="iform">
-            <table class="table table-striped opnsense_standard_table_form">
+            <table class="table table-clean-form opnsense_standard_table_form">
               <thead>
                 <tr>
                   <td width="22%"><strong><?=gettext("Wireless clone configuration");?></strong></td>
@@ -178,7 +172,9 @@ include("head.inc");
                   <td>
                     <input name="descr" type="text" value="<?=$pconfig['descr'];?>" />
                     <div class="hidden" for="help_for_descr">
+                      <small class="formhelp">
                       <?=gettext("You may enter a description here for your reference (not parsed).");?>
+                      </small>
                     </div>
                   </div>
                 </tr>

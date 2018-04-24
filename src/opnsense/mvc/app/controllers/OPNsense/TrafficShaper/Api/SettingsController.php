@@ -208,7 +208,7 @@ class SettingsController extends ApiControllerBase
         $grid = new UIModelGrid($mdlShaper->pipes->pipe);
         return $grid->fetchBindRequest(
             $this->request,
-            array("enabled","number", "bandwidth","bandwidthMetric","burst","description","mask","origin"),
+            array("enabled","number", "bandwidth","bandwidthMetric","description","mask","origin"),
             "number"
         );
     }
@@ -301,7 +301,7 @@ class SettingsController extends ApiControllerBase
         if ($this->request->isPost()) {
             $mdlShaper = new TrafficShaper();
             if ($uuid != null) {
-                $id = $mdlShaper->getNodeByReference('pipes.queue.'.$uuid)->number;
+                $id = $mdlShaper->getNodeByReference('queues.queue.'.$uuid)->number;
                 if ($mdlShaper->queues->queue->del($uuid)) {
                     // if item is removed, serialize to config and save
                     firewall_syslog("Delete Firewall/Traffic Shaper/Queue", $id);
@@ -361,7 +361,7 @@ class SettingsController extends ApiControllerBase
         $grid = new UIModelGrid($mdlShaper->rules->rule);
         return $grid->fetchBindRequest(
             $this->request,
-            array("interface", "proto","source","destination","description","origin","sequence","target"),
+            array("interface", "proto", "source_not","source", "destination_not", "destination", "description", "origin", "sequence", "target"),
             "sequence"
         );
     }

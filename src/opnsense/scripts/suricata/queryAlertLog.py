@@ -1,7 +1,7 @@
 #!/usr/local/bin/python2.7
 
 """
-    Copyright (c) 2015 Ad Schellevis
+    Copyright (c) 2015 Ad Schellevis <ad@opnsense.org>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -30,13 +30,15 @@
     query suricata alert log
 """
 
+import sys
 import os.path
 import re
 import sre_constants
 import shlex
 import ujson
-from lib.log import reverse_log_reader
-from lib.params import update_params
+sys.path.insert(0, "/usr/local/opnsense/site-python")
+from log_helper import reverse_log_reader
+from params import update_params
 from lib import suricata_alert_log
 
 if __name__ == '__main__':

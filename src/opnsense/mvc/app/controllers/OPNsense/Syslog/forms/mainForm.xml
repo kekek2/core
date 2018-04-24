@@ -42,25 +42,27 @@
 	</field>
 	<field>
 		<id>syslog.Firewall.LogDefaultBlock</id>
-		<label>Log packets matched from the default block rules put in the ruleset</label>
+		<label>Log packets blocked by default</label>
 		<type>checkbox</type>
 		<help>Hint: packets that are blocked by the implicit default block rule will not be logged if you uncheck this option. Per-rule logging options are still respected.</help>
 	</field>
 	<field>
 		<id>syslog.Firewall.LogDefaultPass</id>
-		<label>Log packets matched from the default pass rules put in the ruleset</label>
+		<label>Log packets passed by default</label>
 		<type>checkbox</type>
 		<help>Hint: packets that are allowed by the implicit default pass rule will be logged if you check this option. Per-rule logging options are still respected.</help>
 	</field>
 	<field>
 		<id>syslog.Firewall.LogBogons</id>
-		<label>Log packets blocked by 'Block Bogon Networks' rules</label>
+		<label>Log packets blocked from bogons</label>
 		<type>checkbox</type>
+		<help>Log packets blocked by 'Block Bogon Networks' rules</help>
 	</field>
 	<field>
 		<id>syslog.Firewall.LogPrivateNets</id>
-		<label>Log packets blocked by 'Block Private Networks' rules</label>
+		<label>Log packets blocked from privates</label>
 		<type>checkbox</type>
+		<help>Log packets blocked by 'Block Private Networks' rules</help>
 	</field>
 	<field>
 		<id>syslog.Firewall.FilterDescriptions</id>
@@ -70,10 +72,6 @@
 	</field>
 </tab>
 <tab id="syslog-remote" description="Remote Logging">
-	<field>
-		<type>header</type>
-		<label>Remote Logging</label>
-	</field>
 	<field>
 		<id>syslog.Remote.Enable</id>
 		<label>Enable Remote Logging</label>

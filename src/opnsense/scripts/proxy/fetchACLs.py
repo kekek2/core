@@ -1,8 +1,8 @@
 #!/usr/local/bin/python2.7
 
 """
-    Copyright (c) 2016 Ad Schellevis - Deciso B.V.
-    Copyright (c) 2015 Jos Schellevis - Deciso B.V.
+    Copyright (c) 2016 Ad Schellevis <ad@opnsense.org>
+    Copyright (c) 2015 Jos Schellevis <jos@opnsense.org>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -84,9 +84,9 @@ class Downloader(object):
                 req_opts['verify'] = False
             if self._username is not None:
                 req_opts['auth'] = (self._username, self._password)
-
             req = requests.get(**req_opts)
             if req.status_code == 200:
+                req.raw.decode_content = True
                 self._source_handle = tempfile.NamedTemporaryFile('wb+', 10240)
                 while True:
                     data = req.raw.read(10240)

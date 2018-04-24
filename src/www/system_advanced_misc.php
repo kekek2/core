@@ -2,8 +2,8 @@
 
 /*
     Copyright (C) 2014-2015 Deciso B.V.
-    Copyright (C) 2005-2007 Scott Ullrich
-    Copyright (C) 2008 Shrew Soft Inc
+    Copyright (C) 2005-2007 Scott Ullrich <sullrich@gmail.com>
+    Copyright (C) 2008 Shrew Soft Inc. <mgrooms@shrew.net>
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
     All rights reserved.
 
@@ -31,7 +31,7 @@
 
 require_once("guiconfig.inc");
 require_once("filter.inc");
-require_once("ipsec.inc");
+require_once("services.inc");
 require_once("system.inc");
 require_once("interfaces.inc");
 
@@ -82,9 +82,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     /* if the old use_mfs_tmpvar is found, set these flags, too */
     $pconfig['use_mfs_var'] = isset($config['system']['use_mfs_tmpvar']) || isset($config['system']['use_mfs_var']);
     $pconfig['use_mfs_tmp'] = isset($config['system']['use_mfs_tmpvar']) || isset($config['system']['use_mfs_tmp']);
+    $pconfig['use_swap_file'] = isset($config['system']['use_swap_file']);
     $pconfig['rrdbackup'] = !empty($config['system']['rrdbackup']) ? $config['system']['rrdbackup'] : null;
     $pconfig['dhcpbackup'] = !empty($config['system']['dhcpbackup']) ? $config['system']['dhcpbackup'] : null;
     $pconfig['netflowbackup'] = !empty($config['system']['netflowbackup']) ? $config['system']['netflowbackup'] : null;
+    $pconfig['captiveportalbackup'] = !empty($config['system']['captiveportalbackup']) ? $config['system']['captiveportalbackup'] : null;
     $pconfig['powerd_ac_mode'] = "hadp";
     if (!empty($config['system']['powerd_ac_mode'])) {
         $pconfig['powerd_ac_mode'] = $config['system']['powerd_ac_mode'];
@@ -156,6 +158,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             unset($config['system']['use_mfs_tmp']);
         }
 
+        if (!empty($pconfig['use_swap_file'])) {
+            /* set explicit value here in case we want to make it flexible */
+            $config['system']['use_swap_file'] = 2048;
+        } elseif (isset($config['system']['use_swap_file'])) {
+            unset($config['system']['use_swap_file']);
+        }
+
         if (!empty($pconfig['rrdbackup'])) {
             $config['system']['rrdbackup'] = $pconfig['rrdbackup'];
         } elseif (isset($config['system']['rrdbackup'])) {
@@ -172,6 +181,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $config['system']['netflowbackup'] = $pconfig['netflowbackup'];
         } elseif (isset($config['system']['netflowbackup'])) {
             unset($config['system']['netflowbackup']);
+        }
+
+        if (!empty($pconfig['captiveportalbackup'])) {
+            $config['system']['captiveportalbackup'] = $pconfig['captiveportalbackup'];
+        } elseif (isset($config['system']['captiveportalbackup'])) {
+            unset($config['system']['captiveportalbackup']);
         }
 
         write_config();
@@ -210,7 +225,7 @@ include("head.inc");
           <form method="post" name="iform" id="iform">
             <table class="table table-clean-form opnsense_standard_table_form">
               <tr>
-                <td width="22%"><strong><?= gettext('Cryptographic Hardware Acceleration') ?></strong></td>
+                <td width="22%"><div style="position:absolute;"><strong><?= gettext('Cryptographic Hardware Acceleration') ?></strong></div></td>
                 <td width="78%" align="right">
                   <small><?=gettext("full help"); ?> </small>
                   <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
@@ -249,7 +264,9 @@ include("head.inc");
                 <td><a id="help_for_cryptodev_enable" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Use /dev/crypto");?> </td>
                 <td>
                   <input name="cryptodev_enable" type="checkbox" id="cryptodev_enable" value="yes" <?= !empty($pconfig['cryptodev_enable']) ? "checked=\"checked\"" : "";?> />
+                  <strong>
                   <?=gettext("Enable old userland device for cryptographic acceleration"); ?>
+                  </strong>
                   <div class="hidden" for="help_for_cryptodev_enable">
                     <small class="formhelp">
                     <?=gettext("Old hardware accelerators like 'safe', 'hifn' or 'ubsec' may only provide userland acceleration to e.g. " .
@@ -354,6 +371,26 @@ include("head.inc");
                 </td>
               </tr>
               <tr>
+                <td><a id="help_for_captiveportalbackup" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Periodic Captive Portal Backup");?></td>
+                <td>
+                  <select name="captiveportalbackup" class="selectpicker" data-style="btn-default" id="captiveportalbackup">
+                    <option value='0' <?= $pconfig['captiveportalbackup'] == 0 ? 'selected="selected"' : ''; ?>><?=gettext('Disabled'); ?></option>
+<?php
+                    for ($x = 1; $x <= 24; $x++): ?>
+                    <option value="<?= $x ?>" <?= $pconfig['captiveportalbackup'] == $x ? 'selected="selected"' : '';?>>
+                      <?= $x == 1 ? gettext('1 hour') : sprintf(gettext('%s hours'), $x) ?>
+                    </option>
+<?php
+                    endfor; ?>
+                  </select>
+                  <div class="hidden" for="help_for_captiveportalbackup">
+                    <small class="formhelp">
+                    <?=gettext("This will periodically backup the captive portal session data so it can be restored automatically on the next boot.");?>
+                    </small>
+                  </div>
+                </td>
+              </tr>
+              <tr>
                 <th colspan="2" valign="top" class="listtopic"><?=gettext("Power Savings"); ?></th>
               </tr>
               <tr>
@@ -380,7 +417,7 @@ include("head.inc");
                 </td>
               </tr>
               <tr>
-                <td><i class="fa fa-info-circle text-muted"></i>  <?=gettext('On AC Power Mode') ?></td>
+                <td><i class="fa fa-info-circle text-muted"></i> <?=gettext('On AC Power Mode') ?></td>
                 <td>
                   <select name="powerd_ac_mode" class="selectpicker" data-style="btn-default" data-width="auto">
                     <option value="hadp" <?=$pconfig['powerd_ac_mode']=="hadp" ? "selected=\"selected\"" : "";?>>
@@ -398,7 +435,7 @@ include("head.inc");
                   </select>
                 </td>
               <tr>
-                <td><i class="fa fa-info-circle text-muted"></i>  <?=gettext('On Battery Power Mode') ?></td>
+                <td><i class="fa fa-info-circle text-muted"></i> <?=gettext('On Battery Power Mode') ?></td>
                 <td>
                   <select name="powerd_battery_mode" class="selectpicker" data-style="btn-default" data-width="auto">
                     <option value="hadp"<?=$pconfig['powerd_battery_mode']=="hadp" ? "selected=\"selected\"" : "";?>>
@@ -417,7 +454,7 @@ include("head.inc");
                 </td>
               </tr>
               <tr>
-                <td><a id="help_for_powerd_normal_mode" href="#" class="showhelp"><i class="fa fa-info-circle text-circle"></i></a>  <?=gettext('On Normal Power Mode'); ?></td>
+                <td><a id="help_for_powerd_normal_mode" href="#" class="showhelp"><i class="fa fa-info-circle text-circle"></i></a> <?=gettext('On Normal Power Mode'); ?></td>
                 <td>
                   <select name="powerd_normal_mode" class="selectpicker" data-style="btn-default" data-width="auto">
                     <option value="hadp"<?=$pconfig['powerd_normal_mode']=="hadp" ? "selected=\"selected\"" : "";?>>
@@ -434,12 +471,21 @@ include("head.inc");
                     </option>
                   </select>
                   <div class="hidden" for="help_for_powerd_normal_mode">
+                    <small class="formhelp">
                     <?=gettext("If the powerd utility can not determine the power state it uses \"normal\" for control."); ?>
+                    </small>
                   </div>
                 </td>
               </tr>
               <tr>
-                <th colspan="2" valign="top" class="listtopic"><?=gettext("RAM Disk Settings (Reboot to Apply Changes)"); ?></th>
+                <th colspan="2" valign="top" class="listtopic"><?=gettext("Disk / Memory Settings (reboot to apply changes)"); ?></th>
+              </tr>
+              <tr>
+                <td><i class="fa fa-info-circle text-muted"></i> <?=gettext('Swap file'); ?></td>
+                <td>
+                  <input name="use_swap_file" type="checkbox" id="use_swap_file" value="yes" <?=!empty($pconfig['use_swap_file']) ? 'checked="checked"' : '';?>/>
+                  <strong><?= gettext('Add a 2 GB swap file to the system') ?></strong>
+                </td>
               </tr>
               <tr>
                 <td><a id="help_for_use_mfs_var" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('/var RAM disk'); ?></td>
@@ -458,7 +504,7 @@ include("head.inc");
                 <td><a id="help_for_use_mfs_tmp" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('/tmp RAM disk'); ?></td>
                 <td>
                   <input name="use_mfs_tmp" type="checkbox" id="use_mfs_tmp" value="yes" <?=!empty($pconfig['use_mfs_tmp']) ? 'checked="checked"' : '';?>/>
-                  <?=gettext('Use memory file system for /tmp'); ?>
+                  <strong><?=gettext('Use memory file system for /tmp'); ?></strong>
                   <div class="hidden" for="help_for_use_mfs_tmp">
                     <small class="formhelp">
                     <?= gettext('Set this if you wish to use /tmp as a RAM disk (memory file system disk) rather than using the hard disk.') ?>

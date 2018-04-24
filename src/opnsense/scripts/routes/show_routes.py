@@ -1,7 +1,7 @@
 #!/usr/local/bin/python2.7
 
 """
-    Copyright (c) 2016 Ad Schellevis
+    Copyright (c) 2016 Ad Schellevis <ad@opnsense.org>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -39,10 +39,10 @@ if __name__ == '__main__':
     fieldnames=[]
     with tempfile.NamedTemporaryFile() as output_stream:
         if '-n' in sys.argv:
-            resolv = '-n'
+            resolv = 'n'
         else:
             resolv = ''
-        subprocess.call(['/usr/bin/netstat', '-rW', resolv], stdout=output_stream, stderr=open(os.devnull, 'wb'))
+        subprocess.call(['/usr/bin/netstat', '-rW' + resolv], stdout=output_stream, stderr=open(os.devnull, 'wb'))
         output_stream.seek(0)
         current_proto = ""
         for line in output_stream.read().strip().split('\n'):

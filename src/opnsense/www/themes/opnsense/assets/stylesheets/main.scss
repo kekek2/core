@@ -362,14 +362,62 @@ body{
   border-bottom: none;
 }
 
-.nav-tabs > li.active {
+.dropdown-menu > li > a,
+.dropdown-header {
+  padding: 3px 10px;
+}
+
+.nav-tabs {
+  margin-right: 1px;
+  border-bottom: 1px solid darken(map-get($colors, bordergrey), 30%);
+}
+
+.nav-tabs > li {
+  border-radius: 0px;
+  border-top-right-radius: 10px;
+  margin-right: 2px;
+}
+
+.nav-tabs > li > a {
+  background: #FBFBFB;
+  border-radius: 0px;
+  border-top-right-radius: 10px;
+  margin-right: 0px;
+}
+
+.nav-tabs > li > a,
+.nav-tabs > li > a:hover,
+.nav-tabs > li > a:focus {
+  border-right: 1px solid darken(#FBFBFB, 5%);
+  border-top: 1px solid darken(#FBFBFB, 5%);
+  border-left: 1px solid darken(#FBFBFB, 5%);
+  border-bottom: 1px solid darken(map-get($colors, bordergrey), 30%);
+}
+
+.nav-tabs > li.active > a {
   background: #FFF !important;
 }
 
-.nav-tabs > li > a{
-  border-radius: 0px;
-  margin-right: 0px;
+.nav-tabs > li.active > a,
+.nav-tabs > li.active > a:hover,
+.nav-tabs > li.active > a:focus {
+  border-right: 1px solid darken(map-get($colors, bordergrey), 30%);
+  border-top: 1px solid darken(map-get($colors, bordergrey), 30%);
+  border-left: 1px solid darken(map-get($colors, bordergrey), 30%);
 }
+
+.nav-tabs > li > a.visible-lg-inline-block:not(.pull-right) {
+  border-top-right-radius: 0px !important;
+  padding-left: 10px !important;
+  padding-right: 5px !important;
+}
+
+.nav-tabs > li > a.visible-lg-inline-block.pull-right {
+  border-left: 0px !important;
+  padding-left: 5px !important;
+  padding-right: 10px !important;
+}
+
 
 .nav-tabs.nav-justified{
   border-right:1px solid map-get($colors, bordergrey);
@@ -537,6 +585,26 @@ table{
 
 .navbar-brand{
     padding: 10px 20px;
+}
+
+.label-opnsense {
+  /* emulates btn */
+  border: 1px solid transparent;
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 12px;
+  line-height: 1.5;
+  border-radius: 3px;
+}
+
+.label-opnsense-sm {
+  /* emulates btn-sm */
+  padding: 5px 10px;
+}
+
+.label-opnsense-xs {
+  /* emulates btn-xs */
+  padding: 1px 5px;
 }
 
 ::-webkit-scrollbar {

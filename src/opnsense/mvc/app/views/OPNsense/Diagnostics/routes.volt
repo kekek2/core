@@ -84,11 +84,11 @@ POSSIBILITY OF SUCH DAMAGE.
                         <thead>
                         <tr>
                             <th data-column-id="proto" data-type="string" >{{ lang._('Proto') }}</th>
-                            <th data-column-id="destination" data-type="string" data-identifier="true">{{ lang._('Destination') }}</th>
+                            <th data-column-id="destination" data-type="string">{{ lang._('Destination') }}</th>
                             <th data-column-id="gateway" data-type="string">{{ lang._('Gateway') }}</th>
                             <th data-column-id="flags" data-type="string" data-css-class="hidden-xs hidden-sm" data-header-css-class="hidden-xs hidden-sm">{{ lang._('Flags') }}</th>
-                            <th data-column-id="use" data-type="string" data-css-class="hidden-xs hidden-sm" data-header-css-class="hidden-xs hidden-sm">{{ lang._('Use') }}</th>
-                            <th data-column-id="mtu" data-type="string" data-css-class="hidden-xs hidden-sm" data-header-css-class="hidden-xs hidden-sm">{{ lang._('MTU') }}</th>
+                            <th data-column-id="use" data-type="numeric" data-css-class="hidden-xs hidden-sm" data-header-css-class="hidden-xs hidden-sm">{{ lang._('Use') }}</th>
+                            <th data-column-id="mtu" data-type="numeric" data-css-class="hidden-xs hidden-sm" data-header-css-class="hidden-xs hidden-sm">{{ lang._('MTU') }}</th>
                             <th data-column-id="netif" data-type="string" data-css-class="hidden-xs hidden-sm" data-header-css-class="hidden-xs hidden-sm">{{ lang._('Netif') }}</th>
                             <th data-column-id="intf_description" data-type="string" data-css-class="hidden-xs hidden-sm" data-header-css-class="hidden-xs hidden-sm">{{ lang._('Netif (name)') }}</th>
                             <th data-column-id="expire" data-type="string" data-css-class="hidden-xs hidden-sm" data-header-css-class="hidden-xs hidden-sm">{{ lang._('Expire') }}</th>
@@ -110,8 +110,7 @@ POSSIBILITY OF SUCH DAMAGE.
                                 <strong><?=gettext("Name resolution");?></strong>
                                 <p class="text-muted">
                                     <small>
-                                        {{ lang._("Enable this to attempt to resolve names when displaying the tables.") }}<br/>
-                                        {{ lang._('Note:') }} {{ lang._("By enabling name resolution, the query should take a bit longer.") }}
+                                        {{ lang._('Enable this to attempt to resolve names when displaying the tables. By enabling name resolution, the query may take longer.') }}
                                     </small>
                                 </p>
                             </td>
@@ -126,7 +125,6 @@ POSSIBILITY OF SUCH DAMAGE.
                         </tr>
                     </table>
                 </div>
-                <hr/>
             </div>
         </div>
     </div>

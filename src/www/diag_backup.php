@@ -2,7 +2,7 @@
 
 /*
     Copyright (C) 2014 Deciso B.V.
-    Copyright (C) 2004-2009 Scott Ullrich
+    Copyright (C) 2004-2009 Scott Ullrich <sullrich@gmail.com>
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
     All rights reserved.
 
@@ -67,78 +67,6 @@ function restore_config_section($section_name, $new_contents)
     return true;
 }
 
-function rrd_data_xml()
-{
-    $rrddbpath = '/var/db/rrd';
-
-    $result = "\t<rrddata>\n";
-    $rrd_files = glob("{$rrddbpath}/*.rrd");
-    $xml_files = array();
-    foreach ($rrd_files as $rrd_file) {
-        $basename = basename($rrd_file);
-        $xml_file = preg_replace('/\.rrd$/', ".xml", $rrd_file);
-        exec("/usr/local/bin/rrdtool dump '{$rrd_file}' '{$xml_file}'");
-        $xml_data = @file_get_contents($xml_file);
-        @unlink($xml_file);
-        if ($xml_data !== false) {
-            $result .= "\t\t<rrddatafile>\n";
-            $result .= "\t\t\t<filename>{$basename}</filename>\n";
-            $result .= "\t\t\t<xmldata>" . base64_encode(gzdeflate($xml_data)) . "</xmldata>\n";
-            $result .= "\t\t</rrddatafile>\n";
-        }
-    }
-    $result .= "\t</rrddata>\n";
-    return $result;
-}
-
-function restore_rrddata() {
-    global $config;
-    foreach($config['rrddata']['rrddatafile'] as $rrd) {
-        if (!empty($rrd['xmldata'])) {
-            $rrd_file = "/var/db/rrd/{$rrd['filename']}";
-            $xml_file = preg_replace('/\.rrd$/', ".xml", $rrd_file);
-            if (file_put_contents($xml_file, gzinflate(base64_decode($rrd['xmldata']))) === false) {
-                log_error("Cannot write $xml_file");
-                continue;
-            }
-            $output = array();
-            $status = null;
-            exec("/usr/local/bin/rrdtool restore -f '{$xml_file}' '{$rrd_file}'", $output, $status);
-            if ($status) {
-                log_error("rrdtool restore -f '{$xml_file}' '{$rrd_file}' failed returning {$status}.");
-                continue;
-            }
-            unlink($xml_file);
-        } elseif (!empty($rrd['data'])) {
-            /* rrd backup format */
-            $rrd_file = "/var/db/rrd/{$rrd['filename']}";
-            $rrd_fd = fopen($rrd_file, "w");
-            if (!$rrd_fd) {
-                log_error("Cannot write $rrd_file");
-                continue;
-            }
-            $data = base64_decode($rrd['data']);
-            /* Try to decompress the data. */
-            $dcomp = @gzinflate($data);
-            if ($dcomp) {
-                /* If the decompression worked, write the decompressed data */
-                if (fwrite($rrd_fd, $dcomp) === false) {
-                    log_error("fwrite $rrd_file failed");
-                    continue;
-                }
-            } elseif (fwrite($rrd_fd, $data) === false) {
-                  /* If the decompression failed, it wasn't compressed, so write raw data */
-                  log_error("fwrite $rrd_file failed");
-                  continue;
-            }
-            if (fclose($rrd_fd) === false) {
-                log_error("fclose $rrd_file failed");
-                continue;
-            }
-        }
-    }
-}
-
 $areas = array(
     'OPNsense' => gettext('OPNsense Additions'),	/* XXX need specifics */
     'aliases' => gettext('Aliases'),
@@ -149,7 +77,7 @@ $areas = array(
     'dhcpdv6' => gettext('DHCPv6 Server'),
     'dhcrelay' => gettext('DHCP Relay'),
     'dhcrelay6' => gettext('DHCPv6 Relay'),
-    'dnsmasq' => gettext('DNS Forwarder'),
+    'dnsmasq' => gettext('Dnsmasq DNS'),
     'dyndnses' => gettext('Dynamic DNS'),
     'dnsupdates' => gettext('RFC 2136'),
     'filter' => gettext('Firewall Rules'),
@@ -175,7 +103,7 @@ $areas = array(
     'sysctl' => gettext('System tunables'),
     'syslog' => gettext('Syslog'),
     'system' => gettext('System'),
-    'unbound' => gettext('DNS Resolver'),
+    'unbound' => gettext('Unbound DNS'),
     'vlans' => gettext('VLAN Devices'),
     'widgets' => gettext('Dashboard Widgets'),
     'wireless' => gettext('Wireless Devices'),
@@ -222,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
             /* backup RRD data */
             if (empty($_POST['donotbackuprrd'])) {
-                $rrd_data_xml = rrd_data_xml();
+                $rrd_data_xml = rrd_export();
                 $closing_tag = "</opnsense>";
                 $data = str_replace($closing_tag, $rrd_data_xml . $closing_tag, $data);
             }
@@ -278,17 +206,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
 
         if (count($input_errors) == 0) {
-            if(stristr($data, "<m0n0wall>")) {
-                log_error('Upgrading m0n0wall configuration to OPNsense.');
-                $data = str_replace('m0n0wall', 'opnsense', $data);
-                $m0n0wall_upgrade = true;
-            }
             if (!empty($_POST['restorearea'])) {
                 if (!restore_config_section($_POST['restorearea'], $data)) {
                     $input_errors[] = gettext("You have selected to restore an area but we could not locate the correct xml tag.");
                 } else {
                     if (!empty($config['rrddata'])) {
-                        restore_rrddata();
+                        /* XXX we should point to the data... */
+                        rrd_import();
                         unset($config['rrddata']);
                         write_config();
                         convert_config();
@@ -312,108 +236,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     $config = parse_config();
                     /* extract out rrd items, unset from $config when done */
                     if($config['rrddata']) {
-                        restore_rrddata();
+                        /* XXX we should point to the data... */
+                        rrd_import();
                         unset($config['rrddata']);
                         write_config();
                         convert_config();
                     }
-                    if($m0n0wall_upgrade) {
-                        if(!empty($config['system']['gateway'])) {
-                            $config['interfaces']['wan']['gateway'] = $config['system']['gateway'];
-                        }
-                        /* optional if list */
-                        $ifdescrs = get_configured_interface_list(true, true);
-                        /* remove special characters from interface descriptions */
-                        if(is_array($ifdescrs)) {
-                            foreach($ifdescrs as $iface) {
-                                $config['interfaces'][$iface]['descr'] = preg_replace('/[^a-z_0-9]/i','',$config['interfaces'][$iface]['descr']);
-                            }
-                            /* check for interface names with an alias */
-                            foreach($ifdescrs as $iface) {
-                                if(is_alias($config['interfaces'][$iface]['descr'])) {
-                                    // Firewall rules
-                                    $origname = $config['interfaces'][$iface]['descr'];
-                                    $newname  = $config['interfaces'][$iface]['descr'] . "Alias";
-                                    update_alias_names_upon_change(array('filter', 'rule'), array('source', 'address'), $newname, $origname);
-                                    update_alias_names_upon_change(array('filter', 'rule'), array('destination', 'address'), $newname, $origname);
-                                    // NAT Rules
-                                    update_alias_names_upon_change(array('nat', 'rule'), array('source', 'address'), $newname, $origname);
-                                    update_alias_names_upon_change(array('nat', 'rule'), array('destination', 'address'), $newname, $origname);
-                                    update_alias_names_upon_change(array('nat', 'rule'), array('target'), $newname, $origname);
-                                    // Alias in an alias
-                                    update_alias_names_upon_change(array('aliases', 'alias'), array('address'), $newname, $origname);
-                                }
-                            }
-                        }
-                        // Reset configuration version to something low
-                        // in order to force the config upgrade code to
-                        // run through with all steps that are required.
-                        $config['system']['version'] = "1.0";
-                        // Deal with descriptions longer than 63 characters
-                        for ($i = 0; isset($config["filter"]["rule"][$i]); $i++) {
-                            if(count($config['filter']['rule'][$i]['descr']) > 63) {
-                                $config['filter']['rule'][$i]['descr'] = substr($config['filter']['rule'][$i]['descr'], 0, 63);
-                            }
-                        }
-                        // Move interface from ipsec to enc0
-                        for ($i = 0; isset($config["filter"]["rule"][$i]); $i++) {
-                            if($config['filter']['rule'][$i]['interface'] == "ipsec") {
-                                $config['filter']['rule'][$i]['interface'] = "enc0";
-                            }
-                        }
-                        // Convert icmp types
-                        // http://www.openbsd.org/cgi-bin/man.cgi?query=icmp&sektion=4&arch=i386&apropos=0&manpath=OpenBSD+Current
-                        for ($i = 0; isset($config["filter"]["rule"][$i]); $i++) {
-                            if($config["filter"]["rule"][$i]['icmptype']) {
-                                switch($config["filter"]["rule"][$i]['icmptype']) {
-                                    case "echo":
-                                        $config["filter"]["rule"][$i]['icmptype'] = "echoreq";
-                                        break;
-                                    case "unreach":
-                                        $config["filter"]["rule"][$i]['icmptype'] = "unreach";
-                                        break;
-                                    case "echorep":
-                                        $config["filter"]["rule"][$i]['icmptype'] = "echorep";
-                                        break;
-                                    case "squench":
-                                        $config["filter"]["rule"][$i]['icmptype'] = "squench";
-                                        break;
-                                    case "redir":
-                                        $config["filter"]["rule"][$i]['icmptype'] = "redir";
-                                        break;
-                                    case "timex":
-                                        $config["filter"]["rule"][$i]['icmptype'] = "timex";
-                                        break;
-                                    case "paramprob":
-                                        $config["filter"]["rule"][$i]['icmptype'] = "paramprob";
-                                        break;
-                                    case "timest":
-                                        $config["filter"]["rule"][$i]['icmptype'] = "timereq";
-                                        break;
-                                    case "timestrep":
-                                        $config["filter"]["rule"][$i]['icmptype'] = "timerep";
-                                        break;
-                                    case "inforeq":
-                                        $config["filter"]["rule"][$i]['icmptype'] = "inforeq";
-                                        break;
-                                    case "inforep":
-                                        $config["filter"]["rule"][$i]['icmptype'] = "inforep";
-                                        break;
-                                    case "maskreq":
-                                        $config["filter"]["rule"][$i]['icmptype'] = "maskreq";
-                                        break;
-                                    case "maskrep":
-                                        $config["filter"]["rule"][$i]['icmptype'] = "maskrep";
-                                        break;
-                                }
-                            }
-                        }
-                        write_config();
-                        convert_config();
-                        $savemsg = gettext("The m0n0wall configuration has been restored and upgraded to OPNsense.");
-                    } else {
-                        $savemsg = gettext("The configuration has been restored.");
-                    }
+                    $savemsg = gettext("The configuration has been restored.");
                 } else {
                     $input_errors[] = gettext("The configuration could not be restored.");
                 }

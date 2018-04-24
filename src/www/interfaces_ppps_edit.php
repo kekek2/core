@@ -32,13 +32,7 @@ require_once("guiconfig.inc");
 require_once("interfaces.inc");
 require_once("services.inc");
 
-if (!isset($config['ppps'])) {
-    $config['ppps'] = array();
-}
-if (!isset($config['ppps']['ppp'])) {
-    $config['ppps']['ppp'] = array();
-}
-$a_ppps = &$config['ppps']['ppp'];
+$a_ppps = &config_read_array('ppps', 'ppp');
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -49,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
     // plain 1-on-1 copy
     $copy_fields = array('ptpid', 'type', 'username', 'idletimeout', 'uptime', 'descr', 'simpin', 'pin-wait',
-                        'apn', 'apnum', 'phone', 'connect-timeout', 'provider');
+                        'apn', 'apnum', 'phone', 'connect-timeout', 'provider', 'hostuniq');
     foreach ($copy_fields as $fieldname) {
         if (isset($a_ppps[$id][$fieldname])) {
             $pconfig[$fieldname] = $a_ppps[$id][$fieldname];
@@ -218,6 +212,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 } else {
                     $ppp['provider'] = !empty($pconfig['null_service']);
                 }
+                if (!empty($pconfig['hostuniq'])) {
+                    $ppp['hostuniq'] = $pconfig['hostuniq'];
+                }
                 break;
             case "pptp":
             case "l2tp":
@@ -271,7 +268,7 @@ include("head.inc");
     $(document).ready(function() {
         // change type
         $("#type").change(function(){
-          $('#ppp,#ppp_adv,#pppoe,#ppp_provider,#phone_num,#apn_').hide();
+          $('#ppp,#ppp_adv,#pppoe,#hostuniqopt,#ppp_provider,#phone_num,#apn_').hide();
           $('#ports > [data-type="serial"]').hide();
           $('#ports > [data-type="serial"]').prop('disabled', true);
           $('#ports > [data-type="interface"]').hide();
@@ -299,6 +296,7 @@ include("head.inc");
               break;
             case "pppoe":
               $('#pppoe').show();
+              $('#hostuniqopt').show();
               // fall through to show interface items
             default:
               $('#ports > [data-type="interface"]').show();
@@ -414,7 +412,7 @@ include("head.inc");
             <form method="post" name="iform" id="iform">
               <div class="tab-content content-box col-xs-12 __mb">
                 <div class="table-responsive">
-                  <table class="table table-striped opnsense_standard_table_form">
+                  <table class="table table-clean-form opnsense_standard_table_form">
                     <thead>
                       <tr>
                         <td width="22%"><strong><?=gettext("PPPs configuration");?></strong></td>
@@ -468,7 +466,9 @@ include("head.inc");
                           endforeach;?>
                           </select>
                           <div class="hidden" for="help_for_ports">
+                            <small class="formhelp">
                             <?= gettext("Select at least two interfaces for Multilink (MLPPP) connections."); ?>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -477,7 +477,9 @@ include("head.inc");
                         <td>
                           <input name="descr" type="text"  value="<?=$pconfig['descr'];?>" />
                           <div class="hidden" for="help_for_descr">
+                            <small class="formhelp">
                             <?= gettext("You may enter a description here for your reference. Description will appear in the \"Interfaces Assign\" select lists."); ?>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -511,7 +513,9 @@ include("head.inc");
                             </tr>
                           </table>
                           <div class="hidden" for="help_for_country">
+                            <small class="formhelp">
                             <?=gettext("Select to fill in data for your service provider."); ?>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -532,7 +536,9 @@ include("head.inc");
                         <td>
                           <input name="phone" type="text" id="phone" value="<?=$pconfig['phone'];?>" />
                           <div class="hidden" for="help_for_phone">
+                            <small class="formhelp">
                             <?= gettext("Note: Typically *99# for GSM networks and #777 for CDMA networks"); ?>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -546,15 +552,27 @@ include("head.inc");
                         <td><a id="help_for_provider" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Service name"); ?></td>
                         <td>
                           <input name="provider" type="text" id="provider" value="<?=$pconfig['provider'];?>" />&nbsp;&nbsp;
-                          <input type="checkbox" value="on" id="null_service" name="null_service" <?=!empty($pconfig['null_service']) ? "checked=\"checked\"" : ""; ?> /> <?= gettext("Configure a NULL Service name"); ?>
+                          <input type="checkbox" value="on" id="null_service" name="null_service" <?=!empty($pconfig['null_service']) ? "checked=\"checked\"" : ""; ?> />
+                          <strong><?= gettext("Configure a NULL Service name"); ?></strong>
                           <div class="hidden" for="help_for_provider">
+                            <small class="formhelp">
                             <?= gettext("Hint: this field can usually be left empty. Service name will not be configured if this field is empty. Check the \"Configure NULL\" box to configure a blank Service name."); ?>
+                            </small>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr style="display:none" name="hostuniqopt" id="hostuniqopt">
+                        <td><a id="help_for_hostuniq" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Host-Uniq"); ?></td>
+                        <td>
+                          <input name="hostuniq" type="text" id="hostuniq" value="<?=$pconfig['hostuniq'];?>" />
+                          <div class="hidden" for="help_for_hostuniq">
+                            <?= gettext('This field can usually be left empty unless specified by the provider.') ?>
                           </div>
                         </td>
                       </tr>
                     </tbody>
                   </table>
-                  <table class="table table-striped" id="interface_details" style="display:none">
+                  <table class="table table-clean-form" id="interface_details" style="display:none">
                     <tbody>
 <?php
                       for ($intf_idx=0; $intf_idx <= max(count($serialports), count($portlist)) ; ++$intf_idx):?>
@@ -571,7 +589,9 @@ include("head.inc");
                           <?php endfor; ?>
                           </select>
                           <div class="hidden" for="help_for_localip_<?=$intf_idx;?>">
+                            <small class="formhelp">
                             <?= gettext("IP Address"); ?>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -580,7 +600,9 @@ include("head.inc");
                         <td width="78%">
                           <input name="gateway[]" type="text" class="intf_select_<?=$intf_idx;?>" value="<?=isset($pconfig['gateway'][$intf_idx]) ? $pconfig['gateway'][$intf_idx] : "";?>" />
                           <div class="hidden" for="help_for_gateway_<?=$intf_idx;?>">
+                            <small class="formhelp">
                             <?= gettext("IP Address OR Hostname"); ?>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -594,7 +616,7 @@ include("head.inc");
               <!-- Advanced (button, show options) -->
               <div class="tab-content content-box col-xs-12 __mb" id="show_advanced_opt">
                 <div class="table-responsive">
-                  <table class="table table-striped" >
+                  <table class="table table-clean-form" >
                     <tbody>
                       <tr>
                         <td width="22%">&nbsp;</td>
@@ -609,7 +631,7 @@ include("head.inc");
               <div class="tab-content content-box col-xs-12 __mb" >
                 <div class="table-responsive">
                   <!-- Advanced PPP -->
-                  <table class="table table-striped" id="ppp_adv" style="display:none">
+                  <table class="table table-clean-form" id="ppp_adv" style="display:none">
                     <thead>
                       <tr style="display:none" class="act_show_advanced">
                         <th colspan="2"><?= gettext("Advanced Options"); ?></th>
@@ -621,7 +643,9 @@ include("head.inc");
                         <td width="78%">
                           <input name="apnum" type="text" id="apnum" value="<?=$pconfig['apnum'];?>" />
                           <div class="hidden" for="help_for_apnum">
+                            <small class="formhelp">
                             <?= gettext("Note: Defaults to 1 if you set APN above. Ignored if you set no APN above."); ?>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -636,7 +660,9 @@ include("head.inc");
                         <td>
                           <input name="pin-wait" type="text" cid="pin-wait"  value="<?=$pconfig['pin-wait'];?>" />
                           <div class="hidden" for="help_for_pin-wait">
+                            <small class="formhelp">
                             <?= gettext("Note: Time to wait for SIM to discover network after PIN is sent to SIM (seconds)."); ?>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -645,8 +671,10 @@ include("head.inc");
                         <td>
                           <input type="text" id="initstr" name="initstr" value="<?=$pconfig['initstr'];?>" />
                           <div class="hidden" for="help_for_initstr">
+                            <small class="formhelp">
                             <?= gettext("Note: Enter the modem initialization string here. Do NOT include the \"AT\"" .
                           " string at the beginning of the command. Many modern USB 3G modems don't need an initialization string."); ?>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -655,7 +683,9 @@ include("head.inc");
                         <td>
                           <input name="connect-timeout" type="text" id="connect-timeout" value="<?=$pconfig['connect-timeout'];?>" />
                           <div class="hidden" for="help_for_connect-timeout">
+                            <small class="formhelp">
                             <?= gettext("Note: Enter timeout in seconds for connection to be established (sec.) Default is 45 sec."); ?>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -663,25 +693,29 @@ include("head.inc");
                         <td><a id="help_for_uptime" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Uptime Logging"); ?></td>
                         <td>
                           <input type="checkbox" value="on" id="uptime" name="uptime" <?=!empty($pconfig['uptime']) ? "checked=\"checked\"" : ""; ?> />
-                          <?= gettext("Enable persistent logging of connection uptime."); ?>
+                          <strong><?= gettext("Enable persistent logging of connection uptime."); ?></strong>
                           <div class="hidden" for="help_for_uptime">
+                            <small class="formhelp">
                             <?= gettext("This option causes cumulative uptime to be recorded and displayed on the Status Interfaces page."); ?>
+                            </small>
                           </div>
                         </td>
                       </tr>
                     </tbody>
                   </table>
                   <!-- Advanced (all) -->
-                  <table class="table table-striped" >
+                  <table class="table table-clean-form" >
                     <tbody>
                       <tr style="display:none" class="act_show_advanced">
                         <td width="22%"><a id="help_for_ondemand" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Dial On Demand"); ?></td>
                         <td width="78%">
                           <input type="checkbox" value="on" id="ondemand" name="ondemand" <?=!empty($pconfig['ondemand']) ? "checked=\"checked\"" : ""; ?> />
-                          <?= gettext("Enable Dial-on-Demand mode"); ?>
+                          <strong><?= gettext("Enable Dial-on-Demand mode"); ?></strong>
                           <div class="hidden" for="help_for_ondemand">
+                            <small class="formhelp">
                             <?= gettext("This option causes the interface to operate in dial-on-demand mode. Do NOT enable if you want your link to be always up. " .
                             "The interface is configured, but the actual connection of the link is delayed until qualifying outgoing traffic is detected."); ?> </span>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -690,9 +724,11 @@ include("head.inc");
                         <td>
                           <input name="idletimeout" type="text" id="idletimeout" value="<?=$pconfig['idletimeout'];?>" />
                           <div class="hidden" for="help_for_idletimeout">
+                            <small class="formhelp">
                             <?= gettext("(seconds) Default is 0, which disables the timeout feature."); ?><br /><br />
                             <?= gettext("If no incoming or outgoing packets are transmitted for the entered number of seconds the connection is brought down.");?>
                             <br /><?=gettext("When the idle timeout occurs, if the dial-on-demand option is enabled, mpd goes back into dial-on-demand mode. Otherwise, the interface is brought down and all associated routes removed."); ?>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -700,9 +736,11 @@ include("head.inc");
                         <td width="22%"><a id="help_for_mschap" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Enable mschap authentication"); ?></td>
                         <td width="78%">
                           <input type="checkbox" value="on" id="mschap" name="mschap" <?=!empty($pconfig['mschap']) ? "checked=\"checked\"" : ""; ?> />
-                          <?= gettext("Enable Microsoft chap authentication protocol (not safe)"); ?>
+                          <strong><?= gettext("Enable Microsoft chap authentication protocol (not safe)"); ?></strong>
                           <div class="hidden" for="help_for_mschap">
+                            <small class="formhelp">
                             <?= gettext("Enable Microsoft mschap protocol for authentication to remote point. It is not safe method and is not recommended."); ?> </span>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -710,11 +748,13 @@ include("head.inc");
                         <td><a id="help_for_vjcomp" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Compression"); ?></td>
                         <td>
                           <input type="checkbox" value="on" id="vjcomp" name="vjcomp" <?= !empty($pconfig['vjcomp']) ? 'checked="checked"' : '' ?> />
-                          <?= gettext("Disable vjcomp(compression) (auto-negotiated by default)."); ?>
+                          <strong><?= gettext("Disable vjcomp(compression) (auto-negotiated by default)."); ?></strong>
                           <div class="hidden" for="help_for_vjcomp">
+                            <small class="formhelp">
                             <?=gettext("This option enables Van Jacobson TCP header compression, which saves several bytes per TCP data packet. " .
                               "You almost always want this option. This compression ineffective for TCP connections with enabled modern extensions like time " .
                               "stamping or SACK, which modify TCP options between sequential packets.");?>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -722,13 +762,15 @@ include("head.inc");
                         <td><a id="help_for_tcpmssfix" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("TCPmssFix"); ?></td>
                         <td>
                           <input type="checkbox" value="on" id="tcpmssfix" name="tcpmssfix" <?=!empty($pconfig['tcpmssfix']) ? "checked=\"checked\"" : ""; ?> />
-                          <?= gettext("Disable tcpmssfix (enabled by default)."); ?>
+                          <strong><?= gettext("Disable tcpmssfix (enabled by default)."); ?></strong>
                           <div class="hidden" for="help_for_tcpmssfix">
+                            <small class="formhelp">
                             <?=gettext("This option causes mpd to adjust incoming and outgoing TCP SYN segments so that the requested maximum segment size is not greater than the amount ".
                               "allowed by the interface MTU. This is necessary in many setups to avoid problems caused by routers that drop ICMP Datagram Too Big messages. Without these messages, ".
                               "the originating machine sends data, it passes the rogue router then hits a machine that has an MTU that is not big enough for the data. Because the IP Don't Fragment option is set, ".
                               "this machine sends an ICMP Datagram Too Big message back to the originator and drops the packet. The rogue router drops the ICMP message and the originator never ".
                               "gets to discover that it must reduce the fragment size or drop the IP Don't Fragment option from its outgoing data.");?>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -736,10 +778,12 @@ include("head.inc");
                         <td><a id="help_for_shortseq" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("ShortSeq");?></td>
                         <td>
                           <input type="checkbox" value="on" id="shortseq" name="shortseq" <?=!empty($pconfig['shortseq']) ? "checked=\"checked\"" : ""; ?> />
-                          <?= gettext("Disable shortseq (auto-negotiated by default)."); ?>
+                          <strong><?= gettext("Disable shortseq (auto-negotiated by default)."); ?></strong>
                           <div class="hidden" for="help_for_shortseq">
+                            <small class="formhelp">
                             <?= gettext("This option is only meaningful if multi-link PPP is negotiated. It proscribes shorter multi-link fragment headers, saving two bytes on every frame. " .
                             "It is not necessary to disable this for connections that are not multi-link."); ?>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -747,9 +791,11 @@ include("head.inc");
                         <td><a id="help_for_acfcomp" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("ACFComp"); ?></td>
                         <td>
                           <input type="checkbox" value="on" id="acfcomp" name="acfcomp" <?=!empty($pconfig['acfcomp']) ? "checked=\"checked\"" : ""; ?> />
-                          <?= gettext("Disable acfcomp (compression) (auto-negotiated by default)."); ?>
+                          <strong><?= gettext("Disable acfcomp (compression) (auto-negotiated by default)."); ?></strong>
                           <div class="hidden" for="help_for_acfcomp">
+                            <small class="formhelp">
                             <?= gettext("Address and control field compression. This option only applies to asynchronous link types. It saves two bytes per frame."); ?>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -757,22 +803,24 @@ include("head.inc");
                         <td><a id="help_for_protocomp" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("ProtoComp"); ?></td>
                         <td>
                           <input type="checkbox" value="on" id="protocomp" name="protocomp" <?=!empty($pconfig['protocomp']) ? "checked=\"checked\"" :""; ?> />
-                          <?= gettext("Disable protocomp (compression) (auto-negotiated by default)."); ?>
+                          <strong><?= gettext("Disable protocomp (compression) (auto-negotiated by default)."); ?></strong>
                           <div class="hidden" for="help_for_protocomp">
+                            <small class="formhelp">
                             <?= gettext("Protocol field compression. This option saves one byte per frame for most frames."); ?>
+                            </small>
                           </div>
                         </td>
                       </tr>
                     </tbody>
                   </table>
-                  <table class="table table-striped act_show_advanced" style="display:none">
+                  <table class="table table-clean-form act_show_advanced" style="display:none">
                     <tbody>
 <?php
                       for ($intf_idx=0; $intf_idx <= max(count($serialports), count($portlist)) ; ++$intf_idx):?>
                       <tr style="display:none" class="intf_select_<?=$intf_idx;?>">
                         <td width="22%"> <a id="help_for_link_<?=$intf_idx;?>" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a>  <?=gettext("Link Parameters");?> <span class="intf_select_txt_<?=$intf_idx;?>"> </span></td>
                         <td width="78%">
-                          <table class="table table-striped table-condensed">
+                          <table class="table table-clean-form table-condensed">
                             <tr>
                               <td><?=gettext("Bandwidth");?></td>
                               <td>
@@ -799,12 +847,14 @@ include("head.inc");
                             </tr>
                           </table>
                           <div class="hidden" for="help_for_link_<?=$intf_idx;?>">
+                            <small class="formhelp">
                             <ul>
                               <li><?=gettext("Bandwidth: Set ONLY for MLPPP connections and ONLY when links have different bandwidths.");?></li>
                               <li><?=gettext("MTU: MTU will default to 1492.");?></li>
                               <li><?=gettext("MRU: MRU will be auto-negotiated by default.");?></li>
                               <li><?=gettext("MRRU: Set ONLY for MLPPP connections. MRRU will be auto-negotiated by default.");?></li>
                             </ul>
+                            </small>
                           </div>
                         </td>
                       </tr>
@@ -812,7 +862,7 @@ include("head.inc");
                       endfor;?>
                     </tbody>
                   </table>
-                  <table class="table table-striped">
+                  <table class="table table-clean-form">
                     <tbody>
                       <tr>
                         <td width="22%" valign="top">&nbsp;</td>

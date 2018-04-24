@@ -27,20 +27,13 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-require_once("interfaces.inc");
 require_once("guiconfig.inc");
-require_once("ipsec.inc");
+require_once("interfaces.inc");
 require_once("services.inc");
+require_once("plugins.inc.d/ipsec.inc");
 
-if (!isset($config['ipsec']) || !is_array($config['ipsec'])) {
-    $config['ipsec'] = array();
-}
-
-if (!isset($config['ipsec']['mobilekey'])) {
-    $config['ipsec']['mobilekey'] = array();
-} else {
-    ipsec_mobilekey_sort();
-}
+config_read_array('ipsec', 'mobilekey');
+ipsec_mobilekey_sort();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = array();
@@ -140,13 +133,15 @@ include("head.inc");
           <div class="content-box">
             <form method="post" name="iform" id="iform">
               <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-clean-form">
                   <tr>
                     <td><a id="help_for_ident" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Identifier"); ?></td>
                     <td>
                       <input name="ident" type="text" class="formfld unknown" id="ident" size="30" value="<?=$pconfig['ident'];?>" />
                       <div class="hidden" for="help_for_ident">
+                        <small class="formhelp">
                         <?=gettext("This can be either an IP address, fully qualified domain name or an email address."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>

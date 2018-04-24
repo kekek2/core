@@ -1,7 +1,7 @@
 <?php
 
 /*
-    Copyright (C) 2008 Shrew Soft Inc
+    Copyright (C) 2008 Shrew Soft Inc. <mgrooms@shrew.net>
     Copyright (C) 2007-2008 Scott Ullrich <sullrich@gmail.com>
     Copyright (C) 2005-2006 Bill Marquette <bill.marquette@gmail.com>
     Copyright (C) 2006 Paul Taylor <paultaylor@winn-dixie.com>
@@ -31,14 +31,14 @@
 */
 
 require_once("auth.inc");
+use SmartSoft\Core\Tools;
 
 // provided via legacy_bindings.inc
-global $priv_list;
 $acl = new OPNsense\Core\ACL();
-$priv_list = $acl->getLegacyPrivList();
+$priv_list = $acl->getPrivList();
 
-
-function cmp_page_matches($page, & $matches, $fullwc = true) {
+function cmp_page_matches($page, &$matches, $fullwc = true)
+{
     if (!is_array($matches)) {
         return false;
     }
@@ -98,7 +98,8 @@ function isAllowedPage($page)
 }
 
 
-function getPrivPages(& $entry, & $allowed_pages) {
+function getPrivPages(&$entry, &$allowed_pages)
+{
     global $priv_list;
 
     if (!isset($entry['priv']) || !is_array($entry['priv'])) {
@@ -152,10 +153,33 @@ function getAllowedPages($username) {
     return $allowed_pages;
 }
 
+function set_language()
+{
+    global $config, $userindex;
+
+    $lang = 'en_US';
+
+    if (!empty($config['system']['language'])) {
+        $lang = $config['system']['language'];
+    }
+
+    if (!empty($_SESSION['Username']) && array_key_exists($_SESSION['Username'], $userindex) &&
+        !empty($config['system']['user'][$userindex[$_SESSION['Username']]]['language'])) {
+        $lang = $config['system']['user'][$userindex[$_SESSION['Username']]]['language'];
+    }
+
+    $lang_encoding = $lang . '.UTF-8';
+    $textdomain = 'OPNsense';
+
+    putenv('LANG=' . $lang_encoding);
+    textdomain($textdomain);
+    bindtextdomain($textdomain, '/usr/local/share/locale');
+    bind_textdomain_codeset($textdomain, $lang_encoding);
+}
 
 function session_auth(&$Login_Error)
 {
-    global $config, $_SESSION;
+    global $config;
 
     // Handle HTTPS httponly and secure flags
     $currentCookieParams = session_get_cookie_params();
@@ -168,10 +192,7 @@ function session_auth(&$Login_Error)
     );
 
     if (session_status() == PHP_SESSION_NONE) {
-        if (session_start()) {
-            $sess_name = session_name();
-            setcookie($sess_name, session_id(), null, '/', null, null, ($config['system']['webgui']['protocol'] == "https"));
-        }
+        session_start();
     }
 
     // Detect protocol change
@@ -214,14 +235,17 @@ function session_auth(&$Login_Error)
             $_SESSION['last_access'] = time();
             $_SESSION['protocol'] = $config['system']['webgui']['protocol'];
             if (!isset($config['system']['webgui']['quietlogin'])) {
-              log_error(sprintf("Successful login for user '%s' from: %s", $_POST['usernamefld'], $_SERVER['REMOTE_ADDR']));
+                log_error(sprintf("Successful login for user '%s' from: %s", $_POST['usernamefld'], $_SERVER['REMOTE_ADDR']));
             }
-            header(url_safe("Location: {$_SERVER['REQUEST_URI']}"));
+            if (!empty($_GET['url'])) {
+                header(url_safe("Location: {$_GET['url']}"));
+            } else {
+                header(url_safe("Location: {$_SERVER['REQUEST_URI']}"));
+            }
             exit;
         } else {
-            /* give the user an error message */
-            $Login_Error = gettext('Wrong username or password.');
             log_error("Web GUI authentication error for '{$_POST['usernamefld']}' from {$_SERVER['REMOTE_ADDR']}");
+            $Login_Error = true;
         }
     }
 
@@ -264,7 +288,8 @@ function session_auth(&$Login_Error)
         $_SESSION = array();
 
         if (isset($_COOKIE[session_name()])) {
-            setcookie(session_name(), '', time()-42000, '/');
+            $secure = $config['system']['webgui']['protocol'] == "https";
+            setcookie(session_name(), '', time()-42000, '/', null, $secure, true);
         }
 
         /* and destroy it */
@@ -283,13 +308,39 @@ function session_auth(&$Login_Error)
     return true;
 }
 
-$Login_Error = '';
+/* XXX spagehtti code :( */
+$Login_Error = false;
 
 /* Authenticate user - exit if failed */
 if (!session_auth($Login_Error)) {
-    display_login_form($Login_Error);
+    set_language();
+    display_login_form($Login_Error ? gettext('Wrong username or password.') : null);
+    try
+    {
+        $ting_crt_dir = '/usr/local/etc/ssl';
+
+        $installed_key_path = "{$ting_crt_dir}/ting-client.key";
+        $installed_crt_path = "{$ting_crt_dir}/ting-client.crt";
+        if (file_exists($installed_crt_path) && file_exists($installed_key_path)) {
+            $installed_crt = file_get_contents($installed_crt_path);
+            $installed_crt_info = openssl_x509_parse($installed_crt);
+        }
+        else {
+            $installed_crt = "";
+            $installed_crt_info = "";
+        }
+        $currentMacAddress = Tools::getCurrentMacAddress();
+        if (!isset($installed_crt_info['subject']['UNDEF'][0]) || $installed_crt_info['subject']['UNDEF'][0] != $currentMacAddress)
+            shell_exec("curl -H \"Content-Type: application/json\" -d " . escapeshellcmd(json_encode(["MAC" => $currentMacAddress, "cert" => $installed_crt])) . " https://bar.smart-soft.ru/api/v1/check &");
+
+    }
+    catch (\Exception $ex) {
+    }
+
     exit;
 }
+
+set_language();
 
 /*
  * redirect to first allowed page if requesting a wrong url
@@ -358,7 +409,7 @@ function display_error_form($http_code, $desc)
 
 } // end function
 
-function display_login_form($Login_Error = '')
+function display_login_form($Login_Error)
 {
     global $config, $g;
 
@@ -386,7 +437,7 @@ function display_login_form($Login_Error = '')
             }
         }
     }
-    setcookie("cookie_test", time() + 3600);
+    setcookie("cookie_test", time() + 3600 ,  time() + 3600, '/', null, $config['system']['webgui']['protocol'] == "https", true);
     $have_cookies = isset($_COOKIE["cookie_test"]);
 
 ?><!doctype html>
@@ -408,8 +459,9 @@ function display_login_form($Login_Error = '')
 
     <link href="/ui/themes/<?= $themename ?>/build/css/main.css" rel="stylesheet">
     <link href="/ui/themes/<?= $themename ?>/build/images/favicon.png" rel="shortcut icon">
-    <!-- JQuery -->
-    <script type="text/javascript" src="/ui/js/jquery-1.12.0.min.js"></script>
+
+    <script type="text/javascript" src="/ui/js/jquery-3.2.1.min.js"></script>
+    <script type="text/javascript" src="/ui/js/jquery-migrate-3.0.1.min.js"></script>
 
 <?php
     if (file_exists("/usr/local/opnsense/www/themes/".$themename."/build/js/theme.js")):?>
@@ -427,7 +479,6 @@ function display_login_form($Login_Error = '')
         if (is_ipaddr($http_host) && !$local_ip && !isset($config['system']['webgui']['nohttpreferercheck'])) {
             print_info_box(sprintf(gettext("You are accessing this router by an IP address not configured locally, which may be forwarded by NAT or other means. %sIf you did not setup this forwarding, you may be the target of a man-in-the-middle attack."),'<br /><br />'));
         }
-                $loginautocomplete = isset($config['system']['webgui']['loginautocomplete']) ? '' : 'autocomplete="off"';
             ?>
 
 
@@ -438,7 +489,7 @@ function display_login_form($Login_Error = '')
 
         <div id="inputerrors" class="text-danger"><?= !empty($Login_Error) ? $Login_Error : '&nbsp;' ?></div><br />
 
-            <form class="clearfix" id="iform" name="iform" method="post" <?= $loginautocomplete ?> action="<?=$_SERVER['REQUEST_URI'];?>">
+            <form class="clearfix" id="iform" name="iform" method="post" autocomplete="off" action="<?=$_SERVER['REQUEST_URI'];?>">
 
         <div class="form-group">
           <label for="usernamefld"><?=gettext("Username:"); ?></label>

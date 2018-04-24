@@ -2,7 +2,7 @@
 
 /*
     Copyright (C) 2014 Deciso B.V.
-    Copyright (C) 2004 Scott Ullrich
+    Copyright (C) 2004 Scott Ullrich <sullrich@gmail.com>
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
     All rights reserved.
 
@@ -33,23 +33,12 @@ require_once("filter.inc");
 require_once("interfaces.inc");
 require_once("logs.inc");
 
-/**
- *   quite nasty, content provided by filter_generate_gateways (in filter.inc).
- *  Not going to solve this now, because filter_generate_gateways is not a propper function
- *  it returns both rules for the firewall and is kind of responsible for updating this global.
- */
-global $GatewaysList;
 
-if (!isset($config['nat']['outbound']))
-    $config['nat']['outbound'] = array();
-
-if (!isset($config['nat']['outbound']['rule']))
-    $config['nat']['outbound']['rule'] = array();
-
-if (!isset($config['nat']['outbound']['mode']))
+$a_out = &config_read_array('nat', 'outbound', 'rule');
+if (!isset($config['nat']['outbound']['mode'])) {
     $config['nat']['outbound']['mode'] = "automatic";
+}
 
-$a_out = &$config['nat']['outbound']['rule'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pconfig = $_POST;
@@ -65,60 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         clear_subsystem_dirty('filter');
     } elseif (isset($pconfig['save']) && $pconfig['save'] == "Save") {
         $mode = $config['nat']['outbound']['mode'];
-        /* mutually exclusive settings - if user wants advanced NAT, we don't generate automatic rules */
-        if ($pconfig['mode'] == "advanced" && ($mode == "automatic" || $mode == "hybrid")) {
-            /*
-             *    user has enabled advanced outbound NAT and doesn't have rules
-             *    lets automatically create entries
-             *    for all of the interfaces to make life easier on the pip-o-chap
-             */
-            if(empty($GatewaysList)) {
-                filter_generate_gateways();
-            }
-
-            /* XXX cranky low-level call, please refactor */
-            $FilterIflist = filter_generate_optcfg_array();
-            $tonathosts = filter_nat_rules_automatic_tonathosts($FilterIflist, true);
-            $automatic_rules = filter_nat_rules_outbound_automatic($FilterIflist, '');
-
-            foreach ($tonathosts as $tonathost) {
-                foreach ($automatic_rules as $natent) {
-                    $natent['source']['network'] = $tonathost['subnet'];
-                    $natent['descr'] .= ' - ' . $tonathost['descr'] . ' -> ' . convert_real_interface_to_friendly_descr($natent['interface']);
-                    $natent['created'] = make_config_revision_entry();
-
-                    /* Try to detect already auto created rules and avoid duplicate them */
-                    $found = false;
-                    foreach ($a_out as $rule) {
-                      // initialize optional values
-                      if (!isset($rule['dstport'])) {
-                          $rule['dstport'] = "";
-                      }
-                      if (!isset($natent['dstport'])) {
-                          $natent['dstport'] = "";
-                      }
-                      //
-                      if ($rule['interface'] == $natent['interface'] &&
-                          $rule['source']['network'] == $natent['source']['network'] &&
-                          $rule['dstport'] == $natent['dstport'] &&
-                          $rule['target'] == $natent['target'] &&
-                          $rule['descr'] == $natent['descr']) {
-                          $found = true;
-                          break;
-                      }
-                    }
-
-                    if (!$found) {
-                        $a_out[] = $natent;
-                    }
-                }
-            }
-            $savemsg = gettext("Default rules for each interface have been created.");
-            unset($GatewaysList);
-        }
-
         $config['nat']['outbound']['mode'] = $pconfig['mode'];
-
         write_config();
         mark_subsystem_dirty('natconf');
         firewall_syslog("Change mode Firwall/NAT/Outbound");
@@ -246,6 +182,12 @@ include("head.inc");
         $("#action").val("toggle");
         $("#iform").submit();
     });
+
+    // select All
+    $("#selectAll").click(function(){
+        $(".rule_select").prop("checked", $(this).prop("checked"));
+    });
+
     // watch scroll position and set to last known on page load
     watchScrollPosition();
   });
@@ -266,7 +208,7 @@ include("head.inc");
           <input type="hidden" id="action" name="act" value="" />
           <section class="col-xs-12">
             <div class="content-box">
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <thead>
                   <tr>
                     <th colspan="4"><?=gettext("Mode:"); ?></th>
@@ -337,11 +279,11 @@ include("head.inc");
 <?php if ($mode == 'advanced' || $mode == 'hybrid'): ?>
         <section class="col-xs-12">
           <div class="table-responsive content-box ">
-            <table class="table table-striped">
+            <table class="table table-clean-form">
               <thead>
                 <tr><th colspan="12"><?=gettext("Manual rules:"); ?></th></tr>
                 <tr>
-                    <th>&nbsp;</th>
+                    <th><input type="checkbox" id="selectAll"></th>
                     <th>&nbsp;</th>
                     <th><?=gettext("Interface");?></th>
                     <th class="hidden-xs hidden-sm"><?=gettext("Source");?></th>
@@ -362,7 +304,7 @@ include("head.inc");
 ?>
                   <tr <?=$mode == "disabled" || $mode == "automatic" || isset($natent['disabled'])?"class=\"text-muted\"":"";?> ondblclick="document.location='firewall_nat_out_edit.php?id=<?=$i;?>';">
                     <td>
-                      <input type="checkbox" name="rule[]" value="<?=$i;?>"  />
+                      <input class="rule_select" type="checkbox" name="rule[]" value="<?=$i;?>"  />
                     </td>
                     <td>
 <?php
@@ -383,6 +325,7 @@ include("head.inc");
                       <?=htmlspecialchars(convert_friendly_interface_to_friendly_descr($natent['interface'])); ?>
                     </td>
                     <td class="hidden-xs hidden-sm">
+                      <?= isset($natent['source']['not']) ? '!' : '' ?>
 <?php                 if (isset($natent['source']['network']) && is_alias($natent['source']['network'])): ?>
                         <span title="<?=htmlspecialchars(get_alias_description($natent['source']['network']));?>" data-toggle="tooltip">
                           <?=htmlspecialchars($natent['source']['network']);?>&nbsp;
@@ -416,7 +359,7 @@ include("head.inc");
                       endif;?>
                     </td>
                     <td class="hidden-xs hidden-sm">
-                      <?=isset($natent['destination']['not']) ? "!&nbsp;" :"";?>
+                      <?= isset($natent['destination']['not']) ? '!' : '' ?>
 <?php                 if (isset($natent['destination']['address']) && is_alias($natent['destination']['address'])): ?>
                         <span title="<?=htmlspecialchars(get_alias_description($natent['destination']['address']));?>" data-toggle="tooltip">
                           <?=htmlspecialchars($natent['destination']['address']);?>&nbsp;
@@ -459,18 +402,18 @@ include("head.inc");
                       elseif ($natent['target'] == "other-subnet")
                         $nat_address = $natent['targetip'] . '/' . $natent['targetip_subnet'];
                       else
-                        $nat_address = $natent['target'];
+                        $nat_address = htmlspecialchars($natent['target']);
 ?>
 <?php                 if (isset($natent['target']) && is_alias($natent['target'])): ?>
                         <span title="<?=htmlspecialchars(get_alias_description($natent['target']));?>" data-toggle="tooltip">
-                          <?=htmlspecialchars($nat_address);?>&nbsp;
+                          <?=$nat_address;?>&nbsp;
                         </span>
                         <a href="/firewall_aliases_edit.php?name=<?=htmlspecialchars($natent['target']);?>"
                             title="<?=gettext("edit alias");?>" data-toggle="tooltip">
                           <i class="fa fa-list"></i>
                         </a>
 <?php                 else: ?>
-                        <?=htmlspecialchars($nat_address);?>
+                        <?=$nat_address;?>
 <?php                 endif; ?>
                     </td>
                     <td class="hidden-xs hidden-sm">
@@ -556,19 +499,21 @@ include("head.inc");
 <?php
       // when automatic or hybrid, display "auto" table.
       if ($mode == "automatic" || $mode == "hybrid"):
-        if (empty($GatewaysList)) {
-            filter_generate_gateways();
+        $fw = filter_core_get_initialized_plugin_system();
+        $intfv4 = array();
+        $intfnatv4 = array();
+        foreach ($fw->getInterfaceMapping() as $intf => $intfcf) {
+            if (!empty($intfcf['ifconfig']['ipv4']) && empty($intfcf['gateway'])) {
+                $intfv4[] = sprintf(gettext('%s networks'), $intfcf['descr']);
+            } elseif (substr($intfcf['if'], 0, 4) != 'ovpn' && !empty($intfcf['gateway'])) {
+                $intfnatv4[] = $intfcf;
+            }
         }
-        /* XXX cranky low-level call, please refactor */
-        $FilterIflist = filter_generate_optcfg_array();
-        $automatic_rules = filter_nat_rules_outbound_automatic(
-          $FilterIflist, implode(' ', filter_nat_rules_automatic_tonathosts($FilterIflist))
-        );
-        unset($GatewaysList);
+        $intfv4 = array_merge($intfv4, filter_core_get_default_nat_outbound_networks());
 ?>
         <section class="col-xs-12">
           <div class="table-responsive content-box ">
-            <table class="table table-striped">
+            <table class="table table-clean-form">
               <thead>
                   <tr>
                     <th colspan="11"><?=gettext("Automatic rules:"); ?></th>
@@ -577,7 +522,7 @@ include("head.inc");
                     <th>&nbsp;</th>
                     <th>&nbsp;</th>
                     <th><?=gettext("Interface");?></th>
-                    <th><?=gettext("Source");?></th>
+                    <th><?=gettext("Source Networks");?></th>
                     <th class="hidden-xs hidden-sm"><?=gettext("Source Port");?></th>
                     <th class="hidden-xs hidden-sm"><?=gettext("Destination");?></th>
                     <th class="hidden-xs hidden-sm"><?=gettext("Destination Port");?></th>
@@ -589,54 +534,37 @@ include("head.inc");
               </thead>
               <tbody>
 <?php
-              foreach ($automatic_rules as $natent):
+              foreach ($intfnatv4 as $natintf):
 ?>
                 <tr>
                   <td>&nbsp;</td>
                   <td>
                     <span class="glyphicon glyphicon-play text-success" data-toggle="tooltip" title="<?=gettext("automatic outbound nat");?>"></span>
                   </td>
+                  <td><?= htmlspecialchars($natintf['descr']); ?></td>
+                  <td><?= implode(', ', $intfv4);?></td>
+                  <td class="hidden-xs hidden-sm">*</td>
+                  <td class="hidden-xs hidden-sm">*</td>
+                  <td class="hidden-xs hidden-sm">500</td>
+                  <td class="hidden-xs hidden-sm"><?= htmlspecialchars($natintf['descr']); ?></td>
+                  <td class="hidden-xs hidden-sm">*</td>
+                  <td class="hidden-xs hidden-sm"><?=gettext("YES");?></td>
+                  <td><?=gettext('Auto created rule for ISAKMP');?></td>
+                </tr>
+                <tr>
+                  <td>&nbsp;</td>
                   <td>
-                    <?= htmlspecialchars(convert_friendly_interface_to_friendly_descr($natent['interface'])); ?>
+                    <span class="glyphicon glyphicon-play text-success" data-toggle="tooltip" title="<?=gettext("automatic outbound nat");?>"></span>
                   </td>
-                  <td>
-                    <?=$natent['source']['network'];?>
-                  </td>
-                  <td class="hidden-xs hidden-sm">
-                    <?=(!empty($natent['protocol'])) ? $natent['protocol'] . '/' : "" ;?>
-                    <?=empty($natent['sourceport']) ? "*" : $natent['sourceport'] ;?>
-                  </td>
-                  <td class="hidden-xs hidden-sm">
-                    <?=isset($natent['destination']['not']) ? "!&nbsp;" : "";?>
-                    <?=isset($natent['destination']['any']) ? "*" : $natent['destination']['address'] ;?>
-                  </td>
-                  <td class="hidden-xs hidden-sm">
-                    <?=!empty($natent['protocol']) ? $natent['protocol'] . '/' : "" ;?>
-                    <?=empty($natent['dstport']) ? "*" : $natent['dstport'] ;?>
-                  </td>
-                  <td class="hidden-xs hidden-sm">
-<?php
-                    if (isset($natent['nonat'])) {
-                        $nat_address = '<I>NO NAT</I>';
-                    } elseif (empty($natent['target'])) {
-                        $nat_address = htmlspecialchars(convert_friendly_interface_to_friendly_descr($natent['interface'])) . " address";
-                    } elseif ($natent['target'] == "other-subnet") {
-                        $nat_address = $natent['targetip'] . '/' . $natent['targetip_subnet'];
-                    } else  {
-                        $nat_address = $natent['target'];
-                    }
-?>
-                    <?=$nat_address;?>
-                  </td>
-                  <td class="hidden-xs hidden-sm">
-                    <?= empty($natent['natport']) ? "*" : $natent['natport'];?>
-                  </td>
-                  <td class="hidden-xs hidden-sm">
-                    <?= isset($natent['staticnatport']) ? gettext("YES") : gettext("NO") ;?>
-                  </td>
-                  <td>
-                    <?=htmlspecialchars($natent['descr']);?>
-                  </td>
+                  <td><?= htmlspecialchars($natintf['descr']); ?></td>
+                  <td><?= implode(', ', $intfv4);?></td>
+                  <td class="hidden-xs hidden-sm">*</td>
+                  <td class="hidden-xs hidden-sm">*</td>
+                  <td class="hidden-xs hidden-sm">*</td>
+                  <td class="hidden-xs hidden-sm"><?= htmlspecialchars($natintf['descr']); ?></td>
+                  <td class="hidden-xs hidden-sm">*</td>
+                  <td class="hidden-xs hidden-sm"><?=gettext("NO");?></td>
+                  <td><?=gettext('Auto created rule');?></td>
                 </tr>
 <?php
         endforeach;

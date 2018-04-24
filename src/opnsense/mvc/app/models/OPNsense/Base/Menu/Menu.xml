@@ -1,11 +1,15 @@
 <menu>
     <Lobby order="10" cssClass="fa fa-laptop">
         <Dashboard order="0" url="/index.php" cssClass="fa fa-dashboard fa-fw">
+            <Args url="/index.php*" visibility="hidden"/>
             <Root url="/" visibility="hidden"/>
+            <RootArgs url="/?*" visibility="hidden"/>
         </Dashboard>
         <License order="1" url="/license.php" cssClass="fa fa-balance-scale fa-fw"/>
         <Certificate order="2" url="/ting_cert.php" cssClass="fa fa-certificate fa-fw"/>
-        <Password order="3" url="/system_usermanager_passwordmg.php" cssClass="fa fa-key fa-fw"/>
+        <Password order="3" url="/system_usermanager_passwordmg.php" cssClass="fa fa-key fa-fw">
+            <workAround url="/system_usermanager_passwordmg.php*" visibility="hidden"/>
+        </Password>
     </Lobby>
     <Reporting order="15" cssClass="fa fa-area-chart">
         <Traffic order="100" VisibleName="Traffic Graph" url="/status_graph.php" cssClass="fa fa-line-chart fa-fw"/>
@@ -30,8 +34,8 @@
         </Configuration>
         <Firmware order="5" cssClass="fa fa-building-o fa-fw">
             <Updates order="10" url="/ui/core/firmware/#updates"/>
-            <Packages order="20" url="/ui/core/firmware/#packages"/>
-            <Plugins order="30" url="/ui/core/firmware/#plugins"/>
+            <Plugins order="20" url="/ui/core/firmware/#plugins"/>
+            <Packages order="30" url="/ui/core/firmware/#packages"/>
             <Settings order="40" url="/ui/core/firmware/#settings"/>
             <Reporter order="50" url="/crash_reporter.php"/>
             <Defaults order="60" url="/diag_defaults.php"/>
@@ -41,9 +45,7 @@
             <Status order="200" url="/status_habackup.php"/>
         </HighAvailability>
         <Routes order="40" cssClass="fa fa-map-signs fa-fw">
-            <All order="10" url="/system_routes.php">
-                <Edit url="/system_routes_edit.php*" visibility="hidden"/>
-            </All>
+            <Configuration order="10" url="/ui/routes/" />
             <Log order="100" VisibleName="Log File" url="/ui/syslog/logview/showlog/routing"/>
         </Routes>
         <Gateways order="30" cssClass="fa fa-location-arrow fa-fw">
@@ -60,7 +62,7 @@
         </Gateways>
         <Settings order="20" cssClass="fa fa-cogs fa-fw">
             <General order="100" url="/system_general.php">
-                <workAround url="/system_general.php*"/>
+                <workAround url="/system_general.php*" visibility="hidden"/>
             </General>
             <Administration order="200" url="/system_advanced_admin.php"/>
             <Notifications order="400" url="/system_advanced_notifications.php"/>
@@ -70,8 +72,8 @@
             </Tunables>
         </Settings>
         <LogFile order="150" VisibleName="Log File" url="/ui/syslog/logview/showlog/system" cssClass="fa fa-eye fa-fw"/>
-        <Wizard order="140" url="/wizard.php" cssClass="fa fa-magic fa-fw">
-            <Step url="/wizard.php*" visibility="hidden"/>
+        <Wizard order="140" url="/wizard.php?xml=system" cssClass="fa fa-magic fa-fw">
+            <Step url="/wizard.php?xml=system*" visibility="hidden"/>
         </Wizard>
         <Access order="10" cssClass="fa fa-users fa-fw">
             <Users order="10" url="/system_usermanager.php">
@@ -98,9 +100,6 @@
                 <Edit url="/interfaces_wireless_edit.php*" visibility="hidden"/>
             </Devices>
             <Log VisibleName="Log File" url="/ui/syslog/logview/showlog/wireless"/>
-            <Status url="/status_wireless.php">
-                <Status url="/status_wireless.php*" visibility="hidden"/>
-            </Status>
         </Wireless>
         <PPP order="940" VisibleName="Point-to-Point" cssClass="fa fa-tty fa-fw">
             <Devices url="/interfaces_ppps.php">
@@ -118,9 +117,6 @@
             <GRE url="/interfaces_gre.php">
                 <Edit url="/interfaces_gre_edit.php*" visibility="hidden"/>
             </GRE>
-            <Group url="/interfaces_groups.php">
-                <Edit url="/interfaces_groups_edit.php*" visibility="hidden"/>
-            </Group>
             <LAGG url="/interfaces_lagg.php">
                 <Edit url="/interfaces_lagg_edit.php*" visibility="hidden"/>
             </LAGG>
@@ -132,10 +128,11 @@
             </VLAN>
         </Types>
         <Diagnostics order="960" cssClass="fa fa-medkit fa-fw">
-            <PacketCapture order="40" VisibleName="Packet Capture" url="/diag_packet_capture.php"/>
-            <Ping order="50" url="/diag_ping.php"/>
-            <TestPort order="60" VisibleName="Test Port" url="/diag_testport.php"/>
-            <Traceroute order="70" url="/diag_traceroute.php"/>
+            <DNSLookup VisibleName="DNS Lookup" url="/diag_dns.php"/>
+            <PacketCapture VisibleName="Packet Capture" url="/diag_packet_capture.php"/>
+            <Ping url="/diag_ping.php"/>
+            <TestPort VisibleName="Port Probe" url="/diag_testport.php"/>
+            <Traceroute VisibleName="Trace Route" url="/diag_traceroute.php"/>
         </Diagnostics>
     </Interfaces>
     <Firewall order="40" cssClass="glyphicon glyphicon-fire">
@@ -145,11 +142,7 @@
             </View>
             <Import order="200" url="/firewall_aliases_import.php"/>
         </Aliases>
-        <Rules order="20" url="/firewall_rules.php" cssClass="fa fa-check fa-fw">
-            <RulesEdit url="/firewall_rules_edit.php*" visibility="hidden"/>
-            <Floating url="/firewall_rules.php?if=FloatingRules" visibility="hidden"/>
-            <Interface url="/firewall_rules.php?if=*" visibility="hidden"/>
-        </Rules>
+        <Rules order="20" cssClass="fa fa-check fa-fw" />
         <NAT order="30" cssClass="fa fa-exchange fa-fw">
             <PortForward order="100" VisibleName="Port Forward" url="/firewall_nat.php">
               <Edit url="/firewall_nat_edit.php*" visibility="hidden"/>
@@ -164,7 +157,10 @@
                 <Edit url="/firewall_nat_npt_edit.php*" visibility="hidden"/>
             </NPT>
         </NAT>
-        <VIP order="50" VisibleName="Virtual IPs" cssClass="fa fa-clone fa-fw">
+        <Groups order="50" url="/interfaces_groups.php" cssClass="fa fa-sitemap fa-fw">
+            <Edit url="/interfaces_groups_edit.php*" visibility="hidden"/>
+        </Groups>
+        <VIP order="60" VisibleName="Virtual IPs" cssClass="fa fa-clone fa-fw">
             <Settings url="/firewall_virtual_ip.php">
                 <Edit url="/firewall_virtual_ip_edit.php*" visibility="hidden"/>
             </Settings>
@@ -173,17 +169,16 @@
             </Status>
         </VIP>
         <Settings order="200" cssClass="fa fa-cogs fa-fw">
-            <Schedules order="100" url="/firewall_schedule.php">
+            <Schedules url="/firewall_schedule.php">
                 <SchedulesEdit url="/firewall_schedule_edit.php*" visibility="hidden"/>
             </Schedules>
-            <Normalization order="200" url="/firewall_scrub.php">
+            <Normalization url="/firewall_scrub.php">
                 <NormalizationEdit url="/firewall_scrub_edit.php*" visibility="hidden"/>
                 <Normalization url="/firewall_scrub.php*" visibility="hidden"/>
             </Normalization>
-            <Advanced order="300" url="/system_advanced_firewall.php"/>
+            <Advanced url="/system_advanced_firewall.php"/>
         </Settings>
         <Diagnostics order="500" cssClass="fa fa-medkit fa-fw">
-            <FilterReload order="20"  VisibleName="Filter Reload" url="/status_filter_reload.php"/>
             <pfInfo order="30" url="/diag_pf_info.php" VisibleName="pfInfo"/>
             <pfTop order="40" url="/diag_system_pftop.php" VisibleName="pfTop"/>
             <pfTables order="50" url="/diag_tables.php">
@@ -197,63 +192,27 @@
             <StatesSummary order="90" VisibleName="States Summary" url="/diag_states_summary.php"/>
         </Diagnostics>
         <LogFiles order="400" VisibleName="Log Files" cssClass="fa fa-eye fa-fw">
-            <Normal VisibleName="Normal View" order="100" url="/diag_logs_filter.php"/>
-            <Dynamic VisibleName="Dynamic View" order="200" url="/diag_logs_filter_dynamic.php"/>
-            <Summary VisibleName="Summary View" order="300" url="/diag_logs_filter_summary.php"/>
-            <Plain VisibleName="Plain View" order="400" url="/ui/syslog/logview/showlog/filter"/>
+            <Live VisibleName="Live View" url="/ui/diagnostics/firewall/log"/>
+            <Overview url="/diag_logs_filter_summary.php"/>
+            <Plain VisibleName="Plain View" url="/ui/syslog/logview/showlog/filter"/>
         </LogFiles>
     </Firewall>
     <Services order="60" cssClass="fa fa-cog">
-        <DHCP cssClass="fa fa-bullseye fa-fw">
-            <Server order="100" url="/services_dhcp.php">
-                <Tab url="/services_dhcp.php?if=*" visibility="hidden"/>
-                <Edit url="/services_dhcp_edit.php?*" visibility="hidden"/>
-            </Server>
+        <DHCPv4 cssClass="fa fa-bullseye fa-fw">
             <Relay order="200" url="/services_dhcp_relay.php"/>
             <Leases order="300" url="/status_dhcp_leases.php">
                 <Details url="/status_dhcp_leases.php?*" visibility="hidden"/>
             </Leases>
             <LogFile VisibleName="Log File" order="400" url="/diag_logs_dhcp.php"/>
-        </DHCP>
+        </DHCPv4>
         <DHCPv6 cssClass="fa fa-bullseye fa-fw">
-            <Advertisements order="100" url="/services_router_advertisements.php">
-                <Interface url="/services_router_advertisements.php?*" visibility="hidden"/>
-            </Advertisements>
-            <Server order="200" url="/services_dhcpv6.php">
-                <Interface url="/services_dhcpv6.php?*" visibility="hidden"/>
-                <Edit url="/services_dhcpv6_edit.php?*" visibility="hidden"/>
-            </Server>
             <Relay order="300" url="/services_dhcpv6_relay.php"/>
             <Leases order="400" url="/status_dhcpv6_leases.php">
                 <Details url="/status_dhcpv6_leases.php?*" visibility="hidden"/>
             </Leases>
         </DHCPv6>
-        <DNSForwarder VisibleName="DNS Forwarder" url="/services_dnsmasq.php" cssClass="fa fa-tags fa-fw">
-            <Hosts url="/services_dnsmasq_edit.php*" visibility="hidden"/>
-            <Domains url="/services_dnsmasq_domainoverride_edit.php*" visibility="hidden"/>
-        </DNSForwarder>
-        <DNSResolver VisibleName="DNS Resolver" cssClass="fa fa-tags fa-fw">
-            <General order="10" url="/services_unbound.php"/>
-            <Overrides order="15" url="/services_unbound_overrides.php">
-                <Hosts url="/services_unbound_host_edit.php*" visibility="hidden"/>
-                <Domains url="/services_unbound_domainoverride_edit.php*" visibility="hidden"/>
-            </Overrides>
-            <Advanced order="20" url="/services_unbound_advanced.php"/>
-            <ACL VisibleName="Access Lists" order="30" url="/services_unbound_acls.php">
-                <All url="/services_unbound_acls.php*" visibility="hidden"/>
-            </ACL>
-        </DNSResolver>
-        <DNSTools VisibleName="DNS Tools" cssClass="fa fa-tags fa-fw">
-            <DynDNS order="10" url="/services_dyndns.php">
-                <Edit url="/services_dyndns_edit.php*" visibility="hidden"/>
-            </DynDNS>
-            <Filter order="20" url="/services_opendns.php"/>
-            <RFC2136 order="30" VisibleName="RFC 2136" url="/services_rfc2136.php">
-                <Edit url="/services_rfc2136_edit.php*" visibility="hidden"/>
-            </RFC2136>
-            <Lookup order="40" url="/diag_dns.php"/>
-            <LogFile order="100" VisibleName="Log File" url="/diag_logs_resolver.php"/>
-        </DNSTools>
+        <OpenDNS VisibleName="OpenDNS" url="/services_opendns.php" cssClass="fa fa-tags fa-fw"/>
+        <RouterAdv VisibleName="Router Advertisements" cssClass="fa fa-bullseye fa-fw" />
         <Diagnostics order="900" cssClass="fa fa-medkit fa-fw" url="/status_services.php">
           <All url="/status_services.php?*" visibility="hidden"/>
         </Diagnostics>
@@ -282,6 +241,7 @@
         <OpenVPN cssClass="fa fa-lock fa-fw" order="20">
             <Servers order="10" url="/vpn_openvpn_server.php">
                 <Edit url="/vpn_openvpn_server.php?*" visibility="hidden"/>
+                <Step url="/wizard.php?xml=openvpn*" visibility="hidden"/>
             </Servers>
             <Clients order="20" url="/vpn_openvpn_client.php">
                 <Edit url="/vpn_openvpn_client.php?*" visibility="hidden"/>

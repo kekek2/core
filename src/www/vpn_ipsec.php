@@ -3,7 +3,7 @@
 /*
     Copyright (C) 2014-2016 Deciso B.V.
     Copyright (C) 2003-2005 Manuel Kasper <mk@neon1.net>.
-    Copyright (C) 2008 Shrew Soft Inc
+    Copyright (C) 2008 Shrew Soft Inc. <mgrooms@shrew.net>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -29,8 +29,9 @@
 */
 
 require_once("guiconfig.inc");
+require_once("system.inc");
 require_once("filter.inc");
-require_once("ipsec.inc");
+require_once("plugins.inc.d/ipsec.inc");
 require_once("services.inc");
 require_once("interfaces.inc");
 
@@ -63,21 +64,11 @@ function ipsec_idinfo_to_text(& $idinfo) {
     }
 }
 
-if (!isset($config['ipsec']) || !is_array($config['ipsec'])) {
-    $config['ipsec'] = array();
-}
-if (!isset($config['ipsec']['phase1'])) {
-    $config['ipsec']['phase1'] = array();
-}
-if (!isset($config['ipsec']['phase2'])) {
-    $config['ipsec']['phase2'] = array();
-}
-
+$a_phase1 = &config_read_array('ipsec', 'phase1');
+$a_phase2 = &config_read_array('ipsec', 'phase2');
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $a_phase1 = &$config['ipsec']['phase1'];
-    $a_phase2 = &$config['ipsec']['phase2'];
     if (isset($_POST['apply'])) {
-        ipsec_configure();
+        ipsec_configure_do();
         filter_configure();
         $savemsg = get_std_save_message();
         clear_subsystem_dirty('ipsec');
@@ -88,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             unset($config['ipsec']['enable']);
         }
         write_config();
-        ipsec_configure();
+        ipsec_configure_do();
         filter_configure();
         clear_subsystem_dirty('ipsec');
         header(url_safe('Location: /vpn_ipsec.php'));
@@ -104,7 +95,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach ($del_items as $p1entrydel) {
             /* remove static route if interface is not WAN */
             if ($a_phase1[$p1entrydel]['interface'] <> "wan") {
-                mwexec('/sbin/route delete -host ' . escapeshellarg($a_phase1[$p1entrydel]['remote-gateway']));
+                /* XXX does this even apply? only use of system.inc at the top! */
+                system_host_route($a_phase1[$p1entrydel]['remote-gateway'], $a_phase1[$p1entrydel]['remote-gateway'], true, false);
             }
             /* remove all phase2 entries that match the ikeid */
             $ikeid = $a_phase1[$p1entrydel]['ikeid'];
@@ -188,9 +180,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // form data
-$pconfig = $config['ipsec'];
-$pconfig['enable'] = isset($config['ipsec']['enable']);
-legacy_html_escape_form_data($pconfig);
+legacy_html_escape_form_data($a_phase1);
+legacy_html_escape_form_data($a_phase2);
 
 $service_hook = 'ipsec';
 
@@ -324,7 +315,7 @@ $( document ).ready(function() {
           <input type="hidden" id="action" name="act" value="" />
            <div class="tab-content content-box col-xs-12">
               <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-clean-form">
                   <thead>
                   <tr>
                     <td>&nbsp;</td>
@@ -342,7 +333,7 @@ $( document ).ready(function() {
                   <tbody>
 <?php
                   $i = 0;
-                  foreach ($pconfig['phase1'] as $ph1ent) :?>
+                  foreach ($a_phase1 as $ph1ent) :?>
                     <tr>
                       <td>
                         <input type="checkbox" name="p1entry[]" value="<?=$i;?>"/>
@@ -419,6 +410,9 @@ $( document ).ready(function() {
                             16 => '16 (4096&nbsp;bits)',
                             17 => '17 (6144&nbsp;bits)',
                             18 => '18 (8192&nbsp;bits)',
+                            19 => '19 (256&nbsp;bit&nbsp;elliptic&nbsp;curve)',
+                            20 => '20 (384&nbsp;bit&nbsp;elliptic&nbsp;curve)',
+                            21 => '21 (521&nbsp;bit&nbsp;elliptic&nbsp;curve)',
                             22 => '22 (1024(sub 160)&nbsp;bits)',
                             23 => '23 (2048(sub 224)&nbsp;bits)',
                             24 => '24 (2048(sub 256)&nbsp;bits)'
@@ -461,7 +455,7 @@ $( document ).ready(function() {
                       <td colspan="9">
 <?php
                         $phase2count=0;
-                        foreach ($pconfig['phase2'] as $ph2ent) {
+                        foreach ($a_phase2 as $ph2ent) {
                             if ($ph2ent['ikeid'] != $ph1ent['ikeid']) {
                                 continue;
                             }
@@ -473,7 +467,7 @@ $( document ).ready(function() {
                           </button>
                         </div>
                         <div id="tdph2-<?=$i?>" style="display:none">
-                          <table class="table table-striped table-condensed">
+                          <table class="table table-clean-form table-condensed">
                             <thead>
                               <tr>
                                 <td>&nbsp;</td>
@@ -490,7 +484,7 @@ $( document ).ready(function() {
                             <tbody>
 <?php
                             $j = 0;
-                            foreach ($pconfig['phase2'] as $ph2index => $ph2ent) :
+                            foreach ($a_phase2 as $ph2index => $ph2ent) :
                                 if ($ph2ent['ikeid'] != $ph1ent['ikeid']) {
                                     continue;
                                 }?>
@@ -648,7 +642,7 @@ $( document ).ready(function() {
                     </tr>
                     <tr>
                       <td colspan=9>
-                        <input name="enable" type="checkbox" id="enable" value="yes" <?=!empty($pconfig['enable']) ? "checked=\"checked\"":"";?>/>
+                        <input name="enable" type="checkbox" id="enable" value="yes" <?=!empty($config['ipsec']['enable']) ? "checked=\"checked\"":"";?>/>
                         <strong><?=gettext("Enable IPsec"); ?></strong>
                       </td>
                     </tr>

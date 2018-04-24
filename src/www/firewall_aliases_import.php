@@ -2,7 +2,7 @@
 
 /*
     Copyright (C) 2014 Deciso B.V.
-    Copyright (C) 2005 Scott Ullrich
+    Copyright (C) 2005 Scott Ullrich <sullrich@gmail.com>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -30,12 +30,7 @@
 require_once("guiconfig.inc");
 require_once("logs.inc");
 
-if (!isset($config['aliases']) || !is_array($config['aliases'])) {
-    $config['aliases'] = array();
-}
-if (!isset($config['aliases']['alias'])) {
-    $config['aliases']['alias'] = array();
-}
+config_read_array('aliases', 'alias');
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // initialize form vars
@@ -50,14 +45,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     do_input_validation($pconfig, $reqdfields, $reqdfieldsn, $input_errors);
 
-    if (is_validaliasname($pconfig['name']) == false) {
-        $input_errors[] = gettext("The alias name may only consist of the characters") . " a-z, A-Z, 0-9, _.";
+    $valid = is_validaliasname($pconfig['name']);
+    if ($valid === false) {
+        $input_errors[] = sprintf(gettext('The name must be less than 32 characters long and may only consist of the following characters: %s'), 'a-z, A-Z, 0-9, _');
+    } elseif ($valid === null) {
+        $input_errors[] = sprintf(gettext('The name cannot be the internally reserved keyword "%s".'), $pconfig['name']);
     }
 
     /* check for name duplicates */
     if (is_alias($pconfig['name'])) {
         $input_errors[] = gettext("An alias with this name already exists.");
     }
+
+    // Keywords not allowed in names
+    $reserved_keywords = array();
 
     // Add all Load balance names to reserved_keywords
     if (isset($config['load_balancer']['lbpool'])) {
@@ -66,14 +67,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
     }
 
-    // Keywords not allowed in names
-    $reserved_keywords = array("all", "pass", "block", "out", "queue", "max", "min", "pptp", "pppoe", "L2TP", "OpenVPN", "IPsec");
     $reserved_ifs = get_configured_interface_list(false, true);
     $reserved_keywords = array_merge($reserved_keywords, $reserved_ifs, $reserved_table_names);
+
     /* Check for reserved keyword names */
-    foreach($reserved_keywords as $rk)
-        if ($rk == $pconfig['name'])
+    foreach($reserved_keywords as $rk) {
+        if ($rk == $pconfig['name']) {
             $input_errors[] = sprintf(gettext("Cannot use a reserved keyword as alias name %s"), $rk);
+        }
+    }
 
     /* check for name interface description conflicts */
     foreach($config['interfaces'] as $interface) {
@@ -187,26 +189,27 @@ include("head.inc");
                       <span class="text-info">
                         <?=gettext("Networks")?><br/>
                       </span>
-                      <small>
+                      <small class="formhelp">
                         <?=gettext("Networks are specified in CIDR format. Select the CIDR mask that pertains to each entry. /32 specifies a single IPv4 host, /128 specifies a single IPv6 host, /24 specifies 255.255.255.0, /64 specifies a normal IPv6 network, etc. Hostnames (FQDNs) may also be specified, using a /32 mask for IPv4 or /128 for IPv6.");?>
-                        <br/>
                       </small>
+                      <br/>
                       <span class="text-info">
                         <?=gettext("Hosts")?><br/>
                       </span>
-                      <small>
+                      <small class="formhelp">
                         <?=gettext("Enter as many hosts as you would like. Hosts must be specified by their IP address or fully qualified domain name (FQDN). FQDN hostnames are periodically re-resolved and updated. If multiple IPs are returned by a DNS query, all are used.");?>
-                        <br/>
                       </small>
                     </div>
                   </td>
                 </tr>
                 <tr>
-                  <td  width="22%"><a id="help_for_name" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Alias Name"); ?></td>
-                  <td  width="78%">
+                  <td width="22%"><a id="help_for_name" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('Name') ?></td>
+                  <td width="78%">
                     <input name="name" type="text" class="form-control unknown" size="40" maxlength="31" value="<?=$pconfig['name'];?>" />
                     <div class="hidden" for="help_for_name">
+                      <small class="formhelp">
                       <?=gettext("The name of the alias may only consist of the characters \"a-z, A-Z and 0-9\"."); ?>
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -215,15 +218,18 @@ include("head.inc");
                   <td>
                     <input name="descr" type="text" value="<?=$pconfig['descr'];?>" />
                     <div class="hidden" for="help_for_description">
+                      <small class="formhelp">
                       <?=gettext("You may enter a description here for your reference (not parsed)"); ?>.
+                      </small>
                     </div>
                   </td>
                 </tr>
                 <tr>
-                  <td><a id="help_for_alias" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Aliases to import"); ?></td>
+                  <td><a id="help_for_alias" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('Aliases') ?></td>
                   <td>
                     <textarea name="aliasimport" rows="15" cols="40"><?=$pconfig['aliasimport'];?></textarea>
                     <div class="hidden" for="help_for_alias">
+                      <small class="formhelp">
                       <?=gettext("Paste in the aliases to import separated by a carriage return. Common examples are lists of IPs, networks, blacklists, etc."); ?>
                       <br />
                       <?=gettext("The list may contain IP addresses, with or without CIDR prefix, IP ranges, blank lines (ignored) and an optional description after each IP. e.g.:"); ?>
@@ -235,6 +241,7 @@ include("head.inc");
                         <br/>10.20.0.0/16 Office network
                         <br/>10.40.1.10-10.40.1.19 Managed switches
                       </code>
+                      </small>
                     </div>
                   </td>
                 </tr>

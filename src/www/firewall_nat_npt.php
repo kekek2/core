@@ -32,10 +32,7 @@ require_once("filter.inc");
 require_once("interfaces.inc");
 require_once("logs.inc");
 
-if (!isset($config['nat']['npt'])) {
-  $config['nat']['npt'] = array();
-}
-$a_npt = &$config['nat']['npt'];
+$a_npt = &config_read_array('nat', 'npt');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pconfig = $_POST;
@@ -177,6 +174,12 @@ $main_buttons = array(
       $("#action").val("toggle");
       $("#iform").submit();
     });
+
+    // select All
+    $("#selectAll").click(function(){
+        $(".rule_select").prop("checked", $(this).prop("checked"));
+    });
+
     // watch scroll position and set to last known on page load
     watchScrollPosition();
   });
@@ -197,11 +200,11 @@ $main_buttons = array(
               <input type="hidden" id="id" name="id" value="" />
               <input type="hidden" id="action" name="act" value="" />
               <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-clean-form">
                   <thead>
                     <tr>
                       <th width="2%">&nbsp;</th>
-                      <th width="2%">&nbsp;</th>
+                      <th width="2%"><input type="checkbox" id="selectAll"></th>
                       <th width="2%">&nbsp;</th>
                       <th><?=gettext("Interface"); ?></th>
                       <th><?=gettext("External Prefix"); ?></th>
@@ -217,7 +220,7 @@ $main_buttons = array(
                     <tr <?=isset($natent['disabled'])?"class=\"text-muted\"":"";?>  ondblclick="document.location='firewall_nat_npt_edit.php?id=<?=$i;?>';">
                       <td> </td>
                       <td>
-                          <input type="checkbox" name="rule[]" value="<?=$i;?>"  />
+                          <input class="rule_select" type="checkbox" name="rule[]" value="<?=$i;?>"  />
                       </td>
                       <td>
                         <a href="#" class="act_toggle" id="toggle_<?=$i;?>" data-toggle="tooltip" title="<?=(!isset($natent['disabled'])) ? gettext("disable rule") : gettext("enable rule");?>">

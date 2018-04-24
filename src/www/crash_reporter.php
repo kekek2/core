@@ -1,9 +1,9 @@
 <?php
 
 /*
-    Copyright (C) 2015-2016 Franco Fichtner <franco@opnsense.org>
+    Copyright (C) 2015-2017 Franco Fichtner <franco@opnsense.org>
     Copyright (C) 2014 Deciso B.V.
-    Copyright (C) 2011 Scott Ullrich
+    Copyright (C) 2011 Scott Ullrich <sullrich@gmail.com>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -36,7 +36,8 @@ function upload_crash_report($files, $agent)
     $counter = 0;
 
     foreach ($files as $filename) {
-        if (is_link($filename) || $filename == '/var/crash/minfree.gz' || $filename == '/var/crash/bounds.gz') {
+        if (is_link($filename) || $filename == '/var/crash/minfree.gz' || $filename == '/var/crash/bounds.gz'
+            || filesize($filename) > 2097152 ) {
             continue;
         }
         $post["file{$counter}"] = curl_file_create($filename, "application/x-gzip", basename($filename));
@@ -61,15 +62,18 @@ function upload_crash_report($files, $agent)
 
 include('head.inc');
 
+$plugins = implode(' ',  explode("\n", shell_exec('pkg info -g "os-*"')));
+
 $last_version = '/usr/local/opnsense/version/opnsense.last';
 $crash_report_header = sprintf(
-    "%s\n%s %s%s %s (%s)\nTime %s\n",
+    "%s\n%s %s%s %s (%s)\n%sTime %s\n",
     php_uname('v'),
     $g['product_name'],
     trim(file_get_contents('/usr/local/opnsense/version/opnsense')),
     file_exists($last_version) ? sprintf(' [%s]', trim(file_get_contents($last_version))) : '',
     trim(shell_exec('/usr/local/bin/openssl version')),
     trim(shell_exec('uname -p')),
+    empty($plugins) ? '' : "Plugins $plugins\n",
     date('r')
 );
 
@@ -82,12 +86,16 @@ $user_agent = $g['product_name'] . '/' . $pkgver[0];
 $crash_reports = array();
 $has_crashed = false;
 
-if (isset($_POST['Submit'])) {
-    if ($_POST['Submit'] == 'yes') {
+$pconfig = array();
+$pconfig['Email'] = isset($config['system']['contact_email']) ? $config['system']['contact_email'] : '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $pconfig = $_POST;
+    if ($pconfig['Submit'] == 'yes') {
         if (!is_dir('/var/crash')) {
             mkdir('/var/crash', 0750, true);
         }
-        $email = trim($_POST['Email']);
+        $email = trim($pconfig['Email']);
         if (!empty($email)) {
             $crash_report_header .= "Email {$email}\n";
             if (!isset($config['system']['contact_email']) ||
@@ -99,30 +107,42 @@ if (isset($_POST['Submit'])) {
             unset($config['system']['contact_email']);
             write_config('Removed crash reporter contact email.');
         }
-        $desc = trim($_POST['Desc']);
+        $desc = trim($pconfig['Desc']);
         if (!empty($desc)) {
             $crash_report_header .= "Description\n\n{$desc}";
         }
-        file_put_contents('/var/crash/crashreport_header.txt', $crash_report_header);
-        if (file_exists('/tmp/PHP_errors.log')) {
-            // limit PHP_errors to send to 1MB
-            exec('/usr/bin/tail -c 1048576 /tmp/PHP_errors.log > /var/crash/PHP_errors.log');
-            @unlink('/tmp/PHP_errors.log');
+        $skip_files = array('.', '..', 'minfree', 'bounds', '');
+        $crashes = glob('/var/crash/*');
+        foreach ($crashes as $crash) {
+            if (!in_array(basename($crash), $skip_files)) {
+                $count++;
+            }
         }
-        @copy('/var/run/dmesg.boot', '/var/crash/dmesg.boot');
-        exec('/usr/bin/gzip /var/crash/*');
-        $files_to_upload = glob('/var/crash/*');
-        upload_crash_report($files_to_upload, $user_agent);
-        foreach ($files_to_upload as $file_to_upload) {
-            @unlink($file_to_upload);
+        if ($count || (!empty($desc) && !empty($email))) {
+            file_put_contents('/var/crash/crashreport_header.txt', $crash_report_header);
+            if (file_exists('/tmp/PHP_errors.log')) {
+                // limit PHP_errors to send to 1MB
+                exec('/usr/bin/tail -c 1048576 /tmp/PHP_errors.log > /var/crash/PHP_errors.log');
+                @unlink('/tmp/PHP_errors.log');
+            }
+            @copy('/var/run/dmesg.boot', '/var/crash/dmesg.boot');
+            exec('/usr/bin/gzip /var/crash/*');
+            $files_to_upload = glob('/var/crash/*');
+            upload_crash_report($files_to_upload, $user_agent);
+            foreach ($files_to_upload as $file_to_upload) {
+                @unlink($file_to_upload);
+            }
+        } else {
+            /* still crashing ;) */
+            $has_crashed = true;
         }
-    } elseif ($_POST['Submit'] == 'no') {
+    } elseif ($pconfig['Submit'] == 'no') {
         $files_to_upload = glob('/var/crash/*');
         foreach ($files_to_upload as $file_to_upload) {
             @unlink($file_to_upload);
         }
         @unlink('/tmp/PHP_errors.log');
-    } elseif ($_POST['Submit'] == 'new') {
+    } elseif ($pconfig['Submit'] == 'new') {
           /* force a crash report generation */
           $has_crashed = true;
     }
@@ -131,14 +151,12 @@ if (isset($_POST['Submit'])) {
     $has_crashed = get_crash_report(true) != '';
 }
 
-$email = isset($config['system']['contact_email']) ? $config['system']['contact_email'] : '';
-
 if ($has_crashed) {
     $crash_files = glob("/var/crash/*");
     $crash_reports['System Information'] = trim($crash_report_header);
     if (file_exists('/tmp/PHP_errors.log')) {
         $php_errors_size = @filesize('/tmp/PHP_errors.log');
-        $max_php_errors_size = 1048576; // 1MB
+        $max_php_errors_size = 2 * 1024 * 1024;
         // limit reporting for PHP_errors.log to $max_php_errors_size characters
         if ($php_errors_size > $max_php_errors_size) {
             // if file is to large, only display last $max_php_errors_size characters
@@ -168,15 +186,26 @@ if ($has_crashed) {
 }
 
 $message = gettext('Luckily we have not detected a programming bug.');
-if (isset($_POST['Submit'])) {
-    if ($_POST['Submit'] == 'yes') {
-        $message = gettext('Thank you for submitting this crash report.');
-    } elseif ($_POST['Submit'] == 'no') {
+if ($has_crashed) {
+    $message = gettext('Unfortunately we have detected at least one programming bug.');
+}
+
+if (isset($pconfig['Submit'])) {
+    if ($pconfig['Submit'] == 'yes') {
+        if (!$has_crashed) {
+            $message = gettext('Thank you for submitting this crash report.');
+        } else {
+            $message = gettext('This crash report contains no actual crash information. If you want to submit a problem please fill out your e-mail and description below.');
+        }
+    } elseif ($pconfig['Submit'] == 'no') {
         $message = gettext('Please consider submitting a crash report if the error persists.');
     }
 }
-?>
 
+// escape form output before processing
+legacy_html_escape_form_data($pconfig);
+
+?>
 <body>
 
 <?php include("fbegin.inc"); ?>
@@ -192,12 +221,12 @@ if (isset($_POST['Submit'])) {
             if ($has_crashed):?>
               <br/><button name="Submit" type="submit" class="btn btn-default pull-right" value="no"><?=gettext('Dismiss this report');?></button>
               <button name="Submit" type="submit" class="btn btn-primary pull-right" style="margin-right: 8px;" value="yes"><?=gettext('Submit this report');?></button>
-              <p><strong><?=gettext("Unfortunately we have detected at least one programming bug.");?></strong></p>
+              <p><strong><?= $message ?></strong></p>
               <p><?=gettext("Would you like to submit this crash report to the developers?");?></p>
               <hr><p><?=gettext('You can help us further by adding your contact information and a problem description. ' .
                   'Please note that providing your contact information greatly improves the chances of bugs being fixed.');?></p>
-              <p><input type="text" placeholder="<?=gettext('your@email.com');?>" name="Email" value="<?=$email;?>"></p>
-              <p><textarea rows="5" placeholder="<?=gettext('A short problem description or steps to reproduce.');?>" name="Desc"></textarea></p>
+              <p><input type="text" placeholder="<?= html_safe(gettext('your@email.com')) ?>" name="Email" value="<?= $pconfig['Email'] ?>"></p>
+              <p><textarea rows="5" placeholder="<?= html_safe(gettext('A short problem description or steps to reproduce.')) ?>" name="Desc"><?= $pconfig['Desc'] ?></textarea></p>
               <hr><p><?=gettext("Please double-check the following contents to ensure you are comfortable submitting the following information.");?></p>
 <?php
               foreach ($crash_reports as $report => $content):?>
@@ -209,6 +238,7 @@ if (isset($_POST['Submit'])) {
               endforeach;
             else:?>
 
+              <input type="hidden" name="Email" value="<?= $pconfig['Email'] ?>">
               <br/><button name="Submit" type="submit" class="btn btn-primary pull-right" value="new"><?=gettext('Report an issue');?></button>
               <p><strong><?=$message;?></strong></p><br/>
 <?php

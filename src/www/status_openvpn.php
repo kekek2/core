@@ -2,9 +2,10 @@
 
 /*
     Copyright (C) 2014-2015 Deciso B.V.
-    Copyright (C) 2010 Jim Pingle
-    Copyright (C) 2008 Shrew Soft Inc.
-    Copyright (C) 2005 Scott Ullrich, Colin Smith
+    Copyright (C) 2010 Jim Pingle <jimp@pfsense.org>
+    Copyright (C) 2008 Shrew Soft Inc. <mgrooms@shrew.net>
+    Copyright (C) 2005 Scott Ullrich <sullrich@gmail.com>
+    Copyright (C) 2005 Colin Smith <ethethlay@gmail.com>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -30,7 +31,7 @@
 */
 
 require_once("guiconfig.inc");
-require_once("openvpn.inc");
+require_once("plugins.inc.d/openvpn.inc");
 require_once("services.inc");
 require_once("interfaces.inc");
 
@@ -131,7 +132,7 @@ $( document ).ready(function() {
         <div class="content-box-main col-xs-12">
           <form method="get" name="iform">
             <div class="table-responsive">
-              <table class="table table-striped">
+              <table class="table table-clean-form">
 <?php
                 $i = 0;
                 foreach ($servers as $server): ?>
@@ -174,7 +175,7 @@ $( document ).ready(function() {
                 <tr>
                   <td colspan="2">
                     <?php $ssvc = find_service_by_name('openvpn', array('id' => $server['vpnid'])); ?>
-                    <?= get_service_status_icon($ssvc, true, true); ?>
+                    <?= get_service_status_icon($ssvc, true); ?>
                     <?= get_service_control_links($ssvc, true); ?>
                   </td>
                   <td colspan="6">&nbsp;</td>
@@ -253,7 +254,7 @@ $( document ).ready(function() {
                   <td>
                     <div>
                       <?php $ssvc = find_service_by_name('openvpn', array('id' => $sk_server['vpnid'])); ?>
-                      <?= get_service_status_icon($ssvc, false, true); ?>
+                      <?= get_service_status_icon($ssvc, true); ?>
                       <?= get_service_control_links($ssvc, true); ?>
                     </div>
                   </td>
@@ -293,7 +294,7 @@ $( document ).ready(function() {
                   <td>
                     <div>
                       <?php $ssvc = find_service_by_name('openvpn', array('id' => $client['vpnid'])); ?>
-                      <?= get_service_status_icon($ssvc, false, true); ?>
+                      <?= get_service_status_icon($ssvc, true); ?>
                       <?= get_service_control_links($ssvc, true); ?>
                     </div>
                   </td>

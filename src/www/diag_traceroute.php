@@ -2,7 +2,8 @@
 
 /*
     Copyright (C) 2016 Deciso B.V.
-    Copyright (C) 2005 Paul Taylor (paultaylor@winndixie.com) and Manuel Kasper <mk@neon1.net>.
+    Copyright (C) 2005 Paul Taylor <paultaylor@winn-dixie.com>
+    Copyright (C) 2005 Manuel Kasper <mk@neon1.net>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -56,7 +57,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (!is_numeric($pconfig['ttl']) || $pconfig['ttl'] < 1 || $pconfig['ttl'] > MAX_TTL) {
         $input_errors[] = sprintf(gettext("Maximum number of hops must be between 1 and %s"), MAX_TTL);
     }
-    $host = trim($pconfig['host']);
+    $host_utf8 = trim($pconfig['host']);
+    $host = idn_to_ascii($host_utf8);
     $ipproto = $pconfig['ipproto'];
     if ($pconfig['ipproto'] == "ipv4" && is_ipaddrv6($host)) {
         $input_errors[] = gettext("When using IPv4, the target host must be an IPv4 address or hostname.");
@@ -86,6 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if (is_resource($process)) {
              $cmd_output = stream_get_contents($pipes[2]);
              $cmd_output .= stream_get_contents($pipes[1]);
+             $cmd_output = str_replace($host, $host_utf8, $cmd_output);
         }
     }
 }
@@ -107,7 +110,7 @@ include("head.inc");
           <div class="content-box-main ">
             <form method="post" name="iform" id="iform">
               <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-clean-form">
                   <tbody>
                     <tr>
                       <td><?=gettext("Host"); ?></td>

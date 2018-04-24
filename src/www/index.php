@@ -2,7 +2,7 @@
 
 /*
     Copyright (C) 2014-2016 Deciso B.V.
-    Copyright (C) 2004-2012 Scott Ullrich
+    Copyright (C) 2004-2012 Scott Ullrich <sullrich@gmail.com>
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
     All rights reserved.
 
@@ -37,10 +37,8 @@ if (isset($_REQUEST['closenotice'])) {
     exit;
 }
 
-##if no config entry found, initialize config entry
-if (empty($config['widgets']) || !is_array($config['widgets'])) {
-    $config['widgets'] = array();
-}
+// if no config entry found, initialize config entry
+config_read_array('widgets');
 
 $widgetCollection = array();
 
@@ -103,7 +101,9 @@ include("head.inc");
 include("fbegin.inc");?>
 
 <?php
-  if (isset($config['trigger_initial_wizard'])) :?>
+?>
+<?php
+  if (isset($config['trigger_initial_wizard']) || isset($_GET['wizard_done'])): ?>
   <script type="text/javascript">
       $( document ).ready(function() {
         $(".page-content-head:first").hide();
@@ -111,7 +111,14 @@ include("fbegin.inc");?>
   </script>
   <header class="page-content-head">
     <div class="container-fluid">
+<?php
+     if (isset($config['trigger_initial_wizard'])): ?>
       <h1><?= gettext("Starting initial configuration!") ?></h1>
+<?php
+     else: ?>
+      <h1><?= gettext("Finished initial configuration!") ?></h1>
+<?php
+     endif ?>
     </div>
   </header>
   <section class="page-content-main">
@@ -122,10 +129,18 @@ include("fbegin.inc");?>
             <div class="table-responsive">
               <div class="content-box-main">
                 <?php
-                    echo sprintf(gettext("Welcome to %s!"), $g['product_name']) . "<p>\n";
-                    echo gettext("One moment while we start the initial setup wizard.") . "<p>\n";
-                    echo gettext("Embedded platform users: Please be patient, the wizard takes a little longer to run than the normal GUI.") . "<p>\n";
-                    echo gettext("To bypass the wizard, click on the logo in the upper left corner.") . "\n";
+                    if (isset($config['trigger_initial_wizard'])) {
+                        echo '<p>' . sprintf(gettext('Welcome to %s!'), $g['product_name']) . "</p>\n";
+                        echo '<p>' . gettext('One moment while we start the initial setup wizard.') . "</p>\n";
+                        echo '<p class="__nomb">' . gettext('To bypass the wizard, click on the logo in the upper left corner.') . "</p>\n";
+                    } else {
+                        echo '<p>' . sprintf(gettext('Congratulations! %s is now configured.'), $g['product_name']) . "</p>\n";
+                        echo '<p>' . sprintf(gettext(
+                            'Please consider donating to the project to help us with our overhead costs. ' .
+                            'See %sour website%s to donate or purchase available %s support services.'),
+                            '<a target="_new" href="' . $g['product_website'] . '">', '</a>', $g['product_name']) . "</p>\n";
+                        echo '<p class="__nomb">' . sprintf(gettext('Click to %scontinue to the dashboard%s.'), '<a href="/">', '</a>') . "</p>\n";
+                    }
                 ?>
               </div>
             <div>
@@ -134,7 +149,11 @@ include("fbegin.inc");?>
       </div>
     </div>
   </section>
-  <meta http-equiv="refresh" content="3;url=wizard.php">
+<?php
+     if (isset($config['trigger_initial_wizard'])): ?>
+  <meta http-equiv="refresh" content="5;url=/wizard.php?xml=system">
+<?php
+     endif ?>
 <?php
   // normal dashboard
   else:?>

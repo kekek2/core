@@ -41,11 +41,7 @@ function vlan_inuse($vlan_intf) {
     return false;
 }
 
-if (!isset($config['vlans']['vlan']) || !is_array($config['vlans']['vlan'])) {
-    $a_vlans = array();
-} else {
-    $a_vlans = &$config['vlans']['vlan'] ;
-}
+$a_vlans = &config_read_array('vlans', 'vlan') ;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($a_vlans[$_POST['id']])) {
@@ -122,7 +118,8 @@ $main_buttons = array(
                   <thead>
                     <tr>
                       <th><?=gettext("Interface");?></th>
-                      <th><?=gettext("VLAN tag");?></th>
+                      <th><?=gettext("Tag");?></th>
+                      <th><?=gettext("PCP");?></th>
                       <th><?=gettext("Description");?></th>
                       <th>&nbsp;</th>
                     </tr>
@@ -134,6 +131,7 @@ $main_buttons = array(
                     <tr>
                       <td><?=$vlan['if'];?></td>
                       <td><?=$vlan['tag'];?></td>
+                      <td><?= isset($vlan['pcp']) ? $vlan['pcp'] : 0 ?></td>
                       <td><?=$vlan['descr'];?></td>
                       <td>
                         <a href="interfaces_vlan_edit.php?id=<?=$i;?>" class="btn btn-xs btn-default" data-toggle="tooltip" title="<?=gettext("edit interface");?>">
@@ -147,12 +145,14 @@ $main_buttons = array(
 <?php
                   $i++;
                   endforeach; ?>
+                  </tbody>
+                  <tfoot>
                     <tr>
-                      <td colspan="4">
+                      <td colspan="5">
                         <?= gettext("Not all drivers/NICs support 802.1Q VLAN tagging properly. On cards that do not explicitly support it, VLAN tagging will still work, but the reduced MTU may cause problems.");?>
                       </td>
                     </tr>
-                  </tbody>
+                  </tfoot>
                 </table>
               </div>
             </form>

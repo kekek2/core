@@ -2,7 +2,7 @@
 
 /*
     Copyright (C) 2014-2015 Deciso B.V.
-    Copyright (C) 2012 Jim Pingle
+    Copyright (C) 2012 Jim Pingle <jimp@pfsense.org>
     Copyright (C) 2007-2008 Scott Ullrich <sullrich@gmail.com>
     Copyright (C) 2005-2006 Colin Smith <ethethlay@gmail.com>
     All rights reserved.
@@ -28,34 +28,6 @@
     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
 */
-
-/* Determine automated help URL. Should output the page name and
-   parameters separately */
-$uri_split = "";
-preg_match("/\/(.*)\?(.*)/", $_SERVER["REQUEST_URI"], $uri_split);
-
-/* If there was no match, there were no parameters, just grab the filename
-   Otherwise, use the matched filename from above. */
-if (empty($uri_split[0])) {
-    $pagename = ltrim($_SERVER["REQUEST_URI"], '/');
-} else {
-    $pagename = $uri_split[1];
-}
-/* If the page name is still empty, the user must have requested / (index.php) */
-if (empty($pagename)) {
-    $pagename = "index.php";
-}
-
-/* If the filename is wizard.php, reparse looking for the .xml filename */
-if ($pagename == 'wizard.php') {
-    $param_split = explode('&', $uri_split[2]);
-    foreach ($param_split as $param) {
-        if (substr($param, 0, 4) == "xml=") {
-            $xmlfile = explode('=', $param);
-            $pagename = $xmlfile[1];
-        }
-    }
-}
 
 $aclObj = new \OPNsense\Core\ACL();
 
@@ -91,6 +63,16 @@ if($need_alert_display == true) {
       </div>
       <div class="collapse navbar-collapse">
         <ul class="nav navbar-nav navbar-right">
+          <?php if(isset($config['system']) && isset($config['system']['language']) && $config['system']['language'] == 'en_US') { ?>
+            <li>
+              <form class="navbar-form" id="ting-search" role="search">
+                <div class="input-group">
+                  <div class="input-group-addon"><i class="fa fa-search"></i></div>
+                  <input type="text" style="width: 250px;" class="form-control" tabindex="1" data-provide="typeahead" id="menu_search_box">
+                </div>
+              </form>
+            </li>
+          <?php } ?>
           <li id="menu_messages"><?= get_menu_messages() ?></li>
           <li><a href="/index.php?logout"><span class="fa fa-sign-out fa-fw"></span><?=gettext("Logout");?></a></li>
         </ul>
@@ -169,35 +151,34 @@ if($need_alert_display == true) {
   <div class="row">
     <header class="page-content-head">
       <div class="container-fluid">
-          <form action="<?=$_SERVER['REQUEST_URI'];?>" method="post">
         <ul class="list-inline">
-          <li class="__mb"><h1><?= gentitle($menuBreadcrumbs) ?></h1></li>
+          <li><h1><?= gentitle($menuBreadcrumbs) ?></h1></li>
           <li class="btn-group-container">
-            <?php
-            if (isset($service_hook)) {
-              $ssvc = find_service_by_name($service_hook);
-              if (!empty($ssvc)) {
-                echo get_service_status_icon($ssvc, false);
-                echo get_service_control_links($ssvc, false);
-              }
-            }
-            ?>
-            <?php if (!empty($main_buttons)): foreach ($main_buttons as $button): ?>
-              <a href="<?=$button['href'];?>" class="btn btn-primary"><span class="glyphicon glyphicon-plus-sign __iconspacer"></span><?=$button['label'];?></a>
-            <?php endforeach; endif; ?>
+            <form action="<?=$_SERVER['REQUEST_URI'];?>" method="post">
+              <?php
+              if (isset($service_hook)) {
+                $ssvc = find_service_by_name($service_hook);
+                if (!empty($ssvc)) {
+                  echo get_service_status_icon($ssvc);
+                  echo get_service_control_links($ssvc);
+                }
+              } ?>
+              <?php if (!empty($main_buttons)): foreach ($main_buttons as $button): ?>
+                <a href="<?=$button['href'];?>" class="btn btn-primary"><span class="glyphicon glyphicon-plus-sign __iconspacer"></span><?=$button['label'];?></a>
+              <?php endforeach; endif; ?>
 
-            <?php if (isset($widgetCollection)): ?>
-              <a href="#" id="updatepref" style="display:none" onclick="return updatePref();" class="btn btn-primary"><?=gettext("Save Settings");?></a>
-              <button id="add_widget_btn" type="button" class="btn btn-default" data-toggle="modal" data-target="#modal_widgets"><span class="glyphicon glyphicon-plus-sign __iconspacer"></span><?= gettext('Add widget') ?></button>
-              <select class="selectpicker" data-width="120px" id="column_count">
-                  <option value="1" <?=$pconfig['column_count'] == "1" ? 'selected="selected"' : "";?>><?=gettext("1 column");?></option>
-                  <option value="2" <?=$pconfig['column_count'] == "2" ? 'selected="selected"' : "";?>><?=gettext("2 columns");?></option>
-                  <option value="3" <?=$pconfig['column_count'] == "3" ? 'selected="selected"' : "";?>><?=gettext("3 columns");?></option>
-                  <option value="4" <?=$pconfig['column_count'] == "4" ? 'selected="selected"' : "";?>><?=gettext("4 columns");?></option>
-              </select>
-            <?php endif; ?>
+              <?php if (isset($widgetCollection)): ?>
+                <a href="#" id="updatepref" style="display:none" onclick="return updatePref();" class="btn btn-primary"><?=gettext("Save Settings");?></a>
+                <button id="add_widget_btn" type="button" class="btn btn-default" data-toggle="modal" data-target="#modal_widgets"><span class="glyphicon glyphicon-plus-sign __iconspacer"></span><?= gettext('Add widget') ?></button>
+                <select class="selectpicker" data-width="120px" id="column_count">
+                    <option value="1" <?=$pconfig['column_count'] == "1" ? 'selected="selected"' : "";?>><?=gettext("1 column");?></option>
+                    <option value="2" <?=$pconfig['column_count'] == "2" ? 'selected="selected"' : "";?>><?=gettext("2 columns");?></option>
+                    <option value="3" <?=$pconfig['column_count'] == "3" ? 'selected="selected"' : "";?>><?=gettext("3 columns");?></option>
+                    <option value="4" <?=$pconfig['column_count'] == "4" ? 'selected="selected"' : "";?>><?=gettext("4 columns");?></option>
+                </select>
+              <?php endif; ?>
+             </form>
           </li>
         </ul>
-          </form>
       </div>
     </header>

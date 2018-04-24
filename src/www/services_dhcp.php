@@ -97,7 +97,8 @@ function reconfigure_dhcpd()
 $config_copy_fieldsnames = array('enable', 'staticarp', 'failover_peerip', 'dhcpleaseinlocaltime','descr',
   'defaultleasetime', 'maxleasetime', 'gateway', 'domain', 'domainsearchlist', 'denyunknown', 'ddnsdomain',
   'ddnsdomainprimary', 'ddnsdomainkeyname', 'ddnsdomainkey', 'ddnsupdate', 'mac_allow', 'mac_deny', 'tftp', 'ldap',
-  'netboot', 'nextserver', 'filename', 'filename32', 'filename64', 'rootpath', 'netmask', 'numberoptions');
+  'netboot', 'nextserver', 'filename', 'filename32', 'filename64', 'rootpath', 'netmask', 'numberoptions',
+  'interface_mtu');
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // handle identifiers and action
@@ -107,26 +108,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $pool = $_GET['pool'];
         }
     } else {
-        $savemsg = gettext("The DHCP Server can only be enabled on interfaces configured with static IP addresses.") . "<br/><br/>" . gettext("Only interfaces configured with a static IP will be shown.");
+        /* if no interface is provided this invoke is invalid */
+        header(url_safe('Location: /index.php'));
+        exit;
     }
 
-    /* If no interface is provided, choose first one from interfaces */
-    if (!isset($if)) {
-        foreach (legacy_config_get_interfaces(array("virtual" => false)) as $if_id => $intf) {
-            if (!empty($intf['enable']) && is_ipaddrv4($intf['ipaddr'])) {
-                $if = $if_id;
-                break;
-            }
-        }
-    }
-
-    if (empty($config['dhcpd'][$if])) {
-        $config['dhcpd'][$if] = array();
-    }
-    if (empty($config['dhcpd'][$if]['pool'])) {
-        $config['dhcpd'][$if]['pool'] = array();
-    }
-    $a_pools = &$config['dhcpd'][$if]['pool'];
+    $a_pools = &config_read_array('dhcpd', $if, 'pool');
 
     if (!empty($_GET['act'])) {
         $act = $_GET['act'];
@@ -140,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     } elseif ($act == "newpool") {
         $dhcpdconf = array();
     } else {
-        $dhcpdconf = &$config['dhcpd'][$if];
+        $dhcpdconf = &config_read_array('dhcpd', $if);
     }
     $pconfig = array();
     // simple 1-on-1 copy
@@ -178,13 +165,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $pool = $_POST['pool'];
         }
     }
-    if (empty($config['dhcpd'][$if])) {
-        $config['dhcpd'][$if] = array();
-    }
-    if (empty($config['dhcpd'][$if]['pool'])) {
-        $config['dhcpd'][$if]['pool'] = array();
-    }
-    $a_pools = &$config['dhcpd'][$if]['pool'];
+
+    $a_pools = &config_read_array('dhcpd', $if, 'pool');
 
     if (!empty($_POST['act'])) {
         $act = $_POST['act'];
@@ -308,11 +290,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
         }
 
-        if (!empty($config['dhcpd'][$if]['staticmap'])) {
-            $a_maps = &$config['dhcpd'][$if]['staticmap'];
-        } else {
-            $a_maps = array();
-        }
+        $a_maps = &config_read_array('dhcpd', $if, 'staticmap');
         $noip = false;
         foreach ($a_maps as $map) {
             if (empty($map['ipaddr'])) {
@@ -321,6 +299,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         if (!empty($pconfig['staticarp']) && $noip) {
             $input_errors[] = gettext("Cannot enable static ARP when you have static map entries without IP addresses. Ensure all static maps have IP addresses and try again.");
+        }
+        if (!empty($pconfig['interface_mtu']) && (
+          (string)((int)$pconfig['interface_mtu']) != $pconfig['interface_mtu'] || $pconfig['interface_mtu'] < 68)
+        ) {
+            $input_errors[] = gettext("A valid MTU value must be specified.");
         }
 
         if(is_array($pconfig['numberoptions']['item'])) {
@@ -638,29 +621,13 @@ include("head.inc");
         <?php print_info_box_apply(gettext("The static mapping configuration has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?><br />
         <?php endif; ?>
         <section class="col-xs-12">
-<?php
-            /* active tabs */
-            $tab_array = array();
-            foreach (legacy_config_get_interfaces(array("virtual" => false)) as $if_id => $intf) {
-                if (isset($intf['enable']) && is_ipaddrv4($intf['ipaddr'])) {
-                    $ifname = !empty($intf['descr']) ? htmlspecialchars($intf['descr']) : strtoupper($if_id);
-                    if ($if_id == $if) {
-                        $tab_array[] = array($ifname, true, "services_dhcp.php?if={$if_id}");
-                    } else {
-                        $tab_array[] = array($ifname, false, "services_dhcp.php?if={$if_id}");
-                    }
-                }
-            }?>
             <?php if (isset($config['dhcrelay']['enable'])): ?>
               <?php print_info_box(gettext("DHCP Relay is currently enabled. Cannot enable the DHCP Server service while the DHCP Relay is enabled on any interface.")); ?>
-            <?php elseif (count($tab_array) == 0):?>
-              <?php print_info_box(("No interfaces found with a static IPv4 address.")); ?>
             <?php else: ?>
-              <?php display_top_tabs($tab_array); ?>
             <div class="tab-content content-box col-xs-12">
               <form method="post" name="iform" id="iform">
                 <div class="table-responsive">
-                  <table class="table table-striped opnsense_standard_table_form">
+                  <table class="table table-clean-form opnsense_standard_table_form">
                     <tr>
                       <td width="22%" valign="top"></td>
                       <td width="78%" align="right">
@@ -695,6 +662,7 @@ include("head.inc");
                       <td>
                         <input name="denyunknown" type="checkbox" value="yes" <?=!empty($pconfig['denyunknown']) ? "checked=\"checked\"" : ""; ?> />
                         <div class="hidden" for="help_for_denyunknown">
+                          <small class="formhelp">
                           <?=gettext("If this is checked, only the clients defined below will get DHCP leases from this server.");?>
                         </div>
                       </td>
@@ -772,16 +740,19 @@ include("head.inc");
                               <td><?=htmlspecialchars($poolent['range']['to']);?></td>
                               <td><?=htmlspecialchars($poolent['descr']);?></td>
                               <td>
-                                <a href="services_dhcp.php?if=<?=$if;?>&amp;pool=<?=$i;?>"><button type="button" class="btn btn-xs btn-default"><span class="fa fa-pencil"></span></button></a>
-                                <a href="#" data-if="<?=$if;?>" data-id="<?=$i;?>" class="act_delete_pool"><button type="button" class="btn btn-xs btn-default"><span class="fa fa-trash text-muted"></span></button></a>
+                                <a href="services_dhcp.php?if=<?=$if;?>&amp;pool=<?=$i;?>" class="btn btn-xs btn-default"><i class="fa fa-pencil"></i></a>
+                                <a href="#" data-if="<?=$if;?>" data-id="<?=$i;?>" class="act_delete_pool btn btn-xs btn-default"><i class="fa fa-trash text-muted"></i></a>
                               </td>
                             </tr>
 <?php
+                            $i++;
                             endforeach;?>
                             </tbody>
                         </table>
                         <div class="hidden" for="help_for_additionalpools">
+                          <small class="formhelp">
                             <?=gettext("If you need additional pools of addresses inside of this subnet outside the above Range, they may be specified here."); ?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -800,7 +771,9 @@ include("head.inc");
                         <input name="dns1" type="text" value="<?=$pconfig['dns1'];?>" /><br />
                         <input name="dns2" type="text" value="<?=$pconfig['dns2'];?>" />
                         <div class="hidden" for="help_for_dns">
+                          <small class="formhelp">
                           <?=gettext("NOTE: leave blank to use the system default DNS servers - this interface's IP if DNS forwarder is enabled, otherwise the servers configured on the General page.");?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -809,7 +782,9 @@ include("head.inc");
                       <td>
                         <input name="gateway" type="text" class="form-control host" value="<?=$pconfig['gateway'];?>" />
                         <div class="hidden" for="help_for_gateway">
+                          <small class="formhelp">
                           <?=gettext('The default is to use the IP on this interface of the firewall as the gateway. Specify an alternate gateway here if this is not the correct gateway for your network. Type "none" for no gateway assignment.');?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -818,7 +793,9 @@ include("head.inc");
                       <td>
                         <input name="domain" type="text" value="<?=$pconfig['domain'];?>" />
                         <div class="hidden" for="help_for_domain">
+                          <small class="formhelp">
                           <?=gettext("The default is to use the domain name of this system as the default domain name provided by DHCP. You may specify an alternate domain name here.");?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -827,7 +804,9 @@ include("head.inc");
                       <td>
                         <input name="domainsearchlist" type="text" id="domainsearchlist" value="<?=$pconfig['domainsearchlist'];?>" />
                         <div class="hidden" for="help_for_domainsearchlist">
+                          <small class="formhelp">
                           <?=gettext("The DHCP server can optionally provide a domain search list. Use the semicolon character as separator.");?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -836,8 +815,10 @@ include("head.inc");
                       <td>
                         <input name="defaultleasetime" type="text" id="defaultleasetime" value="<?=$pconfig['defaultleasetime'];?>" />
                         <div class="hidden" for="help_for_defaultleasetime">
+                          <small class="formhelp">
                           <?=gettext("This is used for clients that do not ask for a specific expiration time."); ?><br />
                           <?=gettext("The default is 7200 seconds.");?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -846,8 +827,21 @@ include("head.inc");
                       <td>
                         <input name="maxleasetime" type="text" id="maxleasetime" value="<?=$pconfig['maxleasetime'];?>" />
                         <div class="hidden" for="help_for_maxleasetime">
+                          <small class="formhelp">
                           <?=gettext("This is the maximum lease time for clients that ask for a specific expiration time."); ?><br />
                           <?=gettext("The default is 86400 seconds.");?>
+                          </small>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td><a id="help_for_interface_mtu" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Interface MTU");?></td>
+                      <td>
+                        <input name="interface_mtu"  type="text" value="<?=$pconfig['interface_mtu']?>" />
+                        <div class="hidden" for="help_for_interface_mtu">
+                          <small class="formhelp">
+                          <?=gettext('This option specifies the MTU to use on this interface. The minimum legal value for the MTU is 68.');?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -858,7 +852,9 @@ include("head.inc");
                       <td>
                         <input name="failover_peerip" type="text" class="form-control host" id="failover_peerip" value="<?=$pconfig['failover_peerip'];?>" />
                         <div class="hidden" for="help_for_failover_peerip">
+                          <small class="formhelp">
                           <?=gettext("Leave blank to disable. Enter the interface IP address of the other machine. Machines must be using CARP. Interface's advskew determines whether the DHCPd process is Primary or Secondary. Ensure one machine's advskew<20 (and the other is >20).");?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -868,7 +864,9 @@ include("head.inc");
                         <input type="checkbox" value="yes" name="staticarp" <?=!empty($pconfig['staticarp']) ? " checked=\"checked\"" : ""; ?> />&nbsp;
                         <strong><?=gettext("Enable Static ARP entries");?></strong>
                         <div class="hidden" for="help_for_failover_staticarp">
+                          <small class="formhelp">
                           <?=gettext("Warning: This option persists even if DHCP server is disabled. Only the machines listed below will be able to communicate with the firewall on this NIC.");?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -879,9 +877,11 @@ include("head.inc");
                         <strong><?=gettext("Change DHCP display lease time from UTC to local time."); ?></strong>
 
                         <div class="hidden" for="help_for_failover_dhcpleaseinlocaltime">
+                          <small class="formhelp">
                           <?=gettext("Warning: By default DHCP leases are displayed in UTC time. By checking this " .
                           "box DHCP lease time will be displayed in local time and set to time zone selected. This " .
                           "will be used for all DHCP interfaces lease time."); ?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -994,7 +994,7 @@ include("head.inc");
                           <input type="button" onclick="show_shownumbervalue()" class="btn btn-default btn-xs" value="<?=gettext("Advanced");?>" /> - <?=gettext("Show Additional BOOTP/DHCP Options");?>
                         </div>
                         <div id="shownumbervalue" style="display:none">
-                          <table class="table table-striped table-condensed" id="numberoptions_table">
+                          <table class="table table-clean-form table-condensed" id="numberoptions_table">
                             <thead>
                               <tr>
                                 <th></th>
@@ -1067,7 +1067,9 @@ include("head.inc");
                             </tfoot>
                           </table>
                           <div class="hidden" for="help_for_numberoptions">
+                            <small class="formhelp">
                           <?= sprintf(gettext("Enter the DHCP option number and the value for each item you would like to include in the DHCP lease information. For a list of available options please visit this %sURL%s."), '<a href="http://www.iana.org/assignments/bootp-dhcp-parameters/" target="_blank">', '</a>') ?>
+                            </small>
                           </div>
                         </div>
                       </td>
@@ -1110,7 +1112,7 @@ include("head.inc");
           <section class="col-xs-12">
             <div class="tab-content content-box col-xs-12">
               <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-clean-form">
                   <tr>
                     <td colspan="5" valign="top"><?=gettext("DHCP Static Mappings for this interface.");?></td>
                     <td>&nbsp;</td>
@@ -1153,7 +1155,7 @@ include("head.inc");
                       </td>
                       <td>
                         <a href="services_dhcp_edit.php?if=<?=htmlspecialchars($if);?>&amp;id=<?=$i;?>" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-pencil"></span></a>
-                        <a href="#" data-if="<?=$if;?>" data-id="<?=$i;?>" class="act_delete_static"><button type="button" class="btn btn-xs btn-default"><span class="fa fa-trash text-muted"></span></button></a>
+                        <a href="#" data-if="<?=$if;?>" data-id="<?=$i;?>" class="act_delete_static btn btn-xs btn-default"><i class="fa fa-trash text-muted"></i></a>
                       </td>
                     </tr>
 <?php

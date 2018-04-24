@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2016 Franco Fichtner <franco@opnsense.org>
+# Copyright (c) 2015-2017 Franco Fichtner <franco@opnsense.org>
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -70,18 +70,32 @@ install-${TARGET}: force
 			mv -v "${DESTDIR}${ROOT_${TARGET}}/${TREE}/$${FILE}" \
 			    "${DESTDIR}${ROOT_${TARGET}}/${TREE}/$${FILE%%.sample}"; \
 		fi; \
+		if [ "$${FILE%%.shadow}" != "$${FILE}" ]; then \
+			if [ -n "${NO_SAMPLE}" ]; then \
+				mv -v "${DESTDIR}${ROOT_${TARGET}}/${TREE}/$${FILE}" \
+				    "${DESTDIR}${ROOT_${TARGET}}/${TREE}/$${FILE%%.shadow}"; \
+			else \
+				mv "${DESTDIR}${ROOT_${TARGET}}/${TREE}/$${FILE}" \
+				    "${DESTDIR}${ROOT_${TARGET}}/${TREE}/$${FILE%%.shadow}.sample"; \
+			fi; \
+		fi; \
 	done
 .endfor
 
 plist-${TARGET}: force
 .for TREE in ${TREES_${TARGET}}
-	@(cd ${TREE}; find * -type f ${_IGNORES}) | while read FILE; do \
+	@(cd ${TREE}; find * -type f ${_IGNORES} -o -type l) | while read FILE; do \
 		FILE="$${FILE%%.in}"; PREFIX=""; \
 		if [ -z "${NO_SAMPLE}" -a "$${FILE%%.sample}" != "$${FILE}" ]; then \
+			PREFIX="@sample "; \
+		fi; \
+		if [ -z "${NO_SAMPLE}" -a "$${FILE%%.shadow}" != "$${FILE}" ]; then \
+			FILE="$${FILE%%.shadow}.sample"; \
 			PREFIX="@shadow "; \
 		fi; \
 		if [ -n "${NO_SAMPLE}" ]; then \
 			FILE="$${FILE%%.sample}"; \
+			FILE="$${FILE%%.shadow}"; \
 		fi; \
 		echo "$${PREFIX}${ROOT_${TARGET}}/${TREE}/$${FILE}"; \
 	done

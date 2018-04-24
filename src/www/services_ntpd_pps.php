@@ -33,12 +33,7 @@ require_once("system.inc");
 require_once("interfaces.inc");
 require_once("plugins.inc.d/ntpd.inc");
 
-if (!isset($config['ntpd']) || !is_array($config['ntpd'])) {
-    $config['ntpd'] = array();
-}
-if (!isset($config['ntpd']['pps'])) {
-    $config['ntpd']['pps'] = array();
-}
+config_read_array('ntpd', 'pps');
 
 $copy_fields = array('port', 'fudge1', 'stratum', 'flag2', 'flag3', 'flag4', 'refid');
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -87,7 +82,7 @@ include("head.inc");
           <div class="tab-content content-box col-xs-12">
             <form method="post" name="iform" id="iform">
               <div class="table-responsive">
-                <table class="table table-striped opnsense_standard_table_form">
+                <table class="table table-clean-form opnsense_standard_table_form">
                   <thead>
                     <tr>
                       <td width="22%">
@@ -118,7 +113,9 @@ include("head.inc");
                           endforeach; ?>
                         </select>
                         <div class="hidden" for="help_for_gpsport">
+                          <small class="formhelp">
                           <?=gettext("All serial ports are listed, be sure to pick the port with the PPS source attached."); ?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -129,7 +126,9 @@ include("head.inc");
                       <td>
                         <input name="fudge1" type="text" value="<?=$pconfig['fudge1'];?>" />
                         <div class="hidden" for="help_for_fudge1">
+                          <small class="formhelp">
                           <?=gettext("Fudge time is used to specify the PPS signal offset from the actual second such as the transmission delay between the transmitter and the receiver.");?> (<?=gettext("default");?>: 0.0).</td>
+                          </small>
                         </div>
                     </tr>
                     <tr>
@@ -137,8 +136,10 @@ include("head.inc");
                       <td>
                         <input name="stratum" type="text" value="<?=$pconfig['stratum'];?>" />
                         <div class="hidden" for="help_for_stratum">
+                          <small class="formhelp">
                           <?=gettext("(0-16)");?><br />
                           <?=gettext("This may be used to change the PPS Clock stratum");?> (<?=gettext("default");?>: 0). <?=gettext("This may be useful if, for some reason, you want ntpd to prefer a different clock and just monitor this source."); ?></td>
+                          </small>
                         </div>
                     </tr>
                     <tr>
@@ -171,7 +172,9 @@ include("head.inc");
                           </tr>
                         </table>
                         <div class="hidden" for="help_for_flags">
+                          <small class="formhelp">
                           <?=gettext("Normally there should be no need to change these options from the defaults."); ?><br />
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -180,8 +183,10 @@ include("head.inc");
                       <td>
                         <input name="refid" type="text" value="<?=$pconfig['refid'];?>" />
                         <div class="hidden" for="help_for_refid">
+                          <small class="formhelp">
                           <?=gettext("(1 to 4 characters)");?><br />
                           <?=gettext("This may be used to change the PPS Clock ID");?> (<?=gettext("default");?>: PPS).
+                          </small>
                         </div>
                       </td>
                     </tr>

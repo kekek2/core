@@ -1,7 +1,7 @@
 <?php
+
 /**
  *    Copyright (C) 2016 Deciso B.V.
- *
  *    All rights reserved.
  *
  *    Redistribution and use in source and binary forms, with or without
@@ -24,9 +24,7 @@
  *    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  *    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *    POSSIBILITY OF SUCH DAMAGE.
- *
  */
-
 
 namespace OPNsense\Diagnostics\Api;
 
@@ -36,22 +34,35 @@ use \OPNsense\Core\Backend;
 
 /**
  * Class InterfaceController
- * @package OPNsense\SystemHealth
+ * @package OPNsense\Diagnostics\Api
  */
 class InterfaceController extends ApiControllerBase
 {
+    /**
+     * collect interface names
+     * @return array interface mapping (raw interface to description)
+     */
     private function getInterfaceNames()
     {
-        // collect interface names
         $intfmap = array();
         $config = Config::getInstance()->object();
-        if ($config->interfaces != null) {
+        if ($config->interfaces->count() > 0) {
             foreach ($config->interfaces->children() as $key => $node) {
                 $intfmap[(string)$node->if] = !empty((string)$node->descr) ? (string)$node->descr : $key;
             }
         }
         return $intfmap;
     }
+
+    /**
+     * retrieve interface name mapping
+     * @return array interface mapping (raw interface to description)
+     */
+    public function getInterfaceNamesAction()
+    {
+        return $this->getInterfaceNames();
+    }
+
     /**
      * retrieve system arp table contents
      * @return array
@@ -75,6 +86,21 @@ class InterfaceController extends ApiControllerBase
         }
 
         return $arptable;
+    }
+
+    /**
+     * retrieve system arp table contents
+     * @return array
+     */
+    public function flushArpAction()
+    {
+        if ($this->request->isPost()) {
+            $backend = new Backend();
+            $response = $backend->configdpRun("interface flush arp");
+            return $response;
+        } else {
+            return array("message" => "error");
+        }
     }
 
     /**

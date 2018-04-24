@@ -3,7 +3,7 @@
 /*
     Copyright (C) 2014-2015 Deciso B.V.
     Copyright (C) 2009 Ermal Luçi
-    Copyright (C) 2004 Scott Ullrich
+    Copyright (C) 2004 Scott Ullrich <sullrich@gmail.com>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -31,14 +31,7 @@
 require_once("guiconfig.inc");
 require_once("interfaces.inc");
 
-if (!isset($config['ifgroups']) || !is_array($config['ifgroups'])) {
-    $config['ifgroups'] = array();
-}
-if (!isset($config['ifgroups']['ifgroupentry']) || !is_array($config['ifgroups']['ifgroupentry'])) {
-    $config['ifgroups']['ifgroupentry'] = array();
-}
-
-$a_ifgroups = &$config['ifgroups']['ifgroupentry'];
+$a_ifgroups = &config_read_array('ifgroups', 'ifgroupentry');
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // read form data
@@ -64,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
         }
     }
-    if (preg_match("/([^a-zA-Z])+/", $pconfig['ifname'], $match)) {
+    if (preg_match("/([^a-zA-Z])+/", $pconfig['ifname'], $match) || empty($pconfig['ifname'])) {
         $input_errors[] = gettext("Only letters A-Z are allowed as the group name.");
     }
 
@@ -147,7 +140,7 @@ legacy_html_escape_form_data($pconfig);
         <div class="content-box">
           <div class="table-responsive">
             <form method="post" name="iform" id="iform">
-              <table class="table table-striped opnsense_standard_table_form">
+              <table class="table table-clean-form opnsense_standard_table_form">
                 <thead>
                   <tr>
                     <td width="22%"><strong><?=gettext("Interface Groups Edit");?></strong></td>
@@ -164,7 +157,9 @@ legacy_html_escape_form_data($pconfig);
                     <td>
                       <input type="text" name="ifname" value="<?=$pconfig['ifname'];?>" />
                       <div class="hidden" for="help_for_ifname">
+                        <small class="formhelp">
                         <?=gettext("No numbers or spaces are allowed. Only characters in a-zA-Z");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -173,8 +168,10 @@ legacy_html_escape_form_data($pconfig);
                     <td>
                       <input name="descr" type="text" value="<?=$pconfig['descr'];?>" />
                       <div class="hidden" for="help_for_descr">
+                        <small class="formhelp">
                         <?=gettext("You may enter a description here " .
                         "for your reference (not parsed)."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -183,16 +180,22 @@ legacy_html_escape_form_data($pconfig);
                     <td>
                         <select name="members[]" multiple="multiple" class="selectpicker" data-size="5" data-live-search="true">
 <?php
-                        foreach (get_configured_interface_with_descr() as $ifn => $ifinfo):?>
+                        foreach (legacy_config_get_interfaces(array("enable" => true)) as $ifn => $ifdetail):
+                          if (!empty($ifdetail['type']) && $ifdetail['type'] == 'group') {
+                              continue;
+                          }
+                          ?>
                             <option value="<?=$ifn;?>" <?=in_array($ifn, $pconfig['members']) ? "selected=\"selected\"" : "";?>>
-                                <?=$ifinfo;?>
+                                <?=strtoupper($ifdetail['descr']);?>
                             </option>
 <?php
                         endforeach;?>
                         </select>
                       <div class="hidden" for="help_for_members">
+                        <small class="formhelp">
                       <strong><?= gettext('NOTE:') ?></strong>
                       <?= gettext('Rules for WAN type interfaces in groups do not contain the reply-to mechanism upon which Multi-WAN typically relies.') ?>
+                        </small>
                       </div>
                     </td>
                   </tr>

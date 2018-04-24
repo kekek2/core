@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2017 Franco Fichtner <franco@opnsense.org>
+# Copyright (c) 2014-2018 Franco Fichtner <franco@opnsense.org>
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -30,7 +30,7 @@ SHA1!=          which sha1 || echo true
 all:
 	@cat ${.CURDIR}/README.md | ${PAGER}
 
-WANTS=		git pear-PHP_CodeSniffer phpunit
+WANTS=		git pear-PHP_CodeSniffer phpunit6
 
 .for WANT in ${WANTS}
 want-${WANT}: force
@@ -43,17 +43,12 @@ CORE_VERSION=	${CORE_COMMIT:C/-.*$//1}
 CORE_HASH=	${CORE_COMMIT:C/^.*-//1}
 .endif
 
-TING_ABI?=	1.1
-CORE_ABI?=	17.1
+TING_ABI?=	1.2
+CORE_ABI?=	17.7
 CORE_ARCH?=	${ARCH}
-CORE_BIND?=	911
-CORE_PHP?=	70
+CORE_OPENVPN?=	# empty
+CORE_PHP?=	71
 CORE_PY?=	27
-
-.if "${CORE_RELEASE}" == yes
-CORE_NAME?=		opnsense
-CORE_FAMILY?=		release
-.endif
 
 _FLAVOUR!=	if [ -f ${OPENSSL} ]; then ${OPENSSL} version; fi
 FLAVOUR?=	${_FLAVOUR:[1]}
@@ -66,20 +61,22 @@ CORE_REPOSITORY?=	${TING_ABI}/libressl
 CORE_REPOSITORY?=	${FLAVOUR}
 .endif
 
-CORE_PACKAGESITE?=	https://update0.smart-soft.ru
-
 CORE_NAME?=		ting
-CORE_FAMILY?=		stable
-CORE_ORIGIN?=		${CORE_NAME}
-CORE_COMMENT?=		TING ${CORE_FAMILY} package
+CORE_TYPE?=		development
+CORE_MESSAGE?=		
+
 CORE_MAINTAINER?=	evbevz@gmail.com
+CORE_PACKAGESITE?=	https://update0.smart-soft.ru
+CORE_ORIGIN?=		ting
+CORE_COMMENT?=		TING ${CORE_TYPE} package
 CORE_WWW?=		http://smart-soft.ru/
-CORE_MESSAGE?=
+
 # CORE_DEPENDS_armv6 is empty
 CORE_DEPENDS_amd64?=	beep bsdinstaller
 CORE_DEPENDS_i386?=	${CORE_DEPENDS_amd64}
-CORE_DEPENDS?=		apinger \
-			bind${CORE_BIND} \
+
+CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
+			apinger \
 			ca_root_nss \
 			cfv \
 			choparp \
@@ -88,11 +85,11 @@ CORE_DEPENDS?=		apinger \
 			dhcpleases \
 			dnsmasq \
 			expiretable \
-			filterdns \
 			filterlog \
 			ifinfo \
 			flock \
 			flowd \
+			hostapd \
 			isc-dhcp43-client \
 			isc-dhcp43-relay \
 			isc-dhcp43-server \
@@ -100,8 +97,9 @@ CORE_DEPENDS?=		apinger \
 			mpd5 \
 			ntp \
 			openssh-portable \
-			openvpn23 \
+			openvpn${CORE_OPENVPN} \
 			pam_opnsense \
+			pecl-http \
 			pecl-radius \
 			pftop \
 			phalcon \
@@ -111,6 +109,7 @@ CORE_DEPENDS?=		apinger \
 			php${CORE_PHP}-filter \
 			php${CORE_PHP}-gettext \
 			php${CORE_PHP}-hash \
+			php${CORE_PHP}-intl \
 			php${CORE_PHP}-json \
 			php${CORE_PHP}-ldap \
 			php${CORE_PHP}-mcrypt \
@@ -123,6 +122,8 @@ CORE_DEPENDS?=		apinger \
 			php${CORE_PHP}-xml \
 			php${CORE_PHP}-zlib \
 			py${CORE_PY}-Jinja2 \
+			py${CORE_PY}-dnspython \
+			py${CORE_PY}-ipaddress \
 			py${CORE_PY}-netaddr \
 			py${CORE_PY}-requests \
 			py${CORE_PY}-sqlite3 \
@@ -140,11 +141,18 @@ CORE_DEPENDS?=		apinger \
 			unbound \
 			ting-update \
 			ting-lang \
+			ting-ioncube \
+			wpa_supplicant \
 			zip
 
 WRKDIR?=${.CURDIR}/work
 WRKSRC?=${WRKDIR}/src
 PKGDIR?=${WRKDIR}/pkg
+
+FILES_TO_ENCODE=${WRKSRC}${LOCALBASE}/etc/inc/authgui.inc \
+		${WRKSRC}${LOCALBASE}/www/ting_cert.php \
+		${WRKSRC}${LOCALBASE}/www/ting_cert_manual.php \
+		${WRKSRC}${LOCALBASE}/opnsense/mvc/app/library/SmartSoft/Core/Tools.php
 
 mount: want-git
 	@if [ ! -f ${WRKDIR}/.mount_done ]; then \
@@ -181,7 +189,7 @@ manifest: want-git
 	@echo "prefix: ${LOCALBASE}"
 	@echo "vital: true"
 	@echo "deps: {"
-	@for CORE_DEPEND in ${CORE_DEPENDS_${CORE_ARCH}} ${CORE_DEPENDS}; do \
+	@for CORE_DEPEND in ${CORE_DEPENDS}; do \
 		if ! ${PKG} query '  %n: { version: "%v", origin: "%o" }' \
 		    $${CORE_DEPEND}; then \
 			echo ">>> Missing dependency: $${CORE_DEPEND}" >&2; \
@@ -194,7 +202,7 @@ name: force
 	@echo ${CORE_NAME}
 
 depends: force
-	@echo ${CORE_DEPENDS_${CORE_ARCH}} ${CORE_DEPENDS}
+	@echo ${CORE_DEPENDS}
 
 PKG_SCRIPTS=	+PRE_INSTALL +POST_INSTALL \
 		+PRE_UPGRADE +POST_UPGRADE \
@@ -256,8 +264,18 @@ package-check: force
 
 package: package-check
 	@rm -rf ${WRKSRC}
+.for CORE_DEPEND in ${CORE_DEPENDS}
+	@if ! ${PKG} info ${CORE_DEPEND} > /dev/null; then ${PKG} install -yA ${CORE_DEPEND}; fi
+.endfor
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} metadata
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} install
+	@if [ -d /usr/local/ioncube ]; then \
+	    echo ">>> Encode some files"; \
+	    for TOENCODE in ${FILES_TO_ENCODE}; do \
+		/usr/local/ioncube/ioncube_encoder.sh -C -56 --encode "*.inc" $${TOENCODE} -o $${TOENCODE}.enc; \
+		mv -f $${TOENCODE}.enc $${TOENCODE}; \
+	    done; \
+	fi
 	@PORTSDIR=${.CURDIR} ${PKG} create -v -m ${WRKSRC} -r ${WRKSRC} \
 	    -p ${WRKSRC}/plist -o ${PKGDIR}
 
@@ -271,13 +289,13 @@ upgrade-check: force
 upgrade: plist-check upgrade-check package
 	@${PKG} delete -fy ${CORE_NAME}
 	@${PKG} add ${PKGDIR}/*.txz
-	@${LOCALBASE}/etc/rc.restart_webgui
+	@/usr/local/etc/rc.restart_webgui
 
-lint: force
+lint: plist-check
 	find ${.CURDIR}/src ${.CURDIR}/Scripts \
 	    -name "*.sh" -type f -print0 | xargs -0 -n1 sh -n
 	find ${.CURDIR}/src ${.CURDIR}/Scripts \
-	    -name "*.xml" -type f -print0 | xargs -0 -n1 xmllint --noout
+	    -name "*.xml*" -type f -print0 | xargs -0 -n1 xmllint --noout
 	find ${.CURDIR}/src \
 	    ! -name "*.xml" ! -name "*.xml.sample" ! -name "*.eot" \
 	    ! -name "*.svg" ! -name "*.woff" ! -name "*.woff2" \
@@ -301,9 +319,14 @@ sweep: force
 	find ${.CURDIR} -type f -depth 1 -print0 | \
 	    xargs -0 -n1 ${.CURDIR}/Scripts/cleanfile
 
+STYLEDIRS?=	src/etc/inc/plugins.inc.d src/opnsense
+
 style: want-pear-PHP_CodeSniffer
-	@(phpcs --standard=ruleset.xml ${.CURDIR}/src/opnsense \
-	    || true) > ${.CURDIR}/.style.out
+	@: > ${.CURDIR}/.style.out
+.for STYLEDIR in ${STYLEDIRS}
+	@(phpcs --standard=ruleset.xml ${.CURDIR}/${STYLEDIR} \
+	    || true) >> ${.CURDIR}/.style.out
+.endfor
 	@echo -n "Total number of style warnings: "
 	@grep '| WARNING' ${.CURDIR}/.style.out | wc -l
 	@echo -n "Total number of style errors:   "
@@ -312,18 +335,25 @@ style: want-pear-PHP_CodeSniffer
 	@rm ${.CURDIR}/.style.out
 
 style-fix: want-pear-PHP_CodeSniffer
-	phpcbf --standard=ruleset.xml ${.CURDIR}/src/opnsense || true
+.for STYLEDIR in ${STYLEDIRS}
+	phpcbf --standard=ruleset.xml ${.CURDIR}/${STYLEDIR} || true
+.endfor
 
-setup: force
-	${.CURDIR}/src/etc/rc.php_ini_setup
+license:
+	@${.CURDIR}/Scripts/license > ${.CURDIR}/LICENSE
 
-health: force
-	# check test script output and advertise a failure...
-	[ "`${.CURDIR}/src/etc/rc.php_test_run`" == "FCGI-PASSED PASSED" ]
+dhparam:
+.for BITS in 1024 2048 4096
+	openssl dhparam -out ${.CURDIR}/src/etc/dh-parameters.${BITS} ${BITS}
+.endfor
 
-test: want-phpunit
+test: want-phpunit6
 	@cd ${.CURDIR}/src/opnsense/mvc/tests && \
 	    phpunit --configuration PHPunit.xml
 
 clean: want-git
-	${GIT} reset --hard HEAD && ${GIT} clean -xdqf .
+	@${GIT} reset -q ${.CURDIR}/src && \
+	    ${GIT} checkout -f ${.CURDIR}/src && \
+	    ${GIT} clean -xdqf ${.CURDIR}/src
+
+.PHONY: license

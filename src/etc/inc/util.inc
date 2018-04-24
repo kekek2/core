@@ -1,7 +1,7 @@
 <?php
 
 /*
-    Copyright (C) 2015-2016 Franco Fichtner <franco@opnsense.org>
+    Copyright (C) 2015-2017 Franco Fichtner <franco@opnsense.org>
     Copyright (C) 2004-2007 Scott Ullrich <sullrich@gmail.com>
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
     All rights reserved.
@@ -41,11 +41,13 @@ function killbyname($procname, $sig = 'TERM')
 
 function killbypid($pidfile, $sig = 'TERM', $waitforit = false)
 {
-    if (!isvalidpid($pidfile)) {
+    if (is_numeric($pidfile) && $pidfile > 1) {
+        mwexecf('/bin/kill -%s %s', array($sig, $pidfile));
+    } elseif (isvalidpid($pidfile)) {
+        mwexecf('/bin/pkill -%s -F %s', array($sig, $pidfile));
+    } else {
         return;
     }
-
-    mwexecf('/bin/pkill -%s -F %s', array($sig, $pidfile));
 
     if (!$waitforit) {
         return;
@@ -58,11 +60,13 @@ function killbypid($pidfile, $sig = 'TERM', $waitforit = false)
 
 function isvalidpid($pidfile)
 {
-    if (!file_exists($pidfile)) {
-        return false;
+    if (is_numeric($pidfile) && $pidfile > 1) {
+        return mwexecf('/bin/kill -0 %s', $pidfile, true) == 0;
+    } elseif (file_exists($pidfile)) {
+        return mwexecf('/bin/pgrep -nF %s', $pidfile, true) == 0;
     }
 
-    return mwexecf('/bin/pgrep -nF %s', $pidfile, true) == 0;
+    return false;
 }
 
 function is_process_running($process)
@@ -388,6 +392,8 @@ function is_ipaddrv6($ipaddr)
     }
     if (strpos($ipaddr, ":") === false) {
         return false;
+    } elseif (strpos($ipaddr, "/") !== false) {
+        return false; // subnet is not an address
     } else {
         return Net_IPv6::checkIPv6($ipaddr);
     }
@@ -547,19 +553,20 @@ function is_macaddr($macaddr, $partial=false)
    aliases cannot be:
   bad chars: anything except a-z 0-9 and underscore
   bad names: empty string, pure numeric, pure underscore
-  reserved words: pre-defined service/protocol/port names which should not be ambiguous, and the words "port" and  "pass" */
+  reserved words: pre-defined service/protocol/port names which should not be ambiguous and pf keywords */
 
 function is_validaliasname($name)
 {
-    /* Array of reserved words */
-    $reserved = array("port", "pass");
+    $reserved = array('all', 'pass', 'block', 'out', 'queue', 'max', 'min', 'pptp', 'pppoe', 'L2TP', 'OpenVPN', 'IPsec');
 
     if (!is_string($name) || strlen($name) >= 32 || preg_match('/(^_*$|^\d*$|[^a-z0-9_])/i', $name)) {
         return false;
     }
-    if (in_array($name, $reserved, true) || getservbyname($name, "tcp") || getservbyname($name, "udp") || getprotobyname($name)) {
-        return; /* return NULL */
+
+    if (in_array($name, $reserved, true) || getservbyname($name, 'tcp') || getservbyname($name, 'udp') || getprotobyname($name)) {
+        return null;
     }
+
     return true;
 }
 
@@ -603,59 +610,6 @@ function is_portoralias($port)
     return is_port($port);
 }
 
-/* create ranges of sequential port numbers (200:215) and remove duplicates */
-function group_ports($ports)
-{
-    if (!is_array($ports) || empty($ports)) {
-        return;
-    }
-
-    $uniq = array();
-    foreach ($ports as $port) {
-        if (is_portrange($port)) {
-            list($begin, $end) = explode(":", $port);
-            if ($begin > $end) {
-                $aux = $begin;
-                $begin = $end;
-                $end = $aux;
-            }
-            for ($i = $begin; $i <= $end; $i++) {
-                if (!in_array($i, $uniq)) {
-                    $uniq[] = $i;
-                }
-            }
-        } elseif (is_port($port)) {
-            if (!in_array($port, $uniq)) {
-                $uniq[] = $port;
-            }
-        }
-    }
-    sort($uniq, SORT_NUMERIC);
-
-    $result = array();
-    foreach ($uniq as $idx => $port) {
-        if ($idx == 0) {
-            $result[] = $port;
-            continue;
-        }
-
-        $last = end($result);
-        if (is_portrange($last)) {
-            list($begin, $end) = explode(":", $last);
-        } else {
-            $begin = $end = $last;
-        }
-        if ($port == ($end+1)) {
-            $end++;
-            $result[count($result)-1] = "{$begin}:{$end}";
-        } else {
-            $result[] = $port;
-        }
-    }
-
-    return $result;
-}
-
 /* returns true if $test is in the range between $start and $end */
 function is_inrange_v4($test, $start, $end)
 {
@@ -689,7 +643,7 @@ function get_configured_carp_interface_list($carpinterface = '', $family = 'inet
     $iflist = array();
 
     if (isset($config['virtualip']['vip'])) {
-        $viparr = &$config['virtualip']['vip'];
+        $viparr = &config_read_array('virtualip', 'vip');
         foreach ($viparr as $vip) {
             switch ($vip['mode']) {
                 case "carp":
@@ -720,7 +674,7 @@ function get_configured_ip_aliases_list($returnfullentry = false)
     $alias_list = array();
 
     if (isset($config['virtualip']['vip'])) {
-        $viparr = &$config['virtualip']['vip'];
+        $viparr = &config_read_array('virtualip', 'vip');
         foreach ($viparr as $vip) {
             if ($vip['mode']=="ipalias") {
                 if ($returnfullentry) {
@@ -740,7 +694,7 @@ function get_configured_vips_list()
     global $config;
     $alias_list=array();
     if (isset($config['virtualip']['vip'])) {
-        $viparr = &$config['virtualip']['vip'];
+        $viparr = &config_read_array('virtualip', 'vip');
         foreach ($viparr as $vip) {
             if ($vip['mode'] == "carp") {
                 $alias_list[] = array("ipaddr" => $vip['subnet'], "if" => "{$vip['interface']}_vip{$vip['vhid']}");
@@ -820,65 +774,26 @@ function get_configured_interface_with_descr($only_opt = false, $withdisabled = 
 
 /*
  *   get_configured_ip_addresses() - Return a list of all configured
- *   interfaces IP Addresses
+ *   interfaces IP Addresses (ipv4+ipv6)
  *
  */
 function get_configured_ip_addresses()
 {
     global $config;
-
     $ip_array = array();
-    $interfaces = get_configured_interface_list();
-    if (is_array($interfaces)) {
-        foreach($interfaces as $int) {
-            $ipaddr = get_interface_ip($int);
-            $ip_array[$int] = $ipaddr;
-        }
-    }
-    $interfaces = get_configured_carp_interface_list();
-    if (is_array($interfaces)) {
-        foreach($interfaces as $int => $ipaddr) {
-            $ip_array[$int] = $ipaddr;
-        }
-    }
 
-    /* pppoe server */
-    if (isset($config['pppoes']['pppoe'])) {
-        foreach($config['pppoes']['pppoe'] as $pppoe) {
-            if ($pppoe['mode'] == "server") {
-                if (is_ipaddr($pppoe['localip'])) {
-                    $int = "pppoes". $pppoe['pppoeid'];
-                    $ip_array[$int] = $pppoe['localip'];
+    foreach (legacy_interfaces_details() as $ifname => $if) {
+        foreach (array('ipv4', 'ipv6') as $iptype) {
+            if (!empty($if[$iptype])) {
+                foreach ($if[$iptype] as $addr) {
+                    if (!empty($addr['ipaddr'])) {
+                        $ip_array[$addr['ipaddr']] = $ifname;
+                    }
                 }
             }
         }
     }
-
     return $ip_array;
-}
-
-/*
- *   get_configured_ipv6_addresses() - Return a list of all configured
- *   interfaces IPv6 Addresses
- *
- */
-function get_configured_ipv6_addresses()
-{
-    $ipv6_array = array();
-    $interfaces = get_configured_interface_list();
-    if (is_array($interfaces)) {
-        foreach($interfaces as $int) {
-            $ipaddrv6 = get_interface_ipv6($int);
-            $ipv6_array[$int] = $ipaddrv6;
-        }
-    }
-    $interfaces = get_configured_carp_interface_list();
-    if (is_array($interfaces)) {
-        foreach($interfaces as $int => $ipaddrv6) {
-            $ipv6_array[$int] = $ipaddrv6;
-        }
-    }
-    return $ipv6_array;
 }
 
 /*
@@ -930,17 +845,18 @@ function get_interface_list($only_active = false, $include_dmesg = false)
 
     $ifnames_up = legacy_interface_listget('up');
     $ifnames = legacy_interface_listget();
+    $all_interfaces = legacy_config_get_interfaces(array('virtual' => false));
+    $all_interface_data = legacy_interfaces_details();
 
     if ($only_active) {
         $_ifnames = array();
-
+        $all_stats = legacy_interface_stats();
         foreach ($ifnames as $ifname) {
-            $ifinfo = legacy_interface_stats($ifname);
-            if ($ifinfo['link state'] == '2') {
+            $ifinfo = $all_stats[$ifname];
+            if (!empty($ifinfo['link state']) && $ifinfo['link state'] == '2') {
                 $_ifnames[] = $ifname;
             }
         }
-
         $ifnames = $_ifnames;
     }
 
@@ -950,16 +866,15 @@ function get_interface_list($only_active = false, $include_dmesg = false)
             continue;
         }
 
-        $ifdata = legacy_get_interface_addresses($ifname);
-
+        $ifdata = !empty($all_interface_data[$ifname]) ? $all_interface_data[$ifname] : array();
         $toput = array(
           'up' => in_array($ifname, $ifnames_up),
-          'ipaddr' => !empty($ifdata['ipaddr']) ? $ifdata['ipaddr'] : null,
-          'mac' => $ifdata['macaddr'],
+          'ipaddr' => !empty($ifdata['ipv4'][0]['ipaddr']) ? $ifdata['ipv4'][0]['ipaddr'] : null,
+          'mac' => !empty($ifdata['macaddr']) ? $ifdata['macaddr'] : null,
           'dmesg' => '',
         );
 
-        foreach (legacy_config_get_interfaces(array('virtual' => false)) as $name => $int) {
+        foreach ($all_interfaces as $name => $int) {
             if ($int['if'] == $ifname) {
                 $toput['friendly'] = $name;
                 break;
@@ -1007,7 +922,8 @@ function url_safe($format, $args = array())
     }
 
     foreach ($args as $id => $arg) {
-        $args[$id] = urlencode($arg);
+        /* arguments could be empty, so force default */
+        $args[$id] = !empty($arg) ? urlencode($arg) : '';
     }
 
     return vsprintf($format, $args);
@@ -1085,21 +1001,6 @@ function is_alias($name)
 {
     global $aliastable;
     return array_key_exists($name, $aliastable);
-}
-
-function alias_get_type($name)
-{
-    global $config;
-
-    if (is_array($config['aliases']['alias'])) {
-        foreach ($config['aliases']['alias'] as $alias) {
-            if ($name == $alias['name']) {
-                return $alias['type'];
-            }
-        }
-    }
-
-    return "";
 }
 
 /* expand a host or network alias, if necessary */
@@ -1210,58 +1111,15 @@ function resolve_retry($hostname, $retries = 5)
 
 function format_bytes($bytes)
 {
-    if ($bytes >= 1073741824) {
-        return sprintf("%.2f GB", $bytes/1073741824);
-    } elseif ($bytes >= 1048576) {
-        return sprintf("%.2f MB", $bytes/1048576);
+    if ($bytes >= (1024 * 1024 * 1024)) {
+        return sprintf("%.2f GB", $bytes / (1024 * 1024 * 1024));
+    } elseif ($bytes >= 1024 * 1024) {
+        return sprintf("%.2f MB", $bytes / (1024 * 1024));
     } elseif ($bytes >= 1024) {
-        return sprintf("%.0f KB", $bytes/1024);
+        return sprintf("%.0f KB", $bytes / 1024);
     } else {
         return sprintf("%d bytes", $bytes);
     }
-}
-
-function update_filter_reload_status($text, $first = false)
-{
-    $filter_reload_status = '/var/run/filter_reload_status';
-
-    if ($first) {
-        @unlink($filter_reload_status);
-    }
-
-    file_put_contents(
-      $filter_reload_status,
-      sprintf("%s: %s\n", microtime(true), $text),
-      FILE_APPEND
-    );
-}
-
-/****** util/return_dir_as_array
- * NAME
- *   return_dir_as_array - Return a directory's contents as an array.
- * INPUTS
- *   $dir          - string containing the path to the desired directory.
- *   $filter_regex - string containing a regular expression to filter file names. Default empty.
- * RESULT
- *   $dir_array - array containing the directory's contents. This array will be empty if the path specified is invalid.
- ******/
-function return_dir_as_array($dir, $filter_regex = '')
-{
-    $dir_array = array();
-    if (is_dir($dir)) {
-        if ($dh = opendir($dir)) {
-            while (($file = readdir($dh)) !== false) {
-                if (($file == ".") || ($file == "..")) {
-                    continue;
-                }
-                if (empty($filter_regex) || preg_match($filter_regex, $file)) {
-                    array_push($dir_array, $file);
-                }
-            }
-            closedir($dh);
-        }
-    }
-    return $dir_array;
 }
 
 /*
@@ -1462,40 +1320,6 @@ function get_staticroutes($returnsubnetsonly = false, $returnhostnames = false)
     }
 }
 
-/****f* util/get_alias_list
- * NAME
- *   get_alias_list - Provide a list of aliases.
- * INPUTS
- *   $type          - Optional, can be a string or array specifying what type(s) of aliases you need.
- * RESULT
- *   Array containing list of aliases.
- *   If $type is unspecified, all aliases are returned.
- *   If $type is a string, all aliases of the type specified in $type are returned.
- *   If $type is an array, all aliases of any type specified in any element of $type are returned.
- */
-function get_alias_list($type = null)
-{
-    global $config;
-
-    $result = array();
-
-    if (isset($config['aliases']['alias'])) {
-        foreach ($config['aliases']['alias'] as $alias) {
-            if ($type === null) {
-                $result[] = $alias['name'];
-            } elseif (is_array($type)) {
-                if (in_array($alias['type'], $type)) {
-                    $result[] = $alias['name'];
-                }
-            } elseif ($type === $alias['type']) {
-                $result[] = $alias['name'];
-            }
-        }
-    }
-
-    return $result;
-}
-
 function prefer_ipv4_or_ipv6()
 {
     global $config;
@@ -1504,38 +1328,6 @@ function prefer_ipv4_or_ipv6()
       '/etc/rc.d/ip6addrctl %s',
       isset($config['system']['prefer_ipv4']) ? 'prefer_ipv4' : 'prefer_ipv6'
     );
-}
-
-/**
- * download geoip and collect alias contents into /var/db/aliastables
- * @param array $alias
- */
-function download_alias_geoip($alias)
-{
-    if ($alias['type'] == 'geoip') {
-        // create alias target directly if it doesn't exists (mfs)
-        if (!file_exists("/var/db/aliastables/")) {
-            mkdir("/var/db/aliastables");
-        }
-        // download the geoip database, first check if we haven't already done so the last day
-        if (!is_file('/usr/local/share/GeoIP/alias/NL-IPv4') || (time() - filemtime('/usr/local/share/GeoIP/alias/NL-IPv4')) > (86400 - 90)) {
-            log_error("{$argv[0]}: Download GeoIP database");
-            exec('/usr/local/opnsense/scripts/filter/download_geoip.py');
-        }
-        // concat geoip countries and save to alias file
-        $alias_content = "";
-        foreach (explode(' ', $alias['address']) as $country_code) {
-            if (strlen($country_code) == 2 && in_array($alias['proto'], array('IPv4', 'IPv6'))) {
-                $filename = "/usr/local/share/GeoIP/alias/".$country_code."-".$alias['proto'];
-                if (is_file($filename)) {
-                    $alias_content .= file_get_contents($filename);
-                }
-            }
-        }
-        return file_put_contents('/var/db/aliastables/'.basename($alias['name']).'.txt', $alias_content);
-    } else {
-        return false;
-    }
 }
 
 function is_fqdn($fqdn)

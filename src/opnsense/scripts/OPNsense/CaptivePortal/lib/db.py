@@ -1,5 +1,5 @@
 """
-    Copyright (c) 2015 Ad Schellevis
+    Copyright (c) 2015 Ad Schellevis <ad@opnsense.org>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -401,3 +401,24 @@ class DB(object):
                     """)
 
         self._connection.commit()
+
+    def session_data_per_ip(self, zoneid, ip_address):
+        """ fetch mac address per ip address
+        :param zoneid: cp zone number
+        :param ip_address: ip address
+        :return: mac address (or empty)
+        """
+        cur = self._connection.cursor()
+        request = {'zoneid': zoneid, 'ip_address': ip_address}
+        cur.execute("""select   cc.mac_address,
+    				cc.username
+                       from     cp_clients cc
+                       where    cc.deleted = 0
+                       and      cc.zoneid = :zoneid
+                       and      cc.ip_address = :ip_address
+                             """, request)
+
+        result = []
+        for row in cur.fetchall():
+            result.append({"mac": row[0], "name": row[1]})
+        return result

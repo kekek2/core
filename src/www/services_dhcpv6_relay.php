@@ -4,7 +4,7 @@
     Copyright (C) 2014-2016 Deciso B.V.
     Copyright (C) 2003-2004 Justin Ellison <justin@techadvise.com>.
     Copyright (C) 2010  Ermal Luçi
-    Copyright (C) 2010  Seth Mos
+    Copyright (C) 2010  Seth Mos <seth.mos@dds.nl>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -115,7 +115,7 @@ include("head.inc");
             <form method="post" name="iform" id="iform">
               <div>
                 <div class="table-responsive">
-                  <table class="table table-striped opnsense_standard_table_form">
+                  <table class="table table-clean-form opnsense_standard_table_form">
                     <tr>
                       <td width="22%" valign="top"><strong><?=gettext("DHCPv6 Relay configuration"); ?></strong></td>
                       <td width="78%" align="right">
@@ -148,7 +148,9 @@ include("head.inc");
                         endforeach;?>
                         </select>
                         <div class="hidden" for="help_for_interface">
+                          <small class="formhelp">
                           <?=gettext("Interfaces without an IPv6 address will not be shown."); ?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -157,7 +159,9 @@ include("head.inc");
                       <td>
                         <input name="agentoption" type="checkbox" value="yes" <?=!empty($pconfig['agentoption']) ? "checked=\"checked\"" : ""; ?> />
                         <div class="hidden" for="help_for_agentoption">
+                          <small class="formhelp">
                           <?= gettext('If this is checked, the DHCPv6 relay will append the circuit ID (interface number) and the agent ID to the DHCPv6 request.') ?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -166,7 +170,9 @@ include("head.inc");
                       <td>
                         <input name="server" type="text" value="<?=!empty($pconfig['server']) ? htmlspecialchars($pconfig['server']):"";?>" />
                         <div class="hidden" for="help_for_server">
+                          <small class="formhelp">
                           <?=gettext("This is the IPv6 address of the server to which DHCPv6 requests are relayed. You can enter multiple server IPv6 addresses, separated by commas. ");?>
+                          </small>
                         </div>
                       </td>
                     </tr>

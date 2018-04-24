@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright (C) 2016 Franco Fichtner <franco@opnsense.org>
+ * Copyright (C) 2016-2017 Franco Fichtner <franco@opnsense.org>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,6 +33,7 @@
 function plugins_scan()
 {
     $path = '/usr/local/etc/inc/plugins.inc.d/';
+    $clash = '/usr/local/etc/inc/';
     $ext = '.inc';
 
     $ret = array();
@@ -47,6 +48,18 @@ function plugins_scan()
     foreach ($plugins as $plugin) {
         $name = preg_replace('/' . preg_quote($path, '/') . '/', '', $plugin);
         $name = preg_replace('/' . preg_quote($ext, '/') . '/', '', $name);
+        if (file_exists($clash . $name . '.inc') || file_exists($clash . $name . '.class')) {
+            /*
+             * Congratulations, you found the reason why your plugin doesn't
+             * work!  It seems that you're using a name that is already taken
+             * by the base system.  Please change the name of your plugin.
+             *
+             * A traceable call stack requires unique prefixes, which is what
+             * will prevent this from working.  Do not remove this check
+             * without discussing the consequences with the authors.
+             */
+            continue;
+        }
         $ret[$name] = $plugin;
     }
 
@@ -58,11 +71,10 @@ function plugins_services()
     $services = array();
 
     foreach (plugins_scan() as $name => $path) {
-        require_once $path;
+        try { include_once $path; } catch (ParseError $e) { error_log($e); }
         $func = sprintf('%s_services', $name);
         if (function_exists($func)) {
-            $workers = $func();
-            foreach ($workers as $work) {
+            foreach ($func() as $work) {
                 $services[] = $work;
             }
         }
@@ -71,16 +83,32 @@ function plugins_services()
     return $services;
 }
 
+function plugins_cron()
+{
+    $jobs = array();
+
+    foreach (plugins_scan() as $name => $path) {
+        try { include_once $path; } catch (ParseError $e) { error_log($e); }
+        $func = sprintf('%s_cron', $name);
+        if (function_exists($func)) {
+            foreach ($func() as $work) {
+                $jobs[] = $work;
+            }
+        }
+    }
+
+    return $jobs;
+}
+
 function plugins_syslog()
 {
     $syslogs = array();
 
     foreach (plugins_scan() as $name => $path) {
-        require_once $path;
+        try { include_once $path; } catch (ParseError $e) { error_log($e); }
         $func = sprintf('%s_syslog', $name);
         if (function_exists($func)) {
-            $workers = $func();
-            foreach ($workers as $plugin_syslog => $plugin_details) {
+            foreach ($func() as $plugin_syslog => $plugin_details) {
                 $syslogs[$plugin_syslog] = $plugin_details;
             }
         }
@@ -111,7 +139,7 @@ function plugins_interfaces()
 
     // register / update interfaces
     foreach (plugins_scan() as $name => $path) {
-        require_once $path;
+        try { include_once $path; } catch (ParseError $e) { error_log($e); }
         $func = sprintf('%s_interfaces', $name);
         if (function_exists($func)) {
             foreach ($func() as $intf_ref => $intf_data) {
@@ -120,14 +148,11 @@ function plugins_interfaces()
                     if (isset($stale_interfaces[$intf_ref])) {
                         unset($stale_interfaces[$intf_ref]);
                     }
-                    if (empty($config['interfaces'][$intf_ref])) {
-                        $config['interfaces'][$intf_ref] = array();
-                    }
                     if (isset($config['interfaces'][$intf_ref][0])) {
                         // undo stupid listags() turning our item into a new array, see src/etc/inc/xmlparse.inc
-                        $intf_config = &$config['interfaces'][$intf_ref][0];
+                        $intf_config = &config_read_array('interfaces', $intf_ref, 0);
                     } else {
-                        $intf_config = &$config['interfaces'][$intf_ref];
+                        $intf_config = &config_read_array('interfaces', $intf_ref);
                     }
                     $intf_config['internal_dynamic'] = true;
                     // traverse and diff interface properties with known configuration
@@ -152,7 +177,7 @@ function plugins_interfaces()
 function plugins_firewall($fw)
 {
     foreach (plugins_scan() as $name => $path) {
-        require_once $path;
+        try { include_once $path; } catch (ParseError $e) { error_log($e); }
         $func = sprintf('%s_firewall', $name);
         if (function_exists($func)) {
             $func($fw);
@@ -162,17 +187,30 @@ function plugins_firewall($fw)
     return $fw;
 }
 
-function plugins_configure($hook, $verbose = false)
+function plugins_configure($hook, $verbose = false, $args = array())
 {
+    array_unshift($args, $verbose);
+
     foreach (plugins_scan() as $name => $path) {
-        require_once $path;
+        try { include_once $path; } catch (ParseError $e) { error_log($e); }
         $func = sprintf('%s_configure', $name);
         if (function_exists($func)) {
-            $workers = $func();
-            foreach ($workers as $when => $worker) {
+            foreach ($func() as $when => $worker) {
                 if ($hook == $when && is_array($worker)) {
                     foreach ($worker as $task) {
-                        $task($verbose);
+                        /*
+                         * An optional argument count parameter can be
+                         * given by the plugin, which allows to securely
+                         * pull more info from the configure call spot.
+                         */
+                        list($argf, $argc) = explode(':', $task);
+                        if (empty($argc) || !is_numeric($argc)) {
+                            $argc = 1;
+                        }
+                        if ($argc > count($args)) {
+                            $argc = count($args);
+                        }
+                        call_user_func_array($argf, array_slice($args, 0, $argc));
                     }
                 }
             }
@@ -184,7 +222,7 @@ function plugins_xmlrpc_sync()
 {
     $sync_settings = array();
     foreach (plugins_scan() as $name => $path) {
-        require_once $path;
+        try { include_once $path; } catch (ParseError $e) { error_log($e); }
         $func = sprintf('%s_xmlrpc_sync', $name);
         if (function_exists($func)) {
             foreach ($func() as $helper) {

@@ -1,5 +1,5 @@
 """
-    Copyright (c) 2015 Ad Schellevis
+    Copyright (c) 2015 Ad Schellevis <ad@opnsense.org>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -170,6 +170,7 @@ class RuleCache(object):
             os.remove(self.cachefile)
 
         db = sqlite3.connect(self.cachefile)
+        db.text_factory = lambda x: unicode(x, 'utf-8', 'ignore')
         cur = db.cursor()
 
         cur.execute("create table stats (timestamp number, files number)")

@@ -121,7 +121,7 @@
             </field>
             <field>
                 <id>proxy.general.cache.local.enabled</id>
-                <label>Enable local cache (requires service restart)</label>
+                <label>Enable local cache</label>
                 <type>checkbox</type>
                 <help><![CDATA[Enable or disable the local cache. Only UFS directory cache type is supported. Do not enable on embedded systems with SD or CF cards without the /var MFS option as this will wear down your drive.]]></help>
             </field>
@@ -136,7 +136,7 @@
                 <id>proxy.general.cache.local.directory</id>
                 <label>Cache directory location</label>
                 <type>text</type>
-                <help><![CDATA[Enter the directory location for thee local cache (default is /var/squid/cache).]]></help>
+                <help><![CDATA[Enter the directory location for the local cache (default is /var/squid/cache).]]></help>
                 <advanced>true</advanced>
             </field>
             <field>
@@ -159,6 +159,18 @@
                 <type>text</type>
                 <help><![CDATA[Set the maximum object size (default 4MB when left empty).]]></help>
                 <advanced>true</advanced>
+            </field>
+            <field>
+                <id>proxy.general.cache.local.cache_linux_packages</id>
+                <label>Enable Linux Package Cache</label>
+                <type>checkbox</type>
+                <help>Enable or disable the caching of packages for linux distributions. This makes sense if you have multiple servers in your network and do not host your own package mirror. This will reduce internet traffic usage but increase disk access.</help>
+            </field>
+            <field>
+                <id>proxy.general.cache.local.cache_windows_updates</id>
+                <label>Enable Windows Update Cache</label>
+                <type>checkbox</type>
+                <help>Enable or disable the caching of Windows updates. This makes sense if you don't have a WSUS server. If you can setup a WSUS server, this solution should be preferred.</help>
             </field>
         </subtab>
         <subtab id="proxy-general-traffic" description="Traffic Management Settings">
@@ -223,23 +235,27 @@
             </field>
             <field>
                 <id>proxy.forward.sslbump</id>
-                <label>Enable SSL mode</label>
+                <label>Enable SSL inspection</label>
                 <type>checkbox</type>
                 <help><![CDATA[
-                  Enable sslbump mode,
-                  which makes the proxy act as a man in the middle between the internet and your clients.<br/>
+                  Enable SSL inspection mode,
+                  which allows to log HTTPS connections information, such as requested URL and/or
+                  make the proxy act as a man in the middle between the internet and your clients.<br/>
                   Be aware of the security implications before enabling this option.
                   <br/><br/>
-                  Transparent HTTP proxy needs to be enabled and you need nat rules to reflect your traffic
-                  for this feature to work.<br/>
-                  <a href="/firewall_nat_edit.php?template=transparent_proxy&https=1"> Add a new firewall rule </a>
+                  If you plan to use transparent HTTPS mode, you need nat rules to reflect your traffic.<br/>
+                  <a href="/firewall_nat_edit.php?template=transparent_proxy&https=1">Add a new firewall rule </a>
                   ]]></help>
             </field>
             <field>
                 <id>proxy.forward.sslurlonly</id>
-                <label>SSL Domain/IP only</label>
+                <label>Log SNI information only</label>
                 <type>checkbox</type>
-                <help>Do not filter content, only domains and addresses</help>
+                <help><![CDATA[
+                  Do not decode and/or filter SSL content, only log requested domains and IP addresses.<br/>
+                  Some old servers may not provide SNI, so their addresses will not be indicated.<br/>Get more information about
+                  <a href="https://wikipedia.org/wiki/Server_Name_Indication" target="_blank">Server Name Indication</a>.
+                  ]]></help>
             </field>
             <field>
                 <id>proxy.forward.sslbumpport</id>
@@ -286,6 +302,13 @@
                 <label>Allow interface subnets</label>
                 <type>checkbox</type>
                 <help><![CDATA[When enabled the subnets of the selected interfaces will be added to the allow access list.]]></help>
+                <advanced>true</advanced>
+            </field>
+            <field>
+                <id>proxy.forward.snmp_port</id>
+                <label>SNMP port</label>
+                <type>text</type>
+                <help>The port number where Squid listens for SNMP requests. To enable SNMP support set this to a suitable port number. Port number 3401 is often used for the Squid SNMP agent. By default it's set to "0" (disabled)</help>
                 <advanced>true</advanced>
             </field>
         </subtab>
@@ -532,6 +555,24 @@
                 <hint>Enter the size of the preview.</hint>
                 <allownew>true</allownew>
                 <advanced>true</advanced>
+            </field>
+            <field>
+                <id>proxy.forward.icap.exclude</id>
+                <label>Exclusion List</label>
+                <type>select_multiple</type>
+                <style>tokenize</style>
+                <help><![CDATA[Exclusion list destination domains.<br/>
+        You may use a regular expression, use a comma or press Enter for new item.<br/>
+        <div class="alert alert-info">
+            <b>Examples:</b><br/>
+            <b class="text-primary">mydomain.com</b> -> matches on <b>*.mydomain.com</b><br/>
+            <b class="text-primary">^https?:\/\/([a-zA-Z]+)\.mydomain\.</b> -> matches on <b>http(s)://textONLY.mydomain.*</b><br/>
+            <b class="text-primary">\.gif$</b> -> matches on <b>\*.gif</b> but not on <b class="text-danger">\*.gif\test</b><br/>
+            <b class="text-primary">\[0-9]+\.gif$</b> -> matches on <b>\123.gif</b> but not on <b class="text-danger">\test.gif</b><br/>
+        </div>
+        <div class="text-info"><b>TIP: </b>You can also paste a comma separated list into this field.</div>]]></help>
+                <hint>Regular expressions are allowed.</hint>
+                <allownew>true</allownew>
             </field>
         </subtab>
         <subtab id="proxy-general-authentication" description="Authentication Settings">

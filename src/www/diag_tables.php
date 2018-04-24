@@ -2,8 +2,8 @@
 
 /*
     Copyright (C) 2014 Deciso B.V.
-    Copyright (C) 2010 Jim Pingle
-    Copyright (C) 2010 Scott Ullrich
+    Copyright (C) 2010 Jim Pingle <jimp@pfsense.org>
+    Copyright (C) 2010 Scott Ullrich <sullrich@gmail.com>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -92,6 +92,9 @@ $( document ).ready(function() {
      $("#tablename").change(function(){
          window.location='diag_tables.php?tablename=' + $(this).val();
      });
+     $("#refresh").click(function(){
+         $("#tablename").change();
+     });
 
     // delete entry
     $(".act_delete").click(function(event){
@@ -158,6 +161,7 @@ $( document ).ready(function() {
 <?php
            endforeach;?>
           </select>
+          <button class="btn btn-default" id="refresh"><i class="fa fa-refresh" aria-hidden="true"></i></button>
           <button class="btn btn-default" id="flushtable"><?=gettext("Flush");?></button>
           <button class="btn btn-default pull-right" id="update_bogons"><i id="update_bogons_progress" class=""></i>
             <?=gettext("Update bogons");?>

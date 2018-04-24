@@ -2,7 +2,7 @@
 
 /*
     Copyright (C) 2014-2016 Deciso B.V.
-    Copyright (C) 2014 Ermal LUÇi
+    Copyright (C) 2014 Ermal Luçi
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -28,7 +28,7 @@
 */
 
 require_once("guiconfig.inc");
-require_once("ipsec.inc");
+require_once("plugins.inc.d/ipsec.inc");
 require_once("services.inc");
 require_once("interfaces.inc");
 

@@ -25,6 +25,26 @@
  *    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *    POSSIBILITY OF SUCH DAMAGE.
  *
+ *      plugin_syslog return data format:
+ *
+ *      array(
+ *          'log_name' => array(                                    # mapped to log target; real log file name will be /var/log/<log_name>.log
+ *              'facility'  => array('program_1', 'program_2',...), # mapped to log program
+ *              'remote'    => 'remote_log_group_name',             # mapped to category; remote logging group name
+ *              'local'     => '/path/to/local/log-socket',         # local log-socket path; added to listening
+ *
+ *
+ *              # parameters for external logfiles, managed by logview controller, but not managed by syslog
+ *              # if is set, then syslog ignores this target
+ *
+ *              'external'  => array(
+ *                  'filename'          => '/path/to/logfile',      # abcolute path to log file
+ *                  'timestamp_pattern' => '/^([^\,]+),/',          # tamestamp pattern to extract timestamp from log entry, default is Syslog::$TIMESTAMP_PATTERN
+ *               ),
+ *          )
+ *      );
+ *
+ *      
  */
 namespace OPNsense\Syslog;
 
@@ -46,20 +66,23 @@ use OPNsense\Base\ModelException;
 class Syslog extends BaseModel
 {
     private static $LOGS_DIRECTORY = "/var/log";
+    private static $TIMESTAMP_PATTERN = '/^([\S]+\s+[\S]+\s+[\S]+)\s/';
 
     private $Modified = false;
     private $BatchMode = false;
+
+    private $AllTargets = array();
+    private $AllCategories = array();
 
     private function getPredefinedTargets()
     {
         return array(
         array('program' => 'filterlog',                                           'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/filter.log',  'category' => 'filter'),
         array('program' => 'apinger',                                             'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/gateways.log','category' => 'gateways'),
-        array('program' => 'ntp,ntpd,ntpdate',                                    'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/ntpd.log',    'category' => 'ntpd'),
         array('program' => 'captiveportal',                                       'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/portalauth.log','category' => 'portalauth'),
         array('program' => 'ppp',                                                 'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/ppps.log',    'category' => null),
         array('program' => 'relayd',                                              'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/relayd.log',  'category' => 'relayd'),
-        array('program' => 'dnsmasq,filterdns,unbound',                           'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/resolver.log','category' => 'resolver'),
+        array('program' => 'filterdns,unbound',                                   'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/resolver.log','category' => 'dns'),
         array('program' => 'radvd,routed,rtsold,olsrd,zebra,ospfd,bgpd,miniupnpd','filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/routing.log', 'category' => null),
         array('program' => 'hostapd',                                             'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/wireless.log','category' => 'wireless'),
 
@@ -87,13 +110,15 @@ class Syslog extends BaseModel
      * @param $category log category mapping, null if no category
      * @throws \ModelException
      */
-    public function setTarget($source, $filter, $type, $target, $category)
+    public function setTarget($source, $filter, $type, $target, $category, $pid = '', $signum = '')
     {
         $source = str_replace(' ', '', $source);
         $filter = str_replace(' ', '', $filter);
         $type = trim($type);
         $target = trim($target);
         $category = trim($category);
+        $pid = trim($pid);
+        $signum = trim($signum);
 
         $this->setSource($source);
 
@@ -105,8 +130,12 @@ class Syslog extends BaseModel
             && $item->Filter->__toString() == $filter
             && $item->ActionType->__toString() == $type
             && $item->Target->__toString() == $target
-            && $item->Category->__toString() == $category)
+            && $item->Category->__toString() == $category
+            && $item->PID->__toString() == $pid
+            && $item->SigNum->__toString() == $signum) {
+                $this->AllTargets[] = $uuid;
                 return;
+            }
         }
 
         $item = $this->LogTargets->Target->add();
@@ -115,6 +144,10 @@ class Syslog extends BaseModel
         $item->ActionType = $type;
         $item->Target = $target;
         $item->Category = $category;
+        $item->PID = $pid;
+        $item->SigNum = $signum;
+
+        $this->AllTargets[] = $item->getAttributes()["uuid"];
 
         $this->Modified = true;
         $this->saveIfModified();
@@ -164,6 +197,8 @@ class Syslog extends BaseModel
         {
             if($category->Name->__toString() == $name)
             {
+                $this->AllCategories[] = $uuid;
+
                 if($category->Description->__toString() == $description)
                     return;
 
@@ -177,6 +212,7 @@ class Syslog extends BaseModel
         $category = $this->LogCategories->Category->add();
         $category->Name = $name;
         $category->Description = $description;
+        $this->AllCategories[] = $category->getAttributes()["uuid"];
         $this->Modified = true;
         $this->saveIfModified();
     }
@@ -214,11 +250,59 @@ class Syslog extends BaseModel
      */
     public function getLogFileName($logname)
     {
+        // scan defined targets
         foreach($this->LogTargets->Target->__items as $uuid => $target)
             if(basename($target->Target->__toString(), '.log') == $logname)
                 return $target->Target->__toString();
 
+        // scan plugins for external logfiles
+        $plugins_data = plugins_syslog();
+        foreach($plugins_data as $name => $params)
+        {
+            if($name == $logname && isset($params['external'])) {
+                return $params['external']['filename'];
+            }
+        }
+
         return '';
+    }
+
+    /**
+     * get full logfile datetime pattern
+     * @param $logname name of log
+     */
+    public function getDateTimePattern($logname)
+    {
+        // scan defined targets
+        foreach($this->LogTargets->Target->__items as $uuid => $target)
+            if(basename($target->Target->__toString(), '.log') == $logname)
+                return self::$TIMESTAMP_PATTERN;
+
+        // scan plugins for external logfiles
+        $plugins_data = plugins_syslog();
+        foreach($plugins_data as $name => $params)
+        {
+            if($name == $logname && isset($params['external'])) {
+                if(isset($params['external']['timestamp_pattern']))
+                    return $params['external']['timestamp_pattern'];
+            }
+        }
+
+        return self::$TIMESTAMP_PATTERN;;
+    }
+
+    /**
+     * cna clear log?
+     * @param $logname name of log
+     */
+    public function canClearLog($logname)
+    {
+        // scan defined targets
+        foreach($this->LogTargets->Target->__items as $uuid => $target)
+            if(basename($target->Target->__toString(), '.log') == $logname)
+                return true;
+
+        return false;
     }
 
     /*************************************************************************************************************
@@ -230,6 +314,23 @@ class Syslog extends BaseModel
         $this->BatchMode = true;
         $this->checkPredefinedCategories();
         $this->checkPredefinedTargets();
+
+        // cleanup old targets
+        foreach($this->LogTargets->Target->__items as $uuid => $item) 
+        {
+            if(!in_array($uuid, $this->AllTargets)) {
+                $this->LogTargets->Target->del($uuid);
+                $this->Modified = true;
+            }
+        }
+        // cleanup old categories
+        foreach($this->LogCategories->Category->__items as $uuid => $item) 
+        {
+            if(!in_array($uuid, $this->AllCategories)) {
+                $this->LogCategories->Category->del($uuid);
+                $this->Modified = true;
+            }
+        }
         $this->BatchMode = false;
         
         $this->saveIfModified();
@@ -237,16 +338,29 @@ class Syslog extends BaseModel
 
     private function checkPredefinedCategories()
     {
-        $this->setCategory('system',    gettext('System events'));
-        $this->setCategory('dhcp',      gettext('DHCP service events'));
-        $this->setCategory('filter',    gettext('Firewall events'));
-        $this->setCategory('gateways',  gettext('Gateway Monitor events'));
-        $this->setCategory('ntpd',      gettext('Internet time events'));
-        $this->setCategory('portalauth',gettext('Portal Auth events'));
-        $this->setCategory('relayd',    gettext('Server Load Balancer events'));
-        $this->setCategory('resolver',  gettext('Domain name resolver events'));
-        $this->setCategory('wireless',  gettext('Wireless events'));
-        $this->setCategory('vpn',       gettext('VPN (PPTP, IPsec, OpenVPN) events'));
+        // do not write localized categories descriptions to config.xml
+        $this->setCategory('system',    'System events');
+        $this->setCategory('dhcp',      'DHCP service events');
+        $this->setCategory('filter',    'Firewall events');
+        $this->setCategory('gateways',  'Gateway Monitor events');
+        $this->setCategory('portalauth','Portal Auth events');
+        $this->setCategory('relayd',    'Server Load Balancer events');
+        $this->setCategory('resolver',  'Domain name resolver events');
+        $this->setCategory('wireless',  'Wireless events');
+        $this->setCategory('vpn',       'VPN (PPTP, IPsec, OpenVPN) events');
+
+        // hook to include category names to gettext files
+        $translate = [
+            gettext('System events'),
+            gettext('DHCP service events'),
+            gettext('Firewall events'),
+            gettext('Gateway Monitor events'),
+            gettext('Portal Auth events'),
+            gettext('Server Load Balancer events'),
+            gettext('Domain name resolver events'),
+            gettext('Wireless events'),
+            gettext('VPN (PPTP, IPsec, OpenVPN) events')
+        ];
     }
 
     private function checkPredefinedTargets()
@@ -262,10 +376,15 @@ class Syslog extends BaseModel
         $plugins_data = plugins_syslog();
         foreach($plugins_data as $name => $params)
         {
+            if(isset($params['external'])) {
+                continue;
+            }
             $program = join(",", $params['facility']);
             $target =  self::$LOGS_DIRECTORY."/".$name.".log";
             $category = isset($params['remote']) ? $params['remote'] : null;
-            $this->setTarget($program, '*.*', 'file', $target, $category);
+            $pid = isset($params['pid']) ? $params['pid'] : null;
+            $signum = isset($params['pid']) && isset($params['signum']) ? $params['signum'] : null;
+            $this->setTarget($program, '*.*', 'file', $target, $category, $pid, $signum);
             if(isset($params['local']))
             {
                 $this->setLocalSocket($params['local']);

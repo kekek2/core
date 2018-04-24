@@ -34,26 +34,6 @@ data_title      :   data-title to set on form
 
 #}
 
-{# close table and reopen for new header#}
-{%- macro base_form_header(header_text) %}
-      </tbody>
-    </table>
-  </div>
-  <div class="table-responsive">
-    <table class="table table-striped table-condensed table-responsive">
-        <colgroup>
-            <col class="col-md-3"/>
-            <col class="col-md-4"/>
-            <col class="col-md-5"/>
-        </colgroup>
-        <thead>
-          <tr colspan="3">
-            <th><h2>{{header_text}}</h2></th>
-          </tr>
-        </thead>
-        <tbody>
-{%- endmacro %}
-
 {# Find if there are help supported or advanced field on this page #}
 {% set base_form_id=id %}
 {% set help=false %}
@@ -73,31 +53,53 @@ data_title      :   data-title to set on form
 {% endfor %}
 <form id="{{base_form_id}}" class="form-inline" data-title="{{data_title|default('')}}">
   <div class="table-responsive">
-    <table class="table table-striped table-condensed">
+    <table class="table table-clean-form table-condensed">
         <colgroup>
             <col class="col-md-3"/>
             <col class="col-md-4"/>
             <col class="col-md-5"/>
         </colgroup>
         <tbody>
+{% if advanced|default(false) or help|default(false) %}
         <tr>
             <td align="left">{% if advanced|default(false) %}<a href="#"><i class="fa fa-toggle-off text-danger" id="show_advanced_{{base_form_id}}" type="button"></i> </a><small>{{ lang._('advanced mode') }} </small>{% endif %}</td>
             <td colspan="2" align="right">
                 {% if help|default(false) %}<small>{{ lang._('full help') }} </small><a href="#"><i class="fa fa-toggle-off text-danger" id="show_all_help_{{base_form_id}}" type="button"></i></a>{% endif %}
             </td>
         </tr>
-        {% set advanced=false %}
-        {% set help=false %}
-        {% set style=false %}
-        {% set hint=false %}
-        {% set style=false %}
-        {% set maxheight=false %}
-        {% set width=false %}
-        {% set allownew=false %}
+{% endif %}
         {% for field in fields|default({})%}
+            {# looks a bit buggy in the volt templates, field parameters won't reset properly here #}
+            {% set advanced=false %}
+            {% set help=false %}
+            {% set hint=false %}
+            {% set style=false %}
+            {% set maxheight=false %}
+            {% set width=false %}
+            {% set allownew=false %}
+            {% set readonly=false %}
             {% if field['type'] == 'header' %}
               {# close table and start new one with header #}
-              {{ base_form_header(field['label']) }}
+
+{#- macro base_dialog_header(field) #}
+      </tbody>
+    </table>
+  </div>
+  <div class="table-responsive {{field['style']|default('')}}">
+    <table class="table table-clean-form table-condensed table-responsive">
+        <colgroup>
+            <col class="col-md-3"/>
+            <col class="col-md-4"/>
+            <col class="col-md-5"/>
+        </colgroup>
+        <thead>
+          <tr {% if field['advanced']|default(false)=='true' %} data-advanced="true"{% endif %}>
+            <th colspan="3"><h2>{{field['label']}}</h2></th>
+          </tr>
+        </thead>
+        <tbody>
+{#- endmacro #}
+
             {% else %}
               {{ partial("layout_partials/form_input_tr",field)}}
             {% endif %}

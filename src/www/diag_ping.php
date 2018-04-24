@@ -2,7 +2,8 @@
 
 /*
     Copyright (C) 2016 Deciso B.V.
-    Copyright (C) 2003-2005 Bob Zoller (bob@kludgebox.com) and Manuel Kasper <mk@neon1.net>.
+    Copyright (C) 2003-2005 Bob Zoller <bob@kludgebox.com>
+    Copyright (C) 2003-2005 Manuel Kasper <mk@neon1.net>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -70,7 +71,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         } else {
             $ifaddr = is_ipaddr($pconfig['sourceip']) ? $pconfig['sourceip'] : get_interface_ip($pconfig['sourceip']);
         }
-        $host = trim($pconfig['host']);
+        $host_utf8 = trim($pconfig['host']);
+        $host = idn_to_ascii($host_utf8);
         $srcip = "";
         if (!empty($ifaddr) && (is_ipaddr($pconfig['host']) || is_hostname($pconfig['host']))) {
             $srcip = "-S" . escapeshellarg($ifaddr);
@@ -84,6 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if (is_resource($process)) {
              $cmd_output = stream_get_contents($pipes[1]);
              $cmd_output .= stream_get_contents($pipes[2]);
+             $cmd_output = str_replace($host, $host_utf, $cmd_output);
         }
     }
 }
@@ -105,7 +108,7 @@ include("head.inc"); ?>
           <div class="content-box-main">
             <form method="post" name="iform" id="iform">
               <div class="table-responsive">
-                <table class="table table-striped __nomb">
+                <table class="table table-clean-form __nomb">
                   <tbody>
                     <tr>
                       <td><?=gettext("Host"); ?></td>

@@ -3,8 +3,9 @@
 /*
     Copyright (C) 2014-2016 Deciso B.V.
     Copyright (C) 2007 Scott Dale
-    Copyright (C) 2004-2005 T. Lechat <dev@lechat.org>, Manuel Kasper <mk@neon1.net>
-    and Jonathan Watt <jwatt@jwatt.org>.
+    Copyright (C) 2004-2005 T. Lechat <dev@lechat.org>
+    Copyright (C) 2004-2005 Manuel Kasper <mk@neon1.net>
+    Copyright (C) 2004-2005 Jonathan Watt <jwatt@jwatt.org>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -34,7 +35,6 @@ require_once("guiconfig.inc");
 $ipsec_detail_array = array();
 $ipsec_tunnels = array();
 $ipsec_leases = array();
-$activetunnels = 0;
 
 if (isset($config['ipsec']['phase1'])) {
     $ipsec_leases = json_decode(configd_run("ipsec list leases"), true);
@@ -49,7 +49,7 @@ if (isset($config['ipsec']['phase1'])) {
 
     // parse configured tunnels
     foreach ($ipsec_status as $status_key => $status_value) {
-        if (isset($status_value['children'])) {
+        if (isset($status_value['children']) && is_array($status_value['children'])) {
           foreach($status_value['children'] as $child_status_key => $child_status_value) {
               $ipsec_tunnels[$child_status_key] = array('active' => false,
                                                         'local-addrs' => $status_value['local-addrs'],
@@ -61,8 +61,13 @@ if (isset($config['ipsec']['phase1'])) {
         }
         foreach ($status_value['sas'] as $sas_key => $sas_value) {
             foreach ($sas_value['child-sas'] as $child_sa_key => $child_sa_value) {
-                $ipsec_tunnels[$child_sa_key]['active'] = true;
-                $activetunnels++;
+                if (!isset($ipsec_tunnels[$child_sa_key])) {
+                    /* XXX bug on strongSwan 5.5.2 appends -3 and -4 here? */
+                    $child_sa_key = preg_replace('/-[^-]+$/', '', $child_sa_key);
+                }
+                if (isset($ipsec_tunnels[$child_sa_key])) {
+                    $ipsec_tunnels[$child_sa_key]['active'] = true;
+                }
             }
         }
     }
@@ -105,7 +110,15 @@ if (isset($config['ipsec']['phase2'])) {
     </thead>
     <tbody>
       <tr>
-        <td><?= $activetunnels; ?></td>
+        <td>
+<?php
+        $activetunnels = 0;
+        foreach ($ipsec_tunnels as $ipsec_key => $ipsec) {
+            $activetunnels += $ipsec['active'] === true;
+        }
+        echo $activetunnels;
+?>
+        </td>
         <td><?= (count($ipsec_tunnels) - $activetunnels); ?></td>
         <td>
 <?php

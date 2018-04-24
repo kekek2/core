@@ -31,11 +31,7 @@ require_once("guiconfig.inc");
 require_once("interfaces.inc");
 require_once("logs.inc");
 
-
-if (!isset($config['nat']['npt'])) {
-    $config['nat']['npt'] = array();
-}
-$a_npt = &$config['nat']['npt'];
+$a_npt = &config_read_array('nat', 'npt');
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (isset($_GET['dup']) && isset($a_npt[$_GET['dup']])) {
@@ -150,7 +146,7 @@ include("head.inc");
           <section class="col-xs-12">
             <div class="content-box">
               <form method="post" name="iform" id="iform">
-                <table class="table table-striped opnsense_standard_table_form">
+                <table class="table table-clean-form opnsense_standard_table_form">
                   <tr>
                     <td><?=gettext("Edit NAT NPT entry"); ?></td>
                     <td align="right">
@@ -164,7 +160,9 @@ include("head.inc");
                       <input name="disabled" type="checkbox" id="disabled" value="yes" <?= !empty($pconfig['disabled']) ? "checked=\"checked\"" : ""; ?> />
                       <div class="hidden" for="help_for_disabled">
                         <strong><?=gettext("Disable this rule"); ?></strong><br />
+                        <small class="formhelp">
                         <?=gettext("Set this option to disable this rule without removing it from the list."); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -182,8 +180,10 @@ include("head.inc");
                         </select>
                       </div>
                       <div class="hidden" for="help_for_interface">
+                        <small class="formhelp">
                         <?=gettext("Choose which interface this rule applies to"); ?>.<br />
                         <?=gettext("Hint: in most cases, you'll want to use WAN here"); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -195,7 +195,9 @@ include("head.inc");
                       <td>
                         <input name="srcnot" type="checkbox" value="yes" <?= !empty($pconfig['srcnot']) ? "checked=\"checked\"" :"";?> />
                         <div class="hidden" for="help_for_srcnot">
+                          <small class="formhelp">
                             <?=gettext("Use this option to invert the sense of the match."); ?>
+                          </small>
                         </div>
                       </td>
                   </tr>
@@ -217,7 +219,9 @@ include("head.inc");
                         </tr>
                       </table>
                       <div class="hidden" for="help_for_src">
+                        <small class="formhelp">
                         <?=gettext("Enter the internal (LAN) ULA IPv6 Prefix for the Network Prefix translation. The prefix size specified for the internal IPv6 prefix will be applied to the external prefix.");?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -233,7 +237,9 @@ include("head.inc");
                       <td>
                         <input name="dstnot" type="checkbox" value="yes" <?= !empty($pconfig['dstnot']) ? "checked=\"checked\"" :"";?> />
                         <div class="hidden" for="help_for_dstnot">
+                          <small class="formhelp">
                             <?=gettext("Use this option to invert the sense of the match."); ?>
+                          </small>
                         </div>
                       </td>
                   </tr>
@@ -255,7 +261,9 @@ include("head.inc");
                         </tr>
                       </table>
                       <div class="hidden" for="help_for_dst">
+                        <small class="formhelp">
                         <?=gettext("Enter the Global Unicast routable IPv6 prefix here"); ?>
+                        </small>
                       </div>
                     </td>
                   </tr>
@@ -264,7 +272,9 @@ include("head.inc");
                     <td>
                       <input name="descr" type="text" class="formfld unknown" id="descr" size="40" value="<?=$pconfig['descr'];?>" />
                       <div class="hidden" for="help_for_descr">
+                        <small class="formhelp">
                         <?=gettext("You may enter a description here " ."for your reference (not parsed)."); ?>
+                        </small>
                       </div>
                   </tr>
                   <tr>

@@ -2,7 +2,7 @@
 
 /*
     Copyright (C) 2014-2016 Deciso B.V.
-    Copyright (C) 2009 Scott Ullrich
+    Copyright (C) 2009 Scott Ullrich <sullrich@gmail.com>
 
     Redistribution and use in source and binary forms, with or without
     modification, are permitted provided that the following conditions are met:
@@ -139,10 +139,8 @@ if (!empty($config['widgets']['rsswidgettextlength']) && is_numeric($config['wid
 
 <div id="rss-widgets" style="padding: 5px; height: <?=$rsswidgetheight?>px; overflow:scroll;">
 <?php
-    if (!is_dir("/tmp/simplepie")) {
-        mkdir("/tmp/simplepie");
-        mkdir("/tmp/simplepie/cache");
-    }
+    @mkdir('/tmp/simplepie');
+    @mkdir('/tmp/simplepie/cache');
     exec("chmod a+rw /tmp/simplepie/.");
     exec("chmod a+rw /tmp/simplepie/cache/.");
     $feed = new SimplePie();

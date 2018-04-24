@@ -30,11 +30,7 @@ require_once("guiconfig.inc");
 require_once("filter.inc");
 require_once("logs.inc");
 
-if (!isset($config['filter']['scrub']['rule'])) {
-    $config['filter']['scrub'] = array();
-    $config['filter']['scrub']['rule'] = array();
-}
-$a_scrub = &$config['filter']['scrub']['rule'];
+$a_scrub = &config_read_array('filter', 'scrub', 'rule');
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = array();
@@ -42,14 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['scrubrnid'] = !empty($config['system']['scrubrnid']);
     $pconfig['scrub_interface_disable'] = !empty($config['system']['scrub_interface_disable']);
     if (!empty($_GET['savemsg'])) {
-        $savemsg = sprintf(
-            gettext(
-                'The settings have been applied and the rules are now reloading ' .
-                'in the background. You can monitor the reload progress %shere%s.'
-            ),
-            '<a href="status_filter_reload.php">',
-            '</a>'
-        );
+        $savemsg = gettext('The settings have been applied and the rules are now reloading in the background.');
     }
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pconfig = $_POST;
@@ -216,6 +205,10 @@ $( document ).ready(function() {
   });
   $("#scrub_interface_disable").change();
 
+  // select All
+  $("#selectAll").click(function(){
+      $(".rule_select").prop("checked", $(this).prop("checked"));
+  });
 
   // watch scroll position and set to last known on page load
   watchScrollPosition();
@@ -254,9 +247,11 @@ $( document ).ready(function() {
                       <td>
                         <input id="scrub_interface_disable" name="scrub_interface_disable" type="checkbox" value="yes" <?=!empty($pconfig['scrub_interface_disable']) ? "checked=\"checked\"" : "";?> />
                         <div class="hidden" for="help_for_scrub_interface_disable">
+                          <small class="formhelp">
                           <?=gettext("Disable all default interface scrubing rules,".
                                      " mss clamping will also be disabled when you check this.".
                                      " Detailed settings specified below will still be used.");?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -265,10 +260,12 @@ $( document ).ready(function() {
                       <td>
                         <input name="scrubnodf" type="checkbox" value="yes" <?=!empty($pconfig['scrubnodf']) ? "checked=\"checked\"" : ""; ?>/>
                         <div class="hidden" for="help_for_scrubnodf">
+                          <small class="formhelp">
                           <?=gettext("This allows for communications with hosts that generate fragmented " .
                                               "packets with the don't fragment (DF) bit set. Linux NFS is known to " .
                                               "do this. This will cause the filter to not drop such packets but " .
                                               "instead clear the don't fragment bit.");?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -277,10 +274,12 @@ $( document ).ready(function() {
                       <td>
                         <input name="scrubrnid" type="checkbox" value="yes" <?= !empty($pconfig['scrubrnid']) ? "checked=\"checked\"" : "";?> />
                         <div class="hidden" for="help_for_scrubrnid">
+                          <small class="formhelp">
                           <?=gettext("Replaces the IP identification field of packets with random values to " .
                                               "compensate for operating systems that use predictable values. " .
                                               "This option only applies to packets that are not fragmented after the " .
                                               "optional packet reassembly.");?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -306,7 +305,7 @@ $( document ).ready(function() {
                          <th colspan="2"> </th>
                      </tr>
                     <tr>
-                      <th>&nbsp;</th>
+                      <th><input type="checkbox" id="selectAll"></th>
                       <th><?=gettext("Interfaces");?></th>
                       <th class="hidden-xs hidden-sm"><?=gettext("Source");?></th>
                       <th class="hidden-xs hidden-sm"><?=gettext("Destination");?></th>
@@ -321,7 +320,7 @@ $( document ).ready(function() {
                 foreach ($a_scrub as $i => $scrubEntry):?>
                   <tr>
                     <td>
-                        <input type="checkbox" name="rule[]" value="<?=$i;?>"  />
+                        <input class="rule_select" type="checkbox" name="rule[]" value="<?=$i;?>"  />
                         <a href="#" class="act_toggle" data-id="<?=$i;?>" data-toggle="tooltip" title="<?=(empty($scrubEntry['disabled'])) ? gettext("disable") : gettext("enable");?>">
                           <span class="glyphicon glyphicon-play <?=(empty($scrubEntry['disabled'])) ? "text-success" : "text-muted";?>"></span>
                         </a>
@@ -351,7 +350,7 @@ $( document ).ready(function() {
 <?php
                         if (is_alias($scrubEntry['dst'])):?>
                         <span title="<?=htmlspecialchars(get_alias_description($scrubEntry['dst']));?>" data-toggle="tooltip">
-                          <?=$scrubEntry['src'];?>&nbsp;
+                          <?=$scrubEntry['dst'];?>&nbsp;
                         </span>
                         <a href="/firewall_aliases_edit.php?name=<?=$scrubEntry['dst'];?>"
                             title="<?=gettext("edit alias");?>" data-toggle="tooltip">

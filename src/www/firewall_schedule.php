@@ -2,7 +2,7 @@
 
 /*
     Copyright (C) 2014-2015 Deciso B.V.
-    Copyright (C) 2004 Scott Ullrich
+    Copyright (C) 2004 Scott Ullrich <sullrich@gmail.com>
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
     All rights reserved.
 
@@ -35,10 +35,7 @@ require_once("logs.inc");
 $dayArray = array (gettext('Mon'),gettext('Tues'),gettext('Wed'),gettext('Thur'),gettext('Fri'),gettext('Sat'),gettext('Sun'));
 $monthArray = array (gettext('January'),gettext('February'),gettext('March'),gettext('April'),gettext('May'),gettext('June'),gettext('July'),gettext('August'),gettext('September'),gettext('October'),gettext('November'),gettext('December'));
 
-if (!isset($config['schedules']['schedule'])) {
-    $config['schedules']['schedule'] = array();
-}
-$a_schedules = &$config['schedules']['schedule'];
+$a_schedules = &config_read_array('schedules', 'schedule');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pconfig = $_POST;
@@ -120,7 +117,7 @@ $main_buttons = array(
             <form method="post" name="iform" id="iform">
               <input type="hidden" id="id" name="id" value="" />
               <input type="hidden" id="action" name="act" value="" />
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <thead>
                   <tr>
                     <td><?=gettext("Name");?></td>
@@ -141,7 +138,7 @@ $main_buttons = array(
                         endif;?>
                     </td>
                     <td>
-                      <table class="table table-condensed table-striped">
+                      <table class="table table-condensed table-clean-form">
 <?php
                           foreach($schedule['timerange'] as $timerange) {
                               $firstprint = false;

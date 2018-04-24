@@ -64,7 +64,32 @@ POSSIBILITY OF SUCH DAMAGE.
                     get:'/api/trafficshaper/settings/getRule/',
                     set:'/api/trafficshaper/settings/setRule/',
                     add:'/api/trafficshaper/settings/addRule/',
-                    del:'/api/trafficshaper/settings/delRule/'
+                    del:'/api/trafficshaper/settings/delRule/',
+                    options: {
+                        converters: {
+                            notprefixable: {
+                                to: function (value) {
+                                    if (value.not) {
+                                        return '<i class="fa fa-exclamation"></i> ' + value.val;
+                                    } else {
+                                        return value.val;
+                                    }
+                                }
+                            }
+                        },
+                        responseHandler: function (response) {
+                            // concatenate fields for not.
+                            if ('rows' in response) {
+                                for (var i = 0; i < response.rowCount; i++) {
+                                    response.rows[i]['displaysrc'] = {'not':response.rows[i].source_not == '1',
+                                                                      'val':response.rows[i].source}
+                                    response.rows[i]['displaydst'] = {'not':response.rows[i].destination_not == '1',
+                                                                      'val':response.rows[i].destination}
+                                }
+                            }
+                            return response;
+                        }
+                    }
                 }
         );
 
@@ -97,10 +122,10 @@ POSSIBILITY OF SUCH DAMAGE.
           // Ask user if it's ok to flush all of ipfw
           BootstrapDialog.show({
               type:BootstrapDialog.TYPE_WARNING,
-              title: 'Flush',
+              title: '{{ lang._('Flush') }}',
               message: "{{ lang._('Are you sure you want to flush and reload all? this might have impact on other services using the same technology underneath (such as Captive portal)') }}",
               buttons: [{
-                  label: 'Yes',
+                  label: '{{ lang._('Yes') }}',
                   action: function(dialogRef){
                       dialogRef.close();
                       $("#flushAct_progress").addClass("fa fa-spinner fa-pulse");
@@ -111,7 +136,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
                   }
               },{
-                  label: 'No',
+                  label: '{{ lang._('No') }}',
                   action: function(dialogRef){
                       dialogRef.close();
                   }
@@ -139,7 +164,7 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="tab-content content-box tab-content">
     <div id="pipes" class="tab-pane fade in active">
         <!-- tab page "pipes" -->
-        <table id="grid-pipes" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogPipe">
+        <table id="grid-pipes" class="table table-condensed table-hover table-clean-form table-responsive" data-editDialog="DialogPipe">
             <thead>
             <tr>
                 <th data-column-id="origin" data-type="string" data-visible="false">{{ lang._('Origin') }}</th>
@@ -169,7 +194,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div id="queues" class="tab-pane fade in">
         <!-- tab page "queues" -->
-        <table id="grid-queues" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogQueue">
+        <table id="grid-queues" class="table table-condensed table-hover table-clean-form table-responsive" data-editDialog="DialogQueue">
             <thead>
             <tr>
                 <th data-column-id="origin" data-type="string" data-visible="false">{{ lang._('Origin') }}</th>
@@ -197,15 +222,15 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div id="rules" class="tab-pane fade in">
         <!-- tab page "rules" -->
-        <table id="grid-rules" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogRule">
+        <table id="grid-rules" class="table table-condensed table-hover table-clean-form table-responsive" data-editDialog="DialogRule">
             <thead>
             <tr>
                 <th data-column-id="sequence" data-type="number">{{ lang._('#') }}</th>
                 <th data-column-id="origin" data-type="string"  data-visible="false">{{ lang._('Origin') }}</th>
                 <th data-column-id="interface" data-type="string">{{ lang._('Interface') }}</th>
                 <th data-column-id="proto" data-type="string">{{ lang._('Protocol') }}</th>
-                <th data-column-id="source" data-type="string">{{ lang._('Source') }}</th>
-                <th data-column-id="destination" data-type="string">{{ lang._('Destination') }}</th>
+                <th data-column-id="displaysrc" data-type="notprefixable">{{ lang._('Source') }}</th>
+                <th data-column-id="displaydst" data-type="notprefixable">{{ lang._('Destination') }}</th>
                 <th data-column-id="target" data-type="string">{{ lang._('Target') }}</th>
                 <th data-column-id="description" data-type="string">{{ lang._('Description') }}</th>
                 <th data-column-id="commands" data-width="7em" data-formatter="commands" data-sortable="false">{{ lang._('Commands') }}</th>
@@ -235,6 +260,6 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
 {# include dialogs #}
-{{ partial("layout_partials/base_dialog",['fields':formDialogPipe,'id':'DialogPipe','label':'Edit pipe'])}}
-{{ partial("layout_partials/base_dialog",['fields':formDialogQueue,'id':'DialogQueue','label':'Edit queue'])}}
-{{ partial("layout_partials/base_dialog",['fields':formDialogRule,'id':'DialogRule','label':'Edit rule'])}}
+{{ partial("layout_partials/base_dialog",['fields':formDialogPipe,'id':'DialogPipe','label':lang._('Edit pipe')])}}
+{{ partial("layout_partials/base_dialog",['fields':formDialogQueue,'id':'DialogQueue','label':lang._('Edit queue')])}}
+{{ partial("layout_partials/base_dialog",['fields':formDialogRule,'id':'DialogRule','label':lang._('Edit rule')])}}

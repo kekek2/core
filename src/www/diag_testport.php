@@ -3,7 +3,8 @@
 /*
     Copyright (C) 2016 Deciso B.V.
     Copyright (C) 2013 Jim Pingle <jimp@pfsense.org>
-    Copyright (C) 2003-2005 Bob Zoller (bob@kludgebox.com) and Manuel Kasper <mk@neon1.net>.
+    Copyright (C) 2003-2005 Bob Zoller <bob@kludgebox.com>
+    Copyright (C) 2003-2005 Manuel Kasper <mk@neon1.net>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -50,7 +51,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $reqdfieldsn = array(gettext("Host"),gettext("Port"));
     do_input_validation($pconfig, $reqdfields, $reqdfieldsn, $input_errors);
 
-    if (!is_ipaddr($pconfig['host']) && !is_hostname($pconfig['host'])) {
+    $host_utf = trim($pconfig['host']);
+    $host = idn_to_ascii($host_utf);
+    if (!is_ipaddr($pconfig['host']) && !is_hostname($host)) {
         $input_errors[] = gettext("Please enter a valid IP or hostname.");
     }
 
@@ -95,11 +98,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
         }
 
-        $cmd_action = "/usr/bin/nc {$nc_args} " . escapeshellarg($pconfig['host']) . " " . escapeshellarg($pconfig['port']) . " 2>&1";
+        $cmd_action = "/usr/bin/nc {$nc_args} " . escapeshellarg($host) . " " . escapeshellarg($pconfig['port']) . " 2>&1";
         $process = proc_open($cmd_action, array(array("pipe", "r"), array("pipe", "w"), array("pipe", "w")), $pipes);
         if (is_resource($process)) {
              $cmd_output = stream_get_contents($pipes[1]);
              $cmd_output .= stream_get_contents($pipes[2]);
+             $cmd_output = str_replace($host, $host_utf, $cmd_output);
         }
     }
 }
@@ -123,7 +127,7 @@ include("head.inc"); ?>
             <?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
             <form method="post" name="iform" id="iform">
               <div class="table-responsive">
-                <table class="table table-striped opnsense_standard_table_form">
+                <table class="table table-clean-form opnsense_standard_table_form">
                   <thead>
                     <tr>
                       <td width="22%"><strong><?=gettext("Test Port"); ?></strong></td>
@@ -147,7 +151,9 @@ include("head.inc"); ?>
                           </option>
                         </select>
                         <div class="hidden" for="help_for_ipprotocol">
+                          <small class="formhelp">
                           <?=gettext("If you force IPv4 or IPv6 and use a hostname that does not contain a result using that protocol, it will result in an error. For example if you force IPv4 and use a hostname that only returns an AAAA IPv6 IP address, it will not work."); ?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -168,7 +174,9 @@ include("head.inc"); ?>
                       <td>
                         <input name="srcport" type="text" value="<?=$pconfig['srcport'];?>" />
                         <div class="hidden" for="help_for_srcport">
+                          <small class="formhelp">
                           <?=gettext("This should typically be left blank."); ?>
+                          </small>
                         </div>
                       </td>
                     </tr>
@@ -177,7 +185,9 @@ include("head.inc"); ?>
                       <td>
                         <input name="showtext" type="checkbox" id="showtext" <?= !empty($pconfig['showtext']) ? "checked=\"checked\"" : "";?> />
                         <div class="hidden" for="help_for_showtext">
+                          <small class="formhelp">
                           <?=gettext("Shows the text given by the server when connecting to the port. Will take 10+ seconds to display if checked."); ?>
+                          </small>
                         </div>
                       </td>
                     </tr>
