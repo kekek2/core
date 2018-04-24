@@ -72,6 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     } else if (!empty($pconfig['apply'])) {
         system_sysctl_configure();
+        system_login_configure();
         clear_subsystem_dirty('sysctl');
         header(url_safe('Location: /system_advanced_sysctl.php'));
         exit;
@@ -92,20 +93,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         header(url_safe('Location: /system_advanced_sysctl.php'));
         exit;
     }
-
 }
 
 legacy_html_escape_form_data($a_tunable);
+
 if ($act != 'edit') {
     $main_buttons = array(
         array('href' => 'system_advanced_sysctl.php?act=edit', 'label' => gettext('Add a new tunable')),
     );
 }
-include("head.inc");
-?>
 
+include("head.inc");
+
+?>
 <body>
-<script type="text/javascript">
+<script>
 $( document ).ready(function() {
   // delete entry
   $(".act_delete").click(function(event){
@@ -155,7 +157,7 @@ $( document ).ready(function() {
         <div class="table-responsive content-box tab-content" style="overflow: auto;">
 <?php
         if ($act != "edit") :?>
-          <table class="table table-clean-form table-striped">
+          <table class="table table-clean-form table-clean-form">
             <thead>
               <tr>
                 <th><?=gettext("Tunable Name"); ?></th>
@@ -186,6 +188,12 @@ $( document ).ready(function() {
                 </tr>
 <?php
                 $i++; endforeach; ?>
+                <tr>
+                  <td colspan="4">
+                    <?= gettext('Tunables are composed of runtime settings for sysctl.conf which take effect ' .
+                      'immediately after apply and boot settings for loader.conf which require a reboot.') ?>
+                  </td>
+                </tr>
               </tbody>
             </table>
 <?php
@@ -194,7 +202,7 @@ $( document ).ready(function() {
               <table class="table table-clean-form">
                 <thead>
                   <tr>
-                    <th colspan="2" valign="top" class="listtopic"><?=gettext("Edit system tunable"); ?></th>
+                    <th colspan="2" style="vertical-align:top" class="listtopic"><?=gettext("Edit system tunable"); ?></th>
                   </tr>
                 </thead>
                 <tbody>

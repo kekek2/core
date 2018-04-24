@@ -90,7 +90,7 @@ function saveFormToEndpoint(url,formid,callback_ok, disable_dialog) {
                 }
             } else if ( callback_ok != undefined ) {
                 // execute callback function
-                callback_ok();
+                callback_ok(data);
             }
         }
     });
@@ -136,8 +136,8 @@ function mapDataToFormUI(data_get_map) {
 /**
  * update service status buttons in user interface
  */
-function updateServiceStatusUI(status) {
-
+function updateServiceStatusUI(status)
+{
     var status_html = '<span class="label label-opnsense label-opnsense-sm ';
 
     if (status == "running") {
@@ -154,17 +154,54 @@ function updateServiceStatusUI(status) {
 }
 
 /**
+ * operate service status buttons in user interface
+ */
+function updateServiceControlUI(serviceName)
+{
+    ajaxCall(url="/api/" + serviceName + "/service/status", sendData={}, callback=function(data,status) {
+        var status_html = '<span class="label label-opnsense label-opnsense-sm ';
+        var status_icon = '';
+        var buttons = '';
+
+        if (data['status'] == "running") {
+            status_html += 'label-success';
+            status_icon = 'play';
+            buttons += '<span id="restartService" class="btn btn-sm btn-default"><i class="fa fa-refresh fa-fw"></i></span> ';
+            buttons += '<span id="stopService" class="btn btn-sm btn-default"><i class="fa fa-stop fa-fw"></span>';
+        } else if (data['status'] == "stopped") {
+            status_html += 'label-danger';
+            status_icon = 'stop';
+            buttons += '<span id="startService" class="btn btn-sm btn-default"><i class="fa fa-play fa-fw"></i></span>';
+        } else {
+            status_html += 'hidden';
+        }
+
+        status_html += '"><i class="fa fa-' + status_icon + ' fa-fw"/></span>';
+
+        $('#service_status_container').html(status_html + " " + buttons);
+
+        var commands = ["start", "restart", "stop"];
+        commands.forEach(function(command) {
+            $("#" + command + "Service").click(function(){
+                $('#OPNsenseStdWaitDialog').modal('show');
+                ajaxCall(url="/api/" + serviceName + "/service/" + command, sendData={},callback=function(data,status) {
+                    $('#OPNsenseStdWaitDialog').modal('hide');
+                    ajaxCall(url="/api/" + serviceName + "/service/status", sendData={}, callback=function(data,status) {
+                        updateServiceControlUI(serviceName);
+                    });
+                });
+            });
+        });
+    });
+}
+
+/**
  * reformat all tokenizers on this document
  */
-function formatTokenizersUI(){
-    // remove old tokenizers (if any)
-    $('div[class="tokenize Tokenize"]').each(function(){
-        $(this).remove();
-    });
-    $('select[class="tokenize"]').each(function(){
+function formatTokenizersUI() {
+    $('select[class="tokenize"]').each(function () {
         if ($(this).prop("size")==0) {
             maxDropdownHeight=String(36*5)+"px"; // default number of items
-
         } else {
             number_of_items = $(this).prop("size");
             maxDropdownHeight=String(36*number_of_items)+"px";
@@ -175,12 +212,16 @@ function formatTokenizersUI(){
         nbDropdownElements=$(this).data("nbdropdownelements");
         maxTokenContainerHeight=$(this).data("maxheight");
 
-        $(this).tokenize({
+        $tokenizer = $(this).tokenize({
             displayDropdownOnFocus: true,
             newElements: allownew,
             nbDropdownElements: nbDropdownElements,
             placeholder:hint
         });
+        $tokenizer.resizeSearchInput();
+        $tokenizer.remap(true);
+        $tokenizer.updatePlaceholder();
+
         $(this).parent().find('ul[class="TokensContainer"]').parent().css("width",width);
         $(this).parent().find('ul[class="Dropdown"]').css("max-height", maxDropdownHeight);
         if ( maxDropdownHeight != undefined ) {
@@ -302,7 +343,7 @@ function initFormAdvancedUI() {
 /**
  * standard dialog when information is required, wrapper around BootstrapDialog
  */
-function stdDialogInform(title, message, close, callback, type) {
+function stdDialogInform(title, message, close, callback, type, cssClass) {
      var types = {
          "danger": BootstrapDialog.TYPE_DANGER,
          "default": BootstrapDialog.TYPE_DEFAULT,
@@ -314,9 +355,13 @@ function stdDialogInform(title, message, close, callback, type) {
     if (!(type in types)) {
         type = 'info';
     }
+    if (cssClass == undefined) {
+        cssClass = '';
+    }
     BootstrapDialog.show({
         title: title,
         message: message,
+        cssClass: cssClass,
         type: types[type],
         buttons: [{
             label: close,

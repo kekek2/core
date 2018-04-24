@@ -43,28 +43,28 @@ readonly    :   if true, input fields will be readonly
 #}
 
 <tr for="{{ id }}" {% if advanced|default(false)=='true' %} data-advanced="true"{% endif %}>
-    <td >
-        <div class="control-label" for="{{ id }}">
+    <td>
+        <output class="control-label" for="{{ id }}">
             {% if help|default(false) %}
                 <a id="help_for_{{ id }}" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a>
             {% elseif help|default(false) == false %}
                 <i class="fa fa-info-circle text-muted"></i>
             {% endif %}
             <b>{{label}}</b>
-        </div>
+        </output>
     </td>
-    <td >
+    <td>
         {% if type == "text" %}
-            <input type="text" class="form-control" size="{{size|default("50")}}" id="{{ id }}" {{ readonly ?  'readonly="readonly"' : '' }} >
-        {% elseif type == "checkbox"  %}
+            <input type="text" class="form-control" size="{{size|default("50")}}" id="{{ id }}" {{ readonly ? 'readonly="readonly"' : '' }} >
+        {% elseif type == "checkbox" %}
             <input type="checkbox" id="{{ id }}" >
         {% elseif type == "select_multiple" %}
-            <select multiple="multiple" {% if size|default(false) %}size="{{size}}"{% endif %}  id="{{ id }}" {% if style|default(false) %}class="{{style}}" {% endif %}  {% if hint|default(false) %}data-hint="{{hint}}"{% endif %}  {% if maxheight|default(false) %}data-maxheight="{{maxheight}}"{% endif %} data-width="{{width|default("348px")}}" data-allownew="{{allownew|default("false")}}" data-nbdropdownelements="{{nbDropdownElements|default("10")}}"></select>
+            <select multiple="multiple" {% if size|default(false) %}size="{{size}}"{% endif %} id="{{ id }}" {% if style|default(false) %}class="{{style}}" {% endif %} {% if hint|default(false) %}data-hint="{{hint}}"{% endif %} {% if maxheight|default(false) %}data-maxheight="{{maxheight}}"{% endif %} data-width="{{width|default("334px")}}" data-allownew="{{allownew|default("false")}}" data-nbdropdownelements="{{nbDropdownElements|default("10")}}"></select>
             <br/><a href="#" class="text-danger" id="clear-options" for="{{ id }}"><i class="fa fa-times-circle"></i></a> <small>{{ lang._('Clear All') }}</small>
         {% elseif type == "dropdown" %}
-            <select {% if size|default(false) %}size="{{size}}"{% endif %}  id="{{ id }}" class="{{style|default('selectpicker')}}"  data-width="{{width|default("348px")}}"></select>
+            <select {% if size|default(false) %}size="{{size}}"{% endif %} id="{{ id }}" class="{{style|default('selectpicker')}}" data-width="{{width|default("334px")}}"></select>
         {% elseif type == "password" %}
-            <input type="password" class="form-control" size="{{size|default("50")}}" id="{{ id }}"  {{ readonly ?  'readonly="readonly"' : '' }} >
+            <input type="password" class="form-control" size="{{size|default("50")}}" id="{{ id }}" {{ readonly ? 'readonly="readonly"' : '' }} >
         {% elseif type == "textbox" %}
             <textarea rows="{{height|default("5")}}" id="{{ id }}" {{ readonly ? 'readonly="readonly"' : '' }}></textarea>
         {% elseif type == "info" %}

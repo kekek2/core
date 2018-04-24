@@ -133,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 include("head.inc");
 ?>
 
-<script type="text/javascript">
+<script>
 //<![CDATA[
 $( document ).ready(function() {
     // revert config dialog
@@ -205,7 +205,7 @@ $( document ).ready(function() {
             <div class="content-box tab-content table-responsive __mb">
               <table class="table table-clean-form">
                 <tr>
-                  <th colspan="2" valign="top" class="listtopic"><?=gettext("Backup Count"); ?></th>
+                  <th colspan="2" style="vertical-align:top" class="listtopic"><?=gettext("Backup Count"); ?></th>
                 </tr>
                 <tr>
                   <td><input name="backupcount" type="text" class="formfld unknown" size="5" value="<?=htmlspecialchars($pconfig['backupcount']);?>"/></td>
@@ -229,7 +229,7 @@ $( document ).ready(function() {
           <div class="content-box tab-content table-responsive __mb" style="overflow: scroll;">
             <table class="table table-clean-form">
               <tr>
-                <th colspan="2" valign="top" class="listtopic">
+                <th colspan="2" style="vertical-align:top" class="listtopic">
                   <?= sprintf(
                         gettext('Configuration diff from %s to %s'),
                         date(gettext('n/j/y H:i:s'), $oldtime),

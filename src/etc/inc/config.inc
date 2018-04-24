@@ -303,6 +303,11 @@ function backup_to_google_drive()
     if ($cnf->isValid()) {
         $config = $cnf->object();
         if (isset($config->system->remotebackup) && isset($config->system->remotebackup->GDriveEnabled) && $config->system->remotebackup->GDriveEnabled == "on") {
+            if (!empty($config->system->remotebackup->GDrivePrefixHostname)) {
+                $fileprefix = (string)$config->system->hostname . "." . (string)$config->system->domain . "-";
+            } else {
+                $fileprefix = "config-";
+            }
             try {
                 $client = new Google\API\Drive();
                 $client->login($config->system->remotebackup->GDriveEmail->__toString(),
@@ -318,7 +323,7 @@ function backup_to_google_drive()
             tagfile_reformat($confdata_enc, $confdata_enc, "config.xml");
 
 
-            // read filelist (config-*.xml)
+            // read filelist ({prefix}*.xml)
             try {
                 $files = $client->listFiles($config->system->remotebackup->GDriveFolderID->__toString());
             } catch (Exception $e) {
@@ -328,7 +333,7 @@ function backup_to_google_drive()
 
             $configfiles = array();
             foreach ($files as $file) {
-                if (fnmatch("config-*.xml", $file['title'])) {
+                if (fnmatch("{$fileprefix}*.xml", $file['title'])) {
                     $configfiles[$file['title']] = $file;
                 }
             }
@@ -336,7 +341,7 @@ function backup_to_google_drive()
 
 
             // backup new file if changed (or if first in backup)
-            $target_filename = "config-" . time() . ".xml";
+            $target_filename = $fileprefix . time() . ".xml";
             if (count($configfiles) > 1) {
                 // compare last backup with current, only save new
                 try {

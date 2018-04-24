@@ -114,7 +114,7 @@ function print_summary_table($label, $iparr, $sort = TRUE) {
           <h3><?=$label; ?></h3>
         </header>
         <div class="table-responsive">
-          <table class="table table-striped">
+          <table class="table table-clean-form">
             <tr>
               <td><?=gettext("IP");?></td>
               <td># <?=gettext("States");?></td>
@@ -134,9 +134,9 @@ function print_summary_table($label, $iparr, $sort = TRUE) {
         <tr>
           <td colspan="2">&nbsp;</td>
           <td><?=$proto; ?></td>
-          <td ><?=$protoinfo['seen']; ?></td>
-          <td ><span data-toggle="tooltip" title="<?=build_port_info($protoinfo['srcports'], $proto); ?>"><?=count($protoinfo['srcports']); ?></span></td>
-          <td ><span data-toggle="tooltip" title="<?=build_port_info($protoinfo['dstports'], $proto); ?>"><?=count($protoinfo['dstports']); ?></span></td>
+          <td><?=$protoinfo['seen']; ?></td>
+          <td><span data-toggle="tooltip" title="<?=build_port_info($protoinfo['srcports'], $proto); ?>"><?=count($protoinfo['srcports']); ?></span></td>
+          <td><span data-toggle="tooltip" title="<?=build_port_info($protoinfo['dstports'], $proto); ?>"><?=count($protoinfo['dstports']); ?></span></td>
         </tr>
         <?php } ?>
       <?php } ?>

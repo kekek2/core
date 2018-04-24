@@ -165,6 +165,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $config['interfaces'][$newifname]['wireless'] = array();
             interface_sync_wireless_clones($config['interfaces'][$newifname], false);
         }
+        /* lock known-to-be unreliable interfaces by default */
+        if (in_array(substr($_POST['if_add'], 0, 2), array('ue', 'zt'))) {
+            $config['interfaces'][$newifname]['lock'] = true;
+        }
 
         write_config();
         header(url_safe('Location: /interfaces_assign.php'));
@@ -314,7 +318,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                           interface_sync_wireless_clones($config['interfaces'][$ifname], false);
                       }
                       /* Reload all for the interface. */
-                      interface_configure($ifname, true);
+                      interface_configure($ifname, INTERFACE_RELOAD_SINGLE);
                       // count changes
                       $changes++;
                   }
@@ -354,7 +358,7 @@ include("head.inc");
 ?>
 
 <body>
-  <script type="text/javascript">
+  <script>
   $( document ).ready(function() {
     // link delete buttons
     $(".act_delete").click(function(event){

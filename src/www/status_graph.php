@@ -137,7 +137,7 @@ include("head.inc");
     margin-bottom: -5px;
 }
 </style>
-<script type="text/javascript">
+<script>
     var graphtable = {};
     function formatSizeUnits(bytes){
         if      (bytes>=1000000000) {bytes=(bytes/1000000000).toFixed(2)+'G';}
@@ -299,7 +299,7 @@ include("head.inc");
       <section class="col-xs-12">
         <div class="content-box">
             <div class="table-responsive" >
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <thead>
                   <tr>
                     <th><?=gettext("Interface"); ?></th>

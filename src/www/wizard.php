@@ -270,14 +270,14 @@ include("head.inc");
 
 ?>
 <body>
-<script type="text/javascript" src="/javascript/wizard/autosuggest.js"></script>
-<script type="text/javascript" src="/javascript/wizard/disablekeys.js"></script>
-<script type="text/javascript" src="/javascript/wizard/suggestions.js"></script>
+<script src="/javascript/wizard/autosuggest.js"></script>
+<script src="/javascript/wizard/disablekeys.js"></script>
+<script src="/javascript/wizard/suggestions.js"></script>
 
 <?php include("fbegin.inc"); ?>
 
 <?php if($pkg['step'][$stepid]['fields']['field'] <> "") { ?>
-<script type="text/javascript">
+<script>
 //<![CDATA[
 
 function  FieldValidate(userinput,  regexp,  message)
@@ -454,11 +454,11 @@ function showchange() {
 			switch ($field['type']) {
 			case "input":
 				if ($field['displayname']) {
-					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
+					echo "<td style=\"width:22%; text-align:right\" class=\"vncellreq\">\n";
 					echo gettext($field['displayname']);
 					echo ":</td>\n";
 				} else if(!$field['dontdisplayname']) {
-					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
+					echo "<td style=\"width:22%; text-align:right\" class=\"vncellreq\">\n";
 					echo gettext($field['name']);
 					echo ":</td>\n";
 				}
@@ -477,18 +477,18 @@ function showchange() {
 				}
 				break;
 			case "text":
-				echo "<td colspan=\"2\" align=\"center\" class=\"vncell\">\n";
+				echo "<td colspan=\"2\" style=\"text-align:center\" class=\"vncell\">\n";
 				if($field['description'] <> "") {
 					echo "<center><br /> " . gettext($field['description']) . "</center>";
 				}
 				break;
 			case "inputalias":
 				if ($field['displayname']) {
-					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
+					echo "<td style=\"width:22%; text-align:right\" class=\"vncellreq\">\n";
 					echo gettext($field['displayname']);
 					echo ":</td>\n";
 				} else if(!$field['dontdisplayname']) {
-					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
+					echo "<td style=\"width:22%; text-align:right\" class=\"vncellreq\">\n";
 					echo gettext($field['name']);
 					echo ":</td>\n";
 				}
@@ -512,7 +512,7 @@ function showchange() {
 				$size = "";
 				$multiple = "";
 				$name = strtolower($name);
-				echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
+				echo "<td style=\"width:22%; text-align:right\" class=\"vncellreq\">\n";
 				echo ($field['displayname'] ? gettext($field['displayname']) : gettext($field['name'])) . ":\n";
 				echo "</td>";
 				echo "<td class=\"vtable\">\n";
@@ -559,11 +559,11 @@ function showchange() {
 				break;
 			case "password":
 				if ($field['displayname']) {
-					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
+					echo "<td style=\"width:22%; text-align:right\" class=\"vncellreq\">\n";
 					echo gettext($field['displayname']);
 					echo ":</td>\n";
 				} else if(!$field['dontdisplayname']) {
-					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
+					echo "<td style=\"width:22%; text-align:right\" class=\"vncellreq\">\n";
 					echo gettext($field['name']);
 					echo ":</td>\n";
 				}
@@ -583,7 +583,7 @@ function showchange() {
 				$size = "";
 				$multiple = "";
 				$name = strtolower($name);
-				echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
+				echo "<td style=\"width:22%; text-align:right\" class=\"vncellreq\">\n";
 				echo ($field['displayname'] ? gettext($field['displayname']) : gettext($field['name'])) . ":\n";
 				echo "</td>";
 				echo "<td class=\"vtable\">\n";
@@ -624,7 +624,7 @@ function showchange() {
 				$size = "";
 				$multiple = "";
 				$name = strtolower($name);
-				echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
+				echo "<td style=\"width:22%; text-align:right\" class=\"vncellreq\">\n";
 				echo ($field['displayname'] ? gettext($field['displayname']) : gettext($field['name'])) . ":\n";
 				echo "</td>";
 				echo "<td class=\"vtable\">\n";
@@ -662,11 +662,11 @@ function showchange() {
 				break;
 			case "select":
 				if ($field['displayname']) {
-					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
+					echo "<td style=\"width:22%; text-align:right\" class=\"vncellreq\">\n";
 					echo gettext($field['displayname']);
 					echo ":</td>\n";
 				} else if(!$field['dontdisplayname']) {
-					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
+					echo "<td style=\"width:22%; text-align:right\" class=\"vncellreq\">\n";
 					echo gettext($field['name']);
 					echo ":</td>\n";
 				}
@@ -702,11 +702,11 @@ function showchange() {
 				break;
 			case "textarea":
 				if ($field['displayname']) {
-					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
+					echo "<td style=\"width:22%; text-align:right\" class=\"vncellreq\">\n";
 					echo gettext($field['displayname']);
 					echo ":</td>\n";
 				} else if(!$field['dontdisplayname']) {
-					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
+					echo "<td style=\"width:22%; text-align:right\" class=\"vncellreq\">\n";
 					echo gettext($field['name']);
 					echo ":</td>";
 				}
@@ -726,7 +726,7 @@ function showchange() {
 
 				break;
 			case "submit":
-				echo "<td colspan=\"2\" align=\"center\">";
+				echo "<td colspan=\"2\" style=\"text-align:center\">";
 				echo "<input type='submit' class=\"btn btn-primary\" name='" . $name . "' value=\"" . htmlspecialchars(gettext($field['name'])) . "\" />\n";
 
 				if($field['description'] <> "") {
@@ -740,11 +740,11 @@ function showchange() {
 				break;
 			case "subnet_select":
 				if ($field['displayname']) {
-					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
+					echo "<td style=\"width:22%; text-align:right\" class=\"vncellreq\">\n";
 					echo gettext($field['displayname']);
 					echo ":</td>\n";
 				} else if(!$field['dontdisplayname']) {
-					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
+					echo "<td style=\"width:22%; text-align:right\" class=\"vncellreq\">\n";
 					echo gettext($field['name']);
 					echo ":</td>";
 				}
@@ -776,11 +776,11 @@ function showchange() {
 				$languagelist = get_locale_list();
 
 				if ($field['displayname']) {
-					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
+					echo "<td style=\"width:22%; text-align:right\" class=\"vncellreq\">\n";
 					echo gettext($field['displayname']);
 					echo ":</td>\n";
 				} else if(!$field['dontdisplayname']) {
-					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
+					echo "<td style=\"width:22%; text-align:right\" class=\"vncellreq\">\n";
 					echo gettext($field['name']);
 					echo ":</td>";
 				}
@@ -805,11 +805,11 @@ function showchange() {
 				$timezonelist = get_zoneinfo();
 
 				if ($field['displayname']) {
-					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
+					echo "<td style=\"width:22%; text-align:right\" class=\"vncellreq\">\n";
 					echo gettext($field['displayname']);
 					echo ":</td>\n";
 				} else if(!$field['dontdisplayname']) {
-					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
+					echo "<td style=\"width:22%; text-align:right\" class=\"vncellreq\">\n";
 					echo gettext($field['name']);
 					echo ":</td>";
 				}
@@ -834,11 +834,11 @@ function showchange() {
 				break;
 			case "checkbox":
 				if ($field['displayname']) {
-					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
+					echo "<td style=\"width:22%; text-align:right\" class=\"vncellreq\">\n";
 					echo gettext($field['displayname']);
 					echo ":</td>\n";
 				} else if(!$field['dontdisplayname']) {
-					echo "<td width=\"22%\" align=\"right\" class=\"vncellreq\">\n";
+					echo "<td style=\"width:22%; text-align:right\" class=\"vncellreq\">\n";
 					echo gettext($field['name']);
 					echo ":</td>";
 				}
@@ -899,7 +899,7 @@ function showchange() {
 </section>
 
 
-<script type="text/javascript">
+<script>
 //<![CDATA[
 	if (typeof ext_change != 'undefined') {
 		ext_change();
@@ -950,7 +950,7 @@ $fieldnames_array = Array();
 if($pkg['step'][$stepid]['disableallfieldsbydefault'] <> "") {
 	// create a fieldname loop that can be used with javascript
 	// hide and enable features.
-	echo "\n<script type=\"text/javascript\">\n";
+	echo "\n<script>\n";
 	echo "//<![CDATA[\n";
 	echo "function disableall() {\n";
 	foreach ($pkg['step'][$stepid]['fields']['field'] as $field) {
@@ -999,7 +999,7 @@ if($pkg['step'][$stepid]['disableallfieldsbydefault'] <> "") {
 }
 ?>
 
-<script type="text/javascript">
+<script>
 //<![CDATA[
 
 // After reload/redirect functions are not loaded, so check first.
@@ -1019,7 +1019,7 @@ if($pkg['step'][$stepid]['stepafterformdisplay'] <> "") {
 
 if($pkg['step'][$stepid]['javascriptafterformdisplay'] <> "") {
 	// handle after form display event.
-	echo "\n<script type=\"text/javascript\">\n";
+	echo "\n<script>\n";
 	echo "//<![CDATA[\n";
 	echo $pkg['step'][$stepid]['javascriptafterformdisplay'] . "\n";
 	echo "//]]>\n";

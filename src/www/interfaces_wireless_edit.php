@@ -139,10 +139,10 @@ include("head.inc");
             <table class="table table-clean-form opnsense_standard_table_form">
               <thead>
                 <tr>
-                  <td width="22%"><strong><?=gettext("Wireless clone configuration");?></strong></td>
-                  <td width="78%" align="right">
+                  <td style="width:22%"><strong><?=gettext("Wireless clone configuration");?></strong></td>
+                  <td style="width:78%; text-align:right">
                     <small><?=gettext("full help"); ?> </small>
-                    <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
+                    <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page"></i>
                     &nbsp;
                   </td>
                 </tr>
@@ -171,11 +171,9 @@ include("head.inc");
                   <td><a id="help_for_descr" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description");?></td>
                   <td>
                     <input name="descr" type="text" value="<?=$pconfig['descr'];?>" />
-                    <div class="hidden" for="help_for_descr">
-                      <small class="formhelp">
+                    <output class="hidden" for="help_for_descr">
                       <?=gettext("You may enter a description here for your reference (not parsed).");?>
-                      </small>
-                    </div>
+                    </output>
                   </div>
                 </tr>
                 <tr>

@@ -86,7 +86,7 @@ include("head.inc");
 <?php include("fbegin.inc"); ?>
 
 
-<script type="text/javascript">
+<script>
 $( document ).ready(function() {
     // on change pfTable selection
      $("#tablename").change(function(){
@@ -170,7 +170,7 @@ $( document ).ready(function() {
         <section class="col-xs-12">
           <div class="content-box">
             <div class="table-responsive">
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <tr>
                   <td colspan="2"><?=gettext("IP Address");?></td>
                 </tr>

@@ -39,10 +39,10 @@ use \OPNsense\Core\Config;
  */
 class ServiceController extends ApiMutableServiceControllerBase
 {
-    static $internalServiceClass = '\OPNsense\Proxy\Proxy';
-    static $internalServiceEnabled = 'general.enabled';
-    static $internalServiceTemplate = 'OPNsense/Proxy';
-    static $internalServiceName = 'proxy';
+    static protected $internalServiceClass = '\OPNsense\Proxy\Proxy';
+    static protected $internalServiceEnabled = 'general.enabled';
+    static protected $internalServiceTemplate = 'OPNsense/Proxy';
+    static protected $internalServiceName = 'proxy';
 
     /**
      * reconfigure hook
@@ -85,7 +85,8 @@ class ServiceController extends ApiMutableServiceControllerBase
         $prev_cache_active = !empty(trim(@file_get_contents('/var/squid/cache/active')));
 
         return (((string)$mdlProxy->forward->sslcertificate) != $prev_sslbump_cert) ||
-            (!empty((string)$mdlProxy->general->cache->local->enabled) != $prev_cache_active);
+            (!empty((string)$mdlProxy->general->cache->local->enabled) != $prev_cache_active) ||
+            ($this->request->isPost() && $this->request->hasPost("force_restart") && $this->request->getPost("force_restart"));
     }
 
     /**

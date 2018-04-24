@@ -84,7 +84,7 @@ include("head.inc");
 
 <?php
 if ($save_and_test):?>
-<script type="text/javascript">
+<script>
     myRef = window.open('system_usermanager_settings_test.php?authserver=<?=$pconfig['authmode'];?>','mywin','left=20,top=20,width=700,height=550,toolbar=1,resizable=0');
     if (myRef==null || typeof(myRef)=='undefined') alert('<?=gettext("Popup blocker detected. Action aborted.");?>');
 </script>;
@@ -107,15 +107,13 @@ endif;?>
             <form method="post">
               <table class="table table-clean-form opnsense_standard_table_form">
                 <tr>
-                  <td width="22%"><a id="help_for_session_timeout" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Session Timeout"); ?></td>
-                  <td width="78%">
+                  <td style="width:22%"><a id="help_for_session_timeout" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Session Timeout"); ?></td>
+                  <td style="width:78%">
                     <input class="form-control" name="session_timeout" id="session_timeout" type="text" size="8" value="<?=$pconfig['session_timeout'];?>" />
-                    <div class="hidden" for="help_for_session_timeout">
-                      <small class="formhelp">
+                    <output class="hidden" for="help_for_session_timeout">
                       <?=gettext("Time in minutes to expire idle management sessions. The default is 4 hours (240 minutes).");?><br />
                       <?=gettext("Enter 0 to never expire sessions. NOTE: This is a security risk!");?><br />
-                      </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr>

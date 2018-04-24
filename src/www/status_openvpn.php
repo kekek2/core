@@ -97,7 +97,7 @@ include("head.inc"); ?>
 <body>
 <?php include("fbegin.inc"); ?>
 
-<script type="text/javascript">
+<script>
 //<![CDATA[
 $( document ).ready(function() {
   // link kill buttons
@@ -187,11 +187,11 @@ $( document ).ready(function() {
                     <button class="btn btn-default act_show_routes" type="button" id="showroutes_<?=$i?>"><i class="fa fa-info"></i>
                       <?=gettext("Show/Hide Routing Table"); ?>
                     </button>
-                    <div  class="hidden"  for="showroutes_<?=$i?>">
+                    <output  class="hidden"  for="showroutes_<?=$i?>">
                       <small>
                         <?=$server['name'];?> <?=gettext("Routing Table"); ?>
                       </small>
-                      <table class="table table-striped table-bordered">
+                      <table class="table table-clean-form table-bordered">
                         <thead>
                           <tr>
                             <th><?=gettext("Common Name"); ?></th>
@@ -218,7 +218,7 @@ $( document ).ready(function() {
                           </tr>
                         </tfoot>
                       </table>
-                    </div>
+                    </output>
                   </td>
                 </tr>
 <?php

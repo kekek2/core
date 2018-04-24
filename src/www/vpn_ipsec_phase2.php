@@ -410,7 +410,7 @@ include("head.inc");
 
 <body>
 <?php include("fbegin.inc"); ?>
-<script type="text/javascript">
+<script>
     $( document ).ready(function() {
         $("#mode").change(function(){
             $(".opt_localid").hide();
@@ -476,29 +476,27 @@ if (isset($input_errors) && count($input_errors) > 0) {
             <div class="table-responsive">
               <table class="table table-clean-form opnsense_standard_table_form">
                 <tr>
-                  <td width="22%"><b><?=gettext("General information"); ?></b></td>
-                  <td width="78%" align="right">
+                  <td style="width:22%"><b><?=gettext("General information"); ?></b></td>
+                  <td style="width:78%; text-align:right">
                     <small><?=gettext("full help"); ?> </small>
-                    <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
+                    <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page"></i>
                   </td>
                 </tr>
                 <tr>
-                  <td width="22%"><a id="help_for_disabled" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Disabled"); ?></td>
-                  <td width="78%" class="vtable">
+                  <td style="width:22%"><a id="help_for_disabled" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Disabled"); ?></td>
+                  <td style="width:78%" class="vtable">
                     <input name="disabled" type="checkbox" id="disabled" value="yes" <?= !empty($pconfig['disabled']) ? "checked=\"checked\"" : "" ;?> />
-                    <div class="hidden" for="help_for_disabled">
-                      <small class="formhelp">
+                    <output class="hidden" for="help_for_disabled">
                         <?=gettext("Disable this phase2 entry"); ?><br/>
                         <?=gettext("Set this option to disable this phase2 entry without " .
                                                   "removing it from the list"); ?>.
-                      </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr>
                   <td><i class="fa fa-info-circle text-muted"></i>  <?=gettext("Mode"); ?></td>
                   <td>
-                    <select name="mode" id="mode" class="formselect">
+                    <select name="mode" id="mode">
                         <?php
                         $p2_modes = array(
                         'tunnel' => 'Tunnel IPv4',
@@ -519,12 +517,10 @@ if (isset($input_errors) && count($input_errors) > 0) {
                   <td><a id="help_for_descr" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description"); ?></td>
                   <td>
                     <input name="descr" type="text" id="descr" size="40" value="<?=$pconfig['descr'];?>" />
-                    <div class="hidden" for="help_for_descr">
-                      <small class="formhelp">
+                    <output class="hidden" for="help_for_descr">
                         <?=gettext("You may enter a description here " .
                                                     "for your reference (not parsed)"); ?>.
-                      </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr class="opt_localid">
@@ -571,7 +567,7 @@ if (isset($input_errors) && count($input_errors) > 0) {
                 <tr class="opt_remoteid">
                   <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Type"); ?>:&nbsp;&nbsp;</td>
                   <td>
-                    <select name="remoteid_type" id="remoteid_type" class="formselect">
+                    <select name="remoteid_type" id="remoteid_type">
                       <option value="address" <?= $pconfig['remoteid_type'] == "address" ? "selected=\"selected\"" : "";?>>
                         <?=gettext("Address"); ?>
                       </option>
@@ -586,7 +582,7 @@ if (isset($input_errors) && count($input_errors) > 0) {
                   <td>
                     <input name="remoteid_address" type="text" class="formfld unknown ipv4v6" id="remoteid_address" size="28" value="<?=$pconfig['remoteid_address'];?>" />
                     /
-                    <select name="remoteid_netbits" class="formselect ipv4v6" id="remoteid_netbits">
+                    <select name="remoteid_netbits" class="ipv4v6" id="remoteid_netbits">
 <?php              for ($i = 128; $i >= 0; $i--) :
 ?>
                       <option value="<?=$i;?>" <?= isset($pconfig['remoteid_netbits']) && $i == $pconfig['remoteid_netbits'] ? "selected=\"selected\"" : "";?> >
@@ -607,7 +603,7 @@ endif; ?>
                 </tr>
                 <tr>
                   <td><a id="help_for_proto" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Protocol"); ?></td>
-                  <td width="78%" class="vtable">
+                  <td style="width:78%" class="vtable">
                     <select name="protocol" id="proto">
 <?php
                     foreach (array('esp' => 'ESP','ah' => 'AH') as $proto => $protoname) :?>
@@ -618,11 +614,9 @@ endif; ?>
                     endforeach; ?>
                     </select>
                     <br />
-                    <div class="hidden" for="help_for_proto">
-                      <small class="formhelp">
+                    <output class="hidden" for="help_for_proto">
                         <?=gettext("ESP is encryption, AH is authentication only"); ?>
-                      </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr id="opt_enc">
@@ -634,7 +628,7 @@ endif; ?>
                       <?=$algodata['name'];?>
 <?php
                       if (isset($algodata['keysel'])) :?>
-                      <select name="keylen_<?=$algo;?>" class="formselect">
+                      <select name="keylen_<?=$algo;?>">
                         <option value="auto"><?=gettext("auto"); ?></option>
 <?php
                         for ($keylen = $algodata['keysel']['hi']; $keylen >= $algodata['keysel']['lo']; $keylen -= $algodata['keysel']['step']) :?>
@@ -653,18 +647,16 @@ endif; ?>
 <?php
                       endforeach; ?>
 
-                      <div class="hidden" for="help_for_encalg">
-                        <small class="formhelp">
+                      <output class="hidden" for="help_for_encalg">
                           <?=gettext("Hint: use 3DES for best compatibility or if you have a hardware " .
                                                   "crypto accelerator card. Blowfish is usually the fastest in " .
                                                   "software encryption"); ?>.
-                        </small>
-                      </div>
+                      </output>
                   </td>
                 </tr>
                 <tr>
                   <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Hash algorithms"); ?></td>
-                  <td width="78%" class="vtable">
+                  <td style="width:78%" class="vtable">
 <?php
                   foreach ($p2_halgos as $algo => $algoname) :?>
                     <input type="checkbox" name="hash-algorithm-option[]" value="<?=$algo;?>" <?= isset($pconfig['hash-algorithm-option']) && in_array($algo, $pconfig['hash-algorithm-option']) ?  'checked="checked"' : '';?>/>
@@ -716,11 +708,9 @@ endif; ?>
                   <td><a id="help_for_pinghost" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Automatically ping host"); ?></td>
                   <td>
                     <input name="pinghost" type="text" class="formfld unknown" id="pinghost" size="28" value="<?=$pconfig['pinghost'];?>" />
-                    <div class="hidden" for="help_for_pinghost">
-                      <small class="formhelp">
+                    <output class="hidden" for="help_for_pinghost">
                         <?=gettext("IP address"); ?>
-                      </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
 <?php
@@ -729,20 +719,20 @@ endif; ?>
                   <td><a id="help_for_spd" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Manual SPD entries"); ?></td>
                   <td>
                     <input name="spd" type="text" id="spd" value="<?= $pconfig['spd'];?>" />
-                    <div class="hidden" for="help_for_spd">
+                    <output class="hidden" for="help_for_spd">
                         <strong><?=gettext("Register additional Security Policy Database entries"); ?></strong><br/>
                         <?=gettext("Strongswan automatically creates SPD policies for the networks defined in this phase2. ".
                                    "If you need to allow other networks to use this ipsec tunnel, you can add them here as a comma seperated list.".
                                    "When configured, you can use network address translation to push packets through this tunnel from these networks."); ?><br/>
                         <small><?=gettext("e.g. 192.168.1.0/24, 192.168.2.0/24"); ?></small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
 <?php
                 endif; ?>
                 <tr>
                   <td>&nbsp;</td>
-                  <td width="78%">
+                  <td style="width:78%">
 <?php
                  if (isset($pconfig['mobile'])) :?>
                     <input name="mobile" type="hidden" value="true" />

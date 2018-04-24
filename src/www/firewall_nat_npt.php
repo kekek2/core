@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $a_npt[$id]['disabled'] = true;
             $npt_action = "Disable Firewall/NAT/NPT (IPv6)";
         }
-        write_config('Toggled NAT NPT rule');
+        write_config('Toggled NAT NPTv6 rule');
         mark_subsystem_dirty('natconf');
         firewall_syslog($npt_action, $id);
         header(url_safe('Location: /firewall_nat_npt.php'));
@@ -111,7 +111,7 @@ $main_buttons = array(
 
 
 <body>
-  <script type="text/javascript">
+  <script>
   $( document ).ready(function() {
     // link delete buttons
     $(".act_delete").click(function(){
@@ -120,7 +120,7 @@ $main_buttons = array(
         // delete single
         BootstrapDialog.show({
           type:BootstrapDialog.TYPE_DANGER,
-          title: "<?=gettext("NPT");?>",
+          title: "<?=gettext("NPTv6");?>",
           message: "<?=gettext("Do you really want to delete this rule?");?>",
           buttons: [{
                     label: "<?= gettext("No");?>",
@@ -139,7 +139,7 @@ $main_buttons = array(
         // delete selected
         BootstrapDialog.show({
           type:BootstrapDialog.TYPE_DANGER,
-          title: "<?= gettext("NPT");?>",
+          title: "<?= gettext("NPTv6");?>",
           message: "<?=gettext("Do you really want to delete the selected rules?");?>",
           buttons: [{
                     label: "<?= gettext("No");?>",
@@ -203,9 +203,9 @@ $main_buttons = array(
                 <table class="table table-clean-form">
                   <thead>
                     <tr>
-                      <th width="2%">&nbsp;</th>
-                      <th width="2%"><input type="checkbox" id="selectAll"></th>
-                      <th width="2%">&nbsp;</th>
+                      <th style="width:2%">&nbsp;</th>
+                      <th style="width:2%"><input type="checkbox" id="selectAll"></th>
+                      <th style="width:2%">&nbsp;</th>
                       <th><?=gettext("Interface"); ?></th>
                       <th><?=gettext("External Prefix"); ?></th>
                       <th><?=gettext("Internal prefix"); ?></th>

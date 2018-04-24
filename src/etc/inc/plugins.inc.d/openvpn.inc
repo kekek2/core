@@ -476,8 +476,6 @@ function openvpn_add_keyfile($data, &$conf, $mode_id, $directive, $opt = '')
 
 function openvpn_reconfigure($mode, $settings, $device_only = false)
 {
-    global $config;
-
     if (empty($settings)) {
         return;
     }
@@ -623,7 +621,7 @@ function openvpn_reconfigure($mode, $settings, $device_only = false)
                         $conf .= "server-ipv6 {$ipv6}/{$prefix}\n";
                     }
                 }
-                break;
+                /* XXX FALLTHROUGH */
             case 'p2p_shared_key':
                 if (!empty($ip) && !empty($mask)) {
                     list($ip1, $ip2) = openvpn_get_interface_ip($ip, $mask);
@@ -676,8 +674,8 @@ function openvpn_reconfigure($mode, $settings, $device_only = false)
         // configure user auth modes
         switch ($settings['mode']) {
             case 'server_user':
-                $conf .= "client-cert-not-required\n";
-                break;
+                $conf .= "verify-client-cert none\n";
+                /* FALLTHROUGH */
             case 'server_tls_user':
                 /* username-as-common-name is not compatible with server-bridge */
                 if (stristr($conf, "server-bridge") === false && empty($settings['use-common-name'])) {
@@ -748,7 +746,7 @@ function openvpn_reconfigure($mode, $settings, $device_only = false)
         switch ($settings['mode']) {
             case 'p2p_tls':
                 $conf .= "tls-client\n";
-                break;
+                /* XXX FALLTHROUGH */
             case 'shared_key':
                 $conf .= "client\n";
                 break;
@@ -923,8 +921,6 @@ function openvpn_reconfigure($mode, $settings, $device_only = false)
 
 function openvpn_restart($mode, $settings)
 {
-    global $config;
-
     $vpnid = $settings['vpnid'];
     $mode_id = $mode.$vpnid;
 
@@ -962,8 +958,6 @@ function openvpn_restart($mode, $settings)
 
 function openvpn_delete($mode, &$settings)
 {
-    global $config;
-
     $vpnid = $settings['vpnid'];
     $mode_id = $mode.$vpnid;
 
@@ -1272,7 +1266,7 @@ function openvpn_get_server_status($server, $socket)
         stream_set_timeout($fp, 1);
 
         /* send our status request */
-        fputs($fp, "status 2\n");
+        fputs($fp, "status 3\n");
 
         /* recv all response lines */
         while (!feof($fp)) {
@@ -1292,7 +1286,7 @@ function openvpn_get_server_status($server, $socket)
             }
             /* parse client list line */
             if (strstr($line, "CLIENT_LIST")) {
-                $list = explode(",", $line);
+                $list = explode("\t", $line);
                 $conn = array();
                 $conn['common_name'] = $list[1];
                 $conn['remote_host'] = $list[2];
@@ -1304,7 +1298,7 @@ function openvpn_get_server_status($server, $socket)
             }
             /* parse routing table lines */
             if (strstr($line, "ROUTING_TABLE")) {
-                $list = explode(",", $line);
+                $list = explode("\t", $line);
                 $conn = array();
                 $conn['virtual_addr'] = $list[1];
                 $conn['common_name'] = $list[2];
@@ -1368,7 +1362,7 @@ function openvpn_get_client_status($client, $socket)
     if ($fp) {
         stream_set_timeout($fp, 1);
         /* send our status request */
-        fputs($fp, "state 1\n");
+        fputs($fp, "state all\n");
 
         /* recv all response lines */
         while (!feof($fp)) {
@@ -1381,31 +1375,24 @@ function openvpn_get_client_status($client, $socket)
             }
 
             /* Get the client state */
+            $list = explode(",", $line);
+            if (count($list) > 1) {
+                $client['connect_time'] = date('Y-m-d H:i:s', $list[0]);
+            }
             if (strstr($line, "CONNECTED")) {
                 $client['status']="up";
-                $list = explode(",", $line);
-
-                $client['connect_time'] = date('Y-m-d H:i:s', $list[0]);
                 $client['virtual_addr'] = $list[3];
                 $client['remote_host'] = $list[4];
-            }
-            if (strstr($line, "CONNECTING")) {
+            } elseif (strstr($line, "CONNECTING")) {
                 $client['status']="connecting";
-            }
-            if (strstr($line, "ASSIGN_IP")) {
-                $client['status']="waiting";
-                $list = explode(",", $line);
-                $client['connect_time'] = date('Y-m-d H:i:s', $list[0]);
+            } elseif (strstr($line, "ASSIGN_IP")) {
+                $client['status'] = "waiting";
                 $client['virtual_addr'] = $list[3];
-            }
-            if (strstr($line, "RECONNECTING")) {
-                $client['status']="reconnecting";
-                $list = explode(",", $line);
-                $client['connect_time'] = date('Y-m-d H:i:s', $list[0]);
+            } elseif (strstr($line, "RECONNECTING")) {
+                $client['status'] = "reconnecting";
                 $client['status'] .= "; " . $list[2];
-            }
-            /* parse end of output line */
-            if (strstr($line, "END") || strstr($line, "ERROR")) {
+            } elseif (strstr($line, "END") || strstr($line, "ERROR")) {
+                /* parse end of output line */
                 break;
             }
         }
@@ -1423,18 +1410,13 @@ function openvpn_get_client_status($client, $socket)
                     break;
                 }
 
+                $list = explode(",", $line);
                 if (strstr($line, "TCP/UDP read bytes")) {
-                    $list = explode(",", $line);
                     $client['bytes_recv'] = $list[1];
-                }
-
-                if (strstr($line, "TCP/UDP write bytes")) {
-                    $list = explode(",", $line);
+                } elseif (strstr($line, "TCP/UDP write bytes")) {
                     $client['bytes_sent'] = $list[1];
-                }
-
-                /* parse end of output line */
-                if (strstr($line, "END")) {
+                } elseif (strstr($line, "END")) {
+                    /* parse end of output line */
                     break;
                 }
             }

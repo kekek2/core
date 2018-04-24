@@ -115,6 +115,7 @@ $do_reboot = false;
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = array();
     $pconfig['GDriveEnabled'] = isset($config['system']['remotebackup']['GDriveEnabled']) ? $config['system']['remotebackup']['GDriveEnabled'] : null;
+    $pconfig['GDrivePrefixHostname'] = isset($config['system']['remotebackup']['GDrivePrefixHostname']) ? $config['system']['remotebackup']['GDrivePrefixHostname'] : null;
     $pconfig['GDriveEmail'] = isset($config['system']['remotebackup']['GDriveEmail']) ? $config['system']['remotebackup']['GDriveEmail'] : null;
     $pconfig['GDriveP12key'] = isset($config['system']['remotebackup']['GDriveP12key']) ? $config['system']['remotebackup']['GDriveP12key'] : null;
     $pconfig['GDriveFolderID'] = isset($config['system']['remotebackup']['GDriveFolderID']) ? $config['system']['remotebackup']['GDriveFolderID'] : null;
@@ -257,6 +258,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $config['system']['remotebackup'] = array() ;
         }
         $config['system']['remotebackup']['GDriveEnabled'] = $_POST['GDriveEnabled'];
+        $config['system']['remotebackup']['GDrivePrefixHostname'] = $_POST['GDrivePrefixHostname'];
         $config['system']['remotebackup']['GDriveEmail'] =   $_POST['GDriveEmail'] ;
         $config['system']['remotebackup']['GDriveFolderID'] = $_POST['GDriveFolderID'];
         $config['system']['remotebackup']['GDrivePassword'] = $_POST['GDrivePassword'];
@@ -311,7 +313,7 @@ include("head.inc");
 <body>
 <?php include("fbegin.inc"); ?>
 
-<script type="text/javascript">
+<script>
 //<![CDATA[
 $( document ).ready(function() {
     // show encryption password
@@ -349,7 +351,7 @@ $( document ).ready(function() {
             <table class="table table-clean-form ">
               <tbody>
                 <tr>
-                  <th colspan="2" valign="top" class="listtopic">
+                  <th colspan="2" style="vertical-align:top" class="listtopic">
                     <?=gettext("Download"); ?>
                   </th>
                 </tr>
@@ -390,7 +392,7 @@ $( document ).ready(function() {
             <table class="table table-clean-form ">
               <tbody>
                 <tr>
-                  <th colspan="2" valign="top" class="listtopic">
+                  <th colspan="2" style="vertical-align:top" class="listtopic">
                     <?=gettext("Restore"); ?>
                   </th>
                 </tr>
@@ -447,7 +449,7 @@ $( document ).ready(function() {
               </thead>
               <tbody>
                 <tr>
-                  <th colspan="2" valign="top" class="listtopic">
+                  <th colspan="2" style="vertical-align:top" class="listtopic">
                     <?=gettext("Google Drive"); ?>
                   </th>
                 </tr>
@@ -473,6 +475,12 @@ $( document ).ready(function() {
                   <td><?=gettext("Folder ID"); ?> </td>
                   <td>
                     <input name="GDriveFolderID" value="<?=$pconfig['GDriveFolderID'];?>" type="text">
+                  </td>
+                </tr>
+                <tr>
+                  <td><?=gettext("Prefix hostname to backupfile"); ?> </td>
+                  <td>
+                    <input name="GDrivePrefixHostname" type="checkbox" <?=!empty($pconfig['GDrivePrefixHostname']) ? "checked" : "";?> >
                   </td>
                 </tr>
                 <tr>

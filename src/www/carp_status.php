@@ -123,7 +123,7 @@ include("head.inc");
               </tr>
             </table>
             <div class="table-responsive">
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <thead>
                   <tr>
                     <td><?=gettext("CARP Interface"); ?></td>
@@ -168,7 +168,7 @@ include("head.inc");
           </div>
           <hr/>
           <div class="table-responsive">
-            <table class="table table-striped">
+            <table class="table table-clean-form">
               <thead>
                 <tr>
                   <td><?=gettext("pfSync nodes");?></td>

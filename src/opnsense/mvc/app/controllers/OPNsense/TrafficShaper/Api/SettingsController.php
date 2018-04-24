@@ -1,6 +1,6 @@
 <?php
 /**
- *    Copyright (C) 2015 Deciso B.V.
+ *    Copyright (C) 2015-2017 Deciso B.V.
  *
  *    All rights reserved.
  *
@@ -28,18 +28,21 @@
  */
 namespace OPNsense\TrafficShaper\Api;
 
-use \OPNsense\Base\ApiControllerBase;
-use \OPNsense\Core\Config;
+use \OPNsense\Base\ApiMutableModelControllerBase;
 use \OPNsense\TrafficShaper\TrafficShaper;
-use \OPNsense\Base\UIModelGrid;
+use \OPNsense\Core\Config;
+
 require_once("logs.inc");
 
 /**
  * Class SettingsController Handles settings related API actions for the Traffic Shaper
  * @package OPNsense\TrafficShaper
  */
-class SettingsController extends ApiControllerBase
+class SettingsController extends ApiMutableModelControllerBase
 {
+    static protected $internalModelName = 'ts';
+    static protected $internalModelClass = '\OPNsense\TrafficShaper\TrafficShaper';
+
     /**
      * validate and save model after update or insertion.
      * Use the reference node and tag to rename validation output for a specific node to a new offset, which makes
@@ -49,7 +52,7 @@ class SettingsController extends ApiControllerBase
      * @param $reference reference for validation output, used to rename the validation output keys
      * @return array result / validation output
      */
-    private function save($mdlShaper, $node = null, $reference = null)
+    private function validateSave($mdlShaper, $node = null, $reference = null)
     {
         $result = array("result"=>"failed","validations" => array());
         // perform validation
@@ -63,65 +66,45 @@ class SettingsController extends ApiControllerBase
                 $result["validations"][$msg->getField()] = $msg->getMessage();
             }
         }
-
         // serialize model to config and save when there are no validation errors
         if (count($result['validations']) == 0) {
             // save config if validated correctly
             $mdlShaper->serializeToConfig();
-
             Config::getInstance()->save();
             $result = array("result" => "saved");
         }
-
         return $result;
     }
 
     /**
-     * retrieve pipe settings or return defaults
+     * Retrieve pipe settings or return defaults
      * @param $uuid item unique id
-     * @return array
+     * @return array traffic shaper pipe content
+     * @throws \ReflectionException when not bound to model
      */
     public function getPipeAction($uuid = null)
     {
-        $mdlShaper = new TrafficShaper();
-        if ($uuid != null) {
-            $node = $mdlShaper->getNodeByReference('pipes.pipe.'.$uuid);
-            if ($node != null) {
-                // return node
-                return array("pipe" => $node->getNodes());
-            }
-        } else {
-            // generate new node, but don't save to disc
-            $node = $mdlShaper->pipes->pipe->add();
-            return array("pipe" => $node->getNodes());
-        }
-        return array();
+        return $this->getBase("pipe", "pipes.pipe", $uuid);
     }
 
     /**
-     * update pipe with given properties
-     * @param $uuid item unique id
-     * @return array
+     * Update  pipe with given properties
+     * @param string $uuid internal id
+     * @return array save result + validation output
+     * @throws \Phalcon\Validation\Exception when field validations fail
+     * @throws \ReflectionException when not bound to model
      */
     public function setPipeAction($uuid)
     {
-        if ($this->request->isPost() && $this->request->hasPost("pipe")) {
-            $mdlShaper = new TrafficShaper();
-            if ($uuid != null) {
-                $node = $mdlShaper->getNodeByReference('pipes.pipe.'.$uuid);
-                if ($node != null) {
-                    $node->setNodes($this->request->getPost("pipe"));
-                    firewall_syslog("Update Firewall/Traffic Shaper/Pipe", $node->number);
-                    return $this->save($mdlShaper, $node, "pipe");
-                }
-            }
-        }
-        return array("result"=>"failed");
+        firewall_syslog("Update Firewall/Traffic Shaper/Pipe", $uuid);
+        return $this->setBase("pipe", "pipes.pipe", $uuid);
     }
 
     /**
-     * add new pipe and set with attributes from post
-     * @return array
+     * Add new pipe and set with attributes from post
+     * @return array save result + validation output
+     * @throws \OPNsense\Base\ModelException when not bound to model
+     * @throws \Phalcon\Validation\Exception when field validations fail
      */
     public function addPipeAction()
     {
@@ -132,149 +115,96 @@ class SettingsController extends ApiControllerBase
             $node->setNodes($this->request->getPost("pipe"));
             $node->origin = "TrafficShaper"; // set origin to this component.
             firewall_syslog("Add Firewall/Traffic Shaper/Pipe", $node->number->__toString());
-            return $this->save($mdlShaper, $node, "pipe");
+            return $this->validateSave($mdlShaper, $node, "pipe");
         }
         return $result;
     }
 
     /**
-     * delete pipe by uuid
-     * @param $uuid item unique id
-     * @return array status
+     * Delete pipe by uuid
+     * @param string $uuid internal id
+     * @return array save status
+     * @throws \Phalcon\Validation\Exception when field validations fail
+     * @throws \ReflectionException when not bound to model
      */
     public function delPipeAction($uuid)
     {
-        $result = array("result"=>"failed");
-        if ($this->request->isPost()) {
-            $mdlShaper = new TrafficShaper();
-            if ($uuid != null) {
-                $id = $mdlShaper->getNodeByReference('pipes.pipe.'.$uuid)->number;
-                if ($mdlShaper->pipes->pipe->del($uuid)) {
-                    // if item is removed, serialize to config and save
-                    firewall_syslog("Delete Firewall/Traffic Shaper/Pipe", $id);
-                    $mdlShaper->serializeToConfig();
-                    Config::getInstance()->save();
-                    $result['result'] = 'deleted';
-                } else {
-                    $result['result'] = 'not found';
-                }
-            }
-        }
-        return $result;
+        firewall_syslog("Delete Firewall/Traffic Shaper/Pipe", $uuid);
+        return  $this->delBase("pipes.pipe", $uuid);
     }
 
+
     /**
-     * toggle pipe by uuid (enable/disable)
-     * @param $uuid item unique id
+     * Toggle pipe defined by uuid (enable/disable)
+     * @param $uuid user defined rule internal id
      * @param $enabled desired state enabled(1)/disabled(1), leave empty for toggle
-     * @return array status
+     * @return array save result
+     * @throws \Phalcon\Validation\Exception when field validations fail
+     * @throws \ReflectionException when not bound to model
      */
     public function togglePipeAction($uuid, $enabled = null)
     {
-
-        $result = array("result" => "failed");
-        if ($this->request->isPost()) {
-            $mdlShaper = new TrafficShaper();
-            if ($uuid != null) {
-                $node = $mdlShaper->getNodeByReference('pipes.pipe.' . $uuid);
-                if ($node != null) {
-                    if ($enabled == "0" || $enabled == "1") {
-                        $node->enabled = (string)$enabled;
-                    } elseif ($node->enabled->__toString() == "1") {
-                        $node->enabled = "0";
-                        firewall_syslog("Disable Firewall/Traffic Shaper/Pipe", $node->number);
-                    } else {
-                        $node->enabled = "1";
-                        firewall_syslog("Enable Firewall/Traffic Shaper/Pipe", $node->number);
-                    }
-                    $result['result'] = $node->enabled;
-                    // if item has toggled, serialize to config and save
-                    $mdlShaper->serializeToConfig();
-                    Config::getInstance()->save();
-                }
-            }
-        }
-        return $result;
+        firewall_syslog("Toggle Firewall/Traffic Shaper/Pipe", $uuid);
+        return $this->toggleBase("pipes.pipe", $uuid, $enabled);
     }
 
     /**
-     * search traffic shaper pipes
-     * @return array
+     * Search traffic shaper pipes
+     * @return array list of found pipes
+     * @throws \ReflectionException when not bound to model
      */
     public function searchPipesAction()
     {
-        $this->sessionClose();
-        $mdlShaper = new TrafficShaper();
-        $grid = new UIModelGrid($mdlShaper->pipes->pipe);
-        return $grid->fetchBindRequest(
-            $this->request,
+        return $this->searchBase(
+            "pipes.pipe",
             array("enabled","number", "bandwidth","bandwidthMetric","description","mask","origin"),
             "number"
         );
     }
 
+
     /**
-     * search traffic shaper queues
-     * @return array
+     * Search traffic shaper queues
+     * @return array list of found queues
+     * @throws \ReflectionException when not bound to model
      */
     public function searchQueuesAction()
     {
-        $this->sessionClose();
-        $mdlShaper = new TrafficShaper();
-        $grid = new UIModelGrid($mdlShaper->queues->queue);
-        return $grid->fetchBindRequest(
-            $this->request,
+        return $this->searchBase(
+            "queues.queue",
             array("enabled","number", "pipe","weight","description","mask","origin"),
             "number"
         );
     }
 
     /**
-     * retrieve queue settings or return defaults
+     * Retrieve queue settings or return defaults
      * @param $uuid item unique id
-     * @return array
+     * @return array traffic shaper queue content
+     * @throws \ReflectionException when not bound to model
      */
     public function getQueueAction($uuid = null)
     {
-        $mdlShaper = new TrafficShaper();
-        if ($uuid != null) {
-            $node = $mdlShaper->getNodeByReference('queues.queue.'.$uuid);
-            if ($node != null) {
-                // return node
-                return array("queue" => $node->getNodes());
-            }
-        } else {
-            // generate new node, but don't save to disc
-            $node = $mdlShaper->queues->queue->add();
-            return array("queue" => $node->getNodes());
-        }
-        return array();
+        return $this->getBase("queue", "queues.queue", $uuid);
     }
 
     /**
-     * update queue with given properties
-     * @param $uuid item unique id
-     * @return array
+     * Update queue with given properties
+     * @param string $uuid internal id
+     * @return array save result + validation output
+     * @throws \Phalcon\Validation\Exception when field validations fail
+     * @throws \ReflectionException when not bound to model
      */
     public function setQueueAction($uuid)
     {
-        if ($this->request->isPost() && $this->request->hasPost("queue")) {
-            $mdlShaper = new TrafficShaper();
-            if ($uuid != null) {
-                $node = $mdlShaper->getNodeByReference('queues.queue.'.$uuid);
-                if ($node != null) {
-                    $node->setNodes($this->request->getPost("queue"));
-                    firewall_syslog("Update Firewall/Traffic Shaper/Queue", $node->number);
-                    return $this->save($mdlShaper, $node, "queue");
-                }
-            }
-        }
-        return array("result"=>"failed");
+        firewall_syslog("Update Firewall/Traffic Shaper/Queue", $uuid);
+        return $this->setBase("queue", "queues.queue", $uuid);
     }
 
     /**
-     * add new queue and set with attributes from post
-     * @return array
+     * Add new queue and set with attributes from post
+     * @return array save result + validation output
+     * @throws \OPNsense\Base\ModelException when not bound to model
      */
     public function addQueueAction()
     {
@@ -285,134 +215,82 @@ class SettingsController extends ApiControllerBase
             $node->setNodes($this->request->getPost("queue"));
             $node->origin = "TrafficShaper"; // set origin to this component.
             firewall_syslog("Add Firewall/Traffic Shaper/Queue", $node->number->__toString());
-            return $this->save($mdlShaper, $node, "queue");
+            return $this->validateSave($mdlShaper, $node, "queue");
         }
         return $result;
     }
 
     /**
-     * delete queue by uuid
-     * @param $uuid item unique id
-     * @return array status
+     * Delete queue by uuid
+     * @param string $uuid internal id
+     * @return array save status
+     * @throws \Phalcon\Validation\Exception when field validations fail
+     * @throws \ReflectionException when not bound to model
      */
     public function delQueueAction($uuid)
     {
-        $result = array("result"=>"failed");
-        if ($this->request->isPost()) {
-            $mdlShaper = new TrafficShaper();
-            if ($uuid != null) {
-                $id = $mdlShaper->getNodeByReference('queues.queue.'.$uuid)->number;
-                if ($mdlShaper->queues->queue->del($uuid)) {
-                    // if item is removed, serialize to config and save
-                    firewall_syslog("Delete Firewall/Traffic Shaper/Queue", $id);
-                    $mdlShaper->serializeToConfig();
-                    Config::getInstance()->save();
-                    $result['result'] = 'deleted';
-                } else {
-                    $result['result'] = 'not found';
-                }
-            }
-        }
-        return $result;
+        firewall_syslog("Delete Firewall/Traffic Shaper/Queue", $uuid);
+        return  $this->delBase("queues.queue", $uuid);
     }
 
     /**
-     * toggle queue by uuid (enable/disable)
-     * @param $uuid item unique id
+     * Toggle queue defined by uuid (enable/disable)
+     * @param $uuid user defined rule internal id
      * @param $enabled desired state enabled(1)/disabled(1), leave empty for toggle
-     * @return array status
+     * @return array save result
+     * @throws \Phalcon\Validation\Exception when field validations fail
+     * @throws \ReflectionException when not bound to model
      */
     public function toggleQueueAction($uuid, $enabled = null)
     {
-
-        $result = array("result" => "failed");
-        if ($this->request->isPost()) {
-            $mdlShaper = new TrafficShaper();
-            if ($uuid != null) {
-                $node = $mdlShaper->getNodeByReference('queues.queue.'.$uuid);
-                if ($node != null) {
-                    if ($enabled == "0" || $enabled == "1") {
-                        $node->enabled = (string)$enabled;
-                    } elseif ($node->enabled->__toString() == "1") {
-                        $node->enabled = "0";
-                        firewall_syslog("Disable Firewall/Traffic Shaper/Queue", $node->number);
-                    } else {
-                        $node->enabled = "1";
-                        firewall_syslog("Enable Firewall/Traffic Shaper/Queue", $node->number);
-                    }
-                    $result['result'] = $node->enabled;
-                    // if item has toggled, serialize to config and save
-                    $mdlShaper->serializeToConfig();
-                    Config::getInstance()->save();
-                }
-            }
-        }
-        return $result;
+        firewall_syslog("Toggle Firewall/Traffic Shaper/Queue", $uuid);
+        return $this->toggleBase("queues.queue", $uuid, $enabled);
     }
 
+
     /**
-     * search traffic shaper rules
-     * @return array
+     * Search traffic shaper rules
+     * @return array list of found rules
+     * @throws \ReflectionException when not bound to model
      */
     public function searchRulesAction()
     {
-        $this->sessionClose();
-        $mdlShaper = new TrafficShaper();
-        $grid = new UIModelGrid($mdlShaper->rules->rule);
-        return $grid->fetchBindRequest(
-            $this->request,
+        return $this->searchBase(
+            "rules.rule",
             array("interface", "proto", "source_not","source", "destination_not", "destination", "description", "origin", "sequence", "target"),
             "sequence"
         );
     }
 
     /**
-     * retrieve rule settings or return defaults for new rule
+     * Retrieve rule settings or return defaults for new rule
      * @param $uuid item unique id
-     * @return array
+     * @return array traffic shaper rule content
+     * @throws \ReflectionException when not bound to model
      */
     public function getRuleAction($uuid = null)
     {
-        $mdlShaper = new TrafficShaper();
-        if ($uuid != null) {
-            $node = $mdlShaper->getNodeByReference('rules.rule.'.$uuid);
-            if ($node != null) {
-                // return node
-                return array("rule" => $node->getNodes());
-            }
-        } else {
-            // generate new node, but don't save to disc
-            $node = $mdlShaper->rules->rule->add();
-            $node->sequence = $mdlShaper->getMaxRuleSequence() + 10;
-            return array("rule" => $node->getNodes());
-        }
-        return array();
+        return $this->getBase("rule", "rules.rule", $uuid);
     }
 
     /**
-     * update rule with given properties
-     * @param $uuid item unique id
-     * @return array
+     * Update rule with given properties
+     * @param string $uuid internal id
+     * @return array save result + validation output
+     * @throws \Phalcon\Validation\Exception when field validations fail
+     * @throws \ReflectionException when not bound to model
      */
     public function setRuleAction($uuid)
     {
-        if ($this->request->isPost() && $this->request->hasPost("rule")) {
-            $mdlShaper = new TrafficShaper();
-            if ($uuid != null) {
-                $node = $mdlShaper->getNodeByReference('rules.rule.'.$uuid);
-                if ($node != null) {
-                    $node->setNodes($this->request->getPost("rule"));
-                    firewall_syslog("Update Firewall/Traffic Shaper/Rule", $node->sequence);
-                    return $this->save($mdlShaper, $node, "rule");
-                }
-            }
-        }
-        return array("result"=>"failed");
+        firewall_syslog("Update Firewall/Traffic Shaper/Rule", $uuid);
+        return $this->setBase("rule", "rules.rule", $uuid);
     }
 
     /**
-     * add new rule and set with attributes from post
-     * @return array
+     * Add new rule and set with attributes from post
+     * @return array save result + validation output
+     * @throws \OPNsense\Base\ModelException when not bound to model
+     * @throws \Phalcon\Validation\Exception when field validations fail
      */
     public function addRuleAction()
     {
@@ -423,34 +301,20 @@ class SettingsController extends ApiControllerBase
             $node->setNodes($this->request->getPost("rule"));
             $node->origin = "TrafficShaper"; // set origin to this component.
             firewall_syslog("Add Firewall/Traffic Shaper/Rule", $node->sequence->__toString());
-            return $this->save($mdlShaper, $node, "rule");
+            return $this->validateSave($mdlShaper, $node, "rule");
         }
         return $result;
     }
-
     /**
-     * delete rule by uuid
-     * @param $uuid item unique id
-     * @return array status
+     * Delete rule by uuid
+     * @param string $uuid internal id
+     * @return array save status
+     * @throws \Phalcon\Validation\Exception when field validations fail
+     * @throws \ReflectionException when not bound to model
      */
     public function delRuleAction($uuid)
     {
-        $result = array("result"=>"failed");
-        if ($this->request->isPost()) {
-            $mdlShaper = new TrafficShaper();
-            if ($uuid != null) {
-                $id = $mdlShaper->getNodeByReference('rules.rule.'.$uuid)->sequence;
-                if ($mdlShaper->rules->rule->del($uuid)) {
-                    // if item is removed, serialize to config and save
-                    firewall_syslog("Delete Firewall/Traffic Shaper/Rule", $id);
-                    $mdlShaper->serializeToConfig();
-                    Config::getInstance()->save();
-                    $result['result'] = 'deleted';
-                } else {
-                    $result['result'] = 'not found';
-                }
-            }
-        }
-        return $result;
+        firewall_syslog("Delete Firewall/Traffic Shaper/Rule", $uuid);
+        return  $this->delBase("rules.rule", $uuid);
     }
 }

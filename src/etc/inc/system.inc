@@ -73,48 +73,41 @@ function system_powerd_configure($verbose = false)
 function get_default_sysctl_value($id)
 {
     $sysctls = array(
-        "debug.pfftpproxy" => "0",
-        "hw.syscons.kbd_reboot" => "0",
-        "kern.ipc.maxsockbuf" => "4262144",
-        "kern.randompid" => "347",
-        "kern.random.sys.harvest.interrupt" => 0,
-        "kern.random.sys.harvest.point_to_point" => 0,
-        "kern.random.sys.harvest.ethernet" => 0,
-        "kern.filedelay" => "5",
-        "kern.dirdelay" => "4",
-        "kern.metadelay" => "3",
-        "net.bpf.zerocopy_enable" => 1,
-        "net.inet.ip.portrange.first" => "1024",
-        "net.inet.tcp.blackhole" => "2",
-        "net.inet.udp.blackhole" => "1",
-        "net.inet.ip.random_id" => "1",
-        "net.inet.tcp.drop_synfin" => "1",
-        "net.inet.ip.redirect" => "1",
-        "net.inet6.ip6.redirect" => "1",
-        "net.inet6.ip6.use_tempaddr" => "0",
-        "net.inet6.ip6.prefer_tempaddr" => "0",
-        "net.inet.tcp.syncookies" => "1",
-        "net.inet.tcp.recvspace" => "65228",
-        "net.inet.tcp.sendspace" => "65228",
-        'net.inet.ip.sourceroute' => '0',
-        'net.inet.ip.accept_sourceroute' => '0',
+        'debug.pfftpproxy' => '0',
+        'hw.syscons.kbd_reboot' => '0',
+        'hw.ibrs_disable' => '0',
+        'kern.ipc.maxsockbuf' => '4262144',
+        'kern.randompid' => '347',
         'net.inet.icmp.drop_redirect' => '0',
+        'net.inet.icmp.icmplim' => '0',
         'net.inet.icmp.log_redirect' => '0',
-        "net.inet.tcp.delayed_ack" => "0",
-        "net.inet.udp.maxdgram" => "57344",
-        "net.inet.ip.intr_queue_maxlen" => "1000",
-        "net.inet.tcp.log_debug" => "0",
-        "net.inet.tcp.tso" => "1",
-        "net.inet.icmp.icmplim" => "0",
-        "net.inet.ip.process_options" => 0,
-        "net.inet.udp.checksum" => 1,
-        "net.link.bridge.pfil_onlyip" => "0",
-        "net.link.bridge.pfil_member" => "1",
-        "net.link.bridge.pfil_bridge" => "0",
-        "net.link.tap.user_open" => "1",
-        "net.route.netisr_maxqlen" => 1024,
-        "net.inet.icmp.reply_from_interface" => 1,
-        "vfs.read_max" => "32",
+        'net.inet.ip.accept_sourceroute' => '0',
+        'net.inet.ip.intr_queue_maxlen' => '1000',
+        'net.inet.ip.portrange.first' => '1024',
+        'net.inet.ip.random_id' => '1',
+        'net.inet.ip.redirect' => '1',
+        'net.inet.ip.sourceroute' => '0',
+        'net.inet.tcp.blackhole' => '2',
+        'net.inet.tcp.delayed_ack' => '0',
+        'net.inet.tcp.drop_synfin' => '1',
+        'net.inet.tcp.log_debug' => '0',
+        'net.inet.tcp.recvspace' => '65228',
+        'net.inet.tcp.sendspace' => '65228',
+        'net.inet.tcp.syncookies' => '1',
+        'net.inet.tcp.tso' => '1',
+        'net.inet.udp.blackhole' => '1',
+        'net.inet.udp.checksum' => 1,
+        'net.inet.udp.maxdgram' => '57344',
+        'net.inet6.ip6.prefer_tempaddr' => '0',
+        'net.inet6.ip6.redirect' => '1',
+        'net.inet6.ip6.use_tempaddr' => '0',
+        'net.link.bridge.pfil_bridge' => '0',
+        'net.link.bridge.pfil_local_phys' => '0',
+        'net.link.bridge.pfil_member' => '1',
+        'net.link.bridge.pfil_onlyip' => '0',
+        'net.link.tap.user_open' => '1',
+        'vfs.read_max' => '32',
+        'vm.pmap.pti' => '1',
     );
 
     if (isset($sysctls[$id])) {
@@ -124,7 +117,7 @@ function get_default_sysctl_value($id)
     return null;
 }
 
-function activate_sysctls()
+function system_sysctl_get()
 {
     global $config;
 
@@ -146,7 +139,7 @@ function activate_sysctls()
         }
     }
 
-    set_sysctl($sysctls);
+    return $sysctls;
 }
 
 function system_resolvconf_generate($verbose = false)
@@ -234,8 +227,6 @@ function get_locale_list()
     $locales['pt_BR'] = gettext('Portuguese (Brazil)');
     $locales['pt_PT'] = gettext('Portuguese (Portugal)');
     $locales['ru_RU'] = gettext('Russian');
-    $locales['es_ES'] = gettext('Spanish');
-    $locales['tr_TR'] = gettext('Turkish');
 
     return $locales;
 }
@@ -455,19 +446,22 @@ function system_routing_configure($interface = '', $verbose = false)
     $foundgwv6 = false;
     $fargw = false;
 
-    /* XXX eventually this file-based workaround must be removed */
-    foreach (glob('/tmp/*_defaultgw{,v6}', GLOB_BRACE) as $to_delete) {
-        @unlink($to_delete);
+    if (!empty($interface)) {
+        log_error("ROUTING: entering configure using '${interface}'");
+    } else {
+        log_error("ROUTING: entering configure using defaults");
     }
 
     /* tack on all the hard defined gateways as well */
     if (isset($config['gateways']['gateway_item'])) {
+        foreach (glob('/tmp/*_defaultgw{,v6}', GLOB_BRACE) as $to_delete) {
+            log_error("ROUTING: removing {$to_delete}");
+            @unlink($to_delete);
+        }
+
         foreach ($config['gateways']['gateway_item'] as $gateway) {
             if (isset($gateway['defaultgw'])) {
-                if ($gateway['ipprotocol'] != "inet6" && (is_ipaddrv4($gateway['gateway']) || $gateway['gateway'] == "dynamic")) {
-                    if (strstr($gateway['gateway'], ":")) {
-                        continue;
-                    }
+                if ($foundgw == false && $gateway['ipprotocol'] != "inet6" && (is_ipaddrv4($gateway['gateway']) || $gateway['gateway'] == "dynamic")) {
                     if ($gateway['gateway'] == "dynamic") {
                         $gateway['gateway'] = get_interface_gateway($gateway['interface']);
                     }
@@ -477,11 +471,12 @@ function system_routing_configure($interface = '', $verbose = false)
                     if (!empty($gateway['interface'])) {
                         $defaultif = get_real_interface($gateway['interface']);
                         if ($defaultif) {
+                            log_error("ROUTING: creating /tmp/{$defaultif}_defaultgw");
                             @file_put_contents("/tmp/{$defaultif}_defaultgw", $gateway['gateway']);
                         }
                     }
                     $foundgw = true;
-                } elseif ($gateway['ipprotocol'] == "inet6" && (is_ipaddrv6($gateway['gateway']) || $gateway['gateway'] == "dynamic")) {
+                } elseif ($foundgwv6 == false && $gateway['ipprotocol'] == "inet6" && (is_ipaddrv6($gateway['gateway']) || $gateway['gateway'] == "dynamic")) {
                     if ($gateway['gateway'] == "dynamic") {
                         $gateway['gateway'] = get_interface_gateway_v6($gateway['interface']);
                     }
@@ -490,41 +485,50 @@ function system_routing_configure($interface = '', $verbose = false)
                     if (!empty($gateway['interface'])) {
                         $defaultifv6 = get_real_interface($gateway['interface']);
                         if ($defaultifv6) {
+                            log_error("ROUTING: creating /tmp/{$defaultifv6}_defaultgwv6");
                             @file_put_contents("/tmp/{$defaultifv6}_defaultgwv6", $gateway['gateway']);
                         }
                     }
                     $foundgwv6 = true;
                 }
             }
-            if ($foundgw === true && $foundgwv6 === true) {
-                break;
-            }
         }
     }
+
+    /*
+     * From the looks of the code below we cannot cope with
+     * multi-WAN without setting explicit gateways.  This is
+     * probably where the default gateway switching comes into
+     * play because this facility is allowed to use dynamically
+     * created gateways while the former code does not.
+     */
 
     if (!$foundgw) {
         $defaultif = get_real_interface("wan");
         $interfacegw = "wan";
         $gatewayip = get_interface_gateway("wan");
-        @touch("/tmp/{$defaultif}_defaultgw");
+        @file_put_contents("/tmp/{$defaultif}_defaultgw", $gatewayip);
+        log_error("ROUTING: no IPv4 default gateway set, trying ${interfacegw} on '{$defaultif}' ({$gatewayip})");
     }
+
     if (!$foundgwv6) {
         $defaultifv6 = get_real_interface("wan");
         $interfacegwv6 = "wan";
         $gatewayipv6 = get_interface_gateway_v6("wan");
-        @touch("/tmp/{$defaultif}_defaultgwv6");
+        @file_put_contents("/tmp/{$defaultifv6}_defaultgwv6", $gatewayipv6);
+        log_error("ROUTING: no IPv6 default gateway set, trying ${interfacegwv6} on '{$defaultifv6}' ({$gatewayipv6})");
     }
 
-    if (!empty($interface) && $interface != $interfacegw)
-        ;
-    elseif (is_ipaddrv4($gatewayip)) {
+    if (!empty($interface) && $interface != $interfacegw) {
+        log_error("ROUTING: skipping IPv4 default route to {$interfacegw}");
+    } elseif (is_ipaddrv4($gatewayip)) {
         log_error("ROUTING: setting IPv4 default route to {$gatewayip}");
         system_default_route($gatewayip, $fargw ? $defaultif : null);
     }
 
-    if (!empty($interface) && $interface != $interfacegwv6)
-      ;
-    elseif (is_ipaddrv6($gatewayipv6)) {
+    if (!empty($interface) && $interface != $interfacegwv6) {
+        log_error("ROUTING: skipping IPv4 default route to {$interfacegwv6}");
+    } elseif (is_ipaddrv6($gatewayipv6)) {
         log_error("ROUTING: setting IPv6 default route to {$gatewayipv6}");
         system_default_route($gatewayipv6, $defaultifv6);
     }
@@ -539,8 +543,6 @@ function system_routing_configure($interface = '', $verbose = false)
     if ($verbose) {
         echo "done.\n";
     }
-
-    return 0;
 }
 
 
@@ -621,7 +623,7 @@ function system_syslogd_start($verbose = false)
     global $config;
 
     if ($verbose) {
-        echo 'Starting syslog...';
+        echo 'Configuring system logging...';
         flush();
     }
 
@@ -768,7 +770,7 @@ function system_sysctl_configure($verbose = false)
         flush();
     }
 
-    activate_sysctls();
+    set_sysctl(system_sysctl_get());
     system_arp_wrong_if();
 
     if ($verbose) {
@@ -950,7 +952,7 @@ function system_cron_configure($verbose = false, $defer = false)
     $autocron[] = generate_cron_job('/usr/local/sbin/expiretable -v -t 3600 virusprot', '3');
     $autocron[] = generate_cron_job('/usr/local/etc/rc.expireaccounts', '5');
     $autocron[] = generate_cron_job('/usr/local/bin/php /usr/local/etc/checksum.php > /dev/null', '6');
-    $autocron[] = generate_cron_job('/usr/local/opnsense/scripts/filter/update_tables.py', '10');
+    $autocron[] = generate_cron_job('/usr/local/bin/flock -n -E 0 -o /tmp/filter_update_tables.lock /usr/local/opnsense/scripts/filter/update_tables.py', '*');
 
     /* every now and then */
     $autocron[] = generate_cron_job('/usr/local/sbin/ping_hosts.sh', '*/4');
@@ -1120,8 +1122,13 @@ function system_login_configure($verbose = false)
     /* copy settings already there */
     $new_loader_conf = @file_get_contents('/boot/loader.conf');
 
-    /* append our console options */
-    $new_loader_conf .= "# dynamically generated settings follow\n";
+    $new_loader_conf .= "# dynamically generated tunables settings follow\n";
+    foreach (system_sysctl_get() as $param => $value) {
+        $new_loader_conf .= "{$param}=\"{$value}\"\n";
+    }
+    $new_loader_conf .= "\n";
+
+    $new_loader_conf .= "# dynamically generated console settings follow\n";
     foreach ($new_boot_config as $param => $value) {
         if (!empty($value)) {
             $new_loader_conf .= "{$param}={$value}\n";

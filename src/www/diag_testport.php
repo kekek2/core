@@ -51,9 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $reqdfieldsn = array(gettext("Host"),gettext("Port"));
     do_input_validation($pconfig, $reqdfields, $reqdfieldsn, $input_errors);
 
-    $host_utf = trim($pconfig['host']);
-    $host = idn_to_ascii($host_utf);
-    if (!is_ipaddr($pconfig['host']) && !is_hostname($host)) {
+    if (!is_ipaddr($pconfig['host']) && !is_hostname($pconfig['host'])) {
         $input_errors[] = gettext("Please enter a valid IP or hostname.");
     }
 
@@ -98,12 +96,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
         }
 
-        $cmd_action = "/usr/bin/nc {$nc_args} " . escapeshellarg($host) . " " . escapeshellarg($pconfig['port']) . " 2>&1";
+        $cmd_action = "/usr/bin/nc {$nc_args} " . escapeshellarg($pconfig['host']) . " " . escapeshellarg($pconfig['port']) . " 2>&1";
         $process = proc_open($cmd_action, array(array("pipe", "r"), array("pipe", "w"), array("pipe", "w")), $pipes);
         if (is_resource($process)) {
              $cmd_output = stream_get_contents($pipes[1]);
              $cmd_output .= stream_get_contents($pipes[2]);
-             $cmd_output = str_replace($host, $host_utf, $cmd_output);
         }
     }
 }
@@ -130,10 +127,10 @@ include("head.inc"); ?>
                 <table class="table table-clean-form opnsense_standard_table_form">
                   <thead>
                     <tr>
-                      <td width="22%"><strong><?=gettext("Test Port"); ?></strong></td>
-                      <td width="78%" align="right">
+                      <td style="width:22%"><strong><?=gettext("Test Port"); ?></strong></td>
+                      <td style="width:78%; text-align:right">
                         <small><?=gettext("full help"); ?> </small>
-                        <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
+                        <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page"></i>
                         &nbsp;
                       </td>
                     </tr>
@@ -150,11 +147,9 @@ include("head.inc"); ?>
                             <?=gettext("IPv6");?>
                           </option>
                         </select>
-                        <div class="hidden" for="help_for_ipprotocol">
-                          <small class="formhelp">
+                        <output class="hidden" for="help_for_ipprotocol">
                           <?=gettext("If you force IPv4 or IPv6 and use a hostname that does not contain a result using that protocol, it will result in an error. For example if you force IPv4 and use a hostname that only returns an AAAA IPv6 IP address, it will not work."); ?>
-                          </small>
-                        </div>
+                        </output>
                       </td>
                     </tr>
                     <tr>
@@ -173,22 +168,18 @@ include("head.inc"); ?>
                       <td><a id="help_for_srcport" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Source Port"); ?></td>
                       <td>
                         <input name="srcport" type="text" value="<?=$pconfig['srcport'];?>" />
-                        <div class="hidden" for="help_for_srcport">
-                          <small class="formhelp">
+                        <output class="hidden" for="help_for_srcport">
                           <?=gettext("This should typically be left blank."); ?>
-                          </small>
-                        </div>
+                        </output>
                       </td>
                     </tr>
                     <tr>
                       <td><a id="help_for_showtext" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Show Remote Text"); ?></td>
                       <td>
                         <input name="showtext" type="checkbox" id="showtext" <?= !empty($pconfig['showtext']) ? "checked=\"checked\"" : "";?> />
-                        <div class="hidden" for="help_for_showtext">
-                          <small class="formhelp">
+                        <output class="hidden" for="help_for_showtext">
                           <?=gettext("Shows the text given by the server when connecting to the port. Will take 10+ seconds to display if checked."); ?>
-                          </small>
-                        </div>
+                        </output>
                       </td>
                     </tr>
                     <tr>

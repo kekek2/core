@@ -117,10 +117,10 @@ include("head.inc");
                 <div class="table-responsive">
                   <table class="table table-clean-form opnsense_standard_table_form">
                     <tr>
-                      <td width="22%" valign="top"><strong><?=gettext("DHCPv6 Relay configuration"); ?></strong></td>
-                      <td width="78%" align="right">
+                      <td style="width:22%; vertical-align:top"><strong><?=gettext("DHCPv6 Relay configuration"); ?></strong></td>
+                      <td style="width:78%; text-align:right">
                         <small><?=gettext("full help"); ?> </small>
-                        <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
+                        <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page"></i>
                       </td>
                     </tr>
                     <tr>
@@ -147,33 +147,27 @@ include("head.inc");
 <?php
                         endforeach;?>
                         </select>
-                        <div class="hidden" for="help_for_interface">
-                          <small class="formhelp">
+                        <output class="hidden" for="help_for_interface">
                           <?=gettext("Interfaces without an IPv6 address will not be shown."); ?>
-                          </small>
-                        </div>
+                        </output>
                       </td>
                     </tr>
                     <tr>
                       <td><a id="help_for_agentoption" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Append circuit ID");?></td>
                       <td>
                         <input name="agentoption" type="checkbox" value="yes" <?=!empty($pconfig['agentoption']) ? "checked=\"checked\"" : ""; ?> />
-                        <div class="hidden" for="help_for_agentoption">
-                          <small class="formhelp">
+                        <output class="hidden" for="help_for_agentoption">
                           <?= gettext('If this is checked, the DHCPv6 relay will append the circuit ID (interface number) and the agent ID to the DHCPv6 request.') ?>
-                          </small>
-                        </div>
+                        </output>
                       </td>
                     </tr>
                     <tr>
                       <td><a id="help_for_server" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Destination server");?></td>
                       <td>
                         <input name="server" type="text" value="<?=!empty($pconfig['server']) ? htmlspecialchars($pconfig['server']):"";?>" />
-                        <div class="hidden" for="help_for_server">
-                          <small class="formhelp">
+                        <output class="hidden" for="help_for_server">
                           <?=gettext("This is the IPv6 address of the server to which DHCPv6 requests are relayed. You can enter multiple server IPv6 addresses, separated by commas. ");?>
-                          </small>
-                        </div>
+                        </output>
                       </td>
                     </tr>
                     <tr>

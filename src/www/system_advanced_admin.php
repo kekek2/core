@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright (C) 2017 Franco Fichtner <franco@opnsense.org>
+ * Copyright (C) 2017-2018 Franco Fichtner <franco@opnsense.org>
  * Copyright (C) 2014-2015 Deciso B.V.
  * Copyright (C) 2005-2010 Scott Ullrich <sullrich@gmail.com>
  * Copyright (C) 2008 Shrew Soft Inc. <mgrooms@shrew.net>
@@ -97,14 +97,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $config['system']['webgui']['ssl-ciphers'] != $newciphers ||
             $config['system']['webgui']['interfaces'] != $newinterfaces ||
             ($pconfig['disablehttpredirect'] == "yes") != !empty($config['system']['webgui']['disablehttpredirect']);
-
-        session_unset();
-        if (ini_get("session.use_cookies")) {
-            $params = session_get_cookie_params();
-            setcookie(session_name(), '', time() - 42000, $params["path"], $params["domain"], $params["secure"], $params["httponly"]);
-        }
-        session_destroy();
-
 
         $config['system']['webgui']['protocol'] = $pconfig['webguiproto'];
         $config['system']['webgui']['port'] = $pconfig['webguiport'];
@@ -274,9 +266,10 @@ include("head.inc");
 
 <body>
 <?php include("fbegin.inc"); ?>
-<script type="text/javascript">
-  $(document).ready(function() {
-      $(".proto").change(function(){
+<script>
+
+$(document).ready(function() {
+     $(".proto").change(function(){
          if ($("#https_proto").prop('checked')) {
              $("#webguiport").attr('placeholder', '443');
              $(".ssl_opts").show();
@@ -284,8 +277,34 @@ include("head.inc");
              $("#webguiport").attr('placeholder', '80');
              $(".ssl_opts").hide();
          }
-      });
-      $(".proto").change();
+     });
+     $(".proto").change();
+
+     $('#webguiinterface').change(function () {
+         if ($('#webguiinterface option:selected').text() == '') {
+             $.webguiinterface_warned = 0;
+         } else if ($.webguiinterface_warned != 1) {
+             $.webguiinterface_warned = 1;
+             BootstrapDialog.confirm({
+                 title: '<?= html_safe(gettext('Warning!')) ?>',
+                 message: '<?= html_safe(gettext('Changing the listen interfaces of the web GUI may ' .
+                     'prevent you from accessing this page if you continue. It is recommended to keep ' .
+                     'this set to the default unless you know what you are doing.')) ?>',
+                 type: BootstrapDialog.TYPE_WARNING,
+                 btnOKClass: 'btn-warning',
+                 btnOKLabel: '<?= html_safe(gettext('I know what I am doing')) ?>',
+                 btnCancelLabel: '<?= html_safe(gettext('Use the default')) ?>',
+                 callback: function(result) {
+                     if (!result) {
+                         $('#webguiinterface option:selected').removeAttr('selected');
+                         $('#webguiinterface').selectpicker('refresh');
+                         $.webguiinterface_warned = 0;
+                     }
+                 }
+             });
+         }
+     });
+     $.webguiinterface_warned = 0;
 
  <?php
     if (isset($restart_webgui) && $restart_webgui): ?>
@@ -298,8 +317,6 @@ include("head.inc");
                 dialogRef.getModalBody().html(
                     '<?= html_safe(gettext('The web GUI is reloading at the moment, please wait...')) ?>' +
                     ' <i class="fa fa-cog fa-spin"></i><br /><br />' +
-                    ' <?= html_safe(gettext('You will have 5 minutes to confirm the changes before the GUI ' .
-                        'will revert to its previous configuration as an automatic recovery.')) ?><br /><br />' +
                     ' <?= html_safe(gettext('If the page does not reload go here:')) ?>' +
                     ' <a href="<?= html_safe($url) ?>" target="_blank"><?= html_safe($url) ?></a>'
                 );
@@ -349,10 +366,10 @@ include("head.inc");
           <form method="post" name="iform" id="iform">
             <table class="table table-clean-form opnsense_standard_table_form">
               <tr>
-                <td width="22%"><strong><?=gettext('Web GUI');?></strong></td>
-                <td  width="78%" align="right">
+                <td style="width:22%"><strong><?=gettext('Web GUI');?></strong></td>
+                <td style="width:78%; text-align:right">
                   <small><?=gettext("full help"); ?> </small>
-                  <i class="fa fa-toggle-off text-danger" style="cursor: pointer;" id="show_all_help_page" type="button"></i>
+                  <i class="fa fa-toggle-off text-danger" style="cursor: pointer;" id="show_all_help_page"></i>
                 </td>
               </tr>
                 <tr>
@@ -375,7 +392,7 @@ include("head.inc");
                 <tr class="ssl_opts">
                   <td><a id="help_for_sslcertref" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("SSL Certificate"); ?></td>
                   <td>
-                    <select name="ssl-certref" class="formselect selectpicker" data-style="btn-default">
+                    <select name="ssl-certref" class="selectpicker" data-style="btn-default">
 <?php
                     foreach ($a_cert as $cert) :?>
                       <option value="<?=$cert['refid'];?>" <?=$pconfig['ssl-certref'] == $cert['refid'] ? "selected=\"selected\"" : "";?>>
@@ -384,21 +401,19 @@ include("head.inc");
 <?php
                     endforeach;?>
                     </select>
-                    <div class='hidden' for="help_for_sslcertref">
-                      <small class="formhelp">
+                    <output class='hidden' for="help_for_sslcertref">
                       <?=sprintf(
                         gettext('The %sSSL certificate manager%s can be used to ' .
                         'create or import certificates if required.'),
                         '<a href="/system_certmanager.php">', '</a>'
                       );?>
-                      </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr class="ssl_opts">
                   <td><a id="help_for_sslciphers" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("SSL Ciphers"); ?></td>
                   <td>
-                      <select name="ssl-ciphers[]" class="selectpicker"  multiple="multiple" data-live-search="true" title="<?=gettext("System defaults");?>">
+                      <select name="ssl-ciphers[]" class="selectpicker" multiple="multiple" data-live-search="true" title="<?=gettext("System defaults");?>">
 <?php
                       $ciphers = json_decode(configd_run("system ssl ciphers"), true);
                       if ($ciphers == null) {
@@ -412,39 +427,33 @@ include("head.inc");
 <?php
                       endforeach;?>
                       </select>
-                      <div class="hidden" for="help_for_sslciphers">
-                        <small class="formhelp">
+                      <output class="hidden" for="help_for_sslciphers">
                         <?=gettext("Limit SSL cipher selection in case the system defaults are undesired. Note that restrictive use may lead to an inaccessible web GUI.");?>
-                        </small>
-                      </div>
+                      </output>
                   </td>
                 </tr>
                 <tr>
                   <td><a id="help_for_webguiport" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("TCP port"); ?></td>
                   <td>
                     <input name="webguiport" id="webguiport" type="text" value="<?=$pconfig['webguiport'];?>" placeholder="<?= $pconfig['webguiproto'] == 'https' ? '443' : '80' ?>" />
-                    <div class="hidden" for="help_for_webguiport">
-                      <small class="formhelp">
+                    <output class="hidden" for="help_for_webguiport">
                       <?=gettext("Enter a custom port number for the web GUI " .
                                             "above if you want to override the default (80 for HTTP, 443 " .
                                             "for HTTPS). Changes will take effect immediately after save."); ?>
-                      </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr class="ssl_opts">
                   <td><a id="help_for_disablehttpredirect" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('HTTP Redirect'); ?></td>
-                  <td width="78%">
+                  <td style="width:78%">
                     <input name="disablehttpredirect" type="checkbox" value="yes" <?= empty($pconfig['disablehttpredirect']) ? '' : 'checked="checked"';?> />
                     <strong><?= gettext('Disable web GUI redirect rule') ?></strong>
-                    <div class="hidden" for="help_for_disablehttpredirect">
-                      <small class="formhelp">
-                          <?= gettext("When this is unchecked, access to the web GUI " .
+                    <output class="hidden" for="help_for_disablehttpredirect">
+                      <?= gettext("When this is unchecked, access to the web GUI " .
                                           "is always permitted even on port 80, regardless of the listening port configured. " .
                                           "Check this box to disable this automatically added redirect rule.");
                                           ?>
-                      </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr>
@@ -452,11 +461,9 @@ include("head.inc");
                   <td>
                     <input name="quietlogin" type="checkbox" value="yes" <?= empty($pconfig['quietlogin']) ? '' : 'checked="checked"' ?>/>
                     <strong><?= gettext('Disable logging of web GUI successful logins') ?></strong>
-                    <div class="hidden" for="help_for_quietlogin">
-                      <small class="formhelp">
+                    <output class="hidden" for="help_for_quietlogin">
                       <?=gettext("When this is checked, successful logins to the web GUI will not be logged.");?>
-                      </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr>
@@ -464,32 +471,28 @@ include("head.inc");
                   <td>
                     <input name="nodnsrebindcheck" type="checkbox" value="yes" <?= empty($pconfig['nodnsrebindcheck']) ? '' : 'checked="checked"';?>/>
                     <strong><?=gettext("Disable DNS Rebinding Checks"); ?></strong>
-                    <div class="hidden" for="help_for_nodnsrebindcheck">
-                      <small class="formhelp">
+                    <output class="hidden" for="help_for_nodnsrebindcheck">
                       <?= sprintf(gettext("When this is unchecked, your system is protected against %sDNS Rebinding attacks%s. " .
                                           "This blocks private IP responses from your configured DNS servers. Check this box to disable this protection if it interferes with " .
                                           "web GUI access or name resolution in your environment."),'<a href="http://en.wikipedia.org/wiki/DNS_rebinding">','</a>') ?>
-                      </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr>
                   <td><a id="help_for_althostnames" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Alternate Hostnames") ?></td>
                   <td>
                     <input name="althostnames" type="text" value="<?= $pconfig['althostnames'] ?>"/>
-                    <?=gettext("Alternate Hostnames for DNS Rebinding and HTTP_REFERER Checks"); ?>
-                    <div class="hidden" for="help_for_althostnames">
-                      <small class="formhelp">
+                    <strong><?=gettext("Alternate Hostnames for DNS Rebinding and HTTP_REFERER Checks"); ?></strong>
+                    <output class="hidden" for="help_for_althostnames">
                       <?= gettext("Here you can specify alternate hostnames by which the router may be queried, to " .
                                           "bypass the DNS Rebinding Attack checks. Separate hostnames with spaces.") ?>
-                      </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr>
                   <td><a id="help_for_compression" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("HTTP Compression")?></td>
-                  <td width="78%">
-                    <select name="compression" class="formselect selectpicker">
+                  <td style="width:78%">
+                    <select name="compression" class="selectpicker">
                         <option value="" <?=empty($pconfig['compression'])? 'selected="selected"' : '';?>>
                           <?=gettext("Off");?>
                         </option>
@@ -503,27 +506,25 @@ include("head.inc");
                           <?=gettext("High");?>
                         </option>
                     </select>
-                    <div class="hidden" for="help_for_compression">
-                      <small class="formhelp">
+                    <output class="hidden" for="help_for_compression">
                       <?=gettext("Enable compression of HTTP pages and dynamic content.");?><br/>
                       <?=gettext("Transfer less data to the client for an additional cost in processing power.");?>
-                      </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr>
                   <td><a id="help_for_webguiinterfaces" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Listen Interfaces') ?></td>
                     <td>
-                    <select name="webguiinterfaces[]" multiple="multiple" class="selectpicker" title="<?= html_safe(gettext('All (recommended)')) ?>">
+                    <select id="webguiinterface" name="webguiinterfaces[]" multiple="multiple" class="selectpicker" title="<?= html_safe(gettext('All (recommended)')) ?>">
 <?php
                     foreach ($interfaces as $iface => $ifacename): ?>
                         <option value="<?= html_safe($iface) ?>" <?= !empty($pconfig['webguiinterfaces']) && in_array($iface, $pconfig['webguiinterfaces']) ? 'selected="selected"' : '' ?>><?= html_safe($ifacename) ?></option>
 <?php
                     endforeach;?>
                     </select>
-                    <div class="hidden" for="help_for_webguiinterfaces">
+                    <output class="hidden" for="help_for_webguiinterfaces">
                       <?= gettext('Only accept connections from the selected interfaces. Leave empty to listen globally. Use with care.') ?>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr>
@@ -531,15 +532,13 @@ include("head.inc");
                   <td>
                     <input name="nohttpreferercheck" type="checkbox" value="yes" <?= empty($pconfig['nohttpreferercheck']) ? '' : 'checked="checked"' ?> />
                     <strong><?=gettext("Disable HTTP_REFERER enforcement check"); ?></strong>
-                    <div class="hidden" for="help_for_nohttpreferercheck">
-                      <small class="formhelp">
+                    <output class="hidden" for="help_for_nohttpreferercheck">
                       <?=sprintf(gettext("When this is unchecked, access to the web GUI " .
                                           "is protected against HTTP_REFERER redirection attempts. " .
                                           "Check this box to disable this protection if you find that it interferes with " .
                                           "web GUI access in certain corner cases such as using external scripts to interact with this system. More information on HTTP_REFERER is available from %sWikipedia%s."),
                                           '<a target="_blank" href="http://en.wikipedia.org/wiki/HTTP_referrer">','</a>') ?>
-                      </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr>
@@ -557,14 +556,12 @@ include("head.inc");
                   <td>
                     <input name="sshdpermitrootlogin" type="checkbox" value="yes" <?= empty($pconfig['sshdpermitrootlogin']) ? '' : 'checked="checked"' ?> />
                     <strong><?=gettext("Permit root user login"); ?></strong>
-                    <div class="hidden" for="help_for_sshdpermitrootlogin">
-                      <small class="formhelp">
+                    <output class="hidden" for="help_for_sshdpermitrootlogin">
                       <?= gettext(
                         'Root login is generally discouraged. It is advised ' .
                         'to log in via another user and switch to root afterwards.'
                       ) ?>
-                      </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr>
@@ -572,23 +569,19 @@ include("head.inc");
                   <td>
                     <input name="passwordauth" type="checkbox" value="yes" <?= empty($pconfig['passwordauth']) ? '' : 'checked="checked"' ?> />
                     <strong><?=gettext("Permit password login"); ?></strong>
-                    <div class="hidden" for="help_for_passwordauth">
-                      <small class="formhelp">
+                    <output class="hidden" for="help_for_passwordauth">
                       <?=sprintf(gettext("When disabled, authorized keys need to be configured for each %sUser%s that has been granted secure shell access."),
                                 '<a href="system_usermanager.php">', '</a>') ?>
-                      </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr>
                   <td><a id="help_for_sshport" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("SSH port"); ?></td>
-                  <td width="78%">
+                  <td style="width:78%">
                     <input name="sshport" type="text" value="<?=$pconfig['sshport'];?>" placeholder="22" />
-                    <div class="hidden" for="help_for_sshport">
-                      <small class="formhelp">
+                    <output class="hidden" for="help_for_sshport">
                       <?=gettext("Leave this blank for the default of 22."); ?>
-                      </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr>
@@ -601,11 +594,9 @@ include("head.inc");
 <?php
                     endforeach;?>
                     </select>
-                    <div class="hidden" for="help_for_sshinterfaces">
-                      <small class="formhelp">
+                    <output class="hidden" for="help_for_sshinterfaces">
                       <?= gettext('Only accept connections from the selected interfaces. Leave empty to listen globally. Use with care.') ?>
-                      </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr>
@@ -613,48 +604,44 @@ include("head.inc");
                 </tr>
                 <tr>
                   <td><i class="fa fa-info-circle text-muted"></i></a> <?= gettext('Console driver') ?></td>
-                  <td width="78%">
+                  <td style="width:78%">
                     <input name="usevirtualterminal" type="checkbox" value="yes" <?= empty($pconfig['usevirtualterminal']) ? '' : 'checked="checked"' ?>  />
                     <strong><?= gettext('Use the virtual terminal driver (vt)') ?></strong>
                   </td>
                 </tr>
                 <tr>
                   <td><a id="help_for_primaryconsole" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Primary Console")?></td>
-                  <td width="78%">
-                    <select name="primaryconsole" id="primaryconsole" class="formselect selectpicker">
+                  <td style="width:78%">
+                    <select name="primaryconsole" id="primaryconsole" class="selectpicker">
 <?php               foreach (system_console_types() as $console_key => $console_type): ?>
                       <option value="<?= html_safe($console_key) ?>" <?= $pconfig['primaryconsole'] == $console_key ? 'selected="selected"' : '' ?>><?= $console_type['name'] ?></option>
 <?                  endforeach ?>
                     </select>
-                    <div class="hidden" for="help_for_primaryconsole">
-                      <small class="formhelp">
+                    <output class="hidden" for="help_for_primaryconsole">
                       <?=gettext("Select the primary console. This preferred console will show boot script output.") ?>
                       <?=gettext("All consoles display OS boot messages, console messages, and the console menu."); ?>
-                      </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr>
                   <td><a id="help_for_secondaryconsole" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Secondary Console")?></td>
-                  <td width="78%">
-                    <select name="secondaryconsole" id="secondaryconsole" class="formselect selectpicker">
+                  <td style="width:78%">
+                    <select name="secondaryconsole" id="secondaryconsole" class="selectpicker">
                       <option value="" <?= empty($pconfig['secondaryconsole']) ? 'selected="selected"' : '' ?>><?= gettext('None') ?></option>
 <?php               foreach (system_console_types() as $console_key => $console_type): ?>
                       <option value="<?= html_safe($console_key) ?>" <?= $pconfig['secondaryconsole'] == $console_key ? 'selected="selected"' : '' ?>><?= $console_type['name'] ?></option>
 <?                  endforeach ?>
                     </select>
-                    <div class="hidden" for="help_for_secondaryconsole">
-                      <small class="formhelp">
+                    <output class="hidden" for="help_for_secondaryconsole">
                       <?=gettext("Select the secondary console if multiple consoles are present."); ?>
                       <?=gettext("All consoles display OS boot messages, console messages, and the console menu."); ?>
-                      </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr>
                   <td><a id="help_for_serialspeed" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Serial Speed")?></td>
                   <td>
-                    <select name="serialspeed" id="serialspeed" class="formselect selectpicker">
+                    <select name="serialspeed" id="serialspeed" class="selectpicker">
                       <option value="115200" <?=$pconfig['serialspeed'] == "115200" ? 'selected="selected"' : '' ?>>115200</option>
                       <option value="57600" <?=$pconfig['serialspeed'] == "57600" ? 'selected="selected"' : '' ?>>57600</option>
                       <option value="38400" <?=$pconfig['serialspeed'] == "38400" ? 'selected="selected"' : '' ?>>38400</option>
@@ -662,36 +649,32 @@ include("head.inc");
                       <option value="14400" <?=$pconfig['serialspeed'] == "14400" ? 'selected="selected"' : '' ?>>14400</option>
                       <option value="9600" <?=$pconfig['serialspeed'] == "9600" ? 'selected="selected"' : '' ?>>9600</option>
                     </select>
-                    <div class="hidden" for="help_for_serialspeed">
-                      <small class="formhelp">
+                    <output class="hidden" for="help_for_serialspeed">
                       <?=gettext("Allows selection of different speeds for the serial console port."); ?>
-                      </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr>
                   <td><i class="fa fa-info-circle text-muted"></i></a> <?= gettext("Console menu") ?></td>
-                  <td width="78%">
+                  <td style="width:78%">
                     <input name="disableconsolemenu" type="checkbox" value="yes" <?= empty($pconfig['disableconsolemenu']) ? '' : 'checked="checked"' ?>  />
                     <strong><?=gettext("Password protect the console menu"); ?></strong>
                   </td>
                 </tr>
                 <tr>
                   <td><a id="help_for_disableintegratedauth" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Integrated authentication") ?></td>
-                  <td width="78%">
+                  <td style="width:78%">
                     <input name="disableintegratedauth" type="checkbox" value="yes" <?= empty($pconfig['disableintegratedauth']) ? '' : 'checked="checked"' ?>  />
                     <strong><?=gettext("Disable integrated authentication"); ?></strong>
-                    <div class="hidden" for="help_for_disableintegratedauth">
-                        <small class="formhelp">
+                    <output class="hidden" for="help_for_disableintegratedauth">
                         <?=gettext("Disable OPNsense integrated authentication module for console access, falling back to normal unix authentication.");?>
-                        </small>
-                    </div>
+                    </output>
                   </td>
                 </tr>
                 <tr>
                   <td><i class="fa fa-info-circle text-muted"></i> <?= gettext("Sudo usage") ?></td>
-                  <td width="78%">
-                    <select name="sudo_allow_wheel" id="sudo_allow_wheel" class="formselect selectpicker">
+                  <td style="width:78%">
+                    <select name="sudo_allow_wheel" id="sudo_allow_wheel" class="selectpicker">
                       <option value="" <?= empty($pconfig['sudo_allow_wheel']) ? 'selected="selected"' : '' ?>><?= gettext('Disallow') ?></option>
                       <option value="1" <?= $pconfig['sudo_allow_wheel'] == 1 ? 'selected="selected"' : '' ?>><?= gettext('Ask password') ?></option>
                       <option value="2" <?= $pconfig['sudo_allow_wheel'] == 2 ? 'selected="selected"' : '' ?>><?= gettext('No password') ?></option>
@@ -699,8 +682,8 @@ include("head.inc");
                   </td>
                 </tr>
                 <tr>
-                  <td width="22%" valign="top">&nbsp;</td>
-                  <td width="78%"><input name="Submit" type="submit" class="btn btn-primary" value="<?= gettext("Save") ?>" /></td>
+                  <td style="width:22%; vertical-align:top">&nbsp;</td>
+                  <td style="width:78%"><input name="Submit" type="submit" class="btn btn-primary" value="<?= gettext("Save") ?>" /></td>
                 </tr>
             </table>
           </form>

@@ -192,6 +192,9 @@ function filter_configure_sync($verbose = false)
     if (isset($config['filter']['rule'])) {
         // register user rules
         foreach ($config['filter']['rule'] as $rule) {
+            // calculate a hash for this area so we can track this rule, we should replace this
+            // with uuid's on the rules like the new style models do eventually.
+            $rule['md5'] = md5(json_encode($rule));
             $sched = '';
             $descr = '';
 
@@ -320,7 +323,6 @@ function filter_configure_sync($verbose = false)
         flush();
     }
 
-    /* XXX deprectated feature, only called on reconfigure */
     if (isset($config['system']['gw_switch_default'])) {
         $gateways_status = return_gateways_status(true);
         $gateways_arr = return_gateways_array();
@@ -506,6 +508,14 @@ function filter_configure_sync($verbose = false)
     if (!isset($config['system']['kill_states'])) {
         filter_delete_states_for_down_gateways();
     }
+
+    if ($verbose) {
+        echo '.';
+        flush();
+    }
+
+    configd_run('template reload OPNsense/Filter');
+    configd_run('filter refresh_aliases', true);
 
     if ($verbose) {
         echo "done.\n";

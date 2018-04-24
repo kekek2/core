@@ -62,7 +62,7 @@ include("head.inc");
 
 <body>
 <?php include("fbegin.inc"); ?>
-  <script type="text/javascript">
+  <script>
   $( document ).ready(function() {
     // delete state
     $(".act_del").click(function(event){
@@ -90,7 +90,7 @@ include("head.inc");
                   $filter = escapeshellarg(htmlspecialchars($_POST['filter']));
               }
               $states_info = json_decode(configd_run("filter list states {$filter} 10000"), true);?>
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <thead>
                   <tr>
                     <th><?=gettext("Current total state count");?></th>
@@ -120,7 +120,7 @@ include("head.inc");
           <div class="content-box">
             <div class="content-box-main">
               <div class="table-responsive">
-                <table id="state_table" class="table table-condensed table-hover table-striped">
+                <table id="state_table" class="table table-condensed table-hover table-clean-form">
                   <thead>
                     <tr>
                       <th data-column-id="int"><?=gettext("Int");?></th>

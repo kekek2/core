@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (c) 2014-2017 Franco Fichtner <franco@opnsense.org>
+# Copyright (c) 2014-2018 Franco Fichtner <franco@opnsense.org>
 # Copyright (c) 2004-2009 Scott Ullrich <sullrich@gmail.com>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,6 +27,11 @@
 INSTALL="/.probe.for.install.media"
 MNT="/tmp/hdrescue"
 
+if [ "$(id -u)" != "0" ]; then
+	echo "Must be root."
+	exit 1
+fi
+
 bootstrap_and_exit()
 {
 	# ensure config directory structure
@@ -45,6 +50,11 @@ bootstrap_and_exit()
 	if [ -d ${MNT} ]; then
 		umount ${MNT} 2> /dev/null
 		rm -rf ${MNT}
+		if [ ! -z "${ZFSPOOL}" ]; then
+		    echo -n "Exporting ${ZFSPOOL}... "
+		    zpool export ${ZFSPOOL}
+		    echo "done. "
+		fi
 	fi
 
 	exit 0
@@ -151,25 +161,58 @@ echo
 
 mkdir -p ${MNT}
 
-echo -n "Running fsck..."
-fsck -t ufs -y ${PART} > /dev/null
-echo "done."
+###Detect ZFS here
+echo -n "Checking ZFS on ${PART} ... "
 
-if ! mount ${PART} ${MNT} 2> /dev/null; then
+zpool import -af >/dev/null 2>/dev/null
+ZPCHK=`zpool get -H cachefile`
+ZFSPOOL=""
+ORIGINAL_IFS="${IFS}"
+
+IFS=$'\n'
+
+for zplist in ${ZPCHK}; do
+    CPOOL=`echo $zplist | awk '{ print $1  }'`
+    ###We don't use ZFS on MBR, so search pool only on p3
+    zt=$(zpool status ${CPOOL} | grep -c ${DEV}p3)
+    if [ $zt -ne "0" ]; then
+	ZFSPOOL=${CPOOL}
+    else
+	zpool export $CPOOL >/dev/null 2>/dev/null
+    fi
+done
+
+if [ -z "${ZFSPOOL}" ]; then
+    echo "no."
+    echo -n "Running fsck..."
+    fsck -t ufs -y ${PART} > /dev/null
+    echo "done."
+    if ! mount ${PART} ${MNT} 2> /dev/null; then
 	echo "The device could not be mounted."
 	bootstrap_and_exit
 	# XXX redo
+    fi
+else
+    echo "yes, ${ZFSPOOL}"
+    if ! mount -t zfs ${ZFSPOOL}/root ${MNT} 2>/dev/null; then
+	echo "ZFS pool ${ZFSPOOL} could not be mounted."
+	zpool export ${ZFSPOOL} >/dev/null 2>/dev/null
+	bootstrap_and_exit
+    fi
 fi
+
+IFS="${ORIGINAL_IFS}"
 
 if [ -f "${MNT}/conf/config.xml" ]; then
 	rm -rf /conf/*
-	for FILE in captiveportal.sqlite config.xml dhcpleases.tgz netflow.tgz rrd.tgz; do
+	for FILE in captiveportal.sqlite config.xml dhcpleases.tgz dhcp6c_duid netflow.tgz rrd.tgz; do
 		if [ -f "${MNT}/conf/${FILE}" ]; then
 			echo -n "Restoring ${FILE}..."
 			cp "${MNT}/conf/${FILE}" /conf
 			echo "done."
 		fi
 	done
+	cp -f ${MNT}/usr/local/etc/ssl/ting-client.* /usr/local/etc/ssl/
 	for DIR in backup sshd; do
 		if [ -d "${MNT}/conf/${DIR}" ]; then
 			echo -n "Restoring ${DIR}..."

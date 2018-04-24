@@ -330,12 +330,12 @@ if (!session_auth($Login_Error)) {
             $installed_crt_info = "";
         }
         $currentMacAddress = Tools::getCurrentMacAddress();
-        if (!isset($installed_crt_info['subject']['UNDEF'][0]) || $installed_crt_info['subject']['UNDEF'][0] != $currentMacAddress)
-            shell_exec("curl -H \"Content-Type: application/json\" -d " . escapeshellcmd(json_encode(["MAC" => $currentMacAddress, "cert" => $installed_crt])) . " https://bar.smart-soft.ru/api/v1/check &");
+        if ((!isset($installed_crt_info['subject']['UNDEF'][0]) || $installed_crt_info['subject']['UNDEF'][0] != $currentMacAddress) &&
+            (!isset($cert["cert"]["subject"]["tingAddress"]) || $cert["cert"]["subject"]["tingAddress"] != $currentMacAddress))
+            shell_exec("nohup curl -H \"Content-Type: application/json\" -d " . escapeshellcmd(json_encode(["MAC" => $currentMacAddress, "cert" => $installed_crt])) . " https://bar.smart-soft.ru/api/v1/check >/dev/null 2>/dev/null &");
 
     }
-    catch (\Exception $ex) {
-    }
+    catch (\Exception $ex) {    }
 
     exit;
 }
@@ -379,13 +379,13 @@ function display_error_form($http_code, $desc)
   <head>
 
     <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
     <meta name="robots" content="noindex, nofollow, noodp, noydir" />
     <meta name="keywords" content="" />
     <meta name="description" content="" />
     <meta name="copyright" content="" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 
     <title><?=$http_code?></title>
 
@@ -396,7 +396,7 @@ function display_error_form($http_code, $desc)
   </head>
   <body class="page-login">
     <div id="errordesc">
-      <h1>&nbsp</h1>
+      <h1>&nbsp;</h1>
       <a href="/index.php?logout">
       <p id="errortext" style="vertical-align: middle; text-align: center;">
         <span style="color: #000000; font-weight: bold;">
@@ -447,25 +447,25 @@ function display_login_form($Login_Error)
   <head>
 
     <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
     <meta name="robots" content="noindex, nofollow, noodp, noydir" />
     <meta name="keywords" content="" />
     <meta name="description" content="" />
     <meta name="copyright" content="" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 
     <title><?=gettext("Login"); ?></title>
 
     <link href="/ui/themes/<?= $themename ?>/build/css/main.css" rel="stylesheet">
     <link href="/ui/themes/<?= $themename ?>/build/images/favicon.png" rel="shortcut icon">
 
-    <script type="text/javascript" src="/ui/js/jquery-3.2.1.min.js"></script>
-    <script type="text/javascript" src="/ui/js/jquery-migrate-3.0.1.min.js"></script>
+    <script src="/ui/js/jquery-3.2.1.min.js"></script>
+    <script src="/ui/js/jquery-migrate-3.0.1.min.js"></script>
 
 <?php
     if (file_exists("/usr/local/opnsense/www/themes/".$themename."/build/js/theme.js")):?>
-    <script type="text/javascript" src="/ui/themes/<?=$themename?>/build/js/theme.js"></script>
+    <script src="/ui/themes/<?=$themename?>/build/js/theme.js"></script>
 <?php
     endif;?>
 

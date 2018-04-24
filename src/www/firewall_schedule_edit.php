@@ -30,7 +30,6 @@
 
 require_once("guiconfig.inc");
 require_once("filter.inc");
-require_once("logs.inc");
 
 
 /****f* legacy/is_schedule_inuse
@@ -200,16 +199,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         if (isset($id)) {
             $a_schedules[$id] = $schedule;
-            $shedule_action = "Update Firewall/Settings/Shedule";
         } else {
             $a_schedules[] = $schedule;
-            $shedule_action = "Add Firewall/Settings/Shedule";
         }
 
         schedule_sort();
         write_config();
         filter_configure();
-        firewall_syslog($shedule_action, $a_schedules, $schedule);
 
         header(url_safe('Location: /firewall_schedule.php'));
         exit;
@@ -221,7 +217,7 @@ legacy_html_escape_form_data($pconfig);
 include("head.inc");
 
 ?>
-<script type="text/javascript">
+<script>
 //<![CDATA[
 var daysSelected = "";
 var month_array = <?= json_encode($monthArray) ?>;
@@ -788,10 +784,10 @@ function removeRow(el) {
                   <table class="table table-clean-form opnsense_standard_table_form">
                     <tbody>
                       <tr>
-                        <td width="15%"><strong><?=gettext("Schedule information");?></strong></td>
-                        <td width="85%"  align="right">
+                        <td style="width:15%"><strong><?=gettext("Schedule information");?></strong></td>
+                        <td style="width:85%; text-align:right">
                           <small><?=gettext("full help"); ?> </small>
-                          <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
+                          <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page"></i>
                         </td>
                       </tr>
                       <tr>
@@ -815,11 +811,9 @@ function removeRow(el) {
                         <td><a id="help_for_description" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description");?></td>
                         <td>
                           <input name="descr" type="text" id="descr" value="<?=$pconfig['descr'];?>" /><br />
-                          <div class="hidden" for="help_for_description">
-                            <small class="formhelp">
+                          <output class="hidden" for="help_for_name">
                             <?=gettext("You may enter a description here for your reference (not parsed).");?>
-                            </small>
-                          </div>
+                          </output>
                         </td>
                       </tr>
                       <tr>
@@ -859,17 +853,17 @@ function removeRow(el) {
                               $positioncounter = 1;//7 for Sun, 1 for Mon, 2 for Tues, etc
 ?>
                             <div id="<?=date("F_y",mktime(0, 0, 0, date($monthcounter), 1, date($yearcounter)));?>" style=" position:relative; display:<?= $firstmonth ? "block" : "none";?>">
-                              <table border="1" cellspacing="1" cellpadding="1" id="calTable<?=$monthcounter . $yearcounter;?>" class="table table-condensed" summary="month">
+                              <table style="border:1; cellspacing:1; cellpadding:1" id="calTable<?=$monthcounter . $yearcounter;?>" class="table table-condensed">
                                 <thead>
-                                  <tr><td colspan="7" align="center"><?= date("F_Y", mktime(0, 0, 0, date($monthcounter), 1, date($yearcounter)));?></td></tr>
+                                  <tr><td colspan="7" style="text-align:center"><?= date("F_Y", mktime(0, 0, 0, date($monthcounter), 1, date($yearcounter)));?></td></tr>
                                   <tr>
-                                    <td align="center" style="cursor: pointer;" onclick="daytoggle('w1p1');"><u><?=gettext("Mon");?></u></td>
-                                    <td align="center" style="cursor: pointer;" onclick="daytoggle('w1p2');"><u><?=gettext("Tue");?></u></td>
-                                    <td align="center" style="cursor: pointer;" onclick="daytoggle('w1p3');"><u><?=gettext("Wed");?></u></td>
-                                    <td align="center" style="cursor: pointer;" onclick="daytoggle('w1p4');"><u><?=gettext("Thu");?></u></td>
-                                    <td align="center" style="cursor: pointer;" onclick="daytoggle('w1p5');"><u><?=gettext("Fri");?></u></td>
-                                    <td align="center" style="cursor: pointer;" onclick="daytoggle('w1p6');"><u><?=gettext("Sat");?></u></td>
-                                    <td align="center" style="cursor: pointer;" onclick="daytoggle('w1p7');"><u><?=gettext("Sun");?></u></td>
+                                    <td style="text-align:center; cursor: pointer;" onclick="daytoggle('w1p1');"><u><?=gettext("Mon");?></u></td>
+                                    <td style="text-align:center; cursor: pointer;" onclick="daytoggle('w1p2');"><u><?=gettext("Tue");?></u></td>
+                                    <td style="text-align:center; cursor: pointer;" onclick="daytoggle('w1p3');"><u><?=gettext("Wed");?></u></td>
+                                    <td style="text-align:center; cursor: pointer;" onclick="daytoggle('w1p4');"><u><?=gettext("Thu");?></u></td>
+                                    <td style="text-align:center; cursor: pointer;" onclick="daytoggle('w1p5');"><u><?=gettext("Fri");?></u></td>
+                                    <td style="text-align:center; cursor: pointer;" onclick="daytoggle('w1p6');"><u><?=gettext("Sat");?></u></td>
+                                    <td style="text-align:center; cursor: pointer;" onclick="daytoggle('w1p7');"><u><?=gettext("Sun");?></u></td>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -882,20 +876,20 @@ function removeRow(el) {
                                         echo "<tr>";
                                       }
                                       if ($firstdayofmonth == $positioncounter){?>
-                                        <td align="center" style="cursor: pointer;" class="listr" id="w<?=$weekcounter;?>p<?=$positioncounter;?>" onclick="daytoggle('w<?=$weekcounter;?>p<?=$positioncounter;?>-m<?=$monthcounter;?>d<?=$daycounter;?>');">
+                                        <td style="text-align:center; cursor: pointer;" class="listr" id="w<?=$weekcounter;?>p<?=$positioncounter;?>" onclick="daytoggle('w<?=$weekcounter;?>p<?=$positioncounter;?>-m<?=$monthcounter;?>d<?=$daycounter;?>');">
                                         <?php
                                           echo $daycounter;
                                           $daycounter++;
                                           $firstdayprinted = TRUE;
                                           echo "</td>";
                                       } elseif ($firstdayprinted == TRUE && $daycounter <= $numberofdays){?>
-                                      <td align="center" style="cursor: pointer;" class="listr" id="w<?=$weekcounter;?>p<?=$positioncounter;?>" onclick="daytoggle('w<?=$weekcounter;?>p<?=$positioncounter;?>-m<?=$monthcounter;?>d<?=$daycounter;?>');">
+                                      <td style="text-align:center; cursor: pointer;" class="listr" id="w<?=$weekcounter;?>p<?=$positioncounter;?>" onclick="daytoggle('w<?=$weekcounter;?>p<?=$positioncounter;?>-m<?=$monthcounter;?>d<?=$daycounter;?>');">
                                         <?php
                                           echo $daycounter;
                                           $daycounter++;
                                           echo "</td>";
                                       } else {
-                                        echo "<td align=\"center\" class=\"listr\"></td>";
+                                        echo "<td style=\"text-align:center\" class=\"listr\"></td>";
                                       }
 
                                       if ($positioncounter == 7 || $daycounter > $numberofdays) {
@@ -917,17 +911,16 @@ function removeRow(el) {
                               }
                             } //end for loop
 ?>
-                          <div class="hidden" for="help_for_month">
-                            <small class="formhelp">
+                          <output class="hidden" for="help_for_month">
+                            <br />
                             <?=gettext("Click individual date to select that date only. Click the appropriate weekday Header to select all occurrences of that weekday.");?>
-                            </small>
-                          </div>
+                          </output>
                         </td>
                       </tr>
                       <tr>
                         <td><a id="help_for_time" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Time");?></td>
                         <td>
-                          <table cellspacing="2" class="tabcont" summary="time">
+                          <table style="cellspacing:2" class="tabcont">
                             <tr>
                               <td><?=gettext("Start Time");?></td>
                               <td><?=gettext("Stop Time");?></td>
@@ -971,22 +964,19 @@ function removeRow(el) {
                               </td>
                             </tr>
                           </table>
-                          <div class="hidden" for="help_for_time">
-                          <small class="formhelp">
+                          <output class="hidden" for="help_for_time">
+                            <br />
                           <?=gettext("Select the time range for the day(s) selected on the Month(s) above. A full day is 0:00-23:59.")?>
-                          </small>
-                          </div>
+                          </output>
                         </td>
                       </tr>
                       <tr>
                         <td><a id="help_for_timerange_desc" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Time Range Description")?></td>
                         <td>
                           <input name="timerangedescr" type="text" id="timerangedescr"/>
-                          <div class="hidden" for="help_for_timerange_desc">
-                            <small class="formhelp">
+                          <output class="hidden" for="help_for_timerange_desc">
                             <?=gettext("You may enter a description here for your reference (not parsed).")?>
-                            </small>
-                          </div>
+                          </output>
                         </td>
                       </tr>
                       <tr>
@@ -997,18 +987,18 @@ function removeRow(el) {
                         </td>
                       </tr>
                       <tr>
-                        <th colspan="2" valign="top" class="listtopic"><?=gettext("Schedule repeat");?></td>
+                        <th colspan="2" style="vertical-align:top" class="listtopic"><?=gettext("Schedule repeat");?></td>
                       </tr>
                       <tr>
                         <td><?=gettext("Configured Ranges");?></td>
                         <td>
-                          <table id="scheduletable" summary="range">
+                          <table id="scheduletable">
                             <tbody>
                               <tr>
-                                <td width="35%"><?=gettext("Day(s)");?></td>
-                                <td width="12%"><?=gettext("Start Time");?></td>
-                                <td width="11%"><?=gettext("Stop Time");?></td>
-                                <td width="42%"><?=gettext("Description");?></td>
+                                <td style="width:35%"><?=gettext("Day(s)");?></td>
+                                <td style="width:12%"><?=gettext("Start Time");?></td>
+                                <td style="width:11%"><?=gettext("Stop Time");?></td>
+                                <td style="width:42%"><?=gettext("Description");?></td>
                               </tr>
                               <?php
                               if (isset($pconfig['timerange'])){

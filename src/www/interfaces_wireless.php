@@ -68,7 +68,7 @@ $main_buttons = array(
 ?>
 
 <body>
-  <script type="text/javascript">
+  <script>
   $( document ).ready(function() {
     // link delete buttons
     $(".act_delete").click(function(event){
@@ -107,7 +107,7 @@ $main_buttons = array(
               <input type="hidden" id="action" name="action" value="">
               <input type="hidden" id="id" name="id" value="">
               <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-clean-form">
                   <thead>
                     <tr>
                       <th><?=gettext("Interface");?></th>
