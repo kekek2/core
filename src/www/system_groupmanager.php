@@ -162,7 +162,7 @@ include("head.inc");
 
 <body>
 <?php include("fbegin.inc"); ?>
-<script type="text/javascript">
+<script>
 $( document ).ready(function() {
     // remove group
     $(".act-del-group").click(function(event){
@@ -225,8 +225,15 @@ $( document ).ready(function() {
             <input type="hidden" id="privid" name="privid" value="" />
             <table class="table table-clean-form opnsense_standard_table_form">
               <tr>
-                <td width="22%"><i class="fa fa-info-circle text-muted"></i> <?=gettext("Defined by");?></td>
-                <td width="78%">
+                <td style="width:22%"></td>
+                <td style="width:78%; text-align:right">
+                  <small><?=gettext("full help"); ?> </small>
+                  <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page"></i>
+                </td>
+              </tr>
+              <tr>
+                <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Defined by");?></td>
+                <td>
                   <strong><?=strtoupper($pconfig['scope']);?></strong>
                   <input name="scope" type="hidden" value="<?=$pconfig['scope']?>"/>
                 </td>
@@ -241,17 +248,15 @@ $( document ).ready(function() {
                 <td><a id="help_for_desc" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description");?></td>
                 <td>
                   <input name="description" type="text" value="<?=$pconfig['description'];?>" />
-                  <div class="hidden" for="help_for_desc">
-                    <small class="formhelp">
+                  <div class="hidden" data-for="help_for_desc">
                     <?=gettext("Group description, for your own information only");?>
-                    </small>
                   </div>
                 </td>
               </tr>
               <tr>
                 <td><a id="help_for_groups" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Group Memberships");?></td>
                 <td>
-                  <table class="table table-borderless" width="100%" border="0" cellpadding="0" cellspacing="0">
+                  <table class="table" style="width:100%; border:0; cellpadding:0; cellspacing:0">
                     <thead>
                       <tr>
                         <th><?=gettext("Not Member Of"); ?></th>
@@ -304,10 +309,8 @@ $( document ).ready(function() {
                       </td>
                     </tr>
                   </table>
-                  <div class="hidden" for="help_for_groups">
-                    <small class="formhelp">
+                  <div class="hidden" data-for="help_for_groups">
                       <?=gettext("Hold down CTRL (pc)/COMMAND (mac) key to select multiple items");?>
-                    </small>
                   </div>
                 </td>
               </tr>
@@ -316,7 +319,7 @@ $( document ).ready(function() {
               <tr>
                 <td><b><?=gettext("Assigned Privileges");?></b></td>
                 <td>
-                  <table class="table table-borderless table-hover table-condensed">
+                  <table class="table table-hover table-condensed">
                     <tr>
                       <td><b><?=gettext("Name");?></b></td>
                       <td><b><?=gettext("Description");?></b></td>

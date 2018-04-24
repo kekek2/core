@@ -46,6 +46,7 @@ include("head.inc");
         <p><?=gettext("TING is based on");?> <a href="http://www.freebsd.org" target="_blank">FreeBSD</a>, &copy; The FreeBSD Project. <?=gettext("All rights reserved.");?></p>
         <p><?=gettext("TING is a fork of");?> <a href="http://www.opnsense.org" target="_blank">OPNsense</a>, &copy; Deciso B.V. <?=gettext("All rights reserved.");?></p>
         <p><?=gettext("TING includes various freely available software packages and ports. The incorporated third party tools are listed");?> <a href="/ui/core/firmware/"><?=gettext("here");?></a>.</p>
+
       </section>
     </div>
   </div>

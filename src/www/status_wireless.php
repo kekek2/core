@@ -67,7 +67,7 @@ $main_buttons = array(
             <header class="content-box-head container-fluid">
               <h3><?=gettext("Nearby access points or ad-hoc peers"); ?></h3>
             </header>
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <thead>
                   <tr>
                     <th><?=gettext("SSID");?></th>
@@ -118,7 +118,7 @@ $main_buttons = array(
               <header class="content-box-head container-fluid">
                 <h3><?=gettext("Associated or ad-hoc peers"); ?></h3>
               </header>
-              <table class="table table-striped">
+              <table class="table table-clean-form">
                 <thead>
                   <tr>
                     <th><?=gettext("ADDR");?></th>

@@ -104,7 +104,7 @@ include("fbegin.inc");?>
 ?>
 <?php
   if (isset($config['trigger_initial_wizard']) || isset($_GET['wizard_done'])): ?>
-  <script type="text/javascript">
+  <script>
       $( document ).ready(function() {
         $(".page-content-head:first").hide();
       });
@@ -135,10 +135,6 @@ include("fbegin.inc");?>
                         echo '<p class="__nomb">' . gettext('To bypass the wizard, click on the logo in the upper left corner.') . "</p>\n";
                     } else {
                         echo '<p>' . sprintf(gettext('Congratulations! %s is now configured.'), $g['product_name']) . "</p>\n";
-                        echo '<p>' . sprintf(gettext(
-                            'Please consider donating to the project to help us with our overhead costs. ' .
-                            'See %sour website%s to donate or purchase available %s support services.'),
-                            '<a target="_new" href="' . $g['product_website'] . '">', '</a>', $g['product_name']) . "</p>\n";
                         echo '<p class="__nomb">' . sprintf(gettext('Click to %scontinue to the dashboard%s.'), '<a href="/">', '</a>') . "</p>\n";
                     }
                 ?>
@@ -159,7 +155,7 @@ include("fbegin.inc");?>
   else:?>
 
 <script src='/ui/js/jquery-sortable.js'></script>
-<script type="text/javascript">
+<script>
   function addWidget(selectedDiv) {
       $('#'+selectedDiv).show();
       $('#add_widget_'+selectedDiv).hide();
@@ -255,7 +251,7 @@ include("fbegin.inc");?>
   }
 </script>
 
-<script type="text/javascript">
+<script>
   $( document ).ready(function() {
       // rearrange widgets to stored column
       $(".widgetdiv").each(function(){
@@ -277,7 +273,7 @@ include("fbegin.inc");?>
 
       // sortable widgets
       $(".dashboard_grid_column").sortable({
-        handle: '.content-box-head',
+        handle: '.widget-sort-handle',
         group: 'dashboard_grid_column',
         itemSelector: '.widgetdiv',
         containerSelector: '.dashboard_grid_column',
@@ -387,20 +383,22 @@ include("fbegin.inc");?>
                   </h3></li>
                   <li class="pull-right">
                     <div class="btn-group">
-                      <button type="button" class="btn btn-default btn-xs disabled" id="<?= $widgetItem['name'] ?>-configure" onclick='return configureWidget("<?=  $widgetItem['name'] ?>")' style="cursor:pointer" ><span class="glyphicon glyphicon-pencil"></span></button>
-                      <button type="button" class="btn btn-default btn-xs" title="minimize" id="<?= $widgetItem['name'] ?>-min" onclick='return minimizeWidget("<?= $widgetItem['name'] ?>",true)' style="display:<?= $mindiv ?>;"><span class="glyphicon glyphicon-minus"></span></button>
-                      <button type="button" class="btn btn-default btn-xs" title="maximize" id="<?= $widgetItem['name'] ?>-max" onclick='return showWidget("<?= $widgetItem['name'] ?>",true)' style="display:<?= $mindiv == 'none' ? 'inline' : 'none' ?>;"><span class="glyphicon glyphicon-plus"></span></button>
-                      <button type="button" class="btn btn-default btn-xs" title="remove widget" onclick='return closeWidget("<?= $widgetItem['name'] ?>",true)'><span class="glyphicon glyphicon-remove"></span></button>
+                      <button type="button" class="btn btn-default btn-xs disabled" id="<?= $widgetItem['name'] ?>-configure" onclick='return configureWidget("<?=  $widgetItem['name'] ?>")' style="cursor:pointer"><i class="fa fa-pencil fa-fw"></i></button>
+                      <button type="button" class="btn btn-default btn-xs" title="minimize" id="<?= $widgetItem['name'] ?>-min" onclick='return minimizeWidget("<?= $widgetItem['name'] ?>",true)' style="display:<?= $mindiv ?>;"><i class="fa fa-minus fa-fw"></i></button>
+                      <button type="button" class="btn btn-default btn-xs" title="maximize" id="<?= $widgetItem['name'] ?>-max" onclick='return showWidget("<?= $widgetItem['name'] ?>",true)' style="display:<?= $mindiv == 'none' ? 'inline' : 'none' ?>;"><i class="fa fa-plus fa-fw"></i></button>
+                      <button type="button" class="btn btn-default btn-xs" title="remove widget" onclick='return closeWidget("<?= $widgetItem['name'] ?>",true)'><i class="fa fa-remove fa-fw"></i></button>
                     </div>
                   </li>
                 </ul>
+                <div class="container-fluid widget-sort-handle">
+                </div>
               </header>
               <div class="content-box-main collapse in" id="<?= $widgetItem['name'] ?>-container" style="display:<?= $mindiv ?>">
                 <input type="hidden" value="<?= $inputdisplay ?>" id="<?= $widgetItem['name'] ?>-config" name="<?= $widgetItem['name'] ?>-config" />
 <?php
                 if ($divdisplay != "block"):?>
                   <div id="<?= $widgetItem['name'] ?>-loader" style="display:<?= $display ?>;">
-                      &nbsp;&nbsp;<span class="glyphicon glyphicon-refresh"></span> <?= gettext("Save to load widget") ?>
+                      &nbsp;&nbsp;<i class="fa fa-refresh"></i> <?= gettext("Save to load widget") ?>
                   </div>
 <?php
                 else:

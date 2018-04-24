@@ -1,0 +1,11 @@
+<form>
+    <field>
+        <type>header</type>
+        <label>License acquisition</label>
+    </field>
+    <field>
+        <id>License.csrLicenseKey</id>
+        <label>License key</label>
+        <type>text</type>
+    </field>
+</form>

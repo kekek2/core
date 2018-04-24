@@ -122,7 +122,7 @@ include("head.inc");
 ?>
 
 <body>
-<script type="text/javascript">
+<script>
   $( document ).ready(function() {
     /**
      *  Aliases
@@ -200,20 +200,18 @@ include("head.inc");
               <input name="act" type="hidden" value="<?=$act;?>" />
               <table class="table table-clean-form opnsense_standard_table_form">
                 <tr>
-                  <td width="22%"><strong><?=ucwords(sprintf(gettext("%s Access List"),$act));?></strong></td>
-                  <td width="78%" align="right">
+                  <td style="width:22%"><strong><?=ucwords(sprintf(gettext("%s Access List"),$act));?></strong></td>
+                  <td style="width:78%; text-align:right">
                     <small><?=gettext("full help"); ?> </small>
-                    <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
+                    <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page"></i>
                   </td>
                 </tr>
                 <tr>
                   <td><a id="help_for_aclname" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Access List name");?></td>
                   <td>
                     <input name="aclname" type="text" value="<?=$pconfig['aclname'];?>" />
-                    <div class="hidden" for="help_for_aclname">
-                      <small class="formhelp">
+                    <div class="hidden" data-for="help_for_aclname">
                       <?=gettext("Provide an Access List name.");?>
-                      </small>
                     </div>
                   </td>
                 </tr>
@@ -234,14 +232,12 @@ include("head.inc");
                       <?=gettext("Allow Snoop");?>
                       </option>
                     </select>
-                    <div class="hidden" for="help_for_aclaction">
-                      <small class="formhelp">
+                    <div class="hidden" data-for="help_for_aclaction">
                         <?=gettext("Choose what to do with DNS requests that match the criteria specified below.");?> <br />
                         <?=gettext("Deny: This action stops queries from hosts within the netblock defined below.")?> <br />
                         <?=gettext("Refuse: This action also stops queries from hosts within the netblock defined below, but sends a DNS rcode REFUSED error message back to the client.")?> <br />
                         <?=gettext("Allow: This action allows queries from hosts within the netblock defined below.")?> <br />
                         <?=gettext("Allow Snoop: This action allows recursive and nonrecursive access from hosts within the netblock defined below. Used for cache snooping and ideally should only be configured for your administrative host.")?> <br />
-                      </small>
                     </div>
                   </td>
                 </tr>
@@ -305,10 +301,8 @@ include("head.inc");
                   <td><a id="help_for_description" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description");?></td>
                   <td>
                     <input name="description" type="text" value="<?=$pconfig['description'];?>" />
-                    <div class="hidden" for="help_for_description">
-                      <small class="formhelp">
+                    <div class="hidden" data-for="help_for_description">
                       <?=gettext("You may enter a description here for your reference.");?>
-                      </small>
                     </div>
                   </td>
                 </tr>
@@ -331,10 +325,10 @@ include("head.inc");
                     <th colspan="4"><?=gettext("From General settings");?></th>
                   </tr>
                   <tr>
-                    <th width="30%"><?=gettext("Access List Name"); ?></th>
-                    <th width="20%"><?=gettext("Action"); ?></th>
-                    <th width="40%"><?=gettext("Network"); ?></th>
-                    <th width="10%"><a href="services_unbound.php" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-pencil"></span></a></th>
+                    <th><?=gettext("Access List Name"); ?></th>
+                    <th><?=gettext("Action"); ?></th>
+                    <th><?=gettext("Network"); ?></th>
+                    <th><a href="services_unbound.php" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-pencil"></span></a></th>
                   </tr>
                 </thead>
                 <body>
@@ -382,10 +376,10 @@ include("head.inc");
               <table class="table table-clean-form">
                 <thead>
                   <tr>
-                    <th width="30%"><?=gettext("Access List Name"); ?></th>
-                    <th width="20%"><?=gettext("Action"); ?></th>
-                    <th width="40%"><?=gettext("Description"); ?></th>
-                    <th width="10%"></th>
+                    <th><?=gettext("Access List Name"); ?></th>
+                    <th><?=gettext("Action"); ?></th>
+                    <th><?=gettext("Description"); ?></th>
+                    <th></th>
                   </tr>
                 </thead>
 <?php

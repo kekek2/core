@@ -50,7 +50,7 @@ $ipsec_leases = json_decode(configd_run("ipsec list leases"), true);
               foreach($ipsec_leases as $pool => $pool_data): ?>
               <div class="content-box-main ">
                 <div class="table-responsive">
-                  <table class="table table-striped table-condensed">
+                  <table class="table table-clean-form table-condensed">
                     <thead>
                       <tr>
                         <th></th>
@@ -106,7 +106,7 @@ $ipsec_leases = json_decode(configd_run("ipsec list leases"), true);
             else: ?>
             <div class="content-box-main ">
               <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-clean-form">
                   <thead>
                     <tr>
                       <th><?= gettext("No IPsec pools.") ?></th>

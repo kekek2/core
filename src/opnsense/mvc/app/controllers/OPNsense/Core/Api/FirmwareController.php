@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright (c) 2015-2017 Franco Fichtner <franco@opnsense.org>
+ * Copyright (c) 2015-2018 Franco Fichtner <franco@opnsense.org>
  * Copyright (c) 2015-2016 Deciso B.V.
  * All rights reserved.
  *
@@ -45,7 +45,7 @@ class FirmwareController extends ApiControllerBase
      * @param integer $bytes bytes to convert
      * @return string
      */
-    protected function format_bytes($bytes)
+    protected function formatBytes($bytes)
     {
         if ($bytes >= (1024 * 1024 * 1024)) {
             return sprintf("%d GB", $bytes / (1024 * 1024 * 1024));
@@ -65,7 +65,7 @@ class FirmwareController extends ApiControllerBase
     public function statusAction()
     {
         $config = Config::getInstance()->object();
-        $type_want = 'opnsense';
+        $type_want = 'ting';
         if (!empty($config->system->firmware->type)) {
             $type_want .= '-' . (string)$config->system->firmware->type;
         }
@@ -81,10 +81,10 @@ class FirmwareController extends ApiControllerBase
             return array(
                 'status_msg' => gettext('The release type requires an update.'),
                 'all_packages' => array($type_want => array(
+                    'new' => empty($type_ver) ? gettext('N/A') : $type_ver,
                     'reason' => gettext('new'),
                     'old' => gettext('N/A'),
                     'name' => $type_want,
-                    'new' => $type_ver,
                 )),
                 'status_upgrade_action' => 'rel',
                 'status' => 'ok',
@@ -110,10 +110,13 @@ class FirmwareController extends ApiControllerBase
                 switch (isset($matches[2]) ? strtolower($matches[2]) : 'b') {
                     case 'g':
                         $factor *= 1024;
+                        /* FALLTROUGH */
                     case 'm':
                         $factor *= 1024;
+                        /* FALLTROUGH */
                     case 'k':
                         $factor *= 1024;
+                        /* FALLTROUGH */
                     default:
                         break;
                 }
@@ -122,7 +125,7 @@ class FirmwareController extends ApiControllerBase
                 $packages_size = 0;
             }
 
-            $download_size = $this->format_bytes($packages_size + $sets_size);
+            $download_size = $this->formatBytes($packages_size + $sets_size);
 
             if (array_key_exists('connection', $response) && $response['connection'] == 'error') {
                 $response['status_msg'] = gettext('Connection error.');
@@ -174,7 +177,8 @@ class FirmwareController extends ApiControllerBase
              * downgrade_packages: array with { name: <package_name>,
              *     current_version: <current_version>, new_version: <new_version> }
              */
-            foreach (array('new_packages', 'reinstall_packages', 'upgrade_packages', 'downgrade_packages') as $pkg_type) {
+            foreach (array('new_packages', 'reinstall_packages', 'upgrade_packages',
+                'downgrade_packages') as $pkg_type) {
                 if (isset($response[$pkg_type])) {
                     foreach ($response[$pkg_type] as $value) {
                         switch ($pkg_type) {
@@ -205,7 +209,8 @@ class FirmwareController extends ApiControllerBase
                             case 'upgrade_packages':
                                 $sorted[$value['name']] = array(
                                     'reason' => gettext('upgrade'),
-                                    'old' => empty($value['current_version']) ? gettext('N/A') : $value['current_version'],
+                                    'old' => empty($value['current_version']) ?
+                                        gettext('N/A') : $value['current_version'],
                                     'new' => $value['new_version'],
                                     'name' => $value['name'],
                                 );
@@ -619,7 +624,7 @@ class FirmwareController extends ApiControllerBase
                 return preg_replace('/[^0-9a-zA-Z._-]/', '', $value);
             });
             $package = $filter->sanitize($package, 'scrub');
-            $text = trim($backend->configdRun(sprintf('firmware details %s', $package)));
+            $text = gettext(trim($backend->configdRun(sprintf('firmware details %s', $package))));
             if (!empty($text)) {
                 $response['details'] = $text;
             }
@@ -670,6 +675,7 @@ class FirmwareController extends ApiControllerBase
                     }
                 }
 
+                $translated['comment'] = gettext($translated['comment']);
                 /* mark remote packages as "provided", local as "installed" */
                 $translated['provided'] = $type == 'remote' ? "1" : "0";
                 $translated['installed'] = $type == 'local' ? "1" : "0";
@@ -742,7 +748,7 @@ class FirmwareController extends ApiControllerBase
     {
         $this->sessionClose(); // long running action, close session
 
-        // todo: we might want to move these into configuration files later
+        /* XXX we might want to move these into configuration files later */
         $mirrors = array();
         $mirrors['https://update0.smart-soft.ru/'] = 'Mirror #1 (RU)';
         $mirrors['https://update1.smart-soft.ru/'] = 'Mirror #2 (EU)';

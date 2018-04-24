@@ -24,7 +24,7 @@
  # POSSIBILITY OF SUCH DAMAGE.
  #}
 
-<script type="text/javascript">
+<script>
 
     $( document ).ready(function() {
 
@@ -35,10 +35,7 @@
             formatTokenizersUI();
             $('.selectpicker').selectpicker('refresh');
             // request service status on load and update status box
-            ajaxCall(url="/api/proxy/service/status", sendData={}, callback=function(data,status) {
-                updateServiceStatusUI(data['status']);
-            });
-
+            updateServiceControlUI('proxy');
         });
 
         /*************************************************************************************************************
@@ -160,12 +157,12 @@
                 var frm_id = $(this).closest("form").attr("id");
                 var frm_title = $(this).closest("form").attr("data-title");
                 // save data for General TAB
-                saveFormToEndpoint(url="/api/proxy/settings/set",formid=frm_id,callback_ok=function(){
+                saveFormToEndpoint(url="/api/proxy/settings/set",formid=frm_id,callback_ok=function(data){
                     // on correct save, perform reconfigure. set progress animation when reloading
                     $("#"+frm_id+"_progress").addClass("fa fa-spinner fa-pulse");
 
                     //
-                    ajaxCall(url="/api/proxy/service/reconfigure", sendData={}, callback=function(data,status){
+                    ajaxCall(url="/api/proxy/service/reconfigure", sendData={'force_restart' : data.force_restart}, callback=function(data,status){
                         // when done, disable progress animation.
                         $("#"+frm_id+"_progress").removeClass("fa fa-spinner fa-pulse");
 
@@ -178,10 +175,7 @@
                                 draggable: true
                             });
                         } else {
-                            // request service status after successful save and update status box
-                            ajaxCall(url="/api/proxy/service/status", sendData={}, callback=function(data,status) {
-                                updateServiceStatusUI(data['status']);
-                            });
+                            updateServiceControlUI('proxy');
                         }
                     });
                 });
@@ -217,8 +211,8 @@
             </colgroup>
             <tbody>
             <tr>
-                <td colspan="2" align="right">
-                    <small>{{ lang._('full help') }} </small><a href="#"><i class="fa fa-toggle-off text-danger" id="show_all_help_show_all_help_frm_proxy-forward-acl-remoteACLS" type="button"></i></a>
+                <td colspan="2" style="text-align:right">
+                    <small>{{ lang._('full help') }} </small><a href="#"><i class="fa fa-toggle-off text-danger" id="show_all_help_show_all_help_frm_proxy-forward-acl-remoteACLS"></i></a>
                 </td>
             </tr>
             <tr>
@@ -228,13 +222,14 @@
                 </div>
                 </td>
                 <td>
-                  <small class="hidden" for="help_for_proxy.forward.acl.remoteACLs.blacklist">
-                      {{ lang._('
-                      Add an item to the table to fetch a remote acl for blacklisting.%s
+                  <div class="hidden" data-for="help_for_proxy.forward.acl.remoteACLs.blacklist">
+                      <small>
+                      {{ lang._('Add an item to the table to fetch a remote acl for blacklisting.%s
                       You can enable or disable the blacklist list.%s
-                      The active blacklists will be merged with the settings under %sForward Proxy -> Access Control List%s.
-                      ') | format('<br/>','<br/>','<b>','</b>') }}
-                  </small>
+                      The active blacklists will be merged with the settings under %sForward Proxy -> Access Control List%s.') |
+                           format('<br/>','<br/>','<b>','</b>') }}
+                      </small>
+                  </div>
                 </td>
             </tr>
             <tr>

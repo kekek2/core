@@ -90,9 +90,9 @@ function geoip_countries()
     foreach (explode("\n", file_get_contents('/usr/local/opnsense/contrib/tzdata/iso3166.tab')) as $line) {
         $line = trim($line);
         if (strlen($line) > 3 && substr($line, 0, 1) != '#') {
-          $code = substr($line, 0, 2);
-          $name = trim(substr($line, 2, 9999));
-          $result[$code] = $name;
+            $code = substr($line, 0, 2);
+            $name = trim(substr($line, 2, 9999));
+            $result[$code] = $name;
         }
     }
     uasort($result, function($a, $b) {return strcasecmp($a, $b);});
@@ -113,7 +113,9 @@ function geoip_regions()
         if (empty($line[2]) || strpos($line[2], '/') === false) {
             continue;
         }
-        $result[$line[0]] = explode('/', $line[2])[0];
+        if (empty($result[$line[0]])) {
+            $result[$line[0]] = explode('/', $line[2])[0];
+        }
     }
     return $result;
 }
@@ -381,7 +383,7 @@ include("head.inc");
 <?php
   include("fbegin.inc");
 ?>
-<script type="text/javascript">
+<script>
   $( document ).ready(function() {
     /**
      * remove host/port row or clear values on last entry
@@ -412,7 +414,7 @@ include("head.inc");
                 if (used) {
                     return false;
                 } else {
-                    return ~item.toLowerCase().indexOf(this.query)
+                    return ~item.toLowerCase().indexOf(this.query.toLowerCase())
                 }
             }
         });
@@ -540,10 +542,10 @@ include("head.inc");
             <form method="post" name="iform" id="iform">
               <table class="table table-clean-form opnsense_standard_table_form">
                 <tr>
-                  <td width="22%"><strong><?=gettext("Alias Edit");?></strong></td>
-                  <td width="78%" align="right">
+                  <td style="width:22%"><strong><?=gettext("Alias Edit");?></strong></td>
+                  <td style="width:78%; text-align:right">
                     <small><?=gettext("full help"); ?> </small>
-                    <i class="fa fa-toggle-off text-danger" style="cursor: pointer;" id="show_all_help_page" type="button"></i>
+                    <i class="fa fa-toggle-off text-danger" style="cursor: pointer;" id="show_all_help_page"></i>
                   </td>
                 </tr>
                 <tr>
@@ -554,7 +556,7 @@ include("head.inc");
                       <input name="id" type="hidden" value="<?=$id;?>" />
                     <?php endif; ?>
                     <input name="name" type="text" id="name" class="form-control unknown" size="40" maxlength="31" value="<?=$pconfig['name'];?>" />
-                    <div class="hidden" for="help_for_name">
+                    <div class="hidden" data-for="help_for_name">
                       <?=gettext('The name of the alias may only consist of the characters "a-z, A-Z, 0-9 and _". Aliases can be nested using this name.'); ?>
                     </div>
                   </td>
@@ -563,7 +565,7 @@ include("head.inc");
                   <td><a id="help_for_description" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description"); ?></td>
                   <td>
                     <input name="descr" type="text" class="form-control unknown" id="descr" size="40" value="<?=$pconfig['descr'];?>" />
-                    <div class="hidden" for="help_for_description">
+                    <div class="hidden" data-for="help_for_description">
                       <?=gettext("You may enter a description here for your reference (not parsed)."); ?>
                     </div>
                   </td>
@@ -589,44 +591,42 @@ include("head.inc");
                         <option value="IPv6" <?= in_array("IPv6", $pconfig['proto']) ? "selected=\"selected\"" : ""; ?>><?=gettext("IPv6");?></option>
                       </select>
                     </div>
-                    <div class="hidden" for="help_for_type">
+                    <div class="hidden" data-for="help_for_type">
                       <span class="text-info">
                         <?=gettext("Hosts")?><br/>
                       </span>
-                      <small class="formhelp">
+                      <small>
                         <?=gettext("Enter as many hosts as you would like. Hosts must be specified by their IP address or fully qualified domain name (FQDN). FQDN hostnames are periodically re-resolved and updated. If multiple IPs are returned by a DNS query, all are used.");?>
-                        <br/>
                       </small>
                       <br/>
                       <span class="text-info">
                         <?=gettext("Networks")?><br/>
                       </span>
-                      <small class="formhelp">
+                      <small>
                         <?=gettext("Networks are specified in CIDR format. Select the CIDR suffix that pertains to each entry. /32 specifies a single IPv4 host, /128 specifies a single IPv6 host, /24 in IPv4 corresponds to 255.255.255.0, /64 specifies commonly used IPv6 network, etc. Hostnames (FQDNs) may also be specified, using /32 for IPv4 and /128 for IPv6.");?>
-                        <br/>
                       </small>
                       <br/>
                       <span class="text-info">
                         <?=gettext("Ports")?><br/>
                       </span>
-                      <small class="formhelp">
+                      <small>
                         <?=gettext("Enter as many ports as you wish. Port ranges can be expressed by separating with a colon.");?>
                       </small>
                       <br/>
                       <span class="text-info">
                         <?=gettext("URLs")?><br/>
                       </span>
-                      <small class="formhelp">
+                      <small>
                         <?=gettext("Enter an URL containing a large number of IPs, ports or subnets. After saving the lists will be downloaded and scheduled for automatic updates when a frequency is provided.");?>
-                        <br/>
                       </small>
+                      <br/>
                       <span class="text-info">
                         <?=gettext("GeoIP")?><br/>
                       </span>
                       <small>
                         <?=gettext("Select contries to be resolved to IPs. IPv4 and IPv6 can be mixed.");?>
-                        <br/>
                       </small>
+                      <br/>
                       <span class="text-info">
                         <?=gettext("External (advanced)")?><br/>
                       </span>
@@ -640,7 +640,7 @@ include("head.inc");
                 <tr>
                   <td><div id="addressnetworkport"><i class="fa fa-info-circle text-muted"></i> <?= gettext('Aliases') ?></div></td>
                   <td>
-                    <table class="table table-striped table-borderless table-condensed not_geoip_table" id="detailTable">
+                    <table class="table table-clean-form table-borderless table-condensed not_geoip_table" id="detailTable">
                       <thead>
                         <tr>
                           <th></th>
@@ -693,7 +693,7 @@ $where = geoip_regions();
 $unique = array_unique($where);
 uasort($unique , function($a, $b) {return strcasecmp($a, $b);});
 foreach ($unique as $region): ?>
-                    <table class="table table-striped table-condensed geoip_table">
+                    <table class="table table-clean-form table-condensed geoip_table">
                       <tr>
                         <td colspan="3">
                           <input type="checkbox" class="region_toggle" data="<?= html_safe($region) ?>" />

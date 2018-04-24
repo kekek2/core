@@ -431,7 +431,7 @@ include("head.inc");
 
 <body>
 <?php include("fbegin.inc"); ?>
-<script type="text/javascript">
+<script>
     $( document ).ready(function() {
         $("#iketype").change(function(){
             if ($(this).val() == 'ikev2') {
@@ -552,10 +552,10 @@ include("head.inc");
             <div class="table-responsive">
               <table class="table table-clean-form opnsense_standard_table_form">
                   <tr>
-                    <td width="22%"><b><?=gettext("General information"); ?></b></td>
-                    <td width="78%" align="right">
+                    <td style="width:22%"><b><?=gettext("General information"); ?></b></td>
+                    <td style="width:78%; text-align:right">
                       <small><?=gettext("full help"); ?> </small>
-                      <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
+                      <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page"></i>
                     </td>
                   </tr>
 <?php
@@ -564,25 +564,21 @@ include("head.inc");
                     <td><a id="help_for_clone_phase2" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Clone phase2"); ?></td>
                     <td>
                       <input name="clone_phase2" type="checkbox" id="clone_phase2" value="yes" <?=!empty($pconfig['clone_phase2'])?"checked=\"checked\"":"";?> />
-                      <div class="hidden" for="help_for_clone_phase2">
-                        <small class="formhelp">
+                      <div class="hidden" data-for="help_for_clone_phase2">
                         <?=gettext("Clone related phase 2 entries as well, remember to change the networks. All phase 2 entries will be added in disabled state"); ?>
-                        </small>
                       </div>
                     </td>
                   </tr>
 <?php
                   endif;?>
                   <tr>
-                    <td width="22%" valign="top"><a id="help_for_disabled" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Disabled"); ?></td>
+                    <td style="width:22%"><a id="help_for_disabled" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Disabled"); ?></td>
                     <td>
                       <input name="disabled" type="checkbox" id="disabled" value="yes" <?=!empty($pconfig['disabled'])?"checked=\"checked\"":"";?> />
-                      <strong><?=gettext("Disable this phase1 entry"); ?></strong><br />
-                      <div class="hidden" for="help_for_disabled">
-                        <small class="formhelp">
+                      <div class="hidden" data-for="help_for_disabled">
+                        <strong><?=gettext("Disable this phase1 entry"); ?></strong><br />
                         <?=gettext("Set this option to disable this phase1 without " .
                                                 "removing it from the list."); ?>
-                        </small>
                       </div>
                     </td>
                   </tr>
@@ -590,16 +586,14 @@ include("head.inc");
                     <td><a id="help_for_auto" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Connection method"); ?></td>
                     <td>
 
-                      <select name="auto" class="formselect">
+                      <select name="auto">
                         <option value="" <?=empty($pconfig['auto']) ?  "selected=\"selected\"" : ""; ?>><?=gettext("default");?></option>
                         <option value="add" <?=$pconfig['auto'] == "add" ?  "selected=\"selected\"" : ""; ?>><?=gettext("Respond only");?></option>
                         <option value="route" <?=$pconfig['auto'] == "route" ?  "selected=\"selected\"" : ""; ?>><?=gettext("Start on traffic");?></option>
                         <option value="start" <?=$pconfig['auto'] == "start" ?  "selected=\"selected\"" : ""; ?>><?=gettext("Start immediate");?></option>
                       </select>
-                      <div class="hidden" for="help_for_auto">
-                        <small class="formhelp">
+                      <div class="hidden" data-for="help_for_auto">
                         <?=gettext("Choose the connect behaviour here, when using CARP you might want to consider the 'Respond only' option here (wait for the other side to connect)."); ?>
-                        </small>
                       </div>
                     </td>
                   </tr>
@@ -607,7 +601,7 @@ include("head.inc");
                     <td><a id="help_for_iketype" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Key Exchange version"); ?></td>
                     <td>
 
-                      <select name="iketype" id="iketype" class="formselect">
+                      <select name="iketype" id="iketype">
 <?php
                       $keyexchange = array("ikev1" => "V1", "ikev2" => "V2");
                       foreach ($keyexchange as $kidx => $name) :
@@ -618,17 +612,15 @@ include("head.inc");
 <?php                endforeach;
 ?>
                       </select>
-                      <div class="hidden" for="help_for_iketype">
-                        <small class="formhelp">
+                      <div class="hidden" data-for="help_for_iketype">
                         <?=gettext("Select the KeyExchange Protocol version to be used. Usually known as IKEv1 or IKEv2."); ?>
-                        </small>
                       </div>
                     </td>
                   </tr>
                   <tr>
                     <td><a id="help_for_protocol" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Internet Protocol"); ?></td>
                     <td>
-                      <select name="protocol" class="formselect">
+                      <select name="protocol">
                       <?php
                       $protocols = array("inet" => "IPv4", "inet6" => "IPv6");
                       foreach ($protocols as $protocol => $name) :
@@ -639,17 +631,15 @@ include("head.inc");
 <?php                endforeach;
 ?>
                       </select>
-                      <div class="hidden" for="help_for_protocol">
-                        <small class="formhelp">
+                      <div class="hidden" data-for="help_for_protocol">
                         <?=gettext("Select the Internet Protocol family from this dropdown."); ?>
-                        </small>
                       </div>
                     </td>
                   </tr>
                   <tr>
-                    <td ><a id="help_for_interface" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Interface"); ?></td>
+                    <td><a id="help_for_interface" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Interface"); ?></td>
                     <td>
-                      <select name="interface" class="formselect">
+                      <select name="interface">
 <?php
                       $interfaces = get_configured_interface_with_descr();
                       $carplist = get_configured_carp_interface_list();
@@ -684,10 +674,8 @@ include("head.inc");
                             <?=gettext("Any");?>
                         </option>
                       </select>
-                      <div class="hidden" for="help_for_interface">
-                        <small class="formhelp">
+                      <div class="hidden" data-for="help_for_interface">
                         <?=gettext("Select the interface for the local endpoint of this phase1 entry."); ?>
-                        </small>
                       </div>
                     </td>
                   </tr>
@@ -695,13 +683,11 @@ include("head.inc");
 ?>
 
                   <tr>
-                    <td ><a id="help_for_remotegw" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Remote gateway"); ?></td>
+                    <td><a id="help_for_remotegw" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Remote gateway"); ?></td>
                     <td>
                       <input name="remote-gateway" type="text" class="formfld unknown" id="remotegw" size="28" value="<?=$pconfig['remote-gateway'];?>" />
-                      <div class="hidden" for="help_for_remotegw">
-                        <small class="formhelp">
+                      <div class="hidden" data-for="help_for_remotegw">
                         <?=gettext("Enter the public IP address or host name of the remote gateway"); ?>
-                        </small>
                       </div>
                     </td>
                   </tr>
@@ -711,11 +697,9 @@ include("head.inc");
                     <td><a id="help_for_descr" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description"); ?></td>
                     <td>
                       <input name="descr" type="text" id="descr" size="40" value="<?=$pconfig['descr'];?>" />
-                      <div class="hidden" for="help_for_descr">
-                        <small class="formhelp">
+                      <div class="hidden" data-for="help_for_descr">
                         <?=gettext("You may enter a description here " .
                                                 "for your reference (not parsed)."); ?>
-                        </small>
                       </div>
                     </td>
                   </tr>
@@ -728,7 +712,7 @@ include("head.inc");
                   <tr>
                     <td><a id="help_for_authmethod" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Authentication method"); ?></td>
                     <td>
-                      <select name="authentication_method" id="authentication_method" class="formselect">
+                      <select name="authentication_method" id="authentication_method">
 <?php
                       foreach ($p1_authentication_methods as $method_type => $method_params) :
                           if (empty($pconfig['mobile']) && $method_params['mobile']) {
@@ -741,18 +725,16 @@ include("head.inc");
 <?php                endforeach;
 ?>
                       </select>
-                      <div class="hidden" for="help_for_authmethod">
-                        <small class="formhelp">
+                      <div class="hidden" data-for="help_for_authmethod">
                         <?=gettext("Must match the setting chosen on the remote side."); ?><br />
                         <?=sprintf(gettext("If you select EAP-RADIUS, you must define your RADIUS servers on the %sServers%s page."), '<a href="/system_authservers.php">', '</a>'); ?>
-                        </small>
                       </div>
                     </td>
                   </tr>
                   <tr id="mode_tr">
                     <td><a id="help_for_mode" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Negotiation mode"); ?></td>
                     <td>
-                      <select id="mode" name="mode" class="formselect">
+                      <select id="mode" name="mode">
                       <?php
                       $modes = array("main" => "Main", "aggressive" => "Aggressive");
                       foreach ($modes as $mode => $mdescr) :
@@ -763,17 +745,15 @@ include("head.inc");
 <?php                endforeach;
 ?>
                       </select>
-                      <div class="hidden" for="help_for_mode">
-                        <small class="formhelp">
+                      <div class="hidden" data-for="help_for_mode">
                         <?=gettext("Aggressive is more flexible, but less secure."); ?>
-                        </small>
                       </div>
                     </td>
                   </tr>
                   <tr>
-                    <td ><i class="fa fa-info-circle text-muted"></i> <?=gettext("My identifier"); ?></td>
+                    <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("My identifier"); ?></td>
                     <td>
-                      <select name="myid_type" id="myid_type" class="formselect">
+                      <select name="myid_type" id="myid_type">
 <?php
                       $my_identifier_list = array(
                         'myaddress' => array( 'desc' => gettext('My IP address'), 'mobile' => true ),
@@ -801,9 +781,9 @@ endforeach; ?>
 <?php
                   if (empty($pconfig['mobile'])):?>
                   <tr class="auth_opt auth_eap_tls auth_psk">
-                    <td ><i class="fa fa-info-circle text-muted"></i> <?=gettext("Peer identifier"); ?></td>
+                    <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Peer identifier"); ?></td>
                     <td>
-                      <select name="peerid_type" id="peerid_type" class="formselect">
+                      <select name="peerid_type" id="peerid_type">
 <?php
                       $peer_identifier_list = array(
                         'peeraddress' => array( 'desc' => gettext('Peer IP address'), 'mobile' => false ),
@@ -834,21 +814,19 @@ endforeach; ?>
 <?php
                   endif;?>
                   <tr class="auth_opt auth_psk">
-                    <td ><a id="help_for_psk" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Pre-Shared Key"); ?></td>
+                    <td><a id="help_for_psk" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Pre-Shared Key"); ?></td>
                     <td>
                       <input name="pre-shared-key" type="text" class="formfld unknown" id="pskey" size="40"
                              value="<?= $pconfig['authentication_method'] == "pre_shared_key" || $pconfig['authentication_method'] == "xauth_psk_server" ? $pconfig['pre-shared-key'] : "";?>" />
-                      <div class="hidden" for="help_for_psk">
-                        <small class="formhelp">
+                      <div class="hidden" data-for="help_for_psk">
                         <?=gettext("Input your Pre-Shared Key string."); ?>
-                        </small>
                       </div>
                     </td>
                   </tr>
                   <tr class="auth_opt auth_eap_tls">
-                    <td ><a id="help_for_certref" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("My Certificate"); ?></td>
+                    <td><a id="help_for_certref" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("My Certificate"); ?></td>
                     <td>
-                      <select name="certref" class="formselect">
+                      <select name="certref">
 <?php
                       if (isset($config['cert'])) :
                         foreach ($config['cert'] as $cert) :
@@ -860,17 +838,15 @@ endforeach; ?>
                       endif;
 ?>
                       </select>
-                      <div class="hidden" for="help_for_certref">
-                        <small class="formhelp">
+                      <div class="hidden" data-for="help_for_certref">
                         <?=gettext("Select a certificate previously configured in the Certificate Manager."); ?>
-                        </small>
                       </div>
                     </td>
                   </tr>
                   <tr class="auth_opt auth_eap_tls_caref">
                     <td><a id="help_for_caref" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("My Certificate Authority"); ?></td>
                     <td>
-                      <select name="caref" class="formselect">
+                      <select name="caref">
                       <?php
                     $config__ca = isset($config['ca']) ? $config['ca'] : array();
                         foreach ($config__ca as $ca) :
@@ -885,10 +861,8 @@ endforeach; ?>
 <?php                endforeach;
 ?>
                       </select>
-                      <div class="hidden" for="help_for_caref">
-                        <small class="formhelp">
+                      <div class="hidden" data-for="help_for_caref">
                         <?=gettext("Select a certificate authority previously configured in the Certificate Manager."); ?>
-                        </small>
                       </div>
                     </td>
                   </tr>
@@ -906,10 +880,8 @@ endforeach; ?>
                         endif;
                       endforeach;?>
                       </select>
-                      <div class="hidden" for="help_for_authservers">
-                        <small class="formhelp">
+                      <div class="hidden" data-for="help_for_authservers">
                         <?=gettext("Select authentication servers to use."); ?>
-                        </small>
                       </div>
                     </td>
                   </tr>
@@ -935,14 +907,14 @@ endforeach; ?>
 ?>
                       </select>
 
-                      <select name="ealgo_keylen" id="ealgo_keylen" width="30" class="formselect">
+                      <select name="ealgo_keylen" id="ealgo_keylen" width="30">
                       </select>
                     </td>
                   </tr>
                   <tr>
                     <td><a id="help_for_halgo" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Hash algorithm"); ?></td>
                     <td>
-                      <select name="hash-algorithm" class="formselect">
+                      <select name="hash-algorithm">
                       <?php
                       $p1_halgos = array(
                         'md5' => 'MD5',
@@ -960,17 +932,15 @@ endforeach; ?>
 <?php                endforeach;
 ?>
                       </select>
-                      <div class="hidden" for="help_for_halgo">
-                        <small class="formhelp">
+                      <div class="hidden" data-for="help_for_halgo">
                         <?=gettext("Must match the setting chosen on the remote side."); ?>
-                        </small>
                       </div>
                     </td>
                   </tr>
                   <tr>
                     <td><a id="help_for_dhgroup" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("DH key group"); ?></td>
                     <td>
-                      <select name="dhgroup" class="formselect">
+                      <select name="dhgroup">
 <?php
                       $p1_dhgroups = array(
                         1  => '1 (768 bit)',
@@ -996,10 +966,8 @@ endforeach; ?>
 <?php                endforeach;
 ?>
                       </select>
-                      <div class="hidden" for="help_for_dhgroup">
-                        <small class="formhelp">
+                      <div class="hidden" data-for="help_for_dhgroup">
                         <?=gettext("Must match the setting chosen on the remote side."); ?>
-                        </small>
                       </div>
                     </td>
                   </tr>
@@ -1007,10 +975,8 @@ endforeach; ?>
                     <td><a id="help_for_lifetime" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a>  <?=gettext("Lifetime"); ?></td>
                     <td>
                       <input name="lifetime" type="text" id="lifetime" size="20" value="<?=$pconfig['lifetime'];?>" />
-                      <div class="hidden" for="help_for_lifetime">
-                        <small class="formhelp">
+                      <div class="hidden" data-for="help_for_lifetime">
                         <?=gettext("seconds"); ?>
-                        </small>
                       </div>
                     </td>
                   </tr>
@@ -1021,10 +987,8 @@ endforeach; ?>
                     <td><a id="help_for_rekey_enable" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a>  <?=gettext("Disable Rekey");?></td>
                     <td>
                       <input name="rekey_enable" type="checkbox" id="rekey_enable" value="yes" <?= !empty($pconfig['rekey_enable']) ? "checked=\"checked\"" : ""; ?> />
-                      <div class="hidden" for="help_for_rekey_enable">
-                        <small class="formhelp">
+                      <div class="hidden" data-for="help_for_rekey_enable">
                         <?=gettext("Whether a connection should be renegotiated when it is about to expire."); ?>
-                        </small>
                       </div>
                     </td>
                   </tr>
@@ -1032,10 +996,8 @@ endforeach; ?>
                     <td><a id="help_for_reauth_enable" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a>  <?=gettext("Disable Reauth");?></td>
                     <td>
                       <input name="reauth_enable" type="checkbox" id="reauth_enable" value="yes" <?= !empty($pconfig['reauth_enable']) ? "checked=\"checked\"" : "";?> />
-                      <div class="hidden" for="help_for_reauth_enable">
-                        <small class="formhelp">
+                      <div class="hidden" data-for="help_for_reauth_enable">
                         <?=gettext("Whether rekeying of an IKE_SA should also reauthenticate the peer. In IKEv1, reauthentication is always done."); ?>
-                        </small>
                       </div>
                     </td>
                   </tr>
@@ -1043,17 +1005,15 @@ endforeach; ?>
                     <td><a id="help_for_tunnel_isolation" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Tunnel Isolation') ?></td>
                     <td>
                       <input name="tunnel_isolation" type="checkbox" id="tunnel_isolation" value="yes" <?= !empty($pconfig['tunnel_isolation']) ? 'checked="checked"' : '' ?>/>
-                      <div class="hidden" for="help_for_tunnel_isolation">
-                        <small class="formhelp">
+                      <div class="hidden" data-for="help_for_tunnel_isolation">
                         <?= gettext('This option will create a tunnel for each phase 2 entry for IKEv2 interoperability with e.g. FortiGate devices.') ?>
-                        </small>
                       </div>
                     </td>
                   </tr>
                   <tr>
                     <td><a id="help_for_nat_traversal" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a>  <?=gettext("NAT Traversal"); ?></td>
                     <td>
-                      <select name="nat_traversal" class="formselect">
+                      <select name="nat_traversal">
                         <option value="off" <?= isset($pconfig['nat_traversal']) && $pconfig['nat_traversal'] == "off" ? "selected=\"selected\"" :"" ;?> >
                           <?=gettext("Disable"); ?>
                         </option>
@@ -1064,11 +1024,9 @@ endforeach; ?>
                           <?=gettext("Force"); ?>
                         </option>
                       </select>
-                      <div class="hidden" for="help_for_nat_traversal">
-                        <small class="formhelp">
+                      <div class="hidden" data-for="help_for_nat_traversal">
                           <?=gettext("Set this option to enable the use of NAT-T (i.e. the encapsulation of ESP in UDP packets) if needed, " .
                                                   "which can help with clients that are behind restrictive firewalls."); ?>
-                        </small>
                       </div>
                     </td>
                   </tr>
@@ -1076,10 +1034,8 @@ endforeach; ?>
                     <td><a id="help_for_mobike" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a>  <?=gettext("Disable MOBIKE"); ?></td>
                     <td>
                       <input name="mobike" type="checkbox" id="mobike"  <?=!empty($pconfig['mobike']) ? "checked=\"checked\"":"";?> />
-                      <div class="hidden" for="help_for_mobike">
-                        <small class="formhelp">
+                      <div class="hidden" data-for="help_for_mobike">
                           <?=gettext("Disables the IKEv2 MOBIKE protocol defined by RFC 4555");?>
-                        </small>
                       </div>
                     </td>
                   </tr>
@@ -1087,27 +1043,21 @@ endforeach; ?>
                     <td><a id="help_for_dpd_enable" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a>  <?=gettext("Dead Peer Detection"); ?></td>
                     <td>
                       <input name="dpd_enable" type="checkbox" id="dpd_enable" value="yes" <?=!empty($pconfig['dpd_delay']) && !empty($pconfig['dpd_maxfail'])?"checked=\"checked\"":"";?> />
-                      <div class="hidden" for="help_for_dpd_enable">
-                        <small class="formhelp">
+                      <div class="hidden" data-for="help_for_dpd_enable">
                         <?=gettext("Enable DPD"); ?>
-                        </small>
                       </div>
                       <div id="opt_dpd">
                         <br />
                         <input name="dpd_delay" type="text" class="formfld unknown" id="dpd_delay" size="5" value="<?=$pconfig['dpd_delay'];?>" />
                         <?=gettext("seconds"); ?>
-                        <div class="hidden" for="help_for_dpd_enable">
-                          <small class="formhelp">
+                        <div class="hidden" data-for="help_for_dpd_enable">
                           <?=gettext("Delay between requesting peer acknowledgement."); ?>
-                          </small>
                         </div>
                         <br />
                         <input name="dpd_maxfail" type="text" class="formfld unknown" id="dpd_maxfail" size="5" value="<?=$pconfig['dpd_maxfail'];?>" />
                         <?=gettext("retries"); ?>
-                        <div class="hidden" for="help_for_dpd_enable">
-                          <small class="formhelp">
+                        <div class="hidden" data-for="help_for_dpd_enable">
                           <?=gettext("Number of consecutive failures allowed before disconnect."); ?>
-                          </small>
                         </div>
                       </div>
                     </td>

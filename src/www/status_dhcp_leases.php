@@ -319,7 +319,7 @@ include("head.inc");?>
       <section class="col-xs-12">
         <div class="content-box">
           <div class="table-responsive">
-            <table class="table table-striped">
+            <table class="table table-clean-form">
               <thead>
                 <tr>
                   <th><?=gettext("Failover Group"); ?></th>
@@ -353,7 +353,7 @@ include("head.inc");?>
       <section class="col-xs-12">
         <div class="content-box">
           <div class="table-responsive">
-            <table class="table table-striped">
+            <table class="table table-clean-form">
               <thead>
                 <tr>
                     <td><?=gettext("Interface"); ?></td>

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (c) 2014-2017 Franco Fichtner <franco@opnsense.org>
+# Copyright (c) 2014-2018 Franco Fichtner <franco@opnsense.org>
 # Copyright (c) 2004-2010 Scott Ullrich <sullrich@gmail.com>
 # Copyright (c) 2003-2004 Manuel Kasper <mk@neon1.net>
 # All rights reserved.
@@ -41,9 +41,32 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin:/usr/local/sbin
 export HOME PATH
 
 echo "Mounting filesystems..."
+echo -n "Checking root on ZFS... "
 
-# tunefs may refuse otherwise
-mount -fr /
+#Checking ZFS on root
+ORIGINAL_IFS="${IFS}"
+IFS=$'\n'
+ZFSCHK=`mount -t zfs`
+ZFS_ROOT=""
+
+for rmnt in $ZFSCHK; do
+    ZFS_DEV=`echo $rmnt | awk '{ print $1 }'`
+    ZFS_MNT=`echo $rmnt | awk '{ print $3 }'`
+    if [ "$ZFS_MNT" = "/" ]; then
+        ZFS_ROOT="yes"
+        break;
+    fi
+done
+
+IFS="${ORIGINAL_IFS}"
+
+if [ "$ZFS_ROOT" = "yes" ]; then
+    echo "yes, on $ZFS_DEV"
+else
+    echo "no"
+    # tunefs may refuse otherwise
+    mount -fr /
+fi
 
 GROWFS_MARKER=/.probe.for.growfs.nano
 
@@ -90,16 +113,23 @@ while read FS_PART FS_MNT FS_TYPE FS_MORE; do
 	fi
 done < /etc/fstab
 
-attempts=0
-while [ ${attempts} -lt 3 ]; do
-	fsck -C -y /
-	fsck -C -y /
-	if mount -a 2> /dev/null; then
-		# bail if all is well
-		break
-	fi
-	attempts=$((attempts+1))
-done
+#Skip fsck and remount rw if ZFS on root
+if [ "$ZFS_ROOT" != "yes" ]; then
+    attempts=0
+    while [ ${attempts} -lt 3 ]; do
+        fsck -C -y /
+        fsck -C -y /
+        if mount -a 2> /dev/null; then
+            # bail if all is well
+            break
+        fi
+        attempts=$((attempts+1))
+    done
+else
+    mount -t zfs -o rw,remount $ZFS_DEV /
+    #Mount all from fstab
+    mount -a 2> /dev/null
+fi
 
 # clear growfs marker now that we are read/write
 rm -f ${GROWFS_MARKER}
@@ -110,7 +140,7 @@ if _tmpdir=$(mktemp -d -q /.diskless.XXXXXX); then
 	rmdir ${_tmpdir}
 else
 	# fake a writeable environment in some subdirs
-	for i in conf etc home root usr var; do
+	for i in boot conf etc home root usr var; do
 		mkdir -p /tmp/.cdrom/${i}
 		mount_unionfs /tmp/.cdrom/${i} /${i}
 	done
@@ -134,15 +164,8 @@ fi
 # write /var/run/dmesg.boot
 /etc/rc.d/dmesg onestart
 
-# XXX pre-17.1 compat: avoid matching use_mfs_tmpvar
-USE_MFS_TMP=`/usr/bin/grep -c 'use_mfs_tmp[^_]' /conf/config.xml`
-
-if [ ${USE_MFS_TMP} -ne 0 ]; then
-	mount -t tmpfs -o mode=01777 tmpfs /tmp
-else
-	rm -rf /tmp/*
-	chmod 1777 /tmp
-fi
+# all sorts of maintenance tasks for /tmp
+/usr/local/etc/rc.subr.d/tmp
 
 # set up and recover a crash dump before activating swap
 /usr/local/etc/rc.subr.d/crashdump

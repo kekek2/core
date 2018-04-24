@@ -146,7 +146,7 @@ include("head.inc");
 
 ?>
 
-<script type="text/javascript">
+<script>
 $( document ).ready(function() {
     // force protocol on initial selection (only relevant for new items)
     $("select.act-tier-change").change(function(){
@@ -172,12 +172,12 @@ $( document ).ready(function() {
           <div class="tab-content content-box col-xs-12">
             <div class="table-responsive">
               <form method="post" name="iform" id="iform">
-                <table class="table table-clean-form opnsense_standard_table_form" summary="system groups edit">
+                <table class="table table-clean-form opnsense_standard_table_form">
                   <tr>
-                    <td width="22%"></td>
-                    <td width="78%" align="right">
+                    <td style="width:22%"></td>
+                    <td style="width:78%; text-align:right">
                       <small><?=gettext("full help"); ?> </small>
-                      <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
+                      <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page"></i>
                     </td>
                   </tr>
                   <tr>
@@ -189,7 +189,7 @@ $( document ).ready(function() {
                   <tr>
                     <td><a id="help_for_gatewayprio" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Gateway Priority"); ?></td>
                     <td>
-                      <table class="table table-borderless table-condensed">
+                      <table class="table table-condensed">
                         <tr>
                           <td><?= gettext('Gateway') ?></td>
                           <td><?= gettext('Tier') ?></td>
@@ -265,8 +265,8 @@ $( document ).ready(function() {
 <?php
                         endforeach;?>
                       </table>
-                      <div for="help_for_gatewayprio" class="hidden">
-                        <small class="helpform">
+                      <div data-for="help_for_gatewayprio" class="hidden">
+                          <br>
                           <strong><?=gettext("Link Priority"); ?></strong> <br />
                           <?=gettext("The priority selected here defines in what order failover and balancing of links will be done. " .
                                                   "Multiple links of the same priority will balance connections until all links in the priority will be exhausted. " .
@@ -275,7 +275,6 @@ $( document ).ready(function() {
                           <br />
                           <strong><?=gettext("Virtual IP"); ?></strong> <br />
                           <?=gettext("The virtual IP field selects what (virtual) IP should be used when this group applies to a local Dynamic DNS, IPsec or OpenVPN endpoint") ?>
-                        </small>
                       </div>
                     </td>
                   </tr>
@@ -288,10 +287,8 @@ $( document ).ready(function() {
                         <option value="downlatency" <?=$pconfig['trigger'] == "downlatency" ? "selected=\"selected\"" :"";?> ><?=gettext("High Latency");?></option>
                         <option value="downlosslatency" <?=$pconfig['trigger'] == "downlosslatency" ? "selected=\"selected\"" :"";?> ><?=gettext("Packet Loss or High Latency");?></option>
                       </select>
-                      <div for="help_for_triggerlvl" class="hidden">
-                        <small class="helpform">
+                      <div data-for="help_for_triggerlvl" class="hidden">
                         <?=gettext("When to trigger exclusion of a member"); ?>
-                        </small>
                       </div>
                     </td>
                   </tr>
@@ -299,10 +296,8 @@ $( document ).ready(function() {
                     <td><a id="help_for_descr" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description"); ?></td>
                     <td>
                       <input name="descr" type="text" value="<?=$pconfig['descr'];?>" />
-                      <div for="help_for_descr" class="hidden">
-                        <small class="helpform">
+                      <div data-for="help_for_descr" class="hidden">
                         <?=gettext("You may enter a description here for your reference (not parsed)."); ?>
-                        </small>
                       </div>
                     </td>
                   </tr>

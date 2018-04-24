@@ -84,7 +84,7 @@ function dump_log($system_logfile, $syslogEntriesToFetch)
           </select>
         </td>
         <td>
-          <input id="submit" name="submit" type="submit" class="btn btn-primary formbtn" value="<?= gettext('Save') ?>" autocomplete="off">
+          <input id="submit_system_log_widget" name="submit_system_log_widget" type="submit" class="btn btn-primary formbtn" value="<?= gettext('Save') ?>">
         </td>
       </tr>
     </table>
@@ -92,13 +92,13 @@ function dump_log($system_logfile, $syslogEntriesToFetch)
 </div>
 
 <div id="system_log-widgets" class="content-box" style="overflow:scroll;">
-  <table class="table table-striped" cellspacing="0" cellpadding="0">
+  <table class="table table-striped" style="cellspacing:0; cellpadding:0">
     <?php dump_log($system_logfile, $syslogEntriesToFetch); ?>
   </table>
 </div>
 
 <!-- needed to display the widget settings menu -->
-<script type="text/javascript">
+<script>
 //<![CDATA[
   $("#system_log-configure").removeClass("disabled");
 //]]>

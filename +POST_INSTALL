@@ -43,7 +43,4 @@ echo "%%TING_ABI%%" > /usr/local/opnsense/version/ting.abi
 
 /usr/local/etc/rc.d/configd start
 
-# ensure fingerprints revoked dir exists
-[ -d /usr/local/etc/pkg/fingerprints/TING/revoked ] || mkdir -p /usr/local/etc/pkg/fingerprints/TING/revoked
-
 /usr/local/etc/rc.configure_firmware
