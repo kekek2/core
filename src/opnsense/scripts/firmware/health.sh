@@ -32,6 +32,11 @@ PKG_PROGRESS_FILE=/tmp/pkg_upgrade.progress
 echo "***GOT REQUEST TO AUDIT HEALTH***" >> ${PKG_PROGRESS_FILE}
 echo "Check for and install missing package dependencies" >> ${PKG_PROGRESS_FILE}
 pkg check -da >> ${PKG_PROGRESS_FILE} 2>&1
+cd /
+echo "Detect kernels files with invalid checksums" >> ${PKG_PROGRESS_FILE}
+/usr/local/bin/cfv -VV -f boot/kernel.sum >> ${PKG_PROGRESS_FILE} 2>&1
+echo "Detect base files with invalid checksums" >> ${PKG_PROGRESS_FILE}
+/usr/local/bin/cfv -VV -f boot/base.sum >> ${PKG_PROGRESS_FILE} 2>&1
 echo "Detect installed package files with invalid checksums" >> ${PKG_PROGRESS_FILE}
 pkg check -sa >> ${PKG_PROGRESS_FILE} 2>&1
 echo '***DONE***' >> ${PKG_PROGRESS_FILE}
