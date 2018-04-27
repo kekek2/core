@@ -205,7 +205,7 @@ IFS="${ORIGINAL_IFS}"
 
 if [ -f "${MNT}/conf/config.xml" ]; then
 	rm -rf /conf/*
-	for FILE in captiveportal.sqlite config.xml dhcpleases.tgz dhcp6c_duid netflow.tgz rrd.tgz; do
+	for FILE in captiveportal.sqlite config.xml config.xml.sum dhcpleases.tgz dhcp6c_duid netflow.tgz rrd.tgz; do
 		if [ -f "${MNT}/conf/${FILE}" ]; then
 			echo -n "Restoring ${FILE}..."
 			cp "${MNT}/conf/${FILE}" /conf
