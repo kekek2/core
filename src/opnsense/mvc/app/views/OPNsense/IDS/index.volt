@@ -210,8 +210,11 @@ POSSIBILITY OF SUCH DAMAGE.
                 }
 
                 // refresh when all toggles are executed
-                $.when.apply(null, deferreds).done(function(){
+                $.when.apply(null, deferreds).then(function(){
                     $("#"+gridId).bootgrid("reload");
+                    $("#"+gridId).parent().find('[class*="command-toggle"]').each(function (index, entry) {
+                        $(entry).removeClass("fa-spinner pulse");
+                    });
                 });
             }
         }
@@ -575,6 +578,9 @@ POSSIBILITY OF SUCH DAMAGE.
         $("#disableSelectedRules").click(function(){
             var gridId = 'grid-installedrules';
             var url = '/api/ids/settings/toggleRule/';
+            $(this).find('[class*="command-toggle"]').each(function (index, entry) {
+                $(entry).addClass("fa-spinner pulse");
+            });
             actionToggleSelected(gridId, url, 0, 100);
         });
 
@@ -584,6 +590,9 @@ POSSIBILITY OF SUCH DAMAGE.
         $("#enableSelectedRules").click(function(){
             var gridId = 'grid-installedrules';
             var url = '/api/ids/settings/toggleRule/';
+            $(this).find('[class*="command-toggle"]').each(function (index, entry) {
+                $(entry).addClass("fa-spinner pulse");
+            });
             actionToggleSelected(gridId, url, 1, 100);
         });
 
@@ -782,15 +791,10 @@ POSSIBILITY OF SUCH DAMAGE.
             <tbody>
             </tbody>
             <tfoot>
-            <tr>
-                <td>
-                    <button title="{{ lang._('Disable selected') }}" id="disableSelectedRules" type="button" class="btn btn-xs btn-default"><span class="fa fa-square-o command-toggle"></span></button>
-                    <button title="{{ lang._('Enable selected') }}" id="enableSelectedRules" type="button" class="btn btn-xs btn-default"><span class="fa fa-check-square-o command-toggle"></span></button>
-                </td>
-                <td></td>
-            </tr>
             </tfoot>
         </table>
+        <button title="{{ lang._('Disable selected') }}" id="disableSelectedRules" type="button" class="btn btn-xs btn-default"><span class="fa fa-square-o command-toggle"></span></button>
+        <button title="{{ lang._('Enable selected') }}" id="enableSelectedRules" type="button" class="btn btn-xs btn-default"><span class="fa fa-check-square-o command-toggle"></span></button>
         <div class="col-md-12">
             <hr/>
             <button class="btn btn-primary act_update" type="button"><b>{{ lang._('Apply') }}</b> <i class="act_update_progress"></i></button>
