@@ -701,11 +701,7 @@
                 processData: false,  // tell jQuery not to process the data
                 contentType: false   // tell jQuery not to set contentType
             }).done(function (data) {
-                if (data.status == "ok")
-                    $('#message').attr('class', 'alert alert-info');
-                else
-                    $('#message').attr('class', 'alert alert-danger');
-                $('#message').attr('style', '').html("{{  lang._('Repository upload: ') }}" + data.status)
+                $('#updatestatus').html("{{  lang._('Repository upload: ') }}" + data.status)
                 $("#upload_progress").removeClass("fa fa-spinner fa-pulse");
             });
             return false;
@@ -813,14 +809,11 @@
                                         {{ lang._('Select an alternate firmware mirror.') }}
                                     </output>
                                 </td>
-                                <td></td>
-                            </tr>
-                            <tr>
-                                <td></td>
                                 <td>
-                                    <button class="btn btn-primary" id="change_mirror" type="button">{{ lang._('Save') }} <i id="change_mirror_progress"></i></button>
+                                    <form method="post" enctype="multipart/form-data" id="repoform">
+                                        <input name="repofile" type="file" id="repofile" /><br/>
+                                    </form>
                                 </td>
-                                <td></td>
                             </tr>
                             <tr>
                                 <td></td>
