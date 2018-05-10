@@ -876,8 +876,11 @@ class FirmwareController extends ApiControllerBase
             if ($fileName == "")
                 return ["status" => "failure"];
             $file->moveTo("/tmp/" . $fileName);
+            $abi = exec("pkg info pkg | grep Architecture | awk '{print \$3}'");
+            $repo = exec("grep url /usr/local/etc/pkg/repos/origin.conf | awk -F '\"' '{print \$2}' | sed 's/file:\/\///'");
+            $repo = str_replace('${ABI}', $abi, $repo);
             $backend = new Backend();
-            $ret = trim($backend->configdpRun("firmware repository", array("/tmp/" . $fileName), false));
+            $ret = trim($backend->configdpRun("firmware repository", array($repo, "/tmp/" . $fileName), false));
             unlink("/tmp/" . $fileName);
             return ['status' => $ret == "OK" ? "ok" : "failure"];
         }
