@@ -188,7 +188,7 @@ POSSIBILITY OF SUCH DAMAGE.
         function actionToggleSelected(gridId, url, state, combine) {
             var rows =$("#"+gridId).bootgrid('getSelectedRows');
             if (rows != undefined){
-                var deferreds = [];
+                var promise = $.when();
                 if (state != undefined) {
                     var url_suffix = state;
                 } else {
@@ -199,18 +199,22 @@ POSSIBILITY OF SUCH DAMAGE.
                 $.each(rows, function(key,uuid){
                     keyset.push(uuid);
                     if ( combine == undefined || keyset.length > combine) {
-                        deferreds.push(ajaxCall(url + keyset.join(',') +'/'+url_suffix, sendData={},null));
+                        promise = promise.then(function(){
+                            return ajaxCall(url + keyset.join(',') +'/'+url_suffix, sendData={},null);
+                        })
                         keyset = [];
                     }
                 });
 
                 // flush remaining items
                 if (keyset.length > 0) {
-                    deferreds.push(ajaxCall(url + keyset.join(',') +'/'+url_suffix, sendData={},null));
+                    promise = promise.then(function(){
+                        return ajaxCall(url + keyset.join(',') +'/'+url_suffix, sendData={},null);
+                    })
                 }
 
                 // refresh when all toggles are executed
-                $.when.apply(null, deferreds).then(function(){
+                promise.then(function(){
                     $("#"+gridId).bootgrid("reload");
                     $("#"+gridId).parent().find('[class*="command-toggle"]').each(function (index, entry) {
                         $(entry).removeClass("fa-spinner pulse");
