@@ -707,12 +707,12 @@
             <pattern>system_hasync.php*</pattern>
         </patterns>
     </page-system-hasync>
-    <page-system-license>
-        <name>System: License</name>
+    <page-lobby-eula>
+        <name>System: EULA</name>
         <patterns>
             <pattern>license.php*</pattern>
         </patterns>
-    </page-system-license>
+    </page-lobby-eula>
     <page-system-staticroutes>
         <name>System: Static Routes</name>
         <patterns>

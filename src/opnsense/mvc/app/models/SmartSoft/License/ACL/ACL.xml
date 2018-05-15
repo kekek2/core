@@ -1,0 +1,9 @@
+<acl>
+    <page-lobby-license>
+        <name>Lobby: License</name>
+        <patterns>
+            <pattern>ui/license/*</pattern>
+            <pattern>api/license/*</pattern>
+        </patterns>
+    </page-lobby-license>
+</acl>
