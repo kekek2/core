@@ -157,37 +157,34 @@ $( document ).ready(function() {
         <div class="table-responsive content-box tab-content" style="overflow: auto;">
 <?php
         if ($act != "edit") :?>
-          <table class="table table-clean-form table-clean-form">
-            <thead>
+          <table class="table table-clean-form">
+            <tr>
+              <th><?=gettext("Tunable Name"); ?></th>
+              <th><?=gettext("Description"); ?></th>
+              <th><?=gettext("Value"); ?></th>
+              <th></th>
+            </tr>
+<?php
+              $i = 0;
+              foreach ($a_tunable as $tunable) :?>
               <tr>
-                <th><?=gettext("Tunable Name"); ?></th>
-                <th><?=gettext("Description"); ?></th>
-                <th><?=gettext("Value"); ?></th>
-                <th></th>
+                <td><?=$tunable['tunable']; ?></td>
+                <td><?=gettext($tunable['descr']); ?></td>
+                <td>
+                  <?=$tunable['value']; ?>
+                  <?=$tunable['value'] == "default" ? "(" . get_default_sysctl_value($tunable['tunable']) . ")" : "";?>
+                </td>
+                <td style="white-space: nowrap;">
+                  <a href="system_advanced_sysctl.php?act=edit&amp;id=<?=$i;?>" class="btn btn-default btn-xs">
+                      <span data-toggle="tooltip" title="<?=gettext("Edit Tunable"); ?>" class="glyphicon glyphicon-pencil"></span>
+                  </a>
+                  <a id="del_<?=$i;?>" data-id="<?=$i;?>" title="<?=gettext("Delete Tunable"); ?>" data-toggle="tooltip"  class="act_delete btn btn-default btn-xs">
+                    <span class="fa fa-trash text-muted"></span>
+                  </a>
+                </td>
               </tr>
-              </thead>
-              <tbody>
 <?php
-                $i = 0;
-                foreach ($a_tunable as $tunable) :?>
-                <tr>
-                  <td><?=$tunable['tunable']; ?></td>
-                  <td><?=$tunable['descr']; ?></td>
-                  <td>
-                    <?=$tunable['value']; ?>
-                    <?=$tunable['value'] == "default" ? "(" . get_default_sysctl_value($tunable['tunable']) . ")" : "";?>
-                  </td>
-                  <td style="white-space: nowrap;">
-                    <a href="system_advanced_sysctl.php?act=edit&amp;id=<?=$i;?>" class="btn btn-default btn-xs">
-                        <span data-toggle="tooltip" title="<?=gettext("Edit Tunable"); ?>" class="glyphicon glyphicon-pencil"></span>
-                    </a>
-                    <a id="del_<?=$i;?>" data-id="<?=$i;?>" title="<?=gettext("Delete Tunable"); ?>" data-toggle="tooltip"  class="act_delete btn btn-default btn-xs">
-                      <span class="fa fa-trash text-muted"></span>
-                    </a>
-                  </td>
-                </tr>
-<?php
-                $i++; endforeach; ?>
+              $i++; endforeach; ?>
                 <tr>
                   <td colspan="4">
                     <?= gettext('Tunables are composed of runtime settings for sysctl.conf which take effect ' .
