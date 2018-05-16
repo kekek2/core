@@ -91,6 +91,13 @@
 		<help>This option is only used when a non-default address is chosen as the source above. This option only expresses a preference; If an IP address of the selected type is not found on the chosen interface, the other type will be tried.</help>
 	</field>
 	<field>
+		<id>syslog.Remote.Transport</id>
+		<label>Transport Protocol</label>
+		<type>dropdown</type>
+		<help>Specifies the protocol used to send messages to the destination server. If you use the udp transport, syslog-ng OSE automatically sends multicast packets if a multicast destination address is specified. The tcp transport does not support multicasting.
+		</help>
+	</field>
+	<field>
 		<id>syslog.Remote.Servers</id>
 		<label>Remote Syslog Servers</label>
 		<type>select_multiple</type>
