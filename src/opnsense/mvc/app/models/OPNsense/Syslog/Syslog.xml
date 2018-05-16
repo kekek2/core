@@ -1,6 +1,6 @@
 <model>
     <mount>//OPNsense/Syslog</mount>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <description>
         OPNsense Syslog
     </description>
@@ -104,6 +104,15 @@
                     <ipv6>IPv6</ipv6>
                 </OptionValues>
             </Proto>
+            <Transport type="OptionField">
+                <Required>Y</Required>
+                <default>udp</default>
+                <OptionValues>
+                    <udp>udp</udp>
+                    <tcp>tcp</tcp>
+                    <tls>tls</tls>
+                </OptionValues>
+            </Transport>
             <BindAddress type="TextField">
             </BindAddress>
             <Servers type="CSVListField">
