@@ -10,6 +10,7 @@
         mapDataToFormUI(data_get_map).done(function(data){
             $('.selectpicker').selectpicker('refresh');
             formatTokenizersUI();
+            updateServiceControlUI("syslog");
 
             if($("#syslog\\.Remote\\.LogAll").is(':checked'))
                 $("#categories").hide();
@@ -68,6 +69,14 @@
 			else
 				$("#categories").show();
 		});
+
+        // update history on tab state and implement navigation
+        if(window.location.hash != "") {
+            $('a[href="' + window.location.hash + '"]').click()
+        }
+        $('.nav-tabs a').on('shown.bs.tab', function (e) {
+            history.pushState(null, null, e.target.hash);
+        });
     });
 </script>
 
