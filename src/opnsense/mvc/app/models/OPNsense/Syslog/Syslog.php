@@ -74,6 +74,8 @@ class Syslog extends BaseModel
     private $AllTargets = array();
     private $AllCategories = array();
 
+    public $Enabled = 1;
+
     private function getPredefinedTargets()
     {
         return array(
