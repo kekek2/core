@@ -39,7 +39,6 @@ class M1_0_1 extends BaseModelMigration
 		parent::run($model);
 
 		$model->Remote->Transport = "udp";
-        $model->Enabled = "1";
 
 		// save
 		$model->serializeToConfig();

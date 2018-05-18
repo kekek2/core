@@ -5,10 +5,6 @@
         OPNsense Syslog
     </description>
     <items>
-        <Enabled type="BooleanField">
-            <default>1</default>
-            <Required>Y</Required>
-        </Enabled>
         <Reverse type="BooleanField">
             <default>1</default>
             <Required>Y</Required>
