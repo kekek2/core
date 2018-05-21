@@ -156,7 +156,7 @@ function updateServiceStatusUI(status)
 /**
  * operate service status buttons in user interface
  */
-function updateServiceControlUI(serviceName)
+function updateServiceControlUI(serviceName, stopButton)
 {
     ajaxCall(url="/api/" + serviceName + "/service/status", sendData={}, callback=function(data,status) {
         var status_html = '<span class="label label-opnsense label-opnsense-sm ';
@@ -167,7 +167,9 @@ function updateServiceControlUI(serviceName)
             status_html += 'label-success';
             status_icon = 'play';
             buttons += '<span id="restartService" class="btn btn-sm btn-default"><i class="fa fa-refresh fa-fw"></i></span> ';
-            buttons += '<span id="stopService" class="btn btn-sm btn-default"><i class="fa fa-stop fa-fw"></span>';
+            if (stopButton === undefined || stopButton !== false) {
+                buttons += '<span id="stopService" class="btn btn-sm btn-default"><i class="fa fa-stop fa-fw"></span>';
+            }
         } else if (data['status'] == "stopped") {
             status_html += 'label-danger';
             status_icon = 'stop';
