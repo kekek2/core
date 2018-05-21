@@ -199,18 +199,22 @@ POSSIBILITY OF SUCH DAMAGE.
                 $.each(rows, function(key,uuid){
                     keyset.push(uuid);
                     if ( combine == undefined || keyset.length > combine) {
-                        promise = promise.then(function(){
-                            return ajaxCall(url + keyset.join(',') +'/'+url_suffix, sendData={},null);
-                        })
+                        (function (localKeyset) {
+                            promise = promise.then(function () {
+                                return ajaxCall(url + localKeyset.join(',') + '/' + url_suffix, sendData = {}, null);
+                            })
+                        }) (keyset);
                         keyset = [];
                     }
                 });
 
                 // flush remaining items
                 if (keyset.length > 0) {
-                    promise = promise.then(function(){
-                        return ajaxCall(url + keyset.join(',') +'/'+url_suffix, sendData={},null);
-                    })
+                    (function (localKeyset) {
+                        promise = promise.then(function () {
+                            return ajaxCall(url + localKeyset.join(',') + '/' + url_suffix, sendData = {}, null);
+                        })
+                    })(keyset);
                 }
 
                 // refresh when all toggles are executed
