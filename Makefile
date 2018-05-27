@@ -137,10 +137,14 @@ WRKDIR?=${.CURDIR}/work
 WRKSRC?=${WRKDIR}/src
 PKGDIR?=${WRKDIR}/pkg
 
+.if defined(DEMO)
+FILES_TO_ENCODE=${WRKSRC}
+.else
 FILES_TO_ENCODE=${WRKSRC}${LOCALBASE}/etc/inc/authgui.inc \
 		${WRKSRC}${LOCALBASE}/www/ting_cert.php \
 		${WRKSRC}${LOCALBASE}/www/ting_cert_manual.php \
 		${WRKSRC}${LOCALBASE}/opnsense/mvc/app/library/SmartSoft/Core/Tools.php
+.endif
 
 WANTS=		p5-File-Slurp php${CORE_PHP}-pear-PHP_CodeSniffer \
 		phpunit6-php${CORE_PHP}
@@ -277,6 +281,22 @@ package: package-check clean-work
 .endfor
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} metadata
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} install
+.if defined(DEMO)
+	@echo ">>> Encoding all files for DEMO..."
+	@if [ -f /root/.ssh/encoder_rsa ]; then \
+	    ENC_TEMP=`${REMOTESHELL} 'mktemp -d'`; \
+	    ${RCP} -r ${WRKSRC} ${RCPHOST}:$${ENC_TEMP}; \
+	    ${REMOTESHELL} "cd $${ENC_TEMP}; /usr/local/ioncube/ioncube_encoder.sh -C -71 --encode '*.inc' --expire-in ${DEMO} --copy src/usr/local/opnsense/contrib/ src -o src-enc --shell-script-line '#\!/usr/bin/env php'"; \
+	    ${RCP} -r ${RCPHOST}:$${ENC_TEMP}/src-enc ${WRKDIR} ; \
+	    ${REMOTESHELL} "rm -rf $${ENC_TEMP}"; \
+	else \
+	    exit 1; \
+	fi
+	@sed -i '' 's/url:.*/file:\/\/\/var\/tmp\/sets\//' ${WRKDIR}/src-enc/usr/local/etc/pkg/repos/origin.conf.sample
+	@echo '{"file:///var/tmp/sets/":"Local repo"}' > ${WRKDIR}/src-enc/usr/local/opnsense/firmware-mirrors
+	@PORTSDIR=${.CURDIR} ${PKG} create -v -m ${WRKSRC} -r ${WRKDIR}/src-enc \
+	    -p ${WRKSRC}/plist -o ${PKGDIR}
+.else
 	@if [ -f /root/.ssh/encoder_rsa ]; then \
 	    echo ">>> Encode some files"; \
 	    ENC_TEMP=`${REMOTESHELL} 'mktemp -d'`; \
@@ -291,6 +311,7 @@ package: package-check clean-work
 	fi
 	@PORTSDIR=${.CURDIR} ${PKG} create -v -m ${WRKSRC} -r ${WRKSRC} \
 	    -p ${WRKSRC}/plist -o ${PKGDIR}
+.endif
 
 upgrade-check:
 	@if ! ${PKG} info ${CORE_NAME} > /dev/null; then \
