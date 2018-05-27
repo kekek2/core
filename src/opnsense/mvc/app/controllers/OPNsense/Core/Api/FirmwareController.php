@@ -747,10 +747,7 @@ class FirmwareController extends ApiControllerBase
     {
         $this->sessionClose(); // long running action, close session
 
-        /* XXX we might want to move these into configuration files later */
-        $mirrors = array();
-        $mirrors['https://update0.smart-soft.ru/'] = 'Mirror #1 (RU)';
-        $mirrors['https://update1.smart-soft.ru/'] = 'Mirror #2 (EU)';
+        $mirrors = json_decode(file_get_contents('/usr/local/opnsense/firmware-mirrors'), true);
 
         $has_subscription = array();
 
