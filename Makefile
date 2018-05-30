@@ -286,13 +286,13 @@ package: package-check clean-work
 	@if [ -f /root/.ssh/encoder_rsa ]; then \
 	    ENC_TEMP=`${REMOTESHELL} 'mktemp -d'`; \
 	    ${RCP} -r ${WRKSRC} ${RCPHOST}:$${ENC_TEMP}; \
-	    ${REMOTESHELL} "cd $${ENC_TEMP}; /usr/local/ioncube/ioncube_encoder.sh -C -71 --encode '*.inc' --expire-in ${DEMO} --copy src/usr/local/opnsense/contrib/ src -o src-enc --shell-script-line '#\!/usr/bin/env php'"; \
+	    ${REMOTESHELL} "cd $${ENC_TEMP}; /usr/local/ioncube/ioncube_encoder.sh -C -71 --encode '*.inc' --expire-in ${DEMO} --copy src/usr/local/opnsense/contrib/ --copy src/usr/local/opnsense/mvc/app/library/OPNsense/Core/Config.php src -o src-enc --shell-script-line '#\!/usr/bin/env php'"; \
 	    ${RCP} -r ${RCPHOST}:$${ENC_TEMP}/src-enc ${WRKDIR} ; \
 	    ${REMOTESHELL} "rm -rf $${ENC_TEMP}"; \
 	else \
 	    exit 1; \
 	fi
-	@sed -i '' 's/url:.*/file:\/\/\/var\/tmp\/sets\//' ${WRKDIR}/src-enc/usr/local/etc/pkg/repos/origin.conf.sample
+	@sed -i '' 's/url:.*/url: "file:\/\/\/var\/tmp\/sets"/' ${WRKDIR}/src-enc/usr/local/etc/pkg/repos/origin.conf.sample
 	@echo '{"file:///var/tmp/sets/":"Local repo"}' > ${WRKDIR}/src-enc/usr/local/opnsense/firmware-mirrors
 	@PORTSDIR=${.CURDIR} ${PKG} create -v -m ${WRKSRC} -r ${WRKDIR}/src-enc \
 	    -p ${WRKSRC}/plist -o ${PKGDIR}
