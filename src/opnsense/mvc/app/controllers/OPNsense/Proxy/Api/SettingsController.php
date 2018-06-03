@@ -240,4 +240,24 @@ class SettingsController extends ApiMutableModelControllerBase
 
         return $result;
     }
+
+    /**
+     * set action
+     * @return array status
+     */
+    public function setAction()
+    {
+        $mdlProxy = $this->getModel();
+        if (($prevAuthMethod = $mdlProxy->forward->authentication->method) != null) {
+            $prevAuthMethod = $prevAuthMethod->__toString();
+        }
+        $result = parent::setAction();
+
+        if (($authMethod = $mdlProxy->forward->authentication->method) != null) {
+            $authMethod = $authMethod->__toString();
+        }
+        $result["force_restart"] = $prevAuthMethod != $authMethod;
+        return $result;
+    }
+
 }
