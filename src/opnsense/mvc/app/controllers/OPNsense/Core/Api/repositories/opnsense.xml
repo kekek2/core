@@ -1,0 +1,32 @@
+<firmware>
+    <mirrors allow_custom="true">
+        <mirror>
+            <url/>
+            <description>(default)</description>
+        </mirror>
+        <mirror>
+            <url>https://update0.smart-soft.ru/</url>
+            <description>Mirror #1 (RU)</description>
+        </mirror>
+        <mirror>
+            <url>https://update1.smart-soft.ru/</url>
+            <description>Mirror #2 (EU)</description>
+        </mirror>
+    </mirrors>
+    <flavours>
+        <flavour>
+            <name/>
+            <description>(default)</description>
+        </flavour>
+        <flavour>
+            <name>latest</name>
+            <description>OpenSSL</description>
+        </flavour>
+    </flavours>
+    <families>
+        <family>
+            <name/>
+            <description>Production</description>
+        </family>
+    </families>
+</firmware>

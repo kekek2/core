@@ -52,7 +52,7 @@ if($need_alert_display == true) {
     <div class="container-fluid">
       <div class="navbar-header">
         <a class="navbar-brand" href="/index.php">
-        <img class="brand-logo" src="/ui/themes/<?= $themename ?>/build/images/ting-green.png" height="30" alt="logo" />
+          <img class="brand-logo" src="/ui/themes/<?= $themename ?>/build/images/ting-green.png" height="30" alt="logo" />
         </a>
         <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navigation">
           <span class="sr-only">Toggle navigation</span>

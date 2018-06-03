@@ -37,122 +37,6 @@ use SmartSoft\Core\Tools;
 $acl = new OPNsense\Core\ACL();
 $priv_list = $acl->getPrivList();
 
-function cmp_page_matches($page, &$matches, $fullwc = true)
-{
-    if (!is_array($matches)) {
-        return false;
-    }
-
-    /* skip any leading fwdslash */
-    $test = strpos($page, "/");
-    if ($test !== false && $test == 0) {
-        $page = substr($page, 1);
-    }
-
-    /* look for a match */
-    foreach ($matches as $match) {
-        /* possibly ignore full wildcard match */
-        if (!$fullwc && !strcmp($match ,"*")) {
-            continue;
-        }
-
-        /* compare exact or wildcard match */
-        $match =  str_replace(array(".", "*","?"), array("\.", ".*","\?"), $match);
-        $result = preg_match("@^/{$match}$@", "/{$page}");
-
-        if ($result) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-function isAllowedPage($page)
-{
-    if (session_status() == PHP_SESSION_NONE) {
-        session_start();
-    }
-    if (!isset($_SESSION['Username'])) {
-        session_write_close();
-        return false;
-    }
-
-    /* root access check */
-    $user = getUserEntry($_SESSION['Username']);
-    session_write_close();
-    if (isset($user)) {
-        if (isset($user['uid'])) {
-            if ($user['uid'] == 0) {
-                return true;
-            }
-        }
-    }
-    if ($page == "/") {
-        $page = "/index.php";
-    }
-
-    /* user privelege access check */
-    $allowedpages = getAllowedPages($_SESSION['Username']);
-    return cmp_page_matches($page, $allowedpages);
-}
-
-
-function getPrivPages(&$entry, &$allowed_pages)
-{
-    global $priv_list;
-
-    if (!isset($entry['priv']) || !is_array($entry['priv'])) {
-        return;
-    }
-
-    foreach ($entry['priv'] as $pname) {
-        if (strncmp($pname, "page-", 5)) {
-            continue;
-        }
-        $priv = &$priv_list[$pname];
-        if (!is_array($priv)) {
-            continue;
-        }
-        $matches = &$priv['match'];
-        if (!is_array($matches)) {
-            continue;
-        }
-        foreach ($matches as $match) {
-            $allowed_pages[] = $match;
-        }
-    }
-}
-
-
-
-function getAllowedPages($username) {
-    global $config;
-
-    $allowed_pages = array();
-    $allowed_groups = array();
-
-    // search for a local user by name
-    $local_user = getUserEntry($username);
-    getPrivPages($local_user, $allowed_pages);
-
-    // obtain local groups if we have a local user
-    $allowed_groups = local_user_get_groups($local_user);
-
-    // build a list of allowed pages
-    if (is_array($config['system']['group']) && is_array($allowed_groups)) {
-        foreach ($config['system']['group'] as $group) {
-            // a bit odd, we have seem some cases in the wild where $group doesn't contain a name attribute.
-            // this shouldn't happen, but to avoid warnings we will check over here.
-            if (isset($group['name']) && in_array($group['name'], $allowed_groups)) {
-                getPrivPages($group, $allowed_pages);
-            }
-        }
-    }
-
-    return $allowed_pages;
-}
-
 function set_language()
 {
     global $config, $userindex;
@@ -196,7 +80,7 @@ function session_auth(&$Login_Error)
     }
 
     // Detect protocol change
-    if (!isset($_POST['login']) && !empty($_SESSION['Logged_In']) && $_SESSION['protocol'] != $config['system']['webgui']['protocol']) {
+    if (!isset($_POST['login']) && !empty($_SESSION['Username']) && $_SESSION['protocol'] != $config['system']['webgui']['protocol']) {
         session_write_close();
         return false;
     }
@@ -225,22 +109,43 @@ function session_auth(&$Login_Error)
         }
 
         // authenticate using config settings, or local if failed
-        if (authenticate_user($_POST['usernamefld'], $_POST['passwordfld'], $authcfg) ||
-            ($authcfg_fallback !== false && authenticate_user($_POST['usernamefld'], $_POST['passwordfld'], $authcfg_fallback))
-            ) {
+        $authenticator = get_authenticator($authcfg);
+        $is_authenticated = false;
+        if ($authenticator != null && $authenticator->authenticate($_POST['usernamefld'], $_POST['passwordfld'])) {
+            $is_authenticated = true;
+        }
+        if (!$is_authenticated && $authcfg_fallback !== false) {
+            $authenticator = get_authenticator($authcfg_fallback);
+            if ($authenticator != null && $authenticator->authenticate($_POST['usernamefld'], $_POST['passwordfld'])) {
+                $is_authenticated = true;
+            }
+        }
+
+        if ($is_authenticated) {
             // Generate a new id to avoid session fixation
             session_regenerate_id();
-            $_SESSION['Logged_In'] = "True";
             $_SESSION['Username'] = $_POST['usernamefld'];
             $_SESSION['last_access'] = time();
             $_SESSION['protocol'] = $config['system']['webgui']['protocol'];
+            if ($authenticator != null && $authenticator->shouldChangePassword($_SESSION['Username'])) {
+                $_SESSION['user_shouldChangePassword'] = true;
+            }
             if (!isset($config['system']['webgui']['quietlogin'])) {
                 log_error(sprintf("Successful login for user '%s' from: %s", $_POST['usernamefld'], $_SERVER['REMOTE_ADDR']));
             }
             if (!empty($_GET['url'])) {
                 header(url_safe("Location: {$_GET['url']}"));
+            } elseif (!empty($_SESSION['user_shouldChangePassword'])) {
+                header("Location: system_usermanager_passwordmg.php");
             } else {
-                header(url_safe("Location: {$_SERVER['REQUEST_URI']}"));
+                if ($_SERVER['REQUEST_URI'] == "/") {
+                    // default landing page
+                    $acl = new OPNsense\Core\ACL();
+                    $url = $acl->getLandingPage($_SESSION['Username']);
+                    header(url_safe("Location: /{$url}"));
+                } else {
+                    header(url_safe("Location: {$_SERVER['REQUEST_URI']}"));
+                }
             }
             exit;
         } else {
@@ -250,7 +155,7 @@ function session_auth(&$Login_Error)
     }
 
     /* Show login page if they aren't logged in */
-    if (empty($_SESSION['Logged_In'])) {
+    if (empty($_SESSION['Username'])) {
         session_write_close();
         return false;
     }
@@ -295,12 +200,7 @@ function session_auth(&$Login_Error)
         /* and destroy it */
         session_destroy();
 
-        $scriptName = explode("/", $_SERVER["SCRIPT_FILENAME"]);
-        $scriptElms = count($scriptName);
-        $scriptName = $scriptName[$scriptElms-1];
-
-        /* redirect to page the user is on, it'll prompt them to login again */
-        header(url_safe("Location: {$scriptName}"));
+        header(url_safe("Location: /"));
         exit;
     }
 
@@ -345,13 +245,13 @@ set_language();
 /*
  * redirect to first allowed page if requesting a wrong url
  */
-if (!isAllowedPage($_SERVER['REQUEST_URI'])) {
+$page =  $_SERVER['REQUEST_URI']  == "/" ? "/index.php" : $_SERVER['REQUEST_URI'];
+if ($_SESSION['Username'] != 'root' && !$acl->isPageAccessible($_SESSION['Username'],$page)) {
     if (session_status() == PHP_SESSION_NONE) {
         session_start();
     }
-    $allowedpages = getAllowedPages($_SESSION['Username']);
-    if (count($allowedpages) > 0) {
-        $page = str_replace('*', '', $allowedpages[0]);
+    $page = $acl->getLandingPage($_SESSION['Username']);
+    if (!empty($page)) {
         $username = empty($_SESSION["Username"]) ? "(system)" : $_SESSION['Username'];
         if (!empty($_SERVER['REMOTE_ADDR'])) {
             $username .= '@' . $_SERVER['REMOTE_ADDR'];

@@ -124,27 +124,38 @@ function openvpn_xmlrpc_sync()
     return $result;
 }
 
-$openvpn_verbosity_level = array(
-    0 => gettext('0 (none)'),
-    1 => gettext('1 (default)'),
-    2 => gettext('2'),
-    3 => gettext('3 (recommended)'),
-    4 => gettext('4'),
-    5 => gettext('5'),
-    6 => gettext('6'),
-    7 => gettext('7'),
-    8 => gettext('8'),
-    9 => gettext('9'),
-    10 => gettext('10'),
-    11 => gettext('11'),
-);
+function openvpn_verbosity_level()
+{
+    return array(
+       0 => gettext('0 (none)'),
+       1 => gettext('1 (default)'),
+       2 => gettext('2'),
+       3 => gettext('3 (recommended)'),
+       4 => gettext('4'),
+       5 => gettext('5'),
+       6 => gettext('6'),
+       7 => gettext('7'),
+       8 => gettext('8'),
+       9 => gettext('9'),
+       10 => gettext('10'),
+       11 => gettext('11'),
+    );
+}
 
-$openvpn_compression_modes = array(
-    '' => gettext('No Preference'),
-    'no' => gettext('Disabled - No Compression'),
-    'adaptive' => gettext('Enabled with Adaptive Compression'),
-    'yes' => gettext('Enabled without Adaptive Compression'),
-);
+function openvpn_compression_modes()
+{
+    return array(
+        '' => gettext('No Preference'),
+        'no' => gettext('Disabled - No Compression'),
+        'adaptive' => gettext('Enabled with Adaptive Compression'),
+        'yes' => gettext('Enabled without Adaptive Compression'),
+    );
+}
+
+function openvpn_get_protocols()
+{
+    return array('UDP', 'UDP4', 'UDP6', 'TCP', 'TCP4', 'TCP6');
+}
 
 function openvpn_create_key()
 {
@@ -194,8 +205,15 @@ function openvpn_port_used($prot, $interface, $port, $curvpnid = 0)
 {
     global $config;
 
+    $af = null;
+
+    if (strlen($prot) > 3) {
+        $af = substr($prot, 3, 1);
+        $prot = substr($prot, 0, 3);
+    }
+
     if (isset($config['openvpn']['openvpn-server'])) {
-        foreach ($config['openvpn']['openvpn-server'] as & $settings) {
+        foreach ($config['openvpn']['openvpn-server'] as $settings) {
             if (isset($settings['disable'])) {
                 continue;
             }
@@ -204,15 +222,28 @@ function openvpn_port_used($prot, $interface, $port, $curvpnid = 0)
                 continue;
             }
 
-            if ($port == $settings['local_port'] && $prot == $settings['protocol'] &&
-              ($interface == $settings['interface'] || $interface == "any" || $settings['interface'] == "any")) {
-                return $settings['vpnid'];
+            if ($port != $settings['local_port']) {
+                continue;
             }
+
+            if (strpos($settings['protocol'], $prot) === false) {
+                continue;
+            }
+
+            if (!empty($af) && strlen($settings['protocol']) > 3 && strpos($settings['protocol'], $af) === false) {
+                continue;
+            }
+
+            if ($interface != $settings['interface'] && $interface != 'any' && $settings['interface'] != 'any') {
+                continue;
+            }
+
+            return $settings['vpnid'];
         }
     }
 
     if (isset($config['openvpn']['openvpn-client'])) {
-        foreach ($config['openvpn']['openvpn-client'] as & $settings) {
+        foreach ($config['openvpn']['openvpn-client'] as $settings) {
             if (isset($settings['disable'])) {
                 continue;
             }
@@ -221,21 +252,37 @@ function openvpn_port_used($prot, $interface, $port, $curvpnid = 0)
                 continue;
             }
 
-            if ($port == $settings['local_port'] && $prot == $settings['protocol'] &&
-              ($interface == $settings['interface'] || $interface == "any" || $settings['interface'] == "any")) {
-                return $settings['vpnid'];
+            if ($port != $settings['local_port']) {
+                continue;
             }
+
+            if (strpos($settings['protocol'], $prot) === false) {
+                continue;
+            }
+
+            if (!empty($af) && strlen($settings['protocol']) > 3 && strpos($settings['protocol'], $af) === false) {
+                continue;
+            }
+
+            if ($interface != $settings['interface'] && $interface != 'any' && $settings['interface'] != 'any') {
+                continue;
+            }
+
+            return $settings['vpnid'];
         }
     }
+
     return 0;
 }
 
 function openvpn_port_next($prot, $interface = "wan")
 {
     $port = 1194;
+
     while (openvpn_port_used($prot, $interface, $port)) {
         $port++;
     }
+
     while (openvpn_port_used($prot, "any", $port)) {
         $port++;
     }
@@ -335,6 +382,9 @@ function openvpn_validate_port($value, $name)
 
 function openvpn_validate_cidr($value, $name, $multiple = false, $ipproto = 'ipv4', $allow_hosts = false)
 {
+    $error_multi = gettext("The field '%s' must contain only valid %s CIDR range(s) separated by commas.");
+    $error_single = gettext("The field '%s' must contain a single valid %s CIDR range.");
+
     $value = trim($value);
     $error = false;
     if (empty($value)) {
@@ -343,7 +393,7 @@ function openvpn_validate_cidr($value, $name, $multiple = false, $ipproto = 'ipv
     $networks = explode(',', $value);
 
     if (!$multiple && (count($networks) > 1)) {
-        return sprintf(gettext("The field '%s' must contain a single valid %s CIDR range."), $name, $ipproto);
+        return sprintf($error_single, $name, $ipproto);
     }
 
     foreach ($networks as $network) {
@@ -358,11 +408,14 @@ function openvpn_validate_cidr($value, $name, $multiple = false, $ipproto = 'ipv
     }
 
     if ($error) {
-        return sprintf(gettext("The field '%s' must contain only valid %s CIDR range(s) " .
-            "separated by commas."), $name, $ipproto);
-    } else {
-        return false;
+        if (!$multiple) {
+            return sprintf($error_single, $name, $ipproto);
+        }
+
+        return sprintf($error_multi, $name, $ipproto);
     }
+
+    return false;
 }
 
 function openvpn_validate_cidr_ipv4($value, $allow_hosts = false)

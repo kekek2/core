@@ -44,6 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['compression'] = isset($config['system']['webgui']['compression']) ? $config['system']['webgui']['compression'] : null;
     $pconfig['ssl-ciphers'] = !empty($config['system']['webgui']['ssl-ciphers']) ? explode(':', $config['system']['webgui']['ssl-ciphers']) : array();
     $pconfig['disablehttpredirect'] = isset($config['system']['webgui']['disablehttpredirect']);
+    $pconfig['httpaccesslog'] = isset($config['system']['webgui']['httpaccesslog']);
     $pconfig['disableconsolemenu'] = isset($config['system']['disableconsolemenu']);
     $pconfig['usevirtualterminal'] = isset($config['system']['usevirtualterminal']);
     $pconfig['disableintegratedauth'] = !empty($config['system']['disableintegratedauth']);
@@ -57,18 +58,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['enablesshd'] = $config['system']['ssh']['enabled'];
     $pconfig['sshport'] = $config['system']['ssh']['port'];
     $pconfig['sshinterfaces'] = !empty($config['system']['ssh']['interfaces']) ? explode(',', $config['system']['ssh']['interfaces']) : array();
-    $pconfig['passwordauth'] = isset($config['system']['ssh']['passwordauth']);
+    $pconfig['sshpasswordauth'] = isset($config['system']['ssh']['passwordauth']);
     $pconfig['sshdpermitrootlogin'] = isset($config['system']['ssh']['permitrootlogin']);
     $pconfig['quietlogin'] = isset($config['system']['webgui']['quietlogin']);
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $input_errors = array();
     $pconfig = $_POST;
 
-    /* input validation */
-    if (!empty($pconfig['webguiport'])) {
-        if (!is_port($pconfig['webguiport'])) {
-            $input_errors[] = gettext('You must specify a valid web GUI port number');
-        }
+    if (!empty($pconfig['webguiport']) && !is_port($pconfig['webguiport'])) {
+        $input_errors[] = gettext('You must specify a valid web GUI port number.');
+    }
+
+    if (empty($pconfig['webguiproto']) || !in_array($pconfig['webguiproto'], array('http', 'https'))) {
+        $input_errors[] = gettext('You must specify a valid web GUI protocol.');
     }
 
     if (!empty($pconfig['althostnames'])) {
@@ -80,10 +82,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
     }
 
-    if (!empty($pconfig['sshport'])) {
-        if (!is_port($pconfig['sshport'])) {
-            $input_errors[] = gettext("You must specify a valid port number");
-        }
+    if (!empty($pconfig['sshport']) && !is_port($pconfig['sshport'])) {
+        $input_errors[] = gettext('You must specify a valid SSH port number.');
     }
 
     if (count($input_errors) == 0) {
@@ -96,6 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $config['system']['webgui']['compression'] != $pconfig['compression'] ||
             $config['system']['webgui']['ssl-ciphers'] != $newciphers ||
             $config['system']['webgui']['interfaces'] != $newinterfaces ||
+            (empty($pconfig['httpaccesslog'])) != empty($config['system']['webgui']['httpaccesslog']) ||
             ($pconfig['disablehttpredirect'] == "yes") != !empty($config['system']['webgui']['disablehttpredirect']);
 
         $config['system']['webgui']['protocol'] = $pconfig['webguiproto'];
@@ -109,6 +110,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $config['system']['webgui']['disablehttpredirect'] = true;
         } elseif (isset($config['system']['webgui']['disablehttpredirect'])) {
             unset($config['system']['webgui']['disablehttpredirect']);
+        }
+
+        if (!empty($pconfig['httpaccesslog'])) {
+            $config['system']['webgui']['httpaccesslog'] = true;
+        } elseif (isset($config['system']['webgui']['httpaccesslog'])) {
+            unset($config['system']['webgui']['httpaccesslog']);
         }
 
         if ($pconfig['quietlogin'] == "yes") {
@@ -187,7 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             unset($config['system']['ssh']['enabled']);
         }
 
-        if (!empty($pconfig['passwordauth'])) {
+        if (!empty($pconfig['sshpasswordauth'])) {
             $config['system']['ssh']['passwordauth'] = true;
         } elseif (isset($config['system']['ssh']['passwordauth'])) {
             unset($config['system']['ssh']['passwordauth']);
@@ -401,13 +408,13 @@ $(document).ready(function() {
 <?php
                     endforeach;?>
                     </select>
-                    <output class='hidden' for="help_for_sslcertref">
+                    <div class='hidden' data-for="help_for_sslcertref">
                       <?=sprintf(
                         gettext('The %sSSL certificate manager%s can be used to ' .
                         'create or import certificates if required.'),
                         '<a href="/system_certmanager.php">', '</a>'
                       );?>
-                    </output>
+                    </div>
                   </td>
                 </tr>
                 <tr class="ssl_opts">
@@ -427,20 +434,20 @@ $(document).ready(function() {
 <?php
                       endforeach;?>
                       </select>
-                      <output class="hidden" for="help_for_sslciphers">
+                      <div class="hidden" data-for="help_for_sslciphers">
                         <?=gettext("Limit SSL cipher selection in case the system defaults are undesired. Note that restrictive use may lead to an inaccessible web GUI.");?>
-                      </output>
+                      </div>
                   </td>
                 </tr>
                 <tr>
                   <td><a id="help_for_webguiport" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("TCP port"); ?></td>
                   <td>
                     <input name="webguiport" id="webguiport" type="text" value="<?=$pconfig['webguiport'];?>" placeholder="<?= $pconfig['webguiproto'] == 'https' ? '443' : '80' ?>" />
-                    <output class="hidden" for="help_for_webguiport">
+                    <div class="hidden" data-for="help_for_webguiport">
                       <?=gettext("Enter a custom port number for the web GUI " .
                                             "above if you want to override the default (80 for HTTP, 443 " .
                                             "for HTTPS). Changes will take effect immediately after save."); ?>
-                    </output>
+                    </div>
                   </td>
                 </tr>
                 <tr class="ssl_opts">
@@ -448,12 +455,12 @@ $(document).ready(function() {
                   <td style="width:78%">
                     <input name="disablehttpredirect" type="checkbox" value="yes" <?= empty($pconfig['disablehttpredirect']) ? '' : 'checked="checked"';?> />
                     <strong><?= gettext('Disable web GUI redirect rule') ?></strong>
-                    <output class="hidden" for="help_for_disablehttpredirect">
+                    <div class="hidden" data-for="help_for_disablehttpredirect">
                       <?= gettext("When this is unchecked, access to the web GUI " .
                                           "is always permitted even on port 80, regardless of the listening port configured. " .
                                           "Check this box to disable this automatically added redirect rule.");
                                           ?>
-                    </output>
+                    </div>
                   </td>
                 </tr>
                 <tr>
@@ -461,9 +468,9 @@ $(document).ready(function() {
                   <td>
                     <input name="quietlogin" type="checkbox" value="yes" <?= empty($pconfig['quietlogin']) ? '' : 'checked="checked"' ?>/>
                     <strong><?= gettext('Disable logging of web GUI successful logins') ?></strong>
-                    <output class="hidden" for="help_for_quietlogin">
+                    <div class="hidden" data-for="help_for_quietlogin">
                       <?=gettext("When this is checked, successful logins to the web GUI will not be logged.");?>
-                    </output>
+                    </div>
                   </td>
                 </tr>
                 <tr>
@@ -471,11 +478,11 @@ $(document).ready(function() {
                   <td>
                     <input name="nodnsrebindcheck" type="checkbox" value="yes" <?= empty($pconfig['nodnsrebindcheck']) ? '' : 'checked="checked"';?>/>
                     <strong><?=gettext("Disable DNS Rebinding Checks"); ?></strong>
-                    <output class="hidden" for="help_for_nodnsrebindcheck">
+                    <div class="hidden" data-for="help_for_nodnsrebindcheck">
                       <?= sprintf(gettext("When this is unchecked, your system is protected against %sDNS Rebinding attacks%s. " .
                                           "This blocks private IP responses from your configured DNS servers. Check this box to disable this protection if it interferes with " .
                                           "web GUI access or name resolution in your environment."),'<a href="http://en.wikipedia.org/wiki/DNS_rebinding">','</a>') ?>
-                    </output>
+                    </div>
                   </td>
                 </tr>
                 <tr>
@@ -483,10 +490,10 @@ $(document).ready(function() {
                   <td>
                     <input name="althostnames" type="text" value="<?= $pconfig['althostnames'] ?>"/>
                     <strong><?=gettext("Alternate Hostnames for DNS Rebinding and HTTP_REFERER Checks"); ?></strong>
-                    <output class="hidden" for="help_for_althostnames">
+                    <div class="hidden" data-for="help_for_althostnames">
                       <?= gettext("Here you can specify alternate hostnames by which the router may be queried, to " .
                                           "bypass the DNS Rebinding Attack checks. Separate hostnames with spaces.") ?>
-                    </output>
+                    </div>
                   </td>
                 </tr>
                 <tr>
@@ -506,10 +513,20 @@ $(document).ready(function() {
                           <?=gettext("High");?>
                         </option>
                     </select>
-                    <output class="hidden" for="help_for_compression">
+                    <div class="hidden" data-for="help_for_compression">
                       <?=gettext("Enable compression of HTTP pages and dynamic content.");?><br/>
                       <?=gettext("Transfer less data to the client for an additional cost in processing power.");?>
-                    </output>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td><a id="help_for_httpaccesslog" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Access log"); ?></td>
+                  <td>
+                    <input name="httpaccesslog" type="checkbox" value="yes" <?= empty($pconfig['httpaccesslog']) ? '' : 'checked="checked"' ?> />
+                    <strong><?=gettext("Enable access log"); ?></strong>
+                    <div class="hidden" data-for="help_for_httpaccesslog">
+                      <?=gettext("Enable access logging on the webinterface for debugging and analysis purposes.") ?>
+                    </div>
                   </td>
                 </tr>
                 <tr>
@@ -522,9 +539,9 @@ $(document).ready(function() {
 <?php
                     endforeach;?>
                     </select>
-                    <output class="hidden" for="help_for_webguiinterfaces">
+                    <div class="hidden" data-for="help_for_webguiinterfaces">
                       <?= gettext('Only accept connections from the selected interfaces. Leave empty to listen globally. Use with care.') ?>
-                    </output>
+                    </div>
                   </td>
                 </tr>
                 <tr>
@@ -532,13 +549,13 @@ $(document).ready(function() {
                   <td>
                     <input name="nohttpreferercheck" type="checkbox" value="yes" <?= empty($pconfig['nohttpreferercheck']) ? '' : 'checked="checked"' ?> />
                     <strong><?=gettext("Disable HTTP_REFERER enforcement check"); ?></strong>
-                    <output class="hidden" for="help_for_nohttpreferercheck">
+                    <div class="hidden" data-for="help_for_nohttpreferercheck">
                       <?=sprintf(gettext("When this is unchecked, access to the web GUI " .
                                           "is protected against HTTP_REFERER redirection attempts. " .
                                           "Check this box to disable this protection if you find that it interferes with " .
                                           "web GUI access in certain corner cases such as using external scripts to interact with this system. More information on HTTP_REFERER is available from %sWikipedia%s."),
                                           '<a target="_blank" href="http://en.wikipedia.org/wiki/HTTP_referrer">','</a>') ?>
-                    </output>
+                    </div>
                   </td>
                 </tr>
                 <tr>
@@ -556,32 +573,32 @@ $(document).ready(function() {
                   <td>
                     <input name="sshdpermitrootlogin" type="checkbox" value="yes" <?= empty($pconfig['sshdpermitrootlogin']) ? '' : 'checked="checked"' ?> />
                     <strong><?=gettext("Permit root user login"); ?></strong>
-                    <output class="hidden" for="help_for_sshdpermitrootlogin">
+                    <div class="hidden" data-for="help_for_sshdpermitrootlogin">
                       <?= gettext(
                         'Root login is generally discouraged. It is advised ' .
                         'to log in via another user and switch to root afterwards.'
                       ) ?>
-                    </output>
+                    </div>
                   </td>
                 </tr>
                 <tr>
-                  <td><a id="help_for_passwordauth" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Authentication Method") ?></td>
+                  <td><a id="help_for_sshpasswordauth" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Authentication Method") ?></td>
                   <td>
-                    <input name="passwordauth" type="checkbox" value="yes" <?= empty($pconfig['passwordauth']) ? '' : 'checked="checked"' ?> />
+                    <input name="sshpasswordauth" type="checkbox" value="yes" <?= empty($pconfig['sshpasswordauth']) ? '' : 'checked="checked"' ?> />
                     <strong><?=gettext("Permit password login"); ?></strong>
-                    <output class="hidden" for="help_for_passwordauth">
+                    <div class="hidden" data-for="help_for_sshpasswordauth">
                       <?=sprintf(gettext("When disabled, authorized keys need to be configured for each %sUser%s that has been granted secure shell access."),
                                 '<a href="system_usermanager.php">', '</a>') ?>
-                    </output>
+                    </div>
                   </td>
                 </tr>
                 <tr>
                   <td><a id="help_for_sshport" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("SSH port"); ?></td>
                   <td style="width:78%">
                     <input name="sshport" type="text" value="<?=$pconfig['sshport'];?>" placeholder="22" />
-                    <output class="hidden" for="help_for_sshport">
+                    <div class="hidden" data-for="help_for_sshport">
                       <?=gettext("Leave this blank for the default of 22."); ?>
-                    </output>
+                    </div>
                   </td>
                 </tr>
                 <tr>
@@ -594,9 +611,9 @@ $(document).ready(function() {
 <?php
                     endforeach;?>
                     </select>
-                    <output class="hidden" for="help_for_sshinterfaces">
+                    <div class="hidden" data-for="help_for_sshinterfaces">
                       <?= gettext('Only accept connections from the selected interfaces. Leave empty to listen globally. Use with care.') ?>
-                    </output>
+                    </div>
                   </td>
                 </tr>
                 <tr>
@@ -617,10 +634,10 @@ $(document).ready(function() {
                       <option value="<?= html_safe($console_key) ?>" <?= $pconfig['primaryconsole'] == $console_key ? 'selected="selected"' : '' ?>><?= $console_type['name'] ?></option>
 <?                  endforeach ?>
                     </select>
-                    <output class="hidden" for="help_for_primaryconsole">
+                    <div class="hidden" data-for="help_for_primaryconsole">
                       <?=gettext("Select the primary console. This preferred console will show boot script output.") ?>
                       <?=gettext("All consoles display OS boot messages, console messages, and the console menu."); ?>
-                    </output>
+                    </div>
                   </td>
                 </tr>
                 <tr>
@@ -632,10 +649,10 @@ $(document).ready(function() {
                       <option value="<?= html_safe($console_key) ?>" <?= $pconfig['secondaryconsole'] == $console_key ? 'selected="selected"' : '' ?>><?= $console_type['name'] ?></option>
 <?                  endforeach ?>
                     </select>
-                    <output class="hidden" for="help_for_secondaryconsole">
+                    <div class="hidden" data-for="help_for_secondaryconsole">
                       <?=gettext("Select the secondary console if multiple consoles are present."); ?>
                       <?=gettext("All consoles display OS boot messages, console messages, and the console menu."); ?>
-                    </output>
+                    </div>
                   </td>
                 </tr>
                 <tr>
@@ -649,9 +666,9 @@ $(document).ready(function() {
                       <option value="14400" <?=$pconfig['serialspeed'] == "14400" ? 'selected="selected"' : '' ?>>14400</option>
                       <option value="9600" <?=$pconfig['serialspeed'] == "9600" ? 'selected="selected"' : '' ?>>9600</option>
                     </select>
-                    <output class="hidden" for="help_for_serialspeed">
+                    <div class="hidden" data-for="help_for_serialspeed">
                       <?=gettext("Allows selection of different speeds for the serial console port."); ?>
-                    </output>
+                    </div>
                   </td>
                 </tr>
                 <tr>
@@ -666,9 +683,9 @@ $(document).ready(function() {
                   <td style="width:78%">
                     <input name="disableintegratedauth" type="checkbox" value="yes" <?= empty($pconfig['disableintegratedauth']) ? '' : 'checked="checked"' ?>  />
                     <strong><?=gettext("Disable integrated authentication"); ?></strong>
-                    <output class="hidden" for="help_for_disableintegratedauth">
+                    <div class="hidden" data-for="help_for_disableintegratedauth">
                         <?=gettext("Disable OPNsense integrated authentication module for console access, falling back to normal unix authentication.");?>
-                    </output>
+                    </div>
                   </td>
                 </tr>
                 <tr>

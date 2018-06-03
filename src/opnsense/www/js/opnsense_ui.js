@@ -238,7 +238,7 @@ function formatTokenizersUI() {
 function addMultiSelectClearUI() {
     $('[id*="clear-options"]').each(function() {
         $(this).click(function() {
-            var id = $(this).attr("for");
+            var id = $(this).attr("id").replace(/_*clear-options_*/, '');
             BootstrapDialog.confirm({
                 title: 'Deselect or remove all items ?',
                 message: 'Deselect or remove all items ?',
@@ -277,8 +277,8 @@ function addMultiSelectClearUI() {
  */
 function initFormHelpUI() {
     // handle help messages show/hide
-    $("a[class='showhelp']").click(function (event) {
-        $("*[for='" + $(this).attr('id') + "']").toggleClass("hidden show");
+    $("a.showhelp").click(function (event) {
+        $("*[data-for='" + $(this).attr('id') + "']").toggleClass("hidden show");
         event.preventDefault();
     });
 
@@ -290,11 +290,11 @@ function initFormHelpUI() {
             if (window.sessionStorage) {
                 sessionStorage.setItem('all_help_preset', 1);
             }
-            $('[for*="help_for"]').addClass("show");
-            $('[for*="help_for"]').removeClass("hidden");
+            $('[data-for*="help_for"]').addClass("show");
+            $('[data-for*="help_for"]').removeClass("hidden");
         } else {
-            $('[for*="help_for"]').addClass("hidden");
-            $('[for*="help_for"]').removeClass("show");
+            $('[data-for*="help_for"]').addClass("hidden");
+            $('[data-for*="help_for"]').removeClass("show");
             if (window.sessionStorage) {
                 sessionStorage.setItem('all_help_preset', 0);
             }
@@ -305,8 +305,8 @@ function initFormHelpUI() {
         // show all help messages when preset was stored
         $('[id*="show_all_help"]').toggleClass("fa-toggle-on fa-toggle-off");
         $('[id*="show_all_help"]').toggleClass("text-success text-danger");
-        $('[for*="help_for"]').addClass("show");
-        $('[for*="help_for"]').removeClass("hidden");
+        $('[data-for*="help_for"]').addClass("show");
+        $('[data-for*="help_for"]').removeClass("hidden");
     }
 }
 

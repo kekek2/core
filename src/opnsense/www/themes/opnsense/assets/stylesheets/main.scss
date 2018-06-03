@@ -235,10 +235,6 @@ body{
   }
 }
 
-.page-content-main [class^="col-"] + [class^="col-"]{
-  padding-top: ($grid-gutter-width/2);
-}
-
 .brand-logo{
     display: none;
 
@@ -674,6 +670,10 @@ label>input[type="checkbox"],
 label>input[type="radio"] {
   margin-right: .4em;
   float:left;
+}
+
+div[data-for*="help_for"] {
+  padding-top: .4em;
 }
 
 #log-settings label[for^="act"] {

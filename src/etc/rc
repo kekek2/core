@@ -69,11 +69,17 @@ else
 fi
 
 GROWFS_MARKER=/.probe.for.growfs.nano
+ROOT_IS_UFS=
 
 while read FS_PART FS_MNT FS_TYPE FS_MORE; do
 	# only tune our own file systems
 	if [ "${FS_TYPE}" != "ufs" ]; then
 		continue;
+	fi
+
+	# marker for running fsck in a bit
+	if [ "${FS_MNT}" = "/" ]; then
+		ROOT_IS_UFS=yes
 	fi
 
 	if echo "${FS_MORE}" | grep -iq nosoft; then
@@ -131,6 +137,14 @@ else
     mount -a 2> /dev/null
 fi
 
+if kldstat -qm zfs; then
+	mount -uw /
+	zfs mount -va
+	# maybe there is a mountpoint in fstab
+	# that requires ZFS to be fully set up
+	mount -a
+fi
+
 # clear growfs marker now that we are read/write
 rm -f ${GROWFS_MARKER}
 
@@ -149,11 +163,15 @@ fi
 # regenerate groups and users for base
 /usr/local/etc/rc.subr.d/recover base > /dev/null
 
+# generate hostid and save it permanently
+/etc/rc.d/hostid start
+/etc/rc.d/hostid_save start
+
 # set keyboard map if needed
 /etc/rc.d/syscons onestart
 
 # run the config importer during early startup
-/usr/local/etc/rc.importer -b
+/usr/local/sbin/opnsense-importer -b
 
 # enable console output if it was muted
 /sbin/conscontrol mute off > /dev/null

@@ -1,32 +1,32 @@
 <?php
 
 /*
-    Copyright (C) 2016-2017 Franco Fichtner <franco@opnsense.org>
-    Copyright (C) 2004-2007 Scott Ullrich <sullrich@gmail.com>
-    Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
-    All rights reserved.
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are met:
-
-    1. Redistributions of source code must retain the above copyright notice,
-       this list of conditions and the following disclaimer.
-
-    2. Redistributions in binary form must reproduce the above copyright
-       notice, this list of conditions and the following disclaimer in the
-       documentation and/or other materials provided with the distribution.
-
-    THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
-    INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-    AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-    AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-    OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-    POSSIBILITY OF SUCH DAMAGE.
-*/
+ * Copyright (C) 2016-2018 Franco Fichtner <franco@opnsense.org>
+ * Copyright (C) 2004-2007 Scott Ullrich <sullrich@gmail.com>
+ * Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
 function system_powerd_configure($verbose = false)
 {
@@ -376,11 +376,7 @@ function system_hostname_configure($verbose = false)
 
     $hostname = "{$syscfg['hostname']}.{$syscfg['domain']}";
 
-    /* set hostname */
     mwexecf('/bin/hostname %s', $hostname);
-
-    /* Setup host GUID ID.  This is used by ZFS. */
-    mwexec("/etc/rc.d/hostid start");
 
     if ($verbose) {
         echo "{$hostname}\n";
@@ -406,30 +402,64 @@ function system_host_route($host, $gateway, $delete = true, $add = true)
     }
 }
 
-function system_default_route($gateway, $interface = null)
+function system_default_route($gateway, $family, $interface, $far = false)
 {
-    if (is_ipaddrv4($gateway)) {
-        $family = 'inet';
-    } elseif (is_ipaddrv6($gateway)) {
-        $family = 'inet6';
-        if (is_linklocal($gateway)) {
-            $gateway .= "%{$interface}";
-        }
-        /* IPv6 does not support far gateway notion */
-        $interface = null;
-    } else {
+    $realif = get_real_interface($interface);
+
+    switch ($family) {
+        case 'inet':
+            break;
+        case 'inet6':
+            if (is_linklocal($gateway)) {
+                $gateway .= "%{$realif}";
+            }
+            break;
+        default:
+            log_error("ROUTING: unknown address family '{$family}'");
+            return;
+    }
+
+    $tmpcmd = "/sbin/route -n get -{$family} default 2>/dev/null | /usr/bin/awk '/gateway:/ {print $2}'";
+    $current = trim(exec($tmpcmd), " \n");
+    if ($current == $gateway) {
+        log_error("ROUTING: keeping current default gateway '{$gateway}'");
         return;
     }
 
+    if ($family == 'inet') {
+        foreach (glob('/tmp/*_defaultgw', GLOB_BRACE) as $to_delete) {
+            log_error("ROUTING: removing {$to_delete}");
+            @unlink($to_delete);
+        }
+
+        log_error("ROUTING: creating /tmp/{$realif}_defaultgw using '{$gateway}'");
+        @file_put_contents("/tmp/{$realif}_defaultgw", $gateway);
+
+        if (!$far) {
+            $realif = null;
+        }
+    } else {
+        foreach (glob('/tmp/*_defaultgwv6', GLOB_BRACE) as $to_delete) {
+            log_error("ROUTING: removing {$to_delete}");
+            @unlink($to_delete);
+        }
+
+        log_error("ROUTING: creating /tmp/{$realif}_defaultgwv6 using '{$gateway}'");
+        @file_put_contents("/tmp/{$realif}_defaultgwv6", $gateway);
+
+        /* IPv6 does not support far gateway notion */
+        $realif = null;
+    }
+
     mwexecf('/sbin/route delete -%s default', array($family), true);
-    if (!empty($interface)) {
-        mwexecf('/sbin/route delete -%s %s -interface %s', array($family, $gateway, $interface), true);
-        mwexecf('/sbin/route add -%s %s -interface %s', array($family, $gateway, $interface));
+    if (!empty($realif)) {
+        mwexecf('/sbin/route delete -%s %s -interface %s', array($family, $gateway, $realif), true);
+        mwexecf('/sbin/route add -%s %s -interface %s', array($family, $gateway, $realif));
     }
     mwexecf('/sbin/route add -%s default %s', array($family, $gateway));
 }
 
-function system_routing_configure($interface = '', $verbose = false)
+function system_routing_configure($verbose = false, $interface = '')
 {
     global $config;
 
@@ -438,13 +468,14 @@ function system_routing_configure($interface = '', $verbose = false)
         flush();
     }
 
-    $gatewayip = "";
-    $interfacegw = "";
+    $interfacegw = '';
     $foundgw = false;
-    $gatewayipv6 = "";
-    $interfacegwv6 = "";
-    $foundgwv6 = false;
+    $gatewayip = '';
     $fargw = false;
+
+    $interfacegwv6 = '';
+    $foundgwv6 = false;
+    $gatewayipv6 = '';
 
     if (!empty($interface)) {
         log_error("ROUTING: entering configure using '${interface}'");
@@ -452,44 +483,30 @@ function system_routing_configure($interface = '', $verbose = false)
         log_error("ROUTING: entering configure using defaults");
     }
 
-    /* tack on all the hard defined gateways as well */
     if (isset($config['gateways']['gateway_item'])) {
-        foreach (glob('/tmp/*_defaultgw{,v6}', GLOB_BRACE) as $to_delete) {
-            log_error("ROUTING: removing {$to_delete}");
-            @unlink($to_delete);
-        }
-
         foreach ($config['gateways']['gateway_item'] as $gateway) {
             if (isset($gateway['defaultgw'])) {
-                if ($foundgw == false && $gateway['ipprotocol'] != "inet6" && (is_ipaddrv4($gateway['gateway']) || $gateway['gateway'] == "dynamic")) {
-                    if ($gateway['gateway'] == "dynamic") {
+                if ($foundgw == false && $gateway['ipprotocol'] != 'inet6') {
+                    if ($gateway['gateway'] == 'dynamic') {
                         $gateway['gateway'] = get_interface_gateway($gateway['interface']);
                     }
+
+                    $interfacegw = $gateway['interface'];
                     $fargw = isset($gateway['fargw']);
                     $gatewayip = $gateway['gateway'];
-                    $interfacegw = $gateway['interface'];
-                    if (!empty($gateway['interface'])) {
-                        $defaultif = get_real_interface($gateway['interface']);
-                        if ($defaultif) {
-                            log_error("ROUTING: creating /tmp/{$defaultif}_defaultgw");
-                            @file_put_contents("/tmp/{$defaultif}_defaultgw", $gateway['gateway']);
-                        }
-                    }
                     $foundgw = true;
-                } elseif ($foundgwv6 == false && $gateway['ipprotocol'] == "inet6" && (is_ipaddrv6($gateway['gateway']) || $gateway['gateway'] == "dynamic")) {
-                    if ($gateway['gateway'] == "dynamic") {
+
+                    log_error("ROUTING: IPv4 default gateway set to {$interfacegw}");
+                } elseif ($foundgwv6 == false && $gateway['ipprotocol'] == 'inet6') {
+                    if ($gateway['gateway'] == 'dynamic') {
                         $gateway['gateway'] = get_interface_gateway_v6($gateway['interface']);
                     }
-                    $gatewayipv6 = $gateway['gateway'];
+
                     $interfacegwv6 = $gateway['interface'];
-                    if (!empty($gateway['interface'])) {
-                        $defaultifv6 = get_real_interface($gateway['interface']);
-                        if ($defaultifv6) {
-                            log_error("ROUTING: creating /tmp/{$defaultifv6}_defaultgwv6");
-                            @file_put_contents("/tmp/{$defaultifv6}_defaultgwv6", $gateway['gateway']);
-                        }
-                    }
+                    $gatewayipv6 = $gateway['gateway'];
                     $foundgwv6 = true;
+
+                    log_error("ROUTING: IPv6 default gateway set to {$interfacegwv6}");
                 }
             }
         }
@@ -501,43 +518,47 @@ function system_routing_configure($interface = '', $verbose = false)
      * probably where the default gateway switching comes into
      * play because this facility is allowed to use dynamically
      * created gateways while the former code does not.
+     *
+     * In fact the following code is a mini gateway switcher
+     * facility which can only switch one hardcoded gateway and
+     * may obscure a problem with the setup for a long time... :(
+     *
+     * XXX Find a way to infer an upstream-capable interface or
+     * maybe make gateway switching the hardcoded behaviour, or
+     * at least the new default.
      */
 
     if (!$foundgw) {
-        $defaultif = get_real_interface("wan");
-        $interfacegw = "wan";
-        $gatewayip = get_interface_gateway("wan");
-        @file_put_contents("/tmp/{$defaultif}_defaultgw", $gatewayip);
-        log_error("ROUTING: no IPv4 default gateway set, trying ${interfacegw} on '{$defaultif}' ({$gatewayip})");
+        $interfacegw = 'wan';
+        log_error("ROUTING: no IPv4 default gateway set, assuming {$interfacegw}");
+        $gatewayip = get_interface_gateway($interfacegw);
     }
 
     if (!$foundgwv6) {
-        $defaultifv6 = get_real_interface("wan");
-        $interfacegwv6 = "wan";
-        $gatewayipv6 = get_interface_gateway_v6("wan");
-        @file_put_contents("/tmp/{$defaultifv6}_defaultgwv6", $gatewayipv6);
-        log_error("ROUTING: no IPv6 default gateway set, trying ${interfacegwv6} on '{$defaultifv6}' ({$gatewayipv6})");
+        $interfacegwv6 = 'wan';
+        log_error("ROUTING: no IPv6 default gateway set, assuming {$interfacegwv6}");
+        $gatewayipv6 = get_interface_gateway_v6($interfacegwv6);
     }
 
-    if (!empty($interface) && $interface != $interfacegw) {
-        log_error("ROUTING: skipping IPv4 default route to {$interfacegw}");
-    } elseif (is_ipaddrv4($gatewayip)) {
+    if ((empty($interface) || $interface == $interfacegw) && is_ipaddrv4($gatewayip)) {
         log_error("ROUTING: setting IPv4 default route to {$gatewayip}");
-        system_default_route($gatewayip, $fargw ? $defaultif : null);
+        system_default_route($gatewayip, 'inet', $interfacegw, $fargw);
+    } else {
+        log_error("ROUTING: skipping IPv4 default route");
     }
 
-    if (!empty($interface) && $interface != $interfacegwv6) {
-        log_error("ROUTING: skipping IPv4 default route to {$interfacegwv6}");
-    } elseif (is_ipaddrv6($gatewayipv6)) {
+    if ((empty($interface) || $interface == $interfacegwv6) && is_ipaddrv6($gatewayipv6)) {
         log_error("ROUTING: setting IPv6 default route to {$gatewayipv6}");
-        system_default_route($gatewayipv6, $defaultifv6);
+        system_default_route($gatewayipv6, 'inet6', $interfacegwv6);
+    } else {
+        log_error("ROUTING: skipping IPv6 default route");
     }
 
     system_staticroutes_configure($interface);
 
     set_sysctl(array(
-      'net.inet.ip.forwarding' => '1',
-      'net.inet6.ip6.forwarding' => '1'
+        'net.inet.ip.forwarding' => '1',
+        'net.inet6.ip6.forwarding' => '1',
     ));
 
     if ($verbose) {
@@ -972,9 +993,7 @@ function system_cron_configure($verbose = false, $defer = false)
         $autocron[] = generate_cron_job('/usr/local/etc/rc.backup_captiveportal', '0', '*/' . $config['system']['captiveportalbackup']);
     }
 
-    if (!empty($config['system']['remotebackup']['GDriveEnabled'])) {
-        $autocron[] = generate_cron_job('/usr/local/opnsense/scripts/remote_backup.php', 0, 1);
-    }
+    $autocron[] = generate_cron_job('/usr/local/opnsense/scripts/remote_backup.php', 0, 1);
 
     /* bogons fetch always set in default config.xml */
     switch ($config['system']['bogons']['interval']) {
@@ -1183,19 +1202,15 @@ function system_login_configure($verbose = false)
     exec('/bin/kill -HUP 1');
 }
 
-/****f* config/reset_factory_defaults
- * NAME
- *   reset_factory_defaults - Reset the system to its default configuration.
- ******/
 function reset_factory_defaults($sync = true)
 {
-    mwexec('/bin/rm -r /conf/*');
+    mwexec('/bin/rm -fr /conf/* /var/log/* /root/.history');
     disable_security_checks();
 
     mwexec('/usr/local/sbin/beep.sh stop');
 
-    /* as we go through a special case directly reboot */
-    $shutdown_cmd = '/sbin/shutdown -or now';
+    /* as we go through a special case directly shut down */
+    $shutdown_cmd = '/sbin/shutdown -op now';
     if ($sync) {
         mwexec($shutdown_cmd);
     } else {

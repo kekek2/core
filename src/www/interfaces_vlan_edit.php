@@ -96,6 +96,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     if (count($input_errors) == 0) {
         $confif = "";
+        $vlan = array();
+        $vlan['if'] = $_POST['if'];
+        $vlan['tag'] = $_POST['tag'];
+        $vlan['pcp'] = $pconfig['pcp'];
+        $vlan['descr'] = $_POST['descr'];
+        $vlan['vlanif'] = "{$_POST['if']}_vlan{$_POST['tag']}";
         if (isset($id)) {
             if (($a_vlans[$id]['if'] != $pconfig['if']) || ($a_vlans[$id]['tag'] != $pconfig['tag']) || ($a_vlans[$id]['pcp'] != $pconfig['pcp'])) {
                 if (!empty($a_vlans[$id]['vlanif'])) {
@@ -108,15 +114,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 if ($confif <> "") {
                     $config['interfaces'][$confif]['if'] = "{$_POST['if']}_vlan{$_POST['tag']}";
                 }
+                $vlan['vlanif'] = interface_vlan_configure($vlan);
             }
+        } else {
+            $vlan['vlanif'] = interface_vlan_configure($vlan);
         }
-        $vlan = array();
-        $vlan['if'] = $_POST['if'];
-        $vlan['tag'] = $_POST['tag'];
-        $vlan['pcp'] = $pconfig['pcp'];
-        $vlan['descr'] = $_POST['descr'];
-        $vlan['vlanif'] = "{$_POST['if']}_vlan{$_POST['tag']}";
-        $vlan['vlanif'] = interface_vlan_configure($vlan);
         if ($vlan['vlanif'] == "" || !stristr($vlan['vlanif'], "vlan")) {
             $input_errors[] = gettext("Error occurred creating interface, please retry.");
         } else {
@@ -174,10 +176,7 @@ include("head.inc");
                               $portlist[$lagg['laggif']] = $lagg;
                           }
                       }
-                      foreach ($portlist as $ifn => $ifinfo):
-                        if (!is_jumbo_capable($ifn)) {
-                            continue;
-                        }?>
+                      foreach ($portlist as $ifn => $ifinfo): ?>
                         <option value="<?=$ifn;?>" <?=$ifn == $pconfig['if'] ? " selected=\"selected\"" : "";?>>
                           <?=htmlspecialchars($ifn);?>
                           ( <?= !empty($ifinfo['mac']) ? $ifinfo['mac'] :"" ;?> )
@@ -193,18 +192,18 @@ include("head.inc");
                       endforeach;?>
 
                       </select>
-                      <output class="hidden" for="help_for_if">
+                      <div class="hidden" data-for="help_for_if">
                         <?=gettext("Only VLAN capable interfaces will be shown.");?>
-                      </output>
+                      </div>
                     </td>
                   </tr>
                   <tr>
                     <td><a id="help_for_tag" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("VLAN tag");?></td>
                     <td>
                       <input name="tag" type="text" value="<?=$pconfig['tag'];?>" />
-                      <output class="hidden" for="help_for_tag">
+                      <div class="hidden" data-for="help_for_tag">
                         <?=gettext("802.1Q VLAN tag (between 1 and 4094)");?>
-                      </output>
+                      </div>
                     </td>
                   </tr>
                   <tr>
@@ -215,22 +214,22 @@ include("head.inc");
                         <option value="<?=$pcp;?>"<?=($pconfig['pcp'] == $pcp ? ' selected="selected"' : '');?>><?=htmlspecialchars($priority);?></option>
 <? endforeach ?>
                       </select>
-                      <output class="hidden" for="help_for_pcp">
+                      <div class="hidden" data-for="help_for_pcp">
                         <?=gettext('802.1Q VLAN PCP (priority code point)');?>
-                      </output>
+                      </div>
                     </td>
                   </tr>
                   <tr>
                     <td><a id="help_for_descr" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description"); ?></td>
                     <td>
                       <input name="descr" type="text" value="<?=$pconfig['descr'];?>" />
-                      <output class="hidden" for="help_for_descr">
+                      <div class="hidden" data-for="help_for_descr">
                         <?=gettext("You may enter a description here for your reference (not parsed).");?>
-                      </output>
+                      </div>
                     </td>
                   </tr>
                   <tr>
-                    <td style="width:22%; vertical-align:top">&nbsp;</td>
+                    <td style="width:22%">&nbsp;</td>
                     <td style="width:78%">
                       <input type="hidden" name="vlanif" value="<?=$pconfig['vlanif']; ?>" />
                       <input name="Submit" type="submit" class="btn btn-primary" value="<?=gettext("Save");?>" />

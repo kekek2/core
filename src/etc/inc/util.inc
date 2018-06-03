@@ -368,7 +368,7 @@ function ip_range_to_subnet_array($startip, $endip)
     return $rangesubnets;
 }
 
-/* returns true if $ipaddr is a valid dotted IPv4 address or a IPv6 */
+/* returns true if $ipaddr is a valid dotted IPv4 address or an IPv6 */
 function is_ipaddr($ipaddr)
 {
     if (is_ipaddrv4($ipaddr)) {
@@ -751,13 +751,12 @@ function get_configured_interface_list_by_realif ($only_opt = false, $withdisabl
     return $iflist;
 }
 
-/* return the configured interfaces list with their description. */
 function get_configured_interface_with_descr($only_opt = false, $withdisabled = false)
 {
     global $config;
 
     $iflist = array();
-    /* if list */
+
     if (isset($config['interfaces'])) {
         foreach (legacy_config_get_interfaces(array("virtual" => false)) as $if => $ifdetail) {
             if ($only_opt && ($if == "wan" || $if == "lan")) {
@@ -765,10 +764,11 @@ function get_configured_interface_with_descr($only_opt = false, $withdisabled = 
             }
 
             if (isset($ifdetail['enable']) || $withdisabled == true) {
-                $iflist[$if] = strtoupper($ifdetail['descr']);
+                $iflist[$if] = $ifdetail['descr'];
             }
         }
     }
+
     return $iflist;
 }
 
@@ -1086,26 +1086,6 @@ function is_private_ip($iptocheck)
             return true;
         }
     }
-    return false;
-}
-
-
-function resolve_retry($hostname, $retries = 5)
-{
-    if (is_ipaddr($hostname)) {
-        return $hostname;
-    }
-
-    for ($i = 0; $i < $retries; $i++) {
-        // FIXME: gethostbyname does not work for AAAA hostnames, boo, hiss
-        $ip = gethostbyname($hostname);
-        if ($ip && $ip != $hostname) {
-            /* success */
-            return $ip;
-        }
-        sleep(1);
-    }
-
     return false;
 }
 

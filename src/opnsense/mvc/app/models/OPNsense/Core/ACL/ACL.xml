@@ -113,6 +113,8 @@
         <name>Diagnostics: Logs: System</name>
         <patterns>
             <pattern>diag_logs.php*</pattern>
+            <pattern>httpd_logs.php*</pattern>
+            <pattern>configd_logs.php*</pattern>
         </patterns>
     </page-diagnostics-logs-system>
     <page-diagnostics-packetcapture>
@@ -645,6 +647,7 @@
         <name>System: Authentication Servers</name>
         <patterns>
             <pattern>system_authservers.php*</pattern>
+            <pattern>system_usermanager_settings_ldapacpicker.php*</pattern>
         </patterns>
     </page-system-authservers>
     <page-system-camanager>

@@ -98,6 +98,7 @@ class Main(object):
         :return: None
         """
         # check database consistency / repair
+        syslog.syslog(syslog.LOG_NOTICE, 'startup, check database.')
         check_and_repair('/var/netflow/*.sqlite')
 
         vacuum_interval = (60*60*8) # 8 hour vacuum cycle

@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright (C) 2016-2017 Franco Fichtner <franco@opnsense.org>
+ * Copyright (C) 2016-2018 Franco Fichtner <franco@opnsense.org>
  * Copyright (C) 2004-2007 Scott Ullrich <sullrich@gmail.com>
  * Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
  * All rights reserved.
@@ -66,12 +66,25 @@ function webgui_configure_do($verbose = false, $interface = '')
             }
         }
 
+        foreach (array('ipaddr', 'ipaddrv6') as $type) {
+            if (empty($config['interfaces'][$interface][$type])) {
+                continue;
+            }
+            $addr = $config['interfaces'][$interface][$type];
+            if (is_ipaddr($addr) && !is_linklocal($addr)) {
+                $listeners[] = $addr;
+            }
+        }
+
         $viparr = &config_read_array('virtualip', 'vip');
         foreach ($viparr as $vip) {
             if ($vip['interface'] == $interface && is_ipaddr($vip['subnet'])) {
                 $listeners[] = $vip['subnet'];
             }
         }
+
+        /* addresses may have been read twice */
+        $listeners = array_unique($listeners);
     }
 
     chdir('/usr/local/www');
@@ -185,9 +198,14 @@ EOD;
 
     if($config['OPNsense']['Syslog']['LogWebServer'] == 1) {
         $lighty_use_syslog = <<<EOD
-## where to send error-messages to
+## where to send error/access-messages to
+server.syslog-facility = "daemon"
 server.errorlog-use-syslog="enable"
+
 EOD;
+    }
+    if (!empty($config['system']['webgui']['httpaccesslog'])) {
+        $lighty_use_syslog .= 'accesslog.use-syslog="enable"' . "\n";
     }
 
     $fast_cgi_path = "/tmp/php-fastcgi.socket";
@@ -211,6 +229,9 @@ fastcgi.server = ( ".php" =>
 
 EOD;
 
+    $lighty_modules = !empty($config['system']['webgui']['httpaccesslog']) ? ', "mod_accesslog"' : "";
+
+
     $lighty_config = <<<EOD
 #
 # lighttpd configuration file
@@ -225,7 +246,7 @@ server.network-backend  = "writev"
 ## modules to load
 server.modules              =   (
   "mod_access", "mod_expire", "mod_compress", "mod_redirect",
-  "mod_cgi", "mod_fastcgi","mod_alias", "mod_rewrite", "mod_openssl"
+  "mod_cgi", "mod_fastcgi","mod_alias", "mod_rewrite", "mod_openssl" {$lighty_modules}
 )
 
 server.max-keep-alive-requests = 15
@@ -430,7 +451,7 @@ EOD;
 
 ## error-handler for status 404
 #server.error-handler-404   = "/error-handler.html"
-#server.error-handler-404   = "/error-handler.php"
+server.error-handler-404   = "/ui/404"
 
 ## to help the rc.scripts
 server.pid-file            = "/var/run/lighty-webConfigurator.pid"

@@ -1,33 +1,33 @@
 <?php
 
 /*
-    Copyright (C) 2014-2017 Franco Fichtner <franco@opnsense.org>
-    Copyright (C) 2010 Ermal Luçi
-    Copyright (C) 2005-2006 Colin Smith <ethethlay@gmail.com>
-    Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
-    All rights reserved.
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are met:
-
-    1. Redistributions of source code must retain the above copyright notice,
-       this list of conditions and the following disclaimer.
-
-    2. Redistributions in binary form must reproduce the above copyright
-       notice, this list of conditions and the following disclaimer in the
-       documentation and/or other materials provided with the distribution.
-
-    THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
-    INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-    AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-    AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-    OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-    POSSIBILITY OF SUCH DAMAGE.
-*/
+ * Copyright (C) 2014-2018 Franco Fichtner <franco@opnsense.org>
+ * Copyright (C) 2010 Ermal Luçi
+ * Copyright (C) 2005-2006 Colin Smith <ethethlay@gmail.com>
+ * Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
 /*
  * Base services are slowly being converted into plugins,
@@ -45,8 +45,8 @@
  */
 require_once('plugins.inc.d/dnsmasq.inc');
 require_once('plugins.inc.d/ipsec.inc');
-require_once('plugins.inc.d/openvpn.inc');
 require_once('plugins.inc.d/openssh.inc');
+require_once('plugins.inc.d/openvpn.inc');
 require_once('plugins.inc.d/unbound.inc');
 
 function generate_ipv6_from_mac($mac)
@@ -113,7 +113,9 @@ function services_radvd_configure($blacklist = array())
 
     /* handle manually configured DHCP6 server settings first */
     foreach ($config['dhcpdv6'] as $dhcpv6if => $dhcpv6ifconf) {
-        if (!isset($config['interfaces'][$dhcpv6if]['enable'])) {
+        if (isset($config['interfaces'][$dhcpv6if]['track6-interface'])) {
+            continue;
+        } elseif (!isset($config['interfaces'][$dhcpv6if]['enable'])) {
             continue;
         } elseif (isset($blacklist[$dhcpv6if])) {
             /* Do not put in the config an interface which is down */
@@ -188,6 +190,9 @@ function services_radvd_configure($blacklist = array())
             }
         }
 
+        /* VIPs may duplicate readings from system */
+        $stanzas = array_unique($stanzas);
+
         foreach ($stanzas as $stanza) {
             $radvdconf .= "\tprefix {$stanza} {\n";
             $radvdconf .= "\t\tDeprecatePrefix ". (!empty($dhcpv6ifconf['rainterface']) ? "off" : "on").";\n";
@@ -236,13 +241,13 @@ function services_radvd_configure($blacklist = array())
         /* add DNS servers */
         $dnslist_tmp = array();
         if (isset($dhcpv6ifconf['rasamednsasdhcp6']) && !empty($dhcpv6ifconf['dnsserver'][0])) {
-            array_merge($dnslist_tmp, $dhcpv6ifconf['dnsserver']);
+            $dnslist_tmp = $dhcpv6ifconf['dnsserver'];
         } elseif (!isset($dhcpv6ifconf['rasamednsasdhcp6']) && !empty($dhcpv6ifconf['radnsserver'][0])) {
-            array_merge($dnslist_tmp, $dhcpv6ifconf['radnsserver']);
+            $dnslist_tmp = $dhcpv6ifconf['radnsserver'];
         } elseif (isset($config['dnsmasq']['enable']) || isset($config['unbound']['enable'])) {
             $dnslist_tmp[] = get_interface_ipv6($realif);
         } elseif (!empty($config['system']['dnsserver'][0])) {
-            array_merge($dnslist_tmp, $config['system']['dnsserver']);
+            $dnslist_tmp = $config['system']['dnsserver'];
         }
         $dnslist = array();
         foreach($dnslist_tmp as $server) {
@@ -254,8 +259,9 @@ function services_radvd_configure($blacklist = array())
         if (count($dnslist) > 0) {
             $radvdconf .= "\tRDNSS ".implode(" ", $dnslist)." { };\n";
         }
-        if (!empty($dhcpv6ifconf['domain'])) {
-            $radvdconf .= "\tDNSSL {$dhcpv6ifconf['domain']} { };\n";
+        if (!empty($dhcpv6ifconf['radomainsearchlist'])) {
+            $dnssl = implode(' ', explode(';', $dhcpv6ifconf['radomainsearchlist']));
+            $radvdconf .= "\tDNSSL {$dnssl} { };\n";
         } elseif (!empty($config['system']['domain'])) {
             $radvdconf .= "\tDNSSL {$config['system']['domain']} { };\n";
         }
@@ -403,7 +409,7 @@ function services_dhcpdv4_configure($verbose = false)
 
     /* Only consider DNS servers with IPv4 addresses for the IPv4 DHCP server. */
     $dns_arrv4 = array();
-    if (!empty($config['system']['dnsserver'])) {
+    if (!empty($config['system']['dnsserver'][0])) {
         foreach($config['system']['dnsserver'] as $dnsserver) {
             if (is_ipaddrv4($dnsserver)) {
                 $dns_arrv4[] = $dnsserver;
@@ -412,7 +418,7 @@ function services_dhcpdv4_configure($verbose = false)
     }
 
     if ($verbose) {
-        echo 'Starting DHCP service...';
+        echo 'Starting DHCPv4 service...';
         flush();
     }
 
@@ -432,7 +438,6 @@ function services_dhcpdv4_configure($verbose = false)
     $dhcpdconf = <<<EOD
 option domain-name "{$config['system']['domain']}";
 option ldap-server code 95 = text;
-option domain-search-list code 119 = text;
 option arch code 93 = unsigned integer 16; # RFC4578
 {$custoptions}
 default-lease-time 7200;
@@ -1040,9 +1045,18 @@ function services_dhcpdv6_configure($blacklist = array(), $verbose = false)
         return;
     }
 
-    $syscfg = config_read_array('system');
     $dhcpdv6cfg = config_read_array('dhcpdv6');
     $Iflist = get_configured_interface_list();
+
+    /* Only consider DNS servers with IPv6 addresses for the IPv6 DHCP server. */
+    $dns_arrv6 = array();
+    if (!empty($config['system']['dnsserver'][0])) {
+        foreach($config['system']['dnsserver'] as $dnsserver) {
+            if (is_ipaddrv6($dnsserver)) {
+                $dns_arrv6[] = $dnsserver;
+            }
+        }
+    }
 
     if ($verbose) {
         echo 'Starting DHCPv6 service...';
@@ -1092,7 +1106,6 @@ function services_dhcpdv6_configure($blacklist = array(), $verbose = false)
 
                 $dhcpdv6cfg[$ifname]['prefixrange']['from'] = Net_IPv6::compress($range['start']);
                 $dhcpdv6cfg[$ifname]['prefixrange']['to'] = Net_IPv6::compress($range['end']);
-                $dhcpdv6cfg[$ifname]['dns6ip'] = get_interface_ipv6($ifname);
             }
         }
     }
@@ -1116,9 +1129,7 @@ function services_dhcpdv6_configure($blacklist = array(), $verbose = false)
     }
 
     $dhcpdv6conf = <<<EOD
-option domain-name "{$syscfg['domain']}";
-option ldap-server code 95 = text;
-option domain-search-list code 119 = text;
+option domain-name "{$config['system']['domain']}";
 {$custoptionsv6}
 default-lease-time 7200;
 max-lease-time 86400;
@@ -1171,16 +1182,8 @@ EOD;
             $dnscfgv6 .= "  option dhcp6.name-servers " . join(",", $dhcpv6ifconf['dnsserver']) . ";";
         } elseif ((isset($config['dnsmasq']['enable']) || isset($config['unbound']['enable'])) && (is_ipaddrv6($ifcfgipv6))) {
             $dnscfgv6 .= "  option dhcp6.name-servers {$ifcfgipv6};";
-        } elseif (isset($syscfg['dnsserver']) && ($syscfg['dnsserver'][0])) {
-            $dns_arrv6 = array();
-            foreach($syscfg['dnsserver'] as $dnsserver) {
-                if (is_ipaddrv6($dnsserver)) {
-                    $dns_arrv6[] = $dnsserver;
-                }
-            }
-            if (!empty($dns_arrv6)) {
-                $dnscfgv6 .= "  option dhcp6.name-servers " . join(",", $dns_arrv6) . ";";
-            }
+        } elseif (!empty($dns_arrv6)) {
+            $dnscfgv6 .= "  option dhcp6.name-servers " . join(",", $dns_arrv6) . ";";
         }
 
         if (is_ipaddrv6($ifcfgipv6)) {
@@ -1202,9 +1205,7 @@ EOD;
         if (!empty($dhcpv6ifconf['prefixrange']['from']) && is_ipaddrv6($dhcpv6ifconf['prefixrange']['from']) && is_ipaddrv6($dhcpv6ifconf['prefixrange']['to'])) {
             $dhcpdv6conf .= "  prefix6 {$dhcpv6ifconf['prefixrange']['from']} {$dhcpv6ifconf['prefixrange']['to']}/{$dhcpv6ifconf['prefixrange']['prefixlength']};\n";
         }
-        if (isset($dhcpv6ifconf['dns6ip']) && is_ipaddrv6($dhcpv6ifconf['dns6ip'])) {
-            $dhcpdv6conf .= "  option dhcp6.name-servers {$dhcpv6ifconf['dns6ip']};\n";
-        }
+
         // default-lease-time
         if (!empty($dhcpv6ifconf['defaultleasetime'])) {
             $dhcpdv6conf .= "  default-lease-time {$dhcpv6ifconf['defaultleasetime']};\n";
@@ -1234,11 +1235,6 @@ EOD;
             foreach($dhcpv6ifconf['numberoptions']['item'] as $itemv6idx => $itemv6) {
                 $dhcpdv6conf .= "  option custom-{$dhcpv6if}-{$itemv6idx} \"{$itemv6['value']}\";\n";
             }
-        }
-
-        // ldap-server
-        if (!empty($dhcpv6ifconf['ldap'])) {
-            $dhcpdv6conf .= "  option ldap-server \"{$dhcpv6ifconf['ldap']}\";\n";
         }
 
         // net boot information
@@ -1352,7 +1348,7 @@ function services_dhcrelay_configure($verbose = false)
     }
 
     if ($verbose) {
-        echo 'Starting DHCP Relay...';
+        echo 'Starting DHCPv4 Relay...';
         flush();
     }
 
@@ -1575,36 +1571,49 @@ function get_dyndns_ip($int, $ipver = 4)
     global $config;
 
     $ip_address = $ipver == 6 ? get_interface_ipv6($int) : get_interface_ip($int);
+    if (empty($ip_address)) {
+        log_error("Aborted IPv{$ipver} detection: no address for {$int}");
+        return 'down';
+    }
 
-    if ($ipver == 6 || is_private_ip($ip_address)) {
-        $gateways_status = return_gateways_status(true);
-        /*
-         * If the gateway for this interface is down, then the external
-         * check cannot work. Avoid the long wait for the external check
-         * to timeout.
-         */
-        if (stristr($gateways_status[$config['interfaces'][$int]['gateway']]['status'], 'down')) {
-            return 'down';
-        }
+    $gateways_status = return_gateways_status(true);
+
+    /*
+     * If the gateway for this interface is down, then the external
+     * check cannot work. Avoid the long wait for the external check
+     * to timeout.
+     */
+    if (!empty($gateways_status[$config['interfaces'][$int]['gateway']]['status']) &&
+        stristr($gateways_status[$config['interfaces'][$int]['gateway']]['status'], 'down')) {
+        log_error("Aborted IPv{$ipver} detection: gateway down for {$int}");
+        return 'down';
+    }
+
+    if ($ipver != 6 && is_private_ip($ip_address)) {
         /* Chinese alternative is http://ip.3322.net/ */
-        $hosttocheck = $ipver == 6 ? 'http://checkipv6.dyndns.org' : 'http://checkip.dyndns.org';
+        $hosttocheck = 'http://checkip.dyndns.org';
         $ip_ch = curl_init($hosttocheck);
         curl_setopt($ip_ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ip_ch, CURLOPT_INTERFACE, $ip_address);
         curl_setopt($ip_ch, CURLOPT_CONNECTTIMEOUT, 5);
         curl_setopt($ip_ch, CURLOPT_TIMEOUT, 30);
-        curl_setopt($ip_ch, CURLOPT_IPRESOLVE, $ipver == 6 ? CURL_IPRESOLVE_V6 : CURL_IPRESOLVE_V4);
+        curl_setopt($ip_ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
         $ip_result = curl_exec($ip_ch);
         if ($ip_result !== false) {
             preg_match('=<body>Current IP Address: (.*)</body>=siU', $ip_result, $matches);
             $ip_address = trim($matches[1]);
         } else {
-            log_error('Aborted IP detection: ' . curl_error($ip_ch));
+            log_error('Aborted IPv4 detection: ' . curl_error($ip_ch));
+            $ip_address = '';
         }
         curl_close($ip_ch);
-        if (($ipver == 6 && !is_ipaddrv6($ip_address)) || ($ipver != 6 && !is_ipaddrv4($ip_address))) {
-            return 'down';
-        }
+    } elseif (ipver == 6 && is_linklocal($ip_address)) {
+        log_error('Aborted IPv6 detection: cannot bind to link-local address');
+        $ip_address = '';
+    }
+
+    if (($ipver == 6 && !is_ipaddrv6($ip_address)) || ($ipver != 6 && !is_ipaddrv4($ip_address))) {
+        return 'down';
     }
 
     return $ip_address;
@@ -1636,104 +1645,6 @@ function services_get()
     global $config;
 
     $services = array();
-
-    if (is_radvd_enabled()) {
-        $pconfig = array();
-        $pconfig['name'] = "radvd";
-        $pconfig['description'] = gettext("Router Advertisement Daemon");
-        $pconfig['php']['restart'] = array('services_radvd_configure');
-        $pconfig['php']['start'] = array('services_radvd_configure');
-        $pconfig['pidfile'] = '/var/run/radvd.pid';
-        $services[] = $pconfig;
-    }
-
-    if (isset($config['dhcrelay']['enable'])) {
-        $pconfig = array();
-        $pconfig['name'] = "dhcrelay";
-        $pconfig['description'] = gettext("DHCP Relay");
-        $pconfig['php']['restart'] = array('services_dhcrelay_configure');
-        $pconfig['php']['start'] = array('services_dhcrelay_configure');
-        $pconfig['pidfile'] = '/var/run/dhcrelay.pid';
-        $services[] = $pconfig;
-    }
-
-    if (isset($config['dhcrelay6']['enable'])) {
-        $pconfig = array();
-        $pconfig['name'] = "dhcrelay6";
-        $pconfig['description'] = gettext("DHCPv6 Relay");
-        $pconfig['php']['restart'] = array('services_dhcrelay6_configure');
-        $pconfig['php']['start'] = array('services_dhcrelay6_configure');
-        $pconfig['pidfile'] = '/var/run/dhcrelay6.pid';
-        $services[] = $pconfig;
-    }
-
-    if (is_dhcpv4_server_enabled()) {
-        $pconfig = array();
-        $pconfig['name'] = 'dhcpd';
-        $pconfig['description'] = gettext("DHCP Server");
-        $pconfig['php']['restart'] = array('services_dhcpdv4_configure');
-        $pconfig['php']['start'] = array('services_dhcpdv4_configure');
-        $pconfig['pidfile'] = '/var/dhcpd/var/run/dhcpd.pid';
-        $services[] = $pconfig;
-    }
-
-    if (is_dhcpv6_server_enabled()) {
-        $pconfig = array();
-        $pconfig['name'] = 'dhcpd6';
-        $pconfig['description'] = gettext("DHCPv6 Server");
-        $pconfig['php']['restart'] = array('services_dhcpdv6_configure');
-        $pconfig['php']['start'] = array('services_dhcpdv6_configure');
-        $pconfig['pidfile'] = '/var/dhcpd/var/run/dhcpdv6.pid';
-        $services[] = $pconfig;
-    }
-
-    if (is_apinger_enabled()) {
-        $pconfig = array();
-        $pconfig['name'] = "apinger";
-        $pconfig['description'] = gettext("Gateway Monitoring Daemon");
-        $pconfig['php']['restart'] = array('setup_gateways_monitor');
-        $pconfig['php']['start'] = array('setup_gateways_monitor');
-        $pconfig['pidfile'] = '/var/run/apinger.pid';
-        $services[] = $pconfig;
-    }
-
-    if (isset($config['OPNsense']['captiveportal']['zones']['zone'])) {
-        $enabled = false;
-        if (!empty($config['OPNsense']['captiveportal']['zones']['zone']['enabled'])) {
-            // single zone and enabled
-            $enabled = true;
-        } else {
-            // possible more zones, traverse items
-            foreach ($config['OPNsense']['captiveportal']['zones']['zone'] as $zone) {
-                if (!empty($zone['enabled'])) {
-                    $enabled = true;
-                }
-            }
-        }
-        if ($enabled) {
-            $services[] = array(
-                'pidfile' => '/var/run/lighttpd-api-dispatcher.pid',
-                'description' => gettext('Captive Portal'),
-                'configd' => array(
-                    'restart' => array('captiveportal restart'),
-                    'start' => array('captiveportal start'),
-                    'stop' => array('captiveportal stop'),
-                ),
-                'name' => 'captiveportal',
-            );
-        }
-    }
-
-    $services[] = array(
-        'description' => gettext('System Configuration Daemon'),
-        'pidfile' => '/var/run/configd.pid',
-        'mwexec' => array(
-            'restart' => array('/usr/local/etc/rc.d/configd restart'),
-            'start' => array('/usr/local/etc/rc.d/configd start'),
-            'stop' => array('/usr/local/etc/rc.d/configd stop'),
-        ),
-        'name' => 'configd',
-    );
 
     foreach (plugins_services() as $service) {
         $services[] = $service;

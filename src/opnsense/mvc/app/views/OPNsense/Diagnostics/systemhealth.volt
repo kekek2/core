@@ -72,7 +72,6 @@
     });
 
     // create our chart
-    d3.selectAll('.nvtooltip').remove(); // force removal of tooltips
     nv.addGraph(function () {
         chart = nv.models.lineWithFocusChart()
                 .margin( {left:70})
@@ -723,9 +722,8 @@
                             </label>
                         </div>
                     </form>
-                    <div class="btn btn-xs btn-primary inline"
-                         onclick='downloadCSV({ filename: rrd+".csv" });'><i
-                            class="glyphicon glyphicon-download-alt"></i>{{ lang._('Download as CSV') }}
+                    <div class="btn btn-xs btn-primary inline" onclick='downloadCSV({ filename: rrd+".csv" });'>
+                        <i class="fa fa-download"></i> {{ lang._('Download as CSV') }}
                     </div>
                 </div>
 
