@@ -256,6 +256,9 @@ function addMultiSelectClearUI() {
                         } else {
                             // remove options from selection
                             $('select[id="' + id + '"]').find('option').prop('selected',false);
+                            if ($('select[id="' + id + '"]').hasClass('selectpicker')) {
+                               $('select[id="' + id + '"]').selectpicker('refresh');
+                            }
                         }
                     }
                     // In case this modal was triggered from another modal, fix focus issues
@@ -277,7 +280,7 @@ function addMultiSelectClearUI() {
  */
 function initFormHelpUI() {
     // handle help messages show/hide
-    $("a[class='showhelp']").click(function (event) {
+    $("a.showhelp").click(function (event) {
         $("*[data-for='" + $(this).attr('id') + "']").toggleClass("hidden show");
         event.preventDefault();
     });

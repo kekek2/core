@@ -98,6 +98,7 @@ class Main(object):
         :return: None
         """
         # check database consistency / repair
+        syslog.syslog(syslog.LOG_NOTICE, 'startup, check database.')
         check_and_repair('/var/netflow/*.sqlite')
 
         vacuum_interval = (60*60*8) # 8 hour vacuum cycle
@@ -106,6 +107,7 @@ class Main(object):
             os.remove(SOCKET_PATH)
         server = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
         server.bind(SOCKET_PATH)
+        syslog.syslog(syslog.LOG_NOTICE, 'start watching flowd')
         while self.running:
             # should we perform a vacuum
             if not vacuum_countdown or vacuum_countdown < time.time():
@@ -117,6 +119,8 @@ class Main(object):
             # run aggregate
             try:
                 aggregate_flowd(server, do_vacuum)
+                if do_vacuum:
+                    syslog.syslog(syslog.LOG_NOTICE, 'vacuum done')
             except:
                 syslog.syslog(syslog.LOG_ERR, 'flowd aggregate died with message %s' % (traceback.format_exc()))
                 return

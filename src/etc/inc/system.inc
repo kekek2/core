@@ -378,11 +378,7 @@ function system_hostname_configure($verbose = false)
 
     $hostname = "{$syscfg['hostname']}.{$syscfg['domain']}";
 
-    /* set hostname */
     mwexecf('/bin/hostname %s', $hostname);
-
-    /* Setup host GUID ID.  This is used by ZFS. */
-    mwexec("/etc/rc.d/hostid start");
 
     if ($verbose) {
         echo "{$hostname}\n";
@@ -408,7 +404,7 @@ function system_host_route($host, $gateway, $delete = true, $add = true)
     }
 }
 
-function system_default_route($gateway, $family, $interface, $far = false, $keep = true)
+function system_default_route($gateway, $family, $interface, $far = false)
 {
     $realif = get_real_interface($interface);
 
@@ -425,14 +421,11 @@ function system_default_route($gateway, $family, $interface, $far = false, $keep
             return;
     }
 
-    /* XXX we can hardcode this as soon as testing goes ok */
-    if ($keep) {
-        $tmpcmd = "/sbin/route -n get -{$family} default 2>/dev/null | /usr/bin/awk '/gateway:/ {print $2}'";
-        $current = trim(exec($tmpcmd), " \n");
-        if ($current == $gateway) {
-            log_error("ROUTING: keeping current default gateway '{$gateway}'");
-            return;
-        }
+    $tmpcmd = "/sbin/route -n get -{$family} default 2>/dev/null | /usr/bin/awk '/gateway:/ {print $2}'";
+    $current = trim(exec($tmpcmd), " \n");
+    if ($current == $gateway) {
+        log_error("ROUTING: keeping current default gateway '{$gateway}'");
+        return;
     }
 
     if ($family == 'inet') {
@@ -458,7 +451,6 @@ function system_default_route($gateway, $family, $interface, $far = false, $keep
 
         /* IPv6 does not support far gateway notion */
         $realif = null;
-        $far = false;
     }
 
     mwexecf('/sbin/route delete -%s default', array($family), true);
@@ -941,8 +933,6 @@ function system_devd_configure($verbose = false)
 
 function system_cron_configure($verbose = false, $defer = false)
 {
-    global $config;
-
     function generate_cron_job($command, $minute = '0', $hour = '*', $monthday = '*', $month = '*', $weekday = '*')
     {
         $cron_item = array();
@@ -967,7 +957,7 @@ function system_cron_configure($verbose = false, $defer = false)
     foreach (plugins_cron() as $cron_plugin) {
         /*
          * We are stuffing jobs inside 'autocron' to be able to
-         * depreceate this at a later time.  Ideally all of the
+         * deprecate this at a later time.  Ideally all of the
          * services should use a single cron-model, which this is
          * not.  At least this plugin function helps us to divide
          * and conquer the code bits...  :)
@@ -975,48 +965,6 @@ function system_cron_configure($verbose = false, $defer = false)
         if (!empty($cron_plugin['autocron'])) {
             $autocron[] = call_user_func_array('generate_cron_job', $cron_plugin['autocron']);
         }
-    }
-
-    /* hourly */
-    $autocron[] = generate_cron_job('/usr/local/sbin/expiretable -v -t 3600 webConfiguratorlockout', '1');
-    $autocron[] = generate_cron_job('/usr/local/sbin/expiretable -v -t 3600 sshlockout', '2');
-    $autocron[] = generate_cron_job('/usr/local/sbin/expiretable -v -t 3600 virusprot', '3');
-    $autocron[] = generate_cron_job('/usr/local/etc/rc.expireaccounts', '5');
-    $autocron[] = generate_cron_job('/usr/local/bin/flock -n -E 0 -o /tmp/filter_update_tables.lock /usr/local/opnsense/scripts/filter/update_tables.py', '*');
-
-    /* every now and then */
-    $autocron[] = generate_cron_job('/usr/local/sbin/ping_hosts.sh', '*/4');
-
-    if (!empty($config['system']['rrdbackup'])) {
-       $autocron[] = generate_cron_job('/usr/local/etc/rc.backup_rrd', '0', '*/' . $config['system']['rrdbackup']);
-    }
-
-    if (!empty($config['system']['dhcpbackup'])) {
-        $autocron[] = generate_cron_job('/usr/local/etc/rc.backup_dhcpleases', '0', '*/' . $config['system']['dhcpbackup']);
-    }
-
-    if (!empty($config['system']['netflowbackup'])) {
-        $autocron[] = generate_cron_job('/usr/local/etc/rc.backup_netflow', '0', '*/' . $config['system']['netflowbackup']);
-    }
-
-    if (!empty($config['system']['captiveportalbackup'])) {
-        $autocron[] = generate_cron_job('/usr/local/etc/rc.backup_captiveportal', '0', '*/' . $config['system']['captiveportalbackup']);
-    }
-
-    $autocron[] = generate_cron_job('/usr/local/opnsense/scripts/remote_backup.php', 0, 1);
-
-    /* bogons fetch always set in default config.xml */
-    switch ($config['system']['bogons']['interval']) {
-        case 'daily':
-            $autocron[] = generate_cron_job('/usr/local/etc/rc.update_bogons cron', '1', '3', '*', '*', '*');
-            break;
-        case 'weekly':
-            $autocron[] = generate_cron_job('/usr/local/etc/rc.update_bogons cron', '1', '3', '*', '*', '0');
-            break;
-        case 'monthly':
-        default:
-            $autocron[] = generate_cron_job('/usr/local/etc/rc.update_bogons cron', '1', '3', '1', '*', '*');
-            break;
     }
 
     $crontab_contents = "# DO NOT EDIT THIS FILE -- OPNsense auto-generated file\n";
@@ -1212,19 +1160,15 @@ function system_login_configure($verbose = false)
     exec('/bin/kill -HUP 1');
 }
 
-/****f* config/reset_factory_defaults
- * NAME
- *   reset_factory_defaults - Reset the system to its default configuration.
- ******/
 function reset_factory_defaults($sync = true)
 {
-    mwexec('/bin/rm -r /conf/*');
+    mwexec('/bin/rm -fr /conf/* /var/log/* /root/.history');
     disable_security_checks();
 
     mwexec('/usr/local/sbin/beep.sh stop');
 
-    /* as we go through a special case directly reboot */
-    $shutdown_cmd = '/sbin/shutdown -or now';
+    /* as we go through a special case directly shut down */
+    $shutdown_cmd = '/sbin/shutdown -op now';
     if ($sync) {
         mwexec($shutdown_cmd);
     } else {

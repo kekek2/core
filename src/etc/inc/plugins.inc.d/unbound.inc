@@ -41,6 +41,7 @@ function unbound_configure()
     return array(
         'dns' => array('unbound_configure_do'),
         'hosts' => array('unbound_hosts_generate:0'),
+        'local' => array('unbound_configure_do'),
         'newwanip' => array('unbound_configure_do:2'),
     );
 }
@@ -590,8 +591,14 @@ function unbound_add_host_entries()
             switch ($host['rr']) {
                 case 'A':
                 case 'AAAA':
-                    $unbound_entries .= "local-data-ptr: \"{$host['ip']} {$host['host']}{$host['domain']}\"\n";
-                    $unbound_entries .= "local-data: \"{$host['host']}{$host['domain']} IN {$host['rr']} {$host['ip']}\"\n";
+                    /* Handle wildcard entries which have "*" as a hostname. Since we added a . above, we match on "*.". */
+                    if (trim($host['host']) == '*.') {
+                        $unbound_entries .= "local-zone: \"{$host['domain']}\" redirect\n";
+                        $unbound_entries .= "local-data: \"{$host['domain']} IN {$host['rr']} {$host['ip']}\"\n";
+                    } else {
+                        $unbound_entries .= "local-data-ptr: \"{$host['ip']} {$host['host']}{$host['domain']}\"\n";
+                        $unbound_entries .= "local-data: \"{$host['host']}{$host['domain']} IN {$host['rr']} {$host['ip']}\"\n";
+                    }
                     break;
                 case 'MX':
                     $unbound_entries .= "local-data: \"{$host['host']}{$host['domain']} IN MX {$host['mxprio']} {$host['mx']}\"\n";

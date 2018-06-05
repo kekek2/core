@@ -128,16 +128,16 @@ class Routing
         // where module is mapped to the corresponding namespace
         foreach ($registered_modules as $module_name => $module_configs) {
             $namespace = array_shift($module_configs)['namespace'];
-            $this->router->add("/".$module_name."/", array(
-                "namespace" => $namespace
+            $this->router->add("/" . $module_name, array(
+                "namespace" => $namespace,
             ));
 
-            $this->router->add("/".$module_name."/:controller/", array(
+            $this->router->add("/" . $module_name . "/:controller", array(
                 "namespace" => $namespace,
                 "controller" => 1
             ));
 
-            $this->router->add("/".$module_name."/:controller/:action/", array(
+            $this->router->add("/" . $module_name . "/:controller/:action", array(
                 "namespace" => $namespace,
                 "controller" => 1,
                 "action" => 2
@@ -151,12 +151,14 @@ class Routing
                 "params" => 3
             ));
 
+            // In case we have overlapping modules, map additional controllers on top.
+            // This can normally only happens with 3rd party plugins hooking into standard functionality
             if (count($module_configs) > 0) {
                 foreach ($module_configs as $module_config) {
                     foreach (glob($module_config['path']."/*.php") as $filename) {
                         // extract controller name and bind static in routing table
                         $controller = strtolower(str_replace('Controller.php', '', basename($filename)));
-                        $this->router->add("/{$module_name}/{$controller}/:action/", array(
+                        $this->router->add("/{$module_name}/{$controller}/:action", array(
                             "namespace" => $module_config['namespace'],
                             "controller" => $controller,
                             "action" => 1
@@ -170,6 +172,7 @@ class Routing
                     }
                 }
             }
+            $this->router->removeExtraSlashes(true);
         }
     }
 

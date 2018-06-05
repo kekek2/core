@@ -33,6 +33,8 @@ require_once("guiconfig.inc");
 require_once("filter.inc");
 require_once("system.inc");
 require_once("logs.inc");
+require_once("gwlb.inc");
+require_once("rrd.inc");
 
 function default_table_entries_size()
 {
@@ -68,6 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['enablebinatreflection'] = !empty($config['system']['enablebinatreflection']);
     $pconfig['enablenatreflectionhelper'] = isset($config['system']['enablenatreflectionhelper']) ? $config['system']['enablenatreflectionhelper'] : null;
     $pconfig['bypassstaticroutes'] = isset($config['filter']['bypassstaticroutes']);
+    $pconfig['prefer_dpinger'] = isset($config['system']['prefer_dpinger']);
+    $pconfig['ip_change_kill_states'] = isset($config['system']['ip_change_kill_states']);
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pconfig = $_POST;
     $input_errors = array();
@@ -220,6 +224,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             unset($config['system']['gw_switch_default']);
         }
 
+        $old_pinger = isset($config['system']['prefer_dpinger']);
+
+        if (!empty($pconfig['prefer_dpinger'])) {
+            $config['system']['prefer_dpinger'] = true;
+        } elseif (isset($config['system']['prefer_dpinger'])) {
+            unset($config['system']['prefer_dpinger']);
+        }
+
+        if (!empty($pconfig['ip_change_kill_states'])) {
+            $config['system']['ip_change_kill_states'] = true;
+        } elseif (isset($config['system']['ip_change_kill_states'])) {
+            unset($config['system']['ip_change_kill_states']);
+        }
+
         if (write_config())
             firewall_syslog("Update Firewall/Settings/Advanced");
 
@@ -227,6 +245,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         system_cron_configure();
         filter_configure();
+
+        if ($old_pinger != isset($config['system']['prefer_dpinger'])) {
+            mwexec('rm /var/db/rrd/*-quality.rrd');
+            setup_gateways_monitor();
+            rrd_configure();
+        }
     }
 }
 
@@ -377,6 +401,18 @@ include("head.inc");
                   </div>
                 </td>
               </tr>
+              <tr>
+                <td><a id="help_for_prefer_dpinger" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('Monitoring daemon') ?></td>
+                <td>
+                  <input name="prefer_dpinger" type="checkbox" id="prefer_dpinger" value="yes" <?= !empty($pconfig['prefer_dpinger']) ? 'checked="checked"' : '' ?> />
+                  <?= gettext('Prefer Dpinger over Apinger') ?>
+                  <div class="hidden" data-for="help_for_prefer_dpinger">
+                    <?=gettext("By default, the system will use Apinger for gateway monitoring. ".
+                                        "Switching from one to the other will result in the loss of " .
+                                        "any existing quality RRD data."); ?>
+                  </div>
+                </td>
+              </tr>
             </table>
           </div>
           <div class="content-box tab-content table-responsive __mb">
@@ -416,7 +452,7 @@ include("head.inc");
                     <?= gettext('Using policy routing in the packet filter rules causes packets to skip ' .
                                 'processing for the traffic shaper and captive portal tasks. ' .
                                 'Using this option enables the sharing of such forwarding decisions ' .
-                                'between all components to accomodate complex setups. Use with care.') ?>
+                                'between all components to accomodate complex setups.') ?>
                   </div>
                 </td>
               </tr>
@@ -602,7 +638,7 @@ include("head.inc");
                 <td>
                   <input name="maximumtableentries" type="text" id="maximumtableentries" value="<?= html_safe($pconfig['maximumtableentries']) ?>"/>
                   <div class="hidden" data-for="help_for_maximumtableentries">
-                    <?=gettext("Maximum number of table entries for systems such as aliases, sshlockout, snort, etc, combined.");?><br/>
+                    <?= gettext('Maximum number of table entries for systems such as aliases, sshlockout, bogons, etc, combined.') ?><br/>
                     <?=gettext("Note: Leave this blank for the default.");?>
 <?php
                      if (empty($pconfig['maximumtableentries'])) :?>
@@ -669,6 +705,16 @@ include("head.inc");
                   <?=gettext("Verify HTTPS certificates when downloading alias URLs");?>
                   <div class="hidden" data-for="help_for_checkaliasesurlcert">
                     <?=gettext("Make sure the certificate is valid for all HTTPS addresses on aliases. If it's not valid or is revoked, do not download it.");?>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td><a id="help_for_ip_change_kill_states" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Dynamic state reset') ?></td>
+                <td>
+                  <input name="ip_change_kill_states" type="checkbox" value="yes" <?=!empty($pconfig['ip_change_kill_states']) ? 'checked="checked"' : '' ?> />
+                  <?= gettext('Reset all states when a dynamic IP address changes.') ?>
+                  <div class="hidden" data-for="help_for_ip_change_kill_states">
+                    <?=gettext("This option flushes the entire state table on IPv4 address changes in dynamic setups to e.g. allow VoIP servers to re-register.");?>
                   </div>
                 </td>
               </tr>

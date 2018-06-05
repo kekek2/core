@@ -37,7 +37,8 @@ CORE_ABI?=	18.1
 CORE_ARCH?=	${ARCH}
 CORE_OPENVPN?=	# empty
 CORE_PHP?=	71
-CORE_PY?=	27
+CORE_PYTHON?=	27
+CORE_SURICATA?=	# empty
 
 _FLAVOUR!=	if [ -f ${OPENSSL} ]; then ${OPENSSL} version; fi
 FLAVOUR?=	${_FLAVOUR:[1]}
@@ -69,9 +70,10 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			ca_root_nss \
 			choparp \
 			cpustats \
-			dhcp6 \
+			dhcp6c \
 			dhcpleases \
 			dnsmasq \
+			dpinger \
 			expiretable \
 			filterlog \
 			ifinfo \
@@ -95,7 +97,6 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			php${CORE_PHP}-filter \
 			php${CORE_PHP}-gettext \
 			php${CORE_PHP}-hash \
-			php${CORE_PHP}-intl \
 			php${CORE_PHP}-json \
 			php${CORE_PHP}-ldap \
 			php${CORE_PHP}-mcrypt \
@@ -110,13 +111,13 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			php${CORE_PHP}-sqlite3 \
 			php${CORE_PHP}-xml \
 			php${CORE_PHP}-zlib \
-			py${CORE_PY}-Jinja2 \
-			py${CORE_PY}-dnspython \
-			py${CORE_PY}-ipaddress \
-			py${CORE_PY}-netaddr \
-			py${CORE_PY}-requests \
-			py${CORE_PY}-sqlite3 \
-			py${CORE_PY}-ujson \
+			py${CORE_PYTHON}-Jinja2 \
+			py${CORE_PYTHON}-dnspython \
+			py${CORE_PYTHON}-ipaddress \
+			py${CORE_PYTHON}-netaddr \
+			py${CORE_PYTHON}-requests \
+			py${CORE_PYTHON}-sqlite3 \
+			py${CORE_PYTHON}-ujson \
 			radvd \
 			rate \
 			rrdtool12 \
@@ -125,7 +126,7 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			sshlockout_pf \
 			strongswan \
 			sudo \
-			suricata \
+			suricata${CORE_SURICATA} \
 			syslog-ng \
 			unbound \
 			ting-update \
@@ -148,7 +149,7 @@ FILES_TO_ENCODE=${WRKSRC}${LOCALBASE}/etc/inc/authgui.inc \
 .endif
 
 WANTS=		p5-File-Slurp php${CORE_PHP}-pear-PHP_CodeSniffer \
-		phpunit6-php${CORE_PHP}
+		phpunit6-php${CORE_PHP} py${CORE_PYTHON}-pycodestyle
 
 .for WANT in ${WANTS}
 want-${WANT}:
@@ -278,7 +279,7 @@ RCPHOST?=encoder
 
 package: package-check clean-work
 .for CORE_DEPEND in ${CORE_DEPENDS}
-	@if ! ${PKG} info ${CORE_DEPEND} > /dev/null; then ${PKG} install -yA ${CORE_DEPEND}; fi
+	@if ! ${PKG} info ${CORE_DEPEND} > /dev/null; then ${PKG} install -yfA ${CORE_DEPEND}; fi
 .endfor
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} metadata
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} install
@@ -321,12 +322,9 @@ upgrade-check:
 	fi
 
 upgrade: plist-check upgrade-check clean-package package
-	@${PKG} delete -fy ${CORE_NAME}
+	@${PKG} delete -fy ${CORE_NAME} || true
 	@${PKG} add ${PKGDIR}/*.txz
-	@/usr/local/etc/rc.restart_webgui
-
-update:
-	@${GIT} pull
+	@${LOCALBASE}/etc/rc.restart_webgui
 
 lint: plist-check
 	find ${.CURDIR}/src ${.CURDIR}/Scripts \
@@ -376,16 +374,23 @@ style-fix: want-php${CORE_PHP}-pear-PHP_CodeSniffer
 	phpcbf --standard=ruleset.xml ${.CURDIR}/${STYLEDIR} || true
 .endfor
 
+style-python: want-py${CORE_PYTHON}-pycodestyle
+	@pycodestyle --ignore=E501 ${.CURDIR}/src || true
+
 license: want-p5-File-Slurp
 	@${.CURDIR}/Scripts/license > ${.CURDIR}/LICENSE
 
 dhparam:
 .for BITS in 1024 2048 4096
 	${OPENSSL} dhparam -out \
-	    ${.CURDIR}/src/etc/dh-parameters.${BITS} ${BITS}
+	    ${.CURDIR}/src/etc/dh-parameters.${BITS}.sample ${BITS}
 .endfor
 
 test: want-phpunit6-php${CORE_PHP}
+	@if [ "$$(${PKG} query %n-%v ${CORE_NAME})" != "${CORE_NAME}-${CORE_VERSION}" ]; then \
+		echo "Installed version does not match, expected ${CORE_NAME}-${CORE_VERSION}"; \
+		exit 1; \
+	fi
 	@cd ${.CURDIR}/src/opnsense/mvc/tests && \
 	    phpunit --configuration PHPunit.xml
 

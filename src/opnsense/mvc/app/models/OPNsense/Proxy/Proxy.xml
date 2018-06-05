@@ -239,13 +239,21 @@
               <MaximumValue>32</MaximumValue>
               <ValidationMessage>the number of sslrtd children needs to be an integer value between 1 and 32</ValidationMessage>
             </sslcrtd_children>
-            <snmp_port type="IntegerField">
-                <MinimumValue>0</MinimumValue>
-                <MaximumValue>65535</MaximumValue>
-                <ValidationMessage>SNMP port needs to be an integer value between 0 and 65535</ValidationMessage>
-                <Required>Y</Required>
+            <snmp_enable type="BooleanField">
                 <default>0</default>
+                <Required>Y</Required>
+            </snmp_enable>
+            <snmp_port type="IntegerField">
+                <MinimumValue>1</MinimumValue>
+                <MaximumValue>65535</MaximumValue>
+                <ValidationMessage>SNMP port needs to be an integer value between 1 and 65535</ValidationMessage>
+                <Required>Y</Required>
+                <default>3401</default>
             </snmp_port>
+            <snmp_password type="TextField">
+                <default>public</default>
+                <Required>Y</Required>
+            </snmp_password>
             <ftpInterfaces type="InterfaceField">
                 <Required>N</Required>
                 <multiple>Y</multiple>
