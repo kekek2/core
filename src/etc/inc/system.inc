@@ -648,8 +648,6 @@ function system_syslogd_start($verbose = false)
         flush();
     }
 
-    mwexec('/etc/rc.d/hostid start');
-
     try{
         // to ensure that Syslog model is initialized and configured
         $syslog = new OPNsense\Syslog\Syslog;
