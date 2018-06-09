@@ -431,7 +431,7 @@
                     <multiple>Y</multiple>
                 </method>
                 <realm type="TextField">
-                    <default>OPNsense proxy authentication</default>
+                    <default>TING proxy authentication</default>
                     <mask>/^([\t\n\v\f\r 0-9a-zA-Z.,_\x{00A0}-\x{FFFF}]){0,255}$/u</mask>
                     <Required>N</Required>
                 </realm>
