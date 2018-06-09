@@ -7493,3 +7493,36 @@ div[data-for*=help_for] {
   line-height: 2;
 }
 
+@media screen and (max-width: 767px) {
+  .table-responsive {
+    margin-bottom: 0; }
+    .table-responsive > .table > thead > tr > th,
+    .table-responsive > .table > thead > tr > td,
+    .table-responsive > .table > tbody > tr > th,
+    .table-responsive > .table > tbody > tr > td,
+    .table-responsive > .table > tfoot > tr > th,
+    .table-responsive > .table > tfoot > tr > td {
+      white-space: normal; } }
+
+label > input[type="checkbox"],
+label > input[type="radio"] {
+  margin-right: .4em;
+  float: left; }
+
+div[data-for*="help_for"] {
+  padding-top: .4em;
+  font-size: 85%; }
+
+div[data-for*="help_for"] > small {
+  font-size: inherit; }
+
+#log-settings label[for^="act"] {
+  margin-right: 1.5em; }
+
+#log-settings table>tbody>tr>td {
+  vertical-align: middle; }
+
+#log-settings select#filterlogentries,
+#log-settings select#filterlogentriesupdateinterval {
+  width: 5em; }
+
