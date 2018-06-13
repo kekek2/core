@@ -7,79 +7,79 @@
     </field>
     <field>
         <id>rule.sequence</id>
-        <label>Sequence</label>
+        <label>sequence</label>
         <type>text</type>
-        <help>Order in which the rule will be evaluated (lowest first)</help>
+        <help>order in which the rule will be evaluated (lowest first)</help>
     </field>
     <field>
         <id>rule.interface</id>
-        <label>Interface</label>
+        <label>interface</label>
         <type>dropdown</type>
     </field>
     <field>
         <id>rule.interface2</id>
-        <label>Interface 2</label>
+        <label>interface 2</label>
         <type>dropdown</type>
         <advanced>true</advanced>
-        <help>Secondary interface, matches packets traveling to/from interface (1) to/from interface (2). Can be combined with direction.</help>
+        <help>secondary interface, matches packets traveling to/from interface (1) to/from interface (2). can be combined with direction.</help>
     </field>
     <field>
         <id>rule.proto</id>
-        <label>Proto</label>
+        <label>proto</label>
         <type>dropdown</type>
     </field>
     <field>
         <id>rule.source</id>
-        <label>Source</label>
+        <label>source</label>
         <type>text</type>
-        <help>Source ip or network, examples 10.0.0.0/24, 10.0.0.1</help>
+        <help>source ip or network, examples 10.0.0.0/24, 10.0.0.1</help>
     </field>
     <field>
         <id>rule.source_not</id>
-        <label>Invert Source</label>
+        <label>invert source</label>
         <type>checkbox</type>
-        <help>Invert source (not)</help>
+        <help>invert source (not)</help>
     </field>
     <field>
         <id>rule.src_port</id>
-        <label>Src-port</label>
+        <label>src-port</label>
         <type>text</type>
-        <help>Source port number or well known name (imap, imaps, http, https, ...), for ranges use a dash</help>
+        <help>source port number or well known name (imap, imaps, http, https, ...), for ranges use a dash</help>
     </field>
     <field>
         <id>rule.destination</id>
-        <label>Destination</label>
+        <label>destination</label>
         <type>text</type>
-        <help>Destination ip or network, examples 10.0.0.0/24, 10.0.0.1</help>
+        <help>destination ip or network, examples 10.0.0.0/24, 10.0.0.1</help>
     </field>
     <field>
         <id>rule.destination_not</id>
-        <label>Invert Destination</label>
+        <label>invert destination</label>
         <type>checkbox</type>
-        <help>Invert destination (not)</help>
+        <help>invert destination (not)</help>
     </field>
     <field>
         <id>rule.dst_port</id>
-        <label>Dst-port</label>
+        <label>dst-port</label>
         <type>text</type>
-        <help>Destination port number or well known name (imap, imaps, http, https, ...), for ranges use a dash</help>
+        <help>destination port number or well known name (imap, imaps, http, https, ...), for ranges use a dash</help>
     </field>
     <field>
         <id>rule.direction</id>
-        <label>Direction</label>
+        <label>direction</label>
         <type>dropdown</type>
         <advanced>true</advanced>
-        <help>Matches incoming or outgoing packets or both (default)</help>
+        <help>matches incoming or outgoing packets or both (default)</help>
     </field>
     <field>
         <id>rule.target</id>
-        <label>Target</label>
+        <label>target</label>
         <type>dropdown</type>
-        <help>Target pipe or queue</help>
+        <help>target pipe or queue</help>
     </field>
     <field>
         <id>rule.description</id>
-        <label>Description</label>
+        <label>description</label>
         <type>text</type>
     </field>
 </form>
