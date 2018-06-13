@@ -71,7 +71,7 @@
             </Tunables>
         </Settings>
         <LogFiles order="150" VisibleName="Log Files" cssClass="fa fa-eye fa-fw">
-            <syslog order="100" VisibleName="system log" url="/ui/syslog/logview/showlog/system"/>
+            <Syslog order="100" VisibleName="System Log" url="/ui/syslog/logview/showlog/system"/>
             <Configd order="150" VisibleName="Configd" url="/ui/syslog/logview/showlog/configd"/>
             <WebGUI order="200" VisibleName="Web GUI" url="/ui/syslog/logview/showlog/lighttpd"/>
         </LogFiles>
