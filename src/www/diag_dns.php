@@ -32,7 +32,8 @@ require_once("guiconfig.inc");
 $resolved = array();
 $dns_speeds = array();
 if (!empty($_REQUEST['host'])) {
-    $host = trim($_REQUEST['host'], " \t\n\r\0\x0B[];\"'");
+    $host_utf8 = trim($_REQUEST['host'], " \t\n\r\0\x0B[];\"'");
+    $host = idn_to_ascii($host_utf8);
     $host_esc = escapeshellarg($host);
 
     if (!is_hostname($host) && !is_ipaddr($host)) {
@@ -81,7 +82,7 @@ include("head.inc"); ?>
                   <tr>
                     <td><?=gettext("Hostname or IP");?></td>
                     <td>
-                      <input name="host" type="text" value="<?=htmlspecialchars($host);?>" />
+                      <input name="host" type="text" value="<?=htmlspecialchars($host_utf8);?>" />
                     </td>
                   </tr>
 <?php
@@ -131,8 +132,8 @@ include("head.inc"); ?>
                   <tr>
                     <td><?=gettext("More Information:");?></td>
                     <td>
-                      <a href ="/diag_ping.php?host=<?=htmlspecialchars($host)?>&amp;interface=wan&amp;count=3"><?=gettext("Ping");?></a> <br />
-                      <a href ="/diag_traceroute.php?host=<?=htmlspecialchars($host)?>&amp;ttl=18"><?=gettext("Traceroute");?></a>
+                      <a href ="/diag_ping.php?host=<?=htmlspecialchars($host_utf8)?>&amp;interface=wan&amp;count=3"><?=gettext("Ping");?></a> <br />
+                      <a href ="/diag_traceroute.php?host=<?=htmlspecialchars($host_utf8)?>&amp;ttl=18"><?=gettext("Traceroute");?></a>
                       <p>
                       <?=gettext("NOTE: The following links are to external services, so their reliability cannot be guaranteed.");?><br /><br />
                       <a target="_blank" href="http://private.dnsstuff.com/tools/whois.ch?ip=<?=$ipaddr; ?>"><?=gettext("IP WHOIS @ DNS Stuff");?></a><br />
