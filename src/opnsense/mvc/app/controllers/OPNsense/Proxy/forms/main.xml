@@ -311,8 +311,8 @@
                 <label>FTP proxy interfaces</label>
                 <type>select_multiple</type>
                 <style>tokenize</style>
-                <help><![CDATA[Select interface(s) the ftp proxy will bind to.]]></help>
-                <hint>Type or select interface (Leave blank to disable ftp proxy).</hint>
+                <help><![CDATA[Select interface(s) the ftp proxy will bind to (Leave blank to disable ftp proxy).]]></help>
+                <hint>Type or select interface.</hint>
             </field>
             <field>
                 <id>proxy.forward.ftpPort</id>
