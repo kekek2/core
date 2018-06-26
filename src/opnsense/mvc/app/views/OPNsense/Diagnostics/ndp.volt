@@ -72,7 +72,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="content-box-main">
         <div class="table-responsive">
             <div  class="col-sm-12">
-                <table id="grid-ndp" class="table table-condensed table-hover table-striped table-responsive">
+                <table id="grid-ndp" class="table table-condensed table-hover table-clean-form table-responsive">
                     <thead>
                     <tr>
                         <th data-column-id="ip" data-type="string"  data-identifier="true">{{ lang._('IPv6') }}</th>
