@@ -520,7 +520,7 @@ function showchange() {
 					$multiple = "multiple=\"multiple\"";
 					$name .= "[]";
 				}
-				echo "<select class='form-control' id='{$name}' name='{$name}' {$size} {$multiple}>\n";
+				echo "<select class='selectpicker' id='{$name}' name='{$name}' {$size} {$multiple}>\n";
 				if($field['add_to_interfaces_selection'] <> "") {
 					$SELECTED = "";
 					if($field['add_to_interfaces_selection'] == $value) $SELECTED = " selected=\"selected\"";
@@ -583,7 +583,7 @@ function showchange() {
 				echo "</td>";
 				echo "<td class=\"vtable\">\n";
 				if($field['size'] <> "") $size = "size=\"{$field['size']}\"";
-				echo "<select id='{$name}' name='{$name}' {$size}>\n";
+				echo "<select id='{$name}' name='{$name}' class='selectpicker' {$size}>\n";
 				if($field['add_to_certca_selection'] <> "") {
 					$SELECTED = "";
 					if($field['add_to_certca_selection'] == $value) $SELECTED = " selected=\"selected\"";
@@ -624,7 +624,7 @@ function showchange() {
 				echo "</td>";
 				echo "<td class=\"vtable\">\n";
 				if($field['size'] <> "") $size = "size=\"{$field['size']}\"";
-				echo "<select id='{$name}' name='{$name}' {$size}>\n";
+				echo "<select id='{$name}' name='{$name}' {$size} class='selectpicker'>\n";
 				if($field['add_to_cert_selection'] <> "") {
 					$SELECTED = "";
 					if($field['add_to_cert_selection'] == $value) $SELECTED = " selected=\"selected\"";
@@ -675,7 +675,7 @@ function showchange() {
 						$onchange = "onchange=\"enableitems(this.selectedIndex);\" ";
 					}
 				}
-				echo "<select class='form-control' " . $onchange . $multiple . $size . "id='" . $name . "' name='" . $name . "'>\n";
+				echo "<select class='selectpicker' " . $onchange . $multiple . $size . "id='" . $name . "' name='" . $name . "'>\n";
 				foreach ($field['options']['option'] as $opt) {
 					$selected = "";
 					if($value == $opt['value'])
@@ -745,7 +745,7 @@ function showchange() {
 				}
 				if(!$field['dontcombinecells'])
 					echo "<td class=\"vtable\">";
-				echo "<select class='form-control' id='{$name}' name='{$name}' style='max-width:5em;'>\n";
+				echo "<select class='selectpicker' id='{$name}' name='{$name}' style='max-width:5em;'>\n";
 				$CHECKED = ' selected="selected"';
 				for ($x = 1; $x <= 32; $x++) {
 					if ($x == 31) {
@@ -781,7 +781,7 @@ function showchange() {
 				}
 				if(!$field['dontcombinecells'])
 					echo "<td class=\"vtable\">";
-				echo "<select class='form-control' id='{$name}' name='{$name}'>\n";
+				echo "<select class='selectpicker' id='{$name}' name='{$name}'>\n";
 				foreach ($languagelist as $langkey => $langval) {
 					$SELECTED = "";
 					if ($value == $langkey) $SELECTED = " selected=\"selected\"";
@@ -810,7 +810,7 @@ function showchange() {
 				}
 				if(!$field['dontcombinecells'])
 					echo "<td class=\"vtable\">";
-				echo "<select class='form-control' id='{$name}' name='{$name}'>\n";
+				echo "<select class='selectpicker' id='{$name}' name='{$name}'>\n";
 				foreach ($timezonelist as $tz) {
 					if(strstr($tz, "GMT"))
 						continue;
