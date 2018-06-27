@@ -299,6 +299,8 @@ class Config extends Singleton
                 } catch (\Exception $e) {
                     file_notice("config", ['Checksum for /usr/local/etc/config.xml missing. Anyware using this file', gettext('Checksum for /usr/local/etc/config.xml missing. Anyware using this file')], "config", 2);
                     file_put_contents($this->config_file . ".sum", sha1(file_get_contents($this->config_file)));
+                    chmod($this->config_file . ".sum", 0644);
+                    chmod($this->config_file, 0644);
                     $this->load();
                 }
             }
@@ -459,6 +461,8 @@ class Config extends Singleton
         if (!file_exists($target_dir . $target_filename)) {
             copy($this->config_file, $target_dir . $target_filename);
             copy($this->config_file . ".sum", $target_dir . $target_filename . ".sum");
+            chmod($this->config_file . ".sum", 0644);
+            chmod($this->config_file, 0644);
         }
     }
 
@@ -518,6 +522,8 @@ class Config extends Singleton
                 // try to restore config
                 copy($filename, $this->config_file) ;
                 copy($filename . ".sum", $this->config_file . ".sum") ;
+                chmod($this->config_file . ".sum", 0644);
+                chmod($this->config_file, 0644);
                 $this->load();
                 return true;
             } catch (ConfigException $e) {
@@ -531,6 +537,8 @@ class Config extends Singleton
             // we don't have a valid config loaded, just copy and load the requested one
             copy($filename, $this->config_file) ;
             copy($filename . ".sum", $this->config_file . ".sum") ;
+            chmod($this->config_file . ".sum", 0644);
+            chmod($this->config_file, 0644);
             $this->load();
             return true;
         }

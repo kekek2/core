@@ -74,6 +74,7 @@ function file_notice($id, $notice, $category = "General", $url = "", $priority =
 	}
 	fwrite($queueout, serialize($queue));
 	fclose($queueout);
+    chmod($notices_file, 0644);
 	log_error("New alert found: $notice_q[0]");
 	notify_via_growl($notice_q[0]);
 	notify_via_smtp($notice_q[0]);
