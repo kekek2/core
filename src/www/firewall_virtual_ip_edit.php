@@ -386,7 +386,7 @@ $( document ).ready(function() {
                           </tr>
                         </table>
                         <div class="hidden" data-for="help_for_address">
-                            <i id="typenote"></i>
+                            <span id="typenote"></span>
                         </div>
                       </td>
                   </tr>
