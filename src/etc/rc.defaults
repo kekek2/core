@@ -1,0 +1,24 @@
+#!/bin/sh
+
+if [ "$1" = "-y" ]; then
+    ANS="y";
+fi
+
+if [ -z ${ANS} ]; then
+    echo -n "Reset to factory defaults? (Yy/Nn) "
+    read ANS
+fi
+
+if [ ${ANS} != 'y' ] && [ ${ANS} != 'Y' ]; then
+    exit 1
+fi
+
+echo "Resetting to factory defaults..."
+
+/bin/rm -fr /conf/* /var/log/* /root/.history
+
+touch /tmp/disable_security_checks
+
+/usr/local/sbin/beep.sh stop
+
+/sbin/shutdown -or now
