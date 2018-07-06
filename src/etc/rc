@@ -40,6 +40,8 @@ HOME=/
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin:/usr/local/sbin
 export HOME PATH
 
+/usr/local/etc/rc.syshook boot
+
 echo "Mounting filesystems..."
 echo -n "Checking root on ZFS... "
 
@@ -230,5 +232,11 @@ mount | grep ' on / ' | awk '{ print $1 }'
 
 /usr/local/etc/rc.initial.banner
 /usr/local/etc/rc.subr.d/livemode
+
+###Set LED blink scheme if apuctld is running
+apuled_chk=$(ps ax | grep apuledctld | grep -v grep | wc -l)
+if [ ${apuled_chk} -ne "0" ]; then
+    killall -USR2 apuledctld
+fi
 
 exit 0
