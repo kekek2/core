@@ -67,6 +67,7 @@ CORE_DEPENDS_i386?=	${CORE_DEPENDS_amd64}
 
 CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			apinger \
+			apuledctld \
 			ca_root_nss \
 			choparp \
 			cpustats \
