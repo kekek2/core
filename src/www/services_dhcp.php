@@ -1,5 +1,4 @@
 <?php
-<?php
 
 /*
     Copyright (C) 2014-2016 Deciso B.V.
