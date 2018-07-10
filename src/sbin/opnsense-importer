@@ -54,6 +54,11 @@ bootstrap_and_exit()
 	if [ -d ${MNT} ]; then
 		umount ${MNT} 2> /dev/null
 		rm -rf ${MNT}
+		if [ -n "${ZFSPOOL}" ]; then
+		    echo -n "Exporting ${ZFSPOOL}... "
+		    zpool export ${ZFSPOOL}
+		    echo "done. "
+		fi
 	fi
 
 	# error code given or assumed ok (trap)
@@ -166,14 +171,43 @@ echo
 
 mkdir -p ${MNT}
 
-echo -n "Running fsck..."
-fsck -t ufs -y ${PART} > /dev/null
-echo "done."
+###Check ZFS on source
+zpool import -af
 
-if ! mount ${PART} ${MNT} 2> /dev/null; then
-	echo "The device could not be mounted."
+ZPCHK=$(zpool get -H cachefile)
+ZFSPOOL=
+ORIGINAL_IFS="${IFS}"
+
+IFS=$'\n'
+PART_NAME=$(echo ${PART} | sed -e "s/.*\///")
+
+for zplist in ${ZPCHK}; do
+    CPOOL=$(echo ${zplist} | awk '{ print $1  }')
+    zt=$(zpool status ${CPOOL} | grep -c ${PART_NAME})
+    if [ ${zt} -ne "0" ]; then
+	ZFSPOOL=${CPOOL}
+    else
+	zpool export ${CPOOL} >/dev/null 2>/dev/null
+    fi
+done
+
+if [ -z "${ZFSPOOL}" ]; then
+    echo -n "Running fsck..."
+    fsck -t ufs -y ${PART} > /dev/null
+    echo "done."
+
+    if ! mount ${PART} ${MNT} 2> /dev/null; then
+	    echo "The device could not be mounted."
+	    bootstrap_and_exit 1
+    fi
+else
+    if ! mount -t zfs ${ZFSPOOL}/root ${MNT} 2>/dev/null; then
+	echo "ZFS pool ${ZFSPOOL} could not be mounted."
 	bootstrap_and_exit 1
+    fi
 fi
+
+IFS="${ORIGINAL_IFS}"
 
 if [ -f "${MNT}/conf/config.xml" ]; then
 	rm -rf /conf/*
@@ -184,6 +218,7 @@ if [ -f "${MNT}/conf/config.xml" ]; then
 			echo "done."
 		fi
 	done
+	cp -f ${MNT}/usr/local/etc/ssl/ting-client.* /usr/local/etc/ssl/
 	for DIR in backup sshd; do
 		if [ -d "${MNT}/conf/${DIR}" ]; then
 			echo -n "Restoring ${DIR}..."
