@@ -186,43 +186,40 @@ POSSIBILITY OF SUCH DAMAGE.
          *                 try to avoid too much items per call (results in too long url's)
          */
         function actionToggleSelected(gridId, url, state, combine) {
-            var rows =$("#"+gridId).bootgrid('getSelectedRows');
+            var defer_toggle = $.Deferred();
+            var rows = $("#"+gridId).bootgrid('getSelectedRows');
             if (rows != undefined){
-                var promise = $.when();
+                var deferreds = [];
                 if (state != undefined) {
                     var url_suffix = state;
                 } else {
                     var url_suffix = "";
                 }
-
+                var base = $.when({});
                 var keyset = [];
-                $.each(rows, function (key, uuid) {
+                $.each(rows, function(key, uuid){
                     keyset.push(uuid);
-                    if (combine == undefined || keyset.length > combine) {
-                        const localKeyset = keyset;
-                        promise = promise.then(function () {
-                            return ajaxCall(url + localKeyset.join(',') + '/' + url_suffix, sendData = {}, null);
+                    if ( combine === undefined || keyset.length > combine || rows[rows.length - 1] === uuid) {
+                        var call_url = url + keyset.join(',') +'/'+url_suffix;
+                        base = base.then(function() {
+                            var defer = $.Deferred();
+                            ajaxCall(call_url, sendData={}, function(){
+                                defer.resolve();
+                            });
+                            return defer.promise();
                         });
                         keyset = [];
                     }
                 });
-
-                // flush remaining items
-                if (keyset.length > 0) {
-                    const localKeyset = keyset;
-                    promise = promise.then(function () {
-                        return ajaxCall(url + localKeyset.join(',') + '/' + url_suffix, sendData = {}, null);
-                    });
-                }
-
-                // refresh when all toggles are executed
-                promise.then(function(){
+                // last action in the list, reload grid and release this promise
+                base.then(function(){
                     $("#"+gridId).bootgrid("reload");
-                    $("#"+gridId).parent().find('[class*="command-toggle"]').each(function (index, entry) {
-                        $(entry).removeClass("fa-spinner pulse");
-                    });
+                    defer_toggle.resolve();
                 });
+            } else {
+                defer_toggle.resolve();
             }
+            return defer_toggle.promise();
         }
 
         /*************************************************************************************************************
@@ -581,25 +578,30 @@ POSSIBILITY OF SUCH DAMAGE.
         /**
          * disable selected rules
          */
-        $("#disableSelectedRules").click(function(){
+        $("#disableSelectedRules").click(function(event){
+            event.preventDefault();
             var gridId = 'grid-installedrules';
             var url = '/api/ids/settings/toggleRule/';
-            $(this).find('[class*="command-toggle"]').each(function (index, entry) {
-                $(entry).addClass("fa-spinner pulse");
+            $("#disableSelectedRules > span").removeClass("fa-square-o");
+            $("#disableSelectedRules > span").addClass("fa-spinner fa-pulse");
+            actionToggleSelected(gridId, url, 0, 100).done(function(){
+                $("#disableSelectedRules > span").removeClass("fa-spinner fa-pulse");
+                $("#disableSelectedRules > span").addClass("fa-square-o");
             });
-            actionToggleSelected(gridId, url, 0, 100);
         });
 
         /**
          * enable selected rules
          */
-        $("#enableSelectedRules").click(function(){
+        $("#enableSelectedRules").unbind('click').click(function(){
             var gridId = 'grid-installedrules';
             var url = '/api/ids/settings/toggleRule/';
-            $(this).find('[class*="command-toggle"]').each(function (index, entry) {
-                $(entry).addClass("fa-spinner pulse");
+            $("#enableSelectedRules > span").removeClass("fa-check-square-o");
+            $("#enableSelectedRules > span").addClass("fa-spinner fa-pulse");
+            actionToggleSelected(gridId, url, 1, 100).done(function(){
+                $("#enableSelectedRules > span").removeClass("fa-spinner fa-pulse");
+                $("#enableSelectedRules > span").addClass("fa-check-square-o");
             });
-            actionToggleSelected(gridId, url, 1, 100);
         });
 
         /**
@@ -700,7 +702,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div id="download_settings" class="tab-pane fade in">
       <!-- add installable rule files -->
-      <table class="table table-clean-form table-condensed table-responsive">
+      <table class="table table-striped table-condensed table-responsive">
           <tbody>
             <tr>
                 <td><div class="control-label">
@@ -714,8 +716,8 @@ POSSIBILITY OF SUCH DAMAGE.
                       <td>
                         <div class="row">
                           <div class="col-xs-9">
-                            <button data-toggle="tooltip" id="enableSelectedRuleSets" type="button" class="btn btn-xs btn-default btn-primary">{{ lang._('Enable selected') }}</span></button>
-                            <button data-toggle="tooltip" id="disableSelectedRuleSets" type="button" class="btn btn-xs btn-default btn-primary">{{ lang._('Disable selected') }}</span></button>
+                            <button data-toggle="tooltip" id="enableSelectedRuleSets" type="button" class="btn btn-xs btn-default btn-primary">{{ lang._('Enable selected') }}</button>
+                            <button data-toggle="tooltip" id="disableSelectedRuleSets" type="button" class="btn btn-xs btn-default btn-primary">{{ lang._('Disable selected') }}</button>
                           </div>
                           <div class="col-xs-3" style="padding-top:0px;">
                             <input type="text" placeholder="{{ lang._('Search') }}" id="grid-rule-files-search" value=""/>
@@ -725,7 +727,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     </tr>
                   </table>
                   <div style="max-height: 400px; width: 100%; margin: 0; overflow-y: auto;" id="grid-rule-files-container">
-                    <table id="grid-rule-files" class="table table-condensed table-hover table-clean-form table-responsive" data-editDialog="DialogRuleset">
+                    <table id="grid-rule-files" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogRuleset">
                         <thead>
                         <tr>
                             <th data-column-id="filename" data-type="string" data-visible="false" data-identifier="true">{{ lang._('Filename') }}</th>
@@ -783,7 +785,7 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
 
         <!-- tab page "installed rules" -->
-        <table id="grid-installedrules" class="table table-condensed table-hover table-clean-form table-responsive" data-editDialog="DialogRule">
+        <table id="grid-installedrules" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogRule">
             <thead>
             <tr>
                 <th data-column-id="sid" data-type="numeric" data-visible="true" data-identifier="true" data-width="6em">{{ lang._('sid') }}</th>
@@ -797,10 +799,15 @@ POSSIBILITY OF SUCH DAMAGE.
             <tbody>
             </tbody>
             <tfoot>
+            <tr>
+                <td>
+                    <button title="{{ lang._('Disable selected') }}" id="disableSelectedRules" type="button" class="btn btn-xs btn-default"><span class="fa fa-square-o"></span></button>
+                    <button title="{{ lang._('Enable selected') }}" id="enableSelectedRules" type="button" class="btn btn-xs btn-default"><span class="fa fa-check-square-o"></span></button>
+                </td>
+                <td></td>
+            </tr>
             </tfoot>
         </table>
-        <button title="{{ lang._('Disable selected') }}" id="disableSelectedRules" type="button" class="btn btn-xs btn-default"><span class="fa fa-square-o command-toggle"></span></button>
-        <button title="{{ lang._('Enable selected') }}" id="enableSelectedRules" type="button" class="btn btn-xs btn-default"><span class="fa fa-check-square-o command-toggle"></span></button>
         <div class="col-md-12">
             <hr/>
             <button class="btn btn-primary act_update" type="button"><b>{{ lang._('Apply') }}</b> <i class="act_update_progress"></i></button>
@@ -810,7 +817,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div id="userrules" class="tab-pane fade in">
         <!-- tab page "userrules" -->
-        <table id="grid-userrules" class="table table-condensed table-hover table-clean-form table-responsive" data-editDialog="DialogUserDefined">
+        <table id="grid-userrules" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogUserDefined">
             <thead>
                 <tr>
                     <th data-column-id="enabled" data-formatter="rowtoggle" data-sortable="false" data-width="10em">{{ lang._('Enabled') }}</th>
@@ -864,7 +871,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 </div>
             </div>
         </div>
-        <table id="grid-alerts" class="table table-condensed table-hover table-clean-form table-responsive">
+        <table id="grid-alerts" class="table table-condensed table-hover table-striped table-responsive">
             <thead>
               <tr>
                   <th data-column-id="timestamp" data-type="string" data-sortable="false">{{ lang._('Timestamp') }}</th>
