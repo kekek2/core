@@ -10,5 +10,3 @@ rc.conf.d:/etc/rc.conf.d/squid/squid
 squid.conf:/usr/local/etc/squid/squid.conf
 local_voucher.conf:/usr/local/etc/squid/post-auth/local_voucher.conf
 snmp.conf:/usr/local/etc/squid/pre-auth/40-snmp.conf
-pre-ssl.conf:/usr/local/etc/squid/pre-ssl/dummy.conf
-ssl.conf:/usr/local/etc/squid/ssl/dummy.conf
