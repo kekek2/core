@@ -62,7 +62,7 @@ bootstrap_and_exit()
 	fi
 
 	# error code given or assumed ok (trap)
-        if [ -z "${RET}" ]; then
+	if [ -z "${RET}" ]; then
 		RET=0
 	fi
 

@@ -74,15 +74,15 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			dhcp6c \
 			dhcpleases \
 			dnsmasq \
+			dpinger \
 			expiretable \
 			filterlog \
 			ifinfo \
 			flock \
 			flowd \
 			hostapd \
-			isc-dhcp43-client \
-			isc-dhcp43-relay \
-			isc-dhcp43-server \
+			isc-dhcp44-relay \
+			isc-dhcp44-server \
 			lighttpd \
 			mpd5 \
 			ntp \
@@ -383,7 +383,7 @@ license: want-p5-File-Slurp
 dhparam:
 .for BITS in 1024 2048 4096
 	${OPENSSL} dhparam -out \
-	    ${.CURDIR}/src/etc/dh-parameters.${BITS} ${BITS}
+	    ${.CURDIR}/src/etc/dh-parameters.${BITS}.sample ${BITS}
 .endfor
 
 test: want-phpunit6-php${CORE_PHP}

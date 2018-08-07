@@ -92,6 +92,27 @@ function core_services()
         $services[] = $pconfig;
     }
 
+    if (is_dpinger_enabled()) {
+        $gateways_arr_all = return_gateways_array(true);
+
+        foreach ($gateways_arr_all as $name => $gateway) {
+            if (isset($gateway['monitor_disable'])) {
+                continue;
+            }
+
+            $pconfig = array();
+            $pconfig['description'] = sprintf(gettext('Gateway Monitor (%s)'), $gateway['name']);
+            $pconfig['php']['restart'] = array('setup_gateways_monitor');
+            $pconfig['php']['start'] = array('setup_gateways_monitor');
+            $pconfig['pidfile'] = "/var/run/dpinger_{$name}.pid";
+            $pconfig['php']['args'] = array('verbose', 'id');
+            $pconfig['name'] = 'dpinger';
+            $pconfig['verbose'] = false;
+            $pconfig['id'] = $name;
+            $services[] = $pconfig;
+        }
+    }
+
     if (isset($config['OPNsense']['captiveportal']['zones']['zone'])) {
         $enabled = false;
         if (!empty($config['OPNsense']['captiveportal']['zones']['zone']['enabled'])) {
@@ -150,4 +171,54 @@ function core_services()
     );
 
     return $services;
+}
+
+function core_cron()
+{
+    global $config;
+
+    $jobs = array();
+
+    $jobs[]['autocron'] = array('/usr/local/sbin/expiretable -v -t 3600 webConfiguratorlockout', '1');
+    $jobs[]['autocron'] = array('/usr/local/sbin/expiretable -v -t 3600 sshlockout', '2');
+    $jobs[]['autocron'] = array('/usr/local/sbin/expiretable -v -t 3600 virusprot', '3');
+    $jobs[]['autocron'] = array('/usr/local/etc/rc.expireaccounts', '5');
+
+    $jobs[]['autocron'] = array('/usr/local/sbin/ping_hosts.sh', '*/4');
+
+    if (!empty($config['system']['rrdbackup'])) {
+        $jobs[]['autocron'] = array(
+            '/usr/local/etc/rc.syshook.d/backup/20-rrd',
+            '0',
+            '*/' . $config['system']['rrdbackup']
+        );
+    }
+
+    if (!empty($config['system']['dhcpbackup'])) {
+        $jobs[]['autocron'] = array(
+            '/usr/local/etc/rc.syshook.d/backup/20-dhcpleases',
+            '0',
+            '*/' . $config['system']['dhcpbackup']
+        );
+    }
+
+    if (!empty($config['system']['netflowbackup'])) {
+        $jobs[]['autocron'] = array(
+            '/usr/local/etc/rc.syshook.d/backup/20-netflow',
+            '0',
+            '*/' . $config['system']['netflowbackup']
+        );
+    }
+
+    if (!empty($config['system']['captiveportalbackup'])) {
+        $jobs[]['autocron'] = array(
+            '/usr/local/etc/rc.syshook.d/backup/20-captiveportal',
+            '0',
+            '*/' . $config['system']['captiveportalbackup']
+        );
+    }
+
+    $jobs[]['autocron'] = array('configctl system remote backup', 0, 1);
+
+    return $jobs;
 }

@@ -48,15 +48,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (isset($_GET['savemsg'])) {
         $savemsg = htmlspecialchars(sprintf(gettext($_GET['savemsg']), $username));
     } elseif (!empty($_SESSION['user_shouldChangePassword'])) {
-        $savemsg = gettext("Your password has expired, please provide a new one");
+        $savemsg = gettext('Your password does not match the selected security policies. Please provide a new one.');
     }
 
-    if ($userFound) {
-        $pconfig['language'] = $config['system']['user'][$userindex[$username]]['language'];
-    }
-    if (empty($pconfig['language'])) {
-        $pconfig['language'] = $config['system']['language'];
-    }
+    $pconfig['language'] = $userFound ? $config['system']['user'][$userindex[$username]]['language'] : null;
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $input_errors = array();
     $pconfig = $_POST;
@@ -77,7 +72,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     if (count($input_errors) == 0) {
-        $config['system']['user'][$userindex[$username]]['language'] = $pconfig['language'];
+        if (!empty($pconfig['language'])) {
+            $config['system']['user'][$userindex[$username]]['language'] = $pconfig['language'];
+        } elseif (isset($config['system']['user'][$userindex[$username]]['language'])) {
+            unset($config['system']['user'][$userindex[$username]]['language']);
+        }
+
         // only update password change date if there is a policy constraint
         if (!empty($config['system']['webgui']['enable_password_policy_constraints']) &&
             !empty($config['system']['webgui']['password_policy_length'])
@@ -153,14 +153,11 @@ include("head.inc");
                   <tr>
                     <td><a id="help_for_language" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Language");?></td>
                     <td>
-                      <select name="language" class="selectpicker" data-size="10" data-style="btn-default" data-width="auto">
-<?php
-                        foreach (get_locale_list() as $lcode => $ldesc):?>
-                        <option value="<?=$lcode;?>" <?=$lcode == $pconfig['language'] ? "selected=\"selected\"" : "";?>>
-                          <?=$ldesc;?>
-                        </option>
-<?php
-                        endforeach;?>
+                      <select name="language" class="selectpicker" data-style="btn-default">
+                        <option value="" <?= empty($pconfig['language']) ? "selected='selected'" : '' ?>><?=gettext('System defaults') ?></option>
+<?php foreach (get_locale_list() as $lcode => $ldesc): ?>
+                        <option value="<?= html_safe($lcode) ?>" <?= $lcode == $pconfig['language'] ? 'selected="selected"' : '' ?>><?= $ldesc ?></option>
+<?php endforeach ?>
                       </select>
                       <div class="hidden" data-for="help_for_language">
                         <?= gettext('Choose a language for the web GUI.') ?>

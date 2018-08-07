@@ -517,7 +517,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 foreach ($toapplylist as $ifapply => $ifcfgo) {
                     interface_bring_down($ifapply, $ifcfgo);
                     if (isset($config['interfaces'][$ifapply]['enable'])) {
-                        interface_configure($ifapply, INTERFACE_RELOAD_SINGLE);
+                        interface_configure(false, $ifapply, INTERFACE_RELOAD_SINGLE);
                     }
                 }
             }
@@ -2755,7 +2755,7 @@ include("head.inc");
                           <td>
                             <select name="prefix-6rd-v4plen" class="selectpicker" data-size="10" data-style="btn-default" id="prefix-6rd-v4plen">
 <?php
-                              for ($i = 0; $i < 32; $i++):?>
+                              for ($i = 0; $i <= 32; $i++):?>
                                 <option value="<?=$i;?>" <?= $i == $pconfig['prefix-6rd-v4plen'] ? "selected=\"selected\"" : "";?>>
                                   <?=$i;?> <?=gettext("bits");?>
                                 </option>
@@ -2786,9 +2786,9 @@ include("head.inc");
 <?php
                             foreach (get_configured_interface_with_descr(false, true) as $iface => $ifacename):
                               switch($config['interfaces'][$iface]['ipaddrv6']) {
-                                case "6to4":
-                                case "6rd":
-                                case "dhcp6":
+                                case '6rd':
+                                case '6to4':
+                                case 'dhcp6':
                                     break;
                                 default:
                                     continue 2;

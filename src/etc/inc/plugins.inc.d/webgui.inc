@@ -185,8 +185,8 @@ function webgui_generate_config($port, $cert, $key, $ca, $listeners)
 # Phalcon ui and api routing
 alias.url += ( "/ui/" => "/usr/local/opnsense/www/" )
 alias.url += ( "/api/"  => "/usr/local/opnsense/www/" )
-url.rewrite-if-not-file = ( "^/ui/([^\?]+)(\?(.*))?" => "/ui/index.php?_url=/$1&$3" ,
-                            "^/api/([^\?]+)(\?(.*))?" => "/api/api.php?_url=/$1&$3"
+url.rewrite-if-not-file = ( "^/ui/([^\?]+)(\?(.*))?" => "/ui/index.php?$3" ,
+                            "^/api/([^\?]+)(\?(.*))?" => "/api/api.php?$3"
 )
 
 EOD;
@@ -375,7 +375,7 @@ EOD;
 
         $lighty_config .= "\n## ssl configuration\n";
         $lighty_config .= "ssl.engine = \"enable\"\n";
-        $lighty_config .= "ssl.dh-file = \"/usr/local/etc/dh-parameters.4096\"\n";
+        $lighty_config .= "ssl.dh-file = \"" . get_dh_parameters(4096) . "\"\n";
         $lighty_config .= "ssl.ec-curve = \"secp384r1\"\n";
         $lighty_config .= "ssl.pemfile = \"/var/etc/{$cert_location}\"\n";
         if (!empty($ca)) {

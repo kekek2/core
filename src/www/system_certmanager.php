@@ -86,7 +86,7 @@ $cert_methods = array(
     "internal" => gettext("Create an internal Certificate"),
     "external" => gettext("Create a Certificate Signing Request"),
 );
-$cert_keylens = array( "512", "1024", "2048", "4096", "8192");
+$cert_keylens = array( "512", "1024", "2048", "3072", "4096", "8192");
 $openssl_digest_algs = array("sha1", "sha224", "sha256", "sha384", "sha512");
 
 
@@ -209,7 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     } elseif ($act == "info") {
       if (isset($id)) {
           // use openssl to dump cert in readable format
-          $process = proc_open('/usr/local/bin/openssl x509 -text', array(array("pipe", "r"), array("pipe", "w")), $pipes);
+          $process = proc_open('/usr/local/bin/openssl x509 -fingerprint -sha256 -text', array(array("pipe", "r"), array("pipe", "w")), $pipes);
           if (is_resource($process)) {
              fwrite($pipes[0], base64_decode($a_cert[$id]['crt']));
              fclose($pipes[0]);
@@ -492,7 +492,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             if (count($input_errors) == 0) {
                 write_config();
                 if (isset($userid)) {
-                    header(url_safe('Location: /system_usermanager.php?act=edit&userid=%s', array($userid)));
+                    header(url_safe('Location: /system_usermanager.php?act=edit&userid=%d', array($userid)));
                 } else {
                     header(url_safe('Location: /system_certmanager.php'));
                 }
