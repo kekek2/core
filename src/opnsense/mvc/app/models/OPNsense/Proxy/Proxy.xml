@@ -384,11 +384,11 @@
                     <default>0</default>
                     <Required>Y</Required>
                 </enable>
-                <RequestURL type="TextField">
+                <RequestURL type="CSVListField">
                     <Required>Y</Required>
                     <default>icap://[::1]:1344/avscan</default>
                 </RequestURL>
-                <ResponseURL type="TextField">
+                <ResponseURL type="CSVListField">
                     <default>icap://[::1]:1344/avscan</default>
                     <Required>Y</Required>
                 </ResponseURL>

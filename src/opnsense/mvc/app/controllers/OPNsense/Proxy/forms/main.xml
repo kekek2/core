@@ -460,7 +460,7 @@
             <field>
                 <id>proxy.forward.icap.RequestURL</id>
                 <label>Request Modify URL</label>
-                <type>text</type>
+                <type>select_multiple</type>
                 <style>tokenize</style>
                 <help><![CDATA[Enter the url where the REQMOD requests should be sent to.]]></help>
                 <hint>Enter the URL of the ICAP Server</hint>
@@ -470,7 +470,7 @@
             <field>
                 <id>proxy.forward.icap.ResponseURL</id>
                 <label>Response Modify URL</label>
-                <type>text</type>
+                <type>select_multiple</type>
                 <style>tokenize</style>
                 <help><![CDATA[Enter the url where the RESPMOD requests should be sent to.]]></help>
                 <hint>Enter the URL of the ICAP Server</hint>
