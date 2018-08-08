@@ -2667,20 +2667,19 @@ function interface_configure($verbose = false, $interface = 'wan', $reload = INT
         echo "done.\n";
     }
 
-        if (in_array($reload, [INTERFACE_RELOAD_SINGLE, INTERFACE_RELOAD_ALL])) {
-            system_routing_configure(false, $interface);
-        }
+    if (in_array($reload, [INTERFACE_RELOAD_SINGLE, INTERFACE_RELOAD_ALL])) {
+        system_routing_configure(false, $interface);
+    }
 
-        if ($reload == INTERFACE_RELOAD_SINGLE) {
-            ipsec_configure_do();
-            plugins_configure('dns');
-            services_dhcpd_configure();
-        }
+    if ($reload == INTERFACE_RELOAD_SINGLE) {
+        ipsec_configure_do();
+        plugins_configure('dns');
+        services_dhcpd_configure();
+    }
 
-        if (in_array($reload, [INTERFACE_RELOAD_SINGLE, INTERFACE_RELOAD_ALL])) {
-            configd_run("dyndns reload {$interface}");
-            configd_run("rfc2136 reload {$interface}");
-        }
+    if (in_array($reload, [INTERFACE_RELOAD_SINGLE, INTERFACE_RELOAD_ALL])) {
+        configd_run("dyndns reload {$interface}");
+        configd_run("rfc2136 reload {$interface}");
     }
 
     interfaces_staticarp_configure($interface);
