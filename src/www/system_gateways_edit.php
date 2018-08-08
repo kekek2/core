@@ -176,9 +176,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         /* check for overlaps */
         foreach ($a_gateways as $gateway) {
             if (isset($id) && $a_gateways[$id] === $gateway) {
-                if ($gateway['name'] != $pconfig['name']) {
-                    $input_errors[] = gettext("Changing name on a gateway is not allowed.");
-                }
                 continue;
             }
             if (!empty($pconfig['name'])) {
