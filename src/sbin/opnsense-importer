@@ -172,7 +172,7 @@ echo
 mkdir -p ${MNT}
 
 ###Check ZFS on source
-zpool import -af
+zpool import -aNf
 
 ZPCHK=$(zpool get -H cachefile)
 ZFSPOOL=
