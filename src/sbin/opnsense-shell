@@ -118,6 +118,7 @@ MENU_3_10=$(GETTEXT "  3) Reset the root password            10) Firewall log")
 MENU_4_11=$(GETTEXT "  4) Reset to factory defaults          11) Reload all services")
 MENU_5_12=$(GETTEXT "  5) Power off system                   12) Upgrade from console")
 MENU_6_13=$(GETTEXT "  6) Reboot system                      13) Restore a backup")
+ENTER_AN_OPTION=$(GETTEXT "Enter an option: ")
 
 echo
 echo "$MENU_0_07"
