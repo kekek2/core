@@ -1,39 +1,39 @@
 <?php
 
 /*
-    Copyright (C) 2014-2016 Deciso B.V.
-    Copyright (C) 2011 Warren Baker <warren@decoy.co.za>
-    All rights reserved.
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are met:
-
-    1. Redistributions of source code must retain the above copyright notice,
-       this list of conditions and the following disclaimer.
-
-    2. Redistributions in binary form must reproduce the above copyright
-       notice, this list of conditions and the following disclaimer in the
-       documentation and/or other materials provided with the distribution.
-
-    THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
-    INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-    AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-    AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-    OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-    POSSIBILITY OF SUCH DAMAGE.
-*/
+ * Copyright (C) 2014-2016 Deciso B.V.
+ * Copyright (C) 2011 Warren Baker <warren@decoy.co.za>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
 require_once("guiconfig.inc");
 require_once("system.inc");
 require_once("services.inc");
 require_once("interfaces.inc");
+require_once("plugins.inc.d/unbound.inc");
 
 $a_acls = &config_read_array('unbound', 'acls');
-
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (isset($_GET['id']) && !empty($a_acls[$_GET['id']])) {
@@ -73,6 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             write_config();
             mark_subsystem_dirty('unbound');
         }
+        header(url_safe('Location: /services_unbound_acls.php'));
         exit;
     } else {
         // transform networks into row items
@@ -201,7 +202,7 @@ if (!isset($_GET['act'])) {
           <div class="tab-content content-box col-xs-12 __mb">
             <form method="post" name="iform" id="iform">
 <?php
-              if($act=="new" || $act=="edit"): ?>
+              if ($act=="new" || $act=="edit"): ?>
               <input name="id" type="hidden" value="<?=$id;?>" />
               <input name="act" type="hidden" value="<?=$act;?>" />
               <table class="table table-clean-form opnsense_standard_table_form">
@@ -237,6 +238,12 @@ if (!isset($_GET['act'])) {
                       <option value="allow snoop" <?= $pconfig['aclaction'] == "allow snoop" ? "selected=\"selected\"" : ""; ?>>
                       <?=gettext("Allow Snoop");?>
                       </option>
+                      <option value="deny nonlocal" <?= $pconfig['aclaction'] == "deny nonlocal" ? "selected=\"selected\"" : ""; ?>>
+                      <?=gettext("Deny Non-local");?>
+                      </option>
+                      <option value="refuse nonlocal" <?= $pconfig['aclaction'] == "refuse nonlocal" ? "selected=\"selected\"" : ""; ?>>
+                      <?=gettext("Refuse Non-local");?>
+                      </option>
                     </select>
                     <div class="hidden" data-for="help_for_aclaction">
                         <?=gettext("Choose what to do with DNS requests that match the criteria specified below.");?> <br />
@@ -244,6 +251,8 @@ if (!isset($_GET['act'])) {
                         <?=gettext("Refuse: This action also stops queries from hosts within the netblock defined below, but sends a DNS rcode REFUSED error message back to the client.")?> <br />
                         <?=gettext("Allow: This action allows queries from hosts within the netblock defined below.")?> <br />
                         <?=gettext("Allow Snoop: This action allows recursive and nonrecursive access from hosts within the netblock defined below. Used for cache snooping and ideally should only be configured for your administrative host.")?> <br />
+                        <?=gettext("Deny Non-local: Allow only authoritative local-data queries from hosts within the netblock defined below. Messages that are disallowed are dropped.")?> <br />
+                        <?=gettext("Refuse Non-local: Allow only authoritative local-data queries from hosts within the netblock defined below. Sends a DNS rcode REFUSED error message back to the client for messages that are disallowed.")?>
                     </div>
                   </td>
                 </tr>
@@ -267,7 +276,7 @@ if (!isset($_GET['act'])) {
                       } else {
                           $acl_networks = $pconfig['row'];
                       }
-                      foreach($acl_networks as $item_idx => $item):?>
+                      foreach ($acl_networks as $item_idx => $item):?>
                         <tr>
                           <td>
                             <div style="cursor:pointer;" class="act-removerow btn btn-default btn-xs" alt="remove"><i class="fa fa-minus fa-fw"></i></div>
@@ -328,49 +337,19 @@ if (!isset($_GET['act'])) {
               <table class="table table-clean-form">
                 <thead>
                   <tr>
-                    <th colspan="3"><?=gettext("From General settings");?></th>
-                  </tr>
-                  <tr>
                     <th><?=gettext("Access List Name"); ?></th>
                     <th><?=gettext("Action"); ?></th>
                     <th><?=gettext("Network"); ?></th>
                   </tr>
                 </thead>
                 <body>
-<?php
-                  // collect networks where automatic rules will be created for
-                  if (!empty($config['unbound']['active_interface'])) {
-                      $active_interfaces = array_flip(explode(",", $config['unbound']['active_interface']));
-                  } else {
-                      $active_interfaces = get_configured_interface_with_descr();
-                  }
-                  $automatic_allowed = array();
-                  foreach($active_interfaces as $ubif => $ifdesc) {
-                      $ifip = get_interface_ip($ubif);
-                      if (!empty($ifip)) {
-                          $subnet_bits = get_interface_subnet($ubif);
-                          $subnet_ip = gen_subnet($ifip, $subnet_bits);
-                          if (!empty($subnet_bits) && !empty($subnet_ip)) {
-                              $automatic_allowed[] = "{$subnet_ip}/{$subnet_bits}";
-                          }
-                      }
-                      $ifip = get_interface_ipv6($ubif);
-                      if (!empty($ifip)) {
-                          $subnet_bits = get_interface_subnetv6($ubif);
-                          $subnet_ip = gen_subnetv6($ifip, $subnet_bits);
-                          if (!empty($subnet_bits) && !empty($subnet_ip)) {
-                              $automatic_allowed[] = "{$subnet_ip}/{$subnet_bits}";
-                          }
-                      }
-                  }
-                  foreach ($automatic_allowed as $network):?>
+<?php foreach (unbound_acls_subnets() as $subnet): ?>
                   <tr>
-                    <td><?=gettext("Internal");?></td>
-                    <td><?=gettext("allow");?></td>
-                    <td><?=$network;?></td>
+                    <td><?= gettext('Internal') ?></td>
+                    <td><?= gettext('Allow') ?></td>
+                    <td><?= $subnet ?></td>
                   </tr>
-<?php
-                  endforeach;?>
+<?php endforeach ?>
                 </tbody>
               </table>
             </div>
@@ -389,7 +368,7 @@ if (!isset($_GET['act'])) {
                 <tbody>
 <?php
                   $i = 0;
-                  foreach($a_acls as $acl):?>
+                  foreach ($a_acls as $acl):?>
                   <tr>
                     <td>
                       <?=htmlspecialchars($acl['aclname']);?>

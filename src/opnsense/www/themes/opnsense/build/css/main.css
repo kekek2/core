@@ -7436,7 +7436,10 @@ div[data-for*=help_for] {
   background-color: red;
 }
 
-
+.tokens-container {
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
 
 
 /* TING FLAVORED */

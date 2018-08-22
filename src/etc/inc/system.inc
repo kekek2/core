@@ -704,8 +704,12 @@ function system_firmware_configure($verbose = false)
     }
 
     /* rewrite the config via the defaults */
-    $origin_conf = '/usr/local/etc/pkg/repos/origin.conf';
-    copy("${origin_conf}.sample", $origin_conf);
+    $origin_conf = '/usr/local/etc/pkg/repos/OPNsense.conf';
+    /* XXX pre-18.7 fallback */
+    if (!file_exists("{$origin_conf}.sample")) {
+        $origin_conf = '/usr/local/etc/pkg/repos/origin.conf';
+    }
+    copy("{$origin_conf}.sample", $origin_conf);
 
     if (!empty($config['system']['firmware']['mirror'])) {
         mwexecf(
@@ -769,7 +773,7 @@ function system_halt($sync = false)
     if (!$sync) {
         mwexec_bg($cmd);
     } else {
-        mwexec($cmd);
+        passthru($cmd);
     }
 }
 
@@ -780,7 +784,7 @@ function system_reboot($sync = false)
     if (!$sync) {
         mwexec_bg($cmd);
     } else {
-        mwexec($cmd);
+        passthru($cmd);
     }
 }
 
@@ -1131,7 +1135,7 @@ function system_login_configure($verbose = false)
         /* virtual terminals */
         foreach (array('ttyv0', 'ttyv1', 'ttyv2', 'ttyv3', 'ttyv4', 'ttyv5', 'ttyv6', 'ttyv7') as $virtualport) {
             if (strpos($tty, $virtualport) === 0) {
-                fwrite($fd, "${virtualport}\t\"/usr/libexec/getty {$console_type}\"\t\txterm\t${on_off_secure_v}\n");
+                fwrite($fd, "{$virtualport}\t\"/usr/libexec/getty {$console_type}\"\t\txterm\t${on_off_secure_v}\n");
                 continue 2;
             }
         }

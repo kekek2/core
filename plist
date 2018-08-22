@@ -2,6 +2,9 @@
 /boot/logo-ting.4th
 /usr/local/etc/devd/carp.conf
 /usr/local/etc/devd/ifnet.conf
+/usr/local/etc/dh-parameters.2048.rfc7919
+/usr/local/etc/dh-parameters.3072.rfc7919
+/usr/local/etc/dh-parameters.4096.rfc7919
 /usr/local/etc/inc/IPv6.inc
 /usr/local/etc/inc/PEAR.inc
 /usr/local/etc/inc/XMLRPC_Client.inc
@@ -63,23 +66,18 @@
 /usr/local/etc/inc/xmlrpc/service.inc
 /usr/local/etc/inc/xmlrpc/test.inc
 /usr/local/etc/netflow.conf.example
+/usr/local/etc/pkg/fingerprints/OPNsense/revoked/opnsense-update.deciso.com.20160725
+/usr/local/etc/pkg/fingerprints/OPNsense/revoked/opnsense-update.deciso.com.20170721
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20150402
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20160104
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20160630
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20161210
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20170625
-/usr/local/etc/pkg/fingerprints/OPNsense/trusted/opnsense-update.deciso.com.20160725
-/usr/local/etc/pkg/fingerprints/OPNsense/trusted/opnsense-update.deciso.com.20170721
+/usr/local/etc/pkg/fingerprints/OPNsense/trusted/opnsense-update.deciso.com.20180627
 /usr/local/etc/pkg/fingerprints/OPNsense/trusted/pkg.opnsense.org.20171219
+/usr/local/etc/pkg/fingerprints/OPNsense/trusted/pkg.opnsense.org.20180614
 /usr/local/etc/rc
-/usr/local/etc/rc.backup_captiveportal
-/usr/local/etc/rc.backup_dhcpleases
-/usr/local/etc/rc.backup_duid
-/usr/local/etc/rc.backup_netflow
-/usr/local/etc/rc.backup_rrd
 /usr/local/etc/rc.bootup
-/usr/local/etc/rc.carpbackup
-/usr/local/etc/rc.carpmaster
 /usr/local/etc/rc.configure_firmware
 /usr/local/etc/rc.configure_interface
 /usr/local/etc/rc.configure_plugins
@@ -124,18 +122,25 @@
 /usr/local/etc/rc.subr.d/tmp
 /usr/local/etc/rc.subr.d/var
 /usr/local/etc/rc.syshook
-/usr/local/etc/rc.syshook.d/05-beep.stop
-/usr/local/etc/rc.syshook.d/05-update.early
-/usr/local/etc/rc.syshook.d/10-configd.early
-/usr/local/etc/rc.syshook.d/10-newwanip.start
-/usr/local/etc/rc.syshook.d/15-php.early
-/usr/local/etc/rc.syshook.d/20-backup.early
-/usr/local/etc/rc.syshook.d/20-freebsd.start
-/usr/local/etc/rc.syshook.d/80-freebsd.stop
-/usr/local/etc/rc.syshook.d/90-backup.stop
-/usr/local/etc/rc.syshook.d/90-carp.start
-/usr/local/etc/rc.syshook.d/90-cron.start
-/usr/local/etc/rc.syshook.d/95-beep.start
+/usr/local/etc/rc.syshook.d/backup/20-captiveportal
+/usr/local/etc/rc.syshook.d/backup/20-dhcpleases
+/usr/local/etc/rc.syshook.d/backup/20-duid
+/usr/local/etc/rc.syshook.d/backup/20-netflow
+/usr/local/etc/rc.syshook.d/backup/20-rrd
+/usr/local/etc/rc.syshook.d/carp/20-openvpn
+/usr/local/etc/rc.syshook.d/early/05-update
+/usr/local/etc/rc.syshook.d/early/10-configd
+/usr/local/etc/rc.syshook.d/early/15-php
+/usr/local/etc/rc.syshook.d/early/20-backup
+/usr/local/etc/rc.syshook.d/start/10-newwanip
+/usr/local/etc/rc.syshook.d/start/20-freebsd
+/usr/local/etc/rc.syshook.d/start/90-carp
+/usr/local/etc/rc.syshook.d/start/90-cron
+/usr/local/etc/rc.syshook.d/start/95-beep
+/usr/local/etc/rc.syshook.d/stop/05-beep
+/usr/local/etc/rc.syshook.d/stop/80-freebsd
+/usr/local/etc/rc.syshook.d/stop/90-backup
+/usr/local/etc/rc.syshook.d/stop/99-config
 /usr/local/etc/rc.update_bogons
 /usr/local/etc/ssl/opnsense.cnf
 /usr/local/opnsense/contrib/IXR/IXR_Library.php
@@ -310,7 +315,9 @@
 /usr/local/opnsense/contrib/simplepie/phpunit.xml.dist
 /usr/local/opnsense/contrib/tzdata/iso3166.tab
 /usr/local/opnsense/contrib/tzdata/zone.tab
+/usr/local/opnsense/firmware-message
 /usr/local/opnsense/firmware-product
+/usr/local/opnsense/firmware-upgrade
 /usr/local/opnsense/mvc/app/cache/README
 /usr/local/opnsense/mvc/app/config/config.php
 /usr/local/opnsense/mvc/app/config/loader.php
@@ -550,6 +557,7 @@
 /usr/local/opnsense/mvc/script/load_phalcon.php
 /usr/local/opnsense/mvc/script/run_migrations.php
 /usr/local/opnsense/mvc/tests/PHPunit.xml
+/usr/local/opnsense/mvc/tests/app/compound/OPNsense/Monit/MonitTest.php
 /usr/local/opnsense/mvc/tests/app/config/config.php
 /usr/local/opnsense/mvc/tests/app/models/OPNsense/Base/BaseModel/Migrations/M0_0_1.php
 /usr/local/opnsense/mvc/tests/app/models/OPNsense/Base/BaseModel/Migrations/M1_0_0.php
@@ -821,7 +829,6 @@
 /usr/local/opnsense/site-python/sqlite3_helper.py
 /usr/local/opnsense/site-python/watchers/__init__.py
 /usr/local/opnsense/site-python/watchers/dhcpd.py
-/usr/local/opnsense/www/.htaccess
 /usr/local/opnsense/www/api.php
 /usr/local/opnsense/www/css/bootstrap-datepicker3.min.css
 /usr/local/opnsense/www/css/flags/1x1/ad.svg
@@ -1344,8 +1351,8 @@
 /usr/local/opnsense/www/css/flags/flag-icon.scss
 /usr/local/opnsense/www/css/font-awesome.min.css
 /usr/local/opnsense/www/css/jquery.bootgrid.css
-/usr/local/opnsense/www/css/jquery.tokenize.css
 /usr/local/opnsense/www/css/nv.d3.css
+/usr/local/opnsense/www/css/tokenize2.css
 /usr/local/opnsense/www/fonts/FontAwesome.otf
 /usr/local/opnsense/www/fonts/fontawesome-webfont.eot
 /usr/local/opnsense/www/fonts/fontawesome-webfont.svg
@@ -1377,7 +1384,6 @@
 /usr/local/opnsense/www/js/jquery.bootgrid.js
 /usr/local/opnsense/www/js/jquery.qrcode.js
 /usr/local/opnsense/www/js/jquery.qrcode.js.LICENSE
-/usr/local/opnsense/www/js/jquery.tokenize.js
 /usr/local/opnsense/www/js/moment-with-locales.min.js
 /usr/local/opnsense/www/js/nv.d3.min.js
 /usr/local/opnsense/www/js/nv.d3.min.js.LICENSE.md
@@ -1386,6 +1392,8 @@
 /usr/local/opnsense/www/js/opnsense_ui.js
 /usr/local/opnsense/www/js/qrcode.js
 /usr/local/opnsense/www/js/theme.js
+/usr/local/opnsense/www/js/tokenize2.js
+/usr/local/opnsense/www/js/tokenize2.min.js
 /usr/local/opnsense/www/themes/opnsense/LICENSE
 /usr/local/opnsense/www/themes/opnsense/assets/fonts/SourceSansPro-Bold/SourceSansPro-Bold.eot
 /usr/local/opnsense/www/themes/opnsense/assets/fonts/SourceSansPro-Bold/SourceSansPro-Bold.otf
@@ -1693,6 +1701,7 @@
 /usr/local/www/widgets/include/interface_statistics.inc
 /usr/local/www/widgets/include/ipsec.inc
 /usr/local/www/widgets/include/log.inc
+/usr/local/www/widgets/include/monit.inc
 /usr/local/www/widgets/include/ntp_status.inc
 /usr/local/www/widgets/include/openvpn.inc
 /usr/local/www/widgets/include/services_status.inc
@@ -1706,6 +1715,7 @@
 /usr/local/www/widgets/widgets/interface_statistics.widget.php
 /usr/local/www/widgets/widgets/ipsec.widget.php
 /usr/local/www/widgets/widgets/log.widget.php
+/usr/local/www/widgets/widgets/monit.widget.php
 /usr/local/www/widgets/widgets/ntp_status.widget.php
 /usr/local/www/widgets/widgets/openvpn.widget.php
 /usr/local/www/widgets/widgets/picture.widget.php
@@ -1725,4 +1735,4 @@
 @sample /usr/local/etc/dh-parameters.4096.sample
 @sample /usr/local/opnsense/service/templates/OPNsense/IDS/custom.yaml.sample
 @shadow /usr/local/etc/pkg/repos/FreeBSD.conf.sample
-@shadow /usr/local/etc/pkg/repos/origin.conf.sample
+@shadow /usr/local/etc/pkg/repos/OPNsense.conf.sample

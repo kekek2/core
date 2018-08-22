@@ -76,16 +76,50 @@ function is_process_running($process)
     return (intval($retval) == 0);
 }
 
+function list_dh_parameters()
+{
+    global $config;
+
+    $available = array(1024, 2048, 4096);
+
+    if (!empty($config['system']['dhparamusage'])) {
+        switch ($config['system']['dhparamusage']) {
+            case 'rfc7919':
+                $available = array(2048, 3072, 4096);
+                break;
+            default:
+                /* XXX whatever we have on the disk */
+                break;
+        }
+    }
+
+    return $available;
+}
+
 function get_dh_parameters($bits)
 {
-     /*
-     * XXX Use the sample file for now.  Later we want to
-     * try to see if the non-sample file is newer, in these
-     * cases we can use it.  If not, fall back to the sample
-     * file which should give a flexible and fixable apporach
-     * that does not leave users open to stale files.
-     */
-    return "/usr/local/etc/dh-parameters.$bits.sample";
+    global $config;
+
+    $file = "/usr/local/etc/dh-parameters.{$bits}";
+
+    if (!empty($config['system']['dhparamusage'])) {
+        switch ($config['system']['dhparamusage']) {
+            case 'rfc7919':
+                return "{$file}.rfc7919";
+            default:
+                break;
+        }
+    }
+
+    if (empty($config['system']['dhparamusage']) || !file_exists($file)) {
+        /*
+         * Use the sample file if the normal file is MIA
+         * or when the renew interval is not set:
+         */
+        $file .= '.sample';
+    }
+
+    return $file;
 }
 
 function is_subsystem_dirty($subsystem = '')
@@ -150,9 +184,9 @@ function gen_subnet($ipaddr, $bits)
 }
 
 /* return the subnet address given a host address and a subnet bit count */
-function gen_subnetv6($ipaddr, $bits)
+function gen_subnetv6($ipaddr, $bits, $validate = true)
 {
-    if (!is_ipaddrv6($ipaddr) || !is_numeric($bits)) {
+    if ($validate && (!is_ipaddrv6($ipaddr) || !is_numeric($bits))) {
         return "";
     }
 

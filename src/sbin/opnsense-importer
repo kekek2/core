@@ -62,7 +62,7 @@ bootstrap_and_exit()
 	fi
 
 	# error code given or assumed ok (trap)
-        if [ -z "${RET}" ]; then
+	if [ -z "${RET}" ]; then
 		RET=0
 	fi
 
@@ -113,11 +113,11 @@ probe_for_part()
 	DEV=${1}
 
 	if [ -e "/dev/${DEV}s1a" ]; then
-		# MBR layout found
+		# MBR UFS
 		export PART="/dev/${DEV}s1a"
 		return 0
 	elif [ -e "/dev/${DEV}p3" ]; then
-		# GPT layout found
+		# GPT UFS
 		export PART="/dev/${DEV}p3"
 		return 0
 	fi

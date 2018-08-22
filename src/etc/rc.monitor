@@ -32,20 +32,14 @@ if [ -z "${GATEWAY}" ]; then
 	exit 1
 fi
 
+if [ ${#} -gt 1 ]; then
+	/usr/bin/logger -t dpinger "GATEWAY ALARM: ${GATEWAY} (Addr: ${2} Alarm: ${3} RTT: ${4}ms RTTd: ${5}ms Loss: ${6}%)"
+fi
+
 /usr/local/opnsense/service/configd_ctl.py -m \
     "filter reload" \
     "openvpn reload ${GATEWAY}" \
     "dyndns reload ${GATEWAY}" \
     "rfc2136 reload ${GATEWAY}"
-
-ALARM_ADDR="${2}"
-ALARM_FLAG="${3}"
-ALARM_RTT="${4}"
-ALARM_RTTSD="${5}"
-ALARM_LOSS="${6}"
-
-if [ ${#} -gt 1 ]; then
-	echo ">>> Gateway alarm: ${GATEWAY} (Addr:${ALARM_ADDR} Alarm:${ALARM_FLAG} RTT:${ALARM_RTT}ms RTTd:${ALARM_RTTSD}ms Loss:${ALARM_LOSS}%)" | /usr/bin/logger -p daemon.info -i -t rc.monitor
-fi
 
 exit 0
