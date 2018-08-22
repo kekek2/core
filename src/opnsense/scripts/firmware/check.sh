@@ -136,8 +136,8 @@ if [ "$pkg_running" == "" ]; then
               download_size=`cat $tmp_pkg_output_file | grep 'to be downloaded' | awk -F '[ ]' '{print $1$2}'`
 
               # see if packages indicate a new version (not revision) of base / kernel
-              LQUERY=$(pkg query %v opnsense-update)
-              RQUERY=$(pkg rquery %v opnsense-update)
+              LQUERY=$(pkg query %v ting-update)
+              RQUERY=$(pkg rquery %v ting-update)
               if [ "${LQUERY%%_*}" != "${RQUERY%%_*}" ]; then
                 kernel_to_reboot="${RQUERY%%_*}"
                 base_to_reboot="${RQUERY%%_*}"
