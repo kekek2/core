@@ -29,10 +29,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-const INTERFACE_BOOTING = 1;
-const INTERFACE_RELOAD_SINGLE = 2;
-const INTERFACE_RELOAD_ALL = 3;
-
 require_once("interfaces.lib.inc");
 require_once("gwlb.inc");
 
@@ -902,9 +898,6 @@ function interfaces_configure($verbose = false)
     $bridge_list = array();
     $track6_list = array();
 
-    /* This is needed to speedup interfaces on bootup. */
-    $reload = file_exists('/var/run/booting') ? INTERFACE_BOOTING : INTERFACE_RELOAD_ALL;
-
     foreach ($iflist as $if => $ifname) {
         $realif = $config['interfaces'][$if]['if'];
         if (strstr($realif, "bridge")) {
@@ -947,13 +940,6 @@ function interfaces_configure($verbose = false)
     }
 
     interfaces_group_setup();
-
-    if ($reload == INTERFACE_RELOAD_ALL) {
-        system_routing_configure($verbose);
-        ipsec_configure_do($verbose);
-        plugins_configure('dns', $verbose);
-        services_dhcpd_configure('all', array(), $verbose);
-    }
 }
 
 function interface_vip_bring_down($vip)
@@ -2542,19 +2528,16 @@ function interface_configure($verbose = false, $interface = 'wan', $reload = fal
         echo "done.\n";
     }
 
-    if (in_array($reload, [INTERFACE_RELOAD_SINGLE, INTERFACE_RELOAD_ALL])) {
-        system_routing_configure(false, $interface);
-    }
-
-    if ($reload == INTERFACE_RELOAD_SINGLE) {
-        ipsec_configure_do();
-        plugins_configure('dns');
-        services_dhcpd_configure();
-    }
-
-    if (in_array($reload, [INTERFACE_RELOAD_SINGLE, INTERFACE_RELOAD_ALL])) {
-        configd_run("dyndns reload {$interface}");
-        configd_run("rfc2136 reload {$interface}");
+    if (!file_exists("/var/run/booting")) {
+        if ($reload) {
+            system_routing_configure($verbose, $interface);
+            ipsec_configure_do($verbose, $interface);
+            plugins_configure('dns', $verbose);
+            services_dhcpd_configure('all', array(), $verbose);
+            /* XXX move these up the call stack */
+            configd_run("dyndns reload {$interface}");
+            configd_run("rfc2136 reload {$interface}");
+        }
     }
 
     interfaces_staticarp_configure($interface);
