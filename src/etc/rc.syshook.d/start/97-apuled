@@ -1,7 +1,0 @@
-#!/bin/sh
-
-###Set LED blink scheme if apuctld is running
-apuled_chk=$(ps ax | grep apuledctld | grep -v grep | wc -l)
-if [ ${apuled_chk} -ne "0" ]; then
-    killall -USR2 apuledctld
-fi
