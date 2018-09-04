@@ -49,16 +49,6 @@
                     'add':'/api/proxy/settings/addRemoteBlacklist/',
                     'del':'/api/proxy/settings/delRemoteBlacklist/',
                     'toggle':'/api/proxy/settings/toggleRemoteBlacklist/',
-                    'options': {
-                        'labels': {
-                            'all': "{{ lang._('All') }}",
-                            'infos': "{{ lang._('Showing {{ctx.start}} to {{ctx.end}} of {{ctx.total}} entries') }}",
-                            'loading': "{{ lang._('Loading...') }}",
-                            'noResults': "{{ lang._('No results found!') }}",
-                            'refresh': "{{ lang._('Refresh') }}",
-                            'search': "{{ lang._('Search') }}"
-                        }
-                    }
                 }
         );
 
