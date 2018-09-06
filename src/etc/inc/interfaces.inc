@@ -2439,7 +2439,7 @@ function interface_virtual_create($interface)
     }
 }
 
-function interface_configure($verbose = false, $interface = 'wan', $reload = INTERFACE_BOOTING, $linkupevent = false)
+function interface_configure($verbose = false, $interface = 'wan', $reload = false, $linkupevent = false)
 {
     global $config;
 
@@ -2580,7 +2580,7 @@ function interface_configure($verbose = false, $interface = 'wan', $reload = INT
                 interface_6to4_configure($interface, $wancfg);
                 break;
             case 'track6':
-                interface_track6_configure($interface, $wancfg, $reload == INTERFACE_BOOTING || $reload == INTERFACE_RELOAD_ALL || $linkupevent);
+                interface_track6_configure($interface, $wancfg, $reload || $linkupevent);
                 break;
             default:
                 /* XXX: Kludge for now related to #3280 */
