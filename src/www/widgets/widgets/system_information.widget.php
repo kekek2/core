@@ -81,6 +81,8 @@ require_once("system.inc");
       $("#system_information_widget_datetime").html(data['date_frmt']);
       $("#system_information_widget_last_config_change").html(data['config']['last_change_frmt']);
       $("#system_information_widget_versions").html(data['versions'].join('<br/>'));
+      $("#system_information_widget_hardware").html(data['hardware'].join('<br/>'));
+      $("#system_information_widget_bios").html(data['bios'].join('<br/>'));
 
       var states_perc = parseInt((parseInt(data['kernel']['pf']['states']) / parseInt(data['kernel']['pf']['maxstates']))*100);
       $("#system_information_widget_states .progress-bar").css("width",  states_perc + "%").attr("aria-valuenow", states_perc + "%");
@@ -161,6 +163,14 @@ require_once("system.inc");
     <tr>
       <td><?=gettext("Versions");?></td>
       <td id="system_information_widget_versions"></td>
+    </tr>
+    <tr>
+      <td><?=gettext("Hardware");?></td>
+      <td id="system_information_widget_hardware"></td>
+    </tr>
+    <tr>
+      <td><?=gettext("BIOS");?></td>
+      <td id="system_information_widget_bios"></td>
     </tr>
     <tr>
       <td><?= gettext('Updates') ?></td>
