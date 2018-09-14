@@ -33,6 +33,7 @@
 require_once("guiconfig.inc");
 require_once("system.inc");
 
+$system_information = gettext("System Information");
 ?>
 <script src="/ui/js/moment-with-locales.min.js"></script>
 <script>

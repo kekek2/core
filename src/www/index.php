@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     foreach (glob('/usr/local/www/widgets/widgets/*.widget.php') as $php_file) {
         $widgetItem = array();
         $widgetItem['name'] = basename($php_file, '.widget.php');
-        $widgetItem['display_name'] = ucwords(str_replace("_", " ", $widgetItem['name']));
+        $widgetItem['display_name'] = gettext(ucwords(str_replace("_", " ", $widgetItem['name'])));
         $widgetItem['filename'] = $php_file;
         $widgetItem['state'] = "none";
         /// default sort order
