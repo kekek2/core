@@ -27,11 +27,12 @@
 
     --------------------------------------------------------------------------------------
 
-    update suricata rules
+    update/download suricata rules
 """
 
 import os
 import sys
+import syslog
 import fcntl
 from ConfigParser import ConfigParser
 from lib import metadata
@@ -73,7 +74,7 @@ if __name__ == '__main__':
     for rule in md.list_rules(rule_properties):
         if 'url' in rule['source']:
             download_proto = str(rule['source']['url']).split(':')[0].lower()
-            if dl.is_supported(download_proto):
+            if dl.is_supported(url=rule['source']['url']):
                 if rule['filename'] not in enabled_rulefiles:
                     full_path = ('%s/%s' % (rule_source_directory, rule['filename'])).replace('//', '/')
                     if os.path.isfile(full_path):
