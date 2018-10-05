@@ -73,6 +73,7 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			cpustats \
 			dhcp6c \
 			dhcpleases \
+			dmidecode \
 			dnsmasq \
 			dpinger \
 			expiretable \
