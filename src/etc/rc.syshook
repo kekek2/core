@@ -61,7 +61,7 @@ if [ -d ${SYSDIR} ]; then
 		echo ">>> Migrating ${SYSLEVEL} script '${SYSNAME}'"
 
 		mkdir -p ${SYSDIR}/${SYSLEVEL}
-		mv ${_SYSHOOK} ${SYSDIR}/${SYSLEVEL}/${SYSHOOK}
+		mv -f ${_SYSHOOK} ${SYSDIR}/${SYSLEVEL}/${SYSHOOK}
 	done
 fi
 
