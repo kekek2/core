@@ -225,7 +225,7 @@
             if(this.options.sortable){
                 var previous, current, $this = this;
                 $.each(this.tokensContainer.sortable('toArray', {attribute: 'data-value'}), function(k, v){
-                    current = $('option[value="' + v + '"]', $this.select);
+                    current = $('option[value="' + $.escapeSelector(v) + '"]', $this.select);
                     if(previous == undefined){
                         current.prependTo($this.select);
                     } else {
@@ -636,13 +636,13 @@
                     $this.tokenRemove(value);
                 });
 
-            if($('option[value="' + value + '"]', this.select).length){
-                if(!first && ($('option[value="' + value + '"]', this.select).attr('selected') === true ||
-                    $('option[value="' + value + '"]', this.select).prop('selected') === true)){
+            if($('option[value="' + $.escapeSelector(value) + '"]', this.select).length){
+                if(!first && ($('option[value="' + $.escapeSelector(value) + '"]', this.select).attr('selected') === true ||
+                    $('option[value="' + $.escapeSelector(value) + '"]', this.select).prop('selected') === true)){
                     this.options.onDuplicateToken(value, text, this);
                 }
-                $('option[value="' + value + '"]', this.select).attr('selected', true).prop('selected', true);
-            } else if(this.options.newElements || (!this.options.newElements && $('li[data-value="' + value + '"]', this.dropdown).length > 0)) {
+                $('option[value="' + $.escapeSelector(value) + '"]', this.select).attr('selected', true).prop('selected', true);
+            } else if(this.options.newElements || (!this.options.newElements && $('li[data-value="' + $.escapeSelector(value) + '"]', this.dropdown).length > 0)) {
                 var option = $('<option />')
                     .attr('selected', true)
                     .attr('value', value)
@@ -655,7 +655,7 @@
                 return this;
             }
 
-            if($('li.Token[data-value="' + value + '"]', this.tokensContainer).length > 0) {
+            if($('li.Token[data-value="' + $.escapeSelector(value) + '"]', this.tokensContainer).length > 0) {
                 return this;
             }
 
@@ -686,7 +686,7 @@
          */
         tokenRemove: function(value){
 
-            var option = $('option[value="' + value + '"]', this.select);
+            var option = $('option[value="' + $.escapeSelector(value) + '"]', this.select);
 
             if(option.attr('data-type') == 'custom'){
                 option.remove();
@@ -694,7 +694,7 @@
                 option.removeAttr('selected').prop('selected', false);
             }
 
-            $('li.Token[data-value="' + value + '"]', this.tokensContainer).remove();
+            $('li.Token[data-value="' + $.escapeSelector(value) + '"]', this.tokensContainer).remove();
 
             this.options.onRemoveToken(value, this);
             this.resizeSearchInput();
