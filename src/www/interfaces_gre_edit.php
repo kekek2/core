@@ -190,9 +190,9 @@ include("head.inc");
                   <tr>
                     <td><a id="help_for_tunnel-remote-addr" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("GRE tunnel remote address");?></td>
                     <td>
-                      <table class="table table-condensed">
+                      <table>
                         <tr>
-                          <td style="width:285px">
+                          <td style="width:292px">
                             <input name="tunnel-remote-addr" type="text" id="tunnel-remote-addr" value="<?=$pconfig['tunnel-remote-addr'];?>" />
                           </td>
                           <td>
