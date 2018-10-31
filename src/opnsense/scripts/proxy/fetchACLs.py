@@ -271,7 +271,7 @@ class DomainSorter(object):
                         # duplicate, skip
                         continue
                     if self._Type == 'url_regex':
-                        f_out.write(line.strip().replace('\\', '/').replace('.', '\.').replace('[', '\[').replace(']', '\]').replace('?', '\?').replace('(', '\(').replace(')', '\)').replace('+', '\+') + '\n')
+                        f_out.write(line.strip().replace('\\', '/').replace('.', '\.').replace('[', '\[').replace(']', '\]').replace('?', '\?').replace('(', '\(').replace(')', '\)').replace('+', '\+').replace('|', '\|') + '\n')
                     else:
                         if self.is_domain(line):
                             # prefix domain, if this domain is different then the previous one
