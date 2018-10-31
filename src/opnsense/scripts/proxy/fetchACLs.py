@@ -173,7 +173,7 @@ class DomainSorter(object):
         Use as file type object, close flushes the actual (sorted) data to disc
     """
 
-    def __init__(self, filename=None, mode=None, domain=True):
+    def __init__(self, filename=None, mode=None, Type='dstdomain'):
         """ new sorted output file, uses an acl record in reverse order as sort key
             :param filename: target filename
             :param mode: file open mode
@@ -185,7 +185,7 @@ class DomainSorter(object):
         # setup target
         self._target_filename = filename
         self._target_mode = mode
-        self._domain = domain
+        self._Type = Type
         # setup temp files
         self.generate_targets()
 
@@ -270,11 +270,14 @@ class DomainSorter(object):
                     if prev_line == line:
                         # duplicate, skip
                         continue
-                    if not self._domain or self.is_domain(line):
-                        # prefix domain, if this domain is different then the previous one
-                        if prev_line is None or '.%s' % line not in prev_line:
-                            f_out.write('.')
-                    f_out.write(line)
+                    if self._Type == 'url_regex':
+                        f_out.write(line.strip().replace('\\', '/').replace('.', '\.').replace('[', '\[').replace(']', '\]').replace('?', '\?').replace('(', '\(').replace(')', '\)').replace('+', '\+') + '\n')
+                    else:
+                        if self.is_domain(line):
+                            # prefix domain, if this domain is different then the previous one
+                            if prev_line is None or '.%s' % line not in prev_line:
+                                f_out.write('.')
+                        f_out.write(line)
                     prev_line = line
 
 
@@ -333,7 +336,9 @@ def main():
                         else:
                             sslNoVerify = False
                         if cnf.has_option(section, 'type'):
-                            domain = cnf.get(section, 'type') in ['dstdomain', 'dst']
+                            Type = cnf.get(section, 'type')
+                        else:
+                            Type = 'dstdomain'
                         acl = Downloader(download_url, download_username, download_password, acl_max_timeout,
                                          sslNoVerify)
                         all_filenames = list()
@@ -356,7 +361,7 @@ def main():
                                     continue
 
                             if filetype in targets and targets[filetype]['handle'] is None:
-                                targets[filetype]['handle'] = targets[filetype]['class'](targets[filetype]['filename'], 'w', domain)
+                                targets[filetype]['handle'] = targets[filetype]['class'](targets[filetype]['filename'], 'w', Type)
                             if filetype in targets:
                                 targets[filetype]['handle'].write(line)
                                 targets[filetype]['handle'].write('\n')
