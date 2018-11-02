@@ -386,10 +386,10 @@
                 </enable>
                 <RequestURL type="CSVListField">
                     <Required>N</Required>
-                    <default>icap://[::1]:1344/avscan</default>
+                    <default>icap://127.0.0.1:1344/avscan</default>
                 </RequestURL>
                 <ResponseURL type="CSVListField">
-                    <default>icap://[::1]:1344/avscan</default>
+                    <default>icap://127.0.0.1:1344/avscan</default>
                     <Required>N</Required>
                 </ResponseURL>
                 <SendClientIP type="BooleanField">
