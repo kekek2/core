@@ -51,7 +51,7 @@ while : ; do
 # Failure to exit at that moment would lead to an infinite loop.
 set -e
 
-cho
+echo
 echo "$MENU_0_07"
 echo "$MENU_1_08"
 echo "$MENU_2_09"

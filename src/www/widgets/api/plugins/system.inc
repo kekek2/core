@@ -152,6 +152,64 @@ function system_api_versions()
     return $result;
 }
 
+function system_api_hardware()
+{
+    $result = array();
+
+    $data = array();
+    $hardware = explode("\n", shell_exec('dmidecode -q -t system'));
+    foreach ($hardware as $item) {
+        if(strpos($item, 'Manufacturer:')   !== false
+        || strpos($item, 'Product Name:')   !== false
+        || strpos($item, 'Version:')        !== false
+        || strpos($item, 'Serial Number:')  !== false) {
+            $parts = explode(':', $item);
+            $data[trim($parts[0])] = trim($parts[1]);
+        }
+    }
+
+    $result[] = sprintf('%s %s %s',
+        isset($data['Manufacturer']) ? $data['Manufacturer'] : '',
+        isset($data['Product Name']) ? $data['Product Name'] : '',
+        isset($data['Version']) ? $data['Version'] : ''
+    );
+
+    if(isset($data['Serial Number'])) {
+        $result[] = 'SN ' . $data['Serial Number'];
+    }
+
+    return $result;
+}
+
+function system_api_bios()
+{
+    $result = array();
+
+    $data = array();
+    $bios = explode("\n", shell_exec('dmidecode -q -t bios'));
+    foreach ($bios as $item) {
+        if(strpos($item, 'Vendor:')         !== false
+        || strpos($item, 'Version:')        !== false
+        || strpos($item, 'Release Date:')   !== false
+        || strpos($item, 'BIOS Revision:')  !== false) {
+            $parts = explode(':', $item);
+            $data[trim($parts[0])] = trim($parts[1]);
+        }
+    }
+
+    $result[] = sprintf('%s %s %s',
+        isset($data['Vendor']) ? $data['Vendor'] : '',
+        isset($data['Version']) ? $data['Version'] : '',
+        isset($data['BIOS Revision']) ? $data['BIOS Revision'] : ''
+    );
+
+    if(isset($data['Release Date'])) {
+        $result[] = 'Release date: ' . $data['Release Date'];
+    }
+
+    return $result;
+}
+
 /**
  * widget system data
  */
@@ -160,6 +218,8 @@ function system_api()
     $result = array();
 
     $result['versions'] = system_api_versions();
+    $result['hardware'] = system_api_hardware();
+    $result['bios'] = system_api_bios();
     $result['cpu'] = system_api_cpu_stats();
     $result['date_frmt'] = date("D M j G:i:s T Y");
     $result['date_time'] = time();
