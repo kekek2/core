@@ -87,8 +87,8 @@ function filter_core_antilockout_ports()
      * 2. Both webgui and openssh are plugins, their code should
      *    reside in the respective plugins.inc.d file once anti-
      *    lockout is fully pluggable.
-     * 3. Openssh opens the port when install media is detected
-     *    and no ssh has ever been configured.  This is in line
+     * 3. OpenSSH opens the port when install media is detected
+     *    and no ssh has ever been configured. This is in line
      *    with how the plugin behaves, but probably looks odd.
      */
     if (!isset($config['system']['webgui']['noantilockout'])) {
@@ -110,56 +110,6 @@ function filter_core_antilockout_ports()
 
 
 /**
- *   fetch a remote list of ports, eventually we might be better of dropping this functionality because of the
- *   disadvantages it has (network dependency on filter load).
- */
-function filter_core_get_url_port_alias($name)
-{
-    global $config;
-    $alias_content = "";
-    $urltable_prefix = "/var/db/aliastables/";
-    $urltable_filename = $urltable_prefix . $name . ".txt";
-    if (!file_exists($urltable_prefix)) {
-        mkdir($urltable_prefix);
-    }
-    if (!empty($config['aliases']['alias'])) {
-        foreach ($config['aliases']['alias'] as $alias) {
-            if ($alias['name'] == $name) {
-                 $urls = array();
-                 if (!empty($alias["url"])) {
-                     $urls = array($alias["url"]);
-                 } elseif (!empty($alias["aliasurl"][0])) {
-                     $urls = $alias["aliasurl"];
-                 }
-                 if (file_exists($urltable_filename) && filesize($urltable_filename)) {
-                     $alias_content = file_get_contents($urltable_filename);
-                 } else {
-                     $arrContextOptions = array();
-                     if (!isset($config['system']['checkaliasesurlcert'])) {
-                         $arrContextOptions['ssl'] = array("verify_peer"=>false,"verify_peer_name"=>false);
-                     }
-                     foreach ($urls as $url) {
-                        if (is_URL($url)) {
-                            $content = @file_get_contents($url, false, stream_context_create($arrContextOptions));
-                            foreach (preg_split('/[\n\r]+/', $content, -1, PREG_SPLIT_NO_EMPTY) as $line) {
-                                if ((string)((int)$line) === $line && $line >= 1 && $line <= 65535) {
-                                    $alias_content .= $line. "\n";
-                                }
-                            }
-                         }
-                     }
-                     if (!empty($alias_content)) {
-                         file_put_contents($urltable_filename, $alias_content);
-                     }
-                 }
-                 break;
-            }
-        }
-    }
-    return preg_replace("/\n/", " ", $alias_content);
-}
-
-/**
  * recursively collect port alias(es) contents
  * @param $aliasname string alias name or null to fetch all aliases
  * @param $aliases aliases already parsed (prevent deadlock)
@@ -167,25 +117,21 @@ function filter_core_get_url_port_alias($name)
  */
 function filter_core_get_port_alias($aliasname, $aliases=array())
 {
-    global $config;
-
     $response = array();
     $aliases[] = $aliasname;
-    if (isset($config['aliases']['alias'])) {
-        foreach ($config['aliases']['alias'] as $aliased) {
-            if ($aliasname == $aliased['name'] && $aliased['type'] == 'port') {
-                foreach (explode(" ", $aliased['address']) as $address) {
-                    if (is_alias($address)) {
-                        if (!in_array($address, $aliases)) {
-                            foreach (filter_core_get_port_alias($address, $aliases) as $port) {
-                                if (!in_array($port, $response)) {
-                                    $response[] = $port;
-                                }
+    foreach ((new \OPNsense\Firewall\Alias())->aliasIterator() as $aliased) {
+        if ($aliasname == $aliased['name'] && $aliased['type'] == 'port') {
+            foreach (explode("\n", $aliased['content']) as $address) {
+                if (is_alias($address)) {
+                    if (!in_array($address, $aliases)) {
+                        foreach (filter_core_get_port_alias($address, $aliases) as $port) {
+                            if (!in_array($port, $response)) {
+                                $response[] = $port;
                             }
                         }
-                    } elseif ((is_port($address) || is_portrange($address)) && !in_array($address, $response)) {
-                        $response[] = $address ;
                     }
+                } elseif ((is_port($address) || is_portrange($address)) && !in_array($address, $response)) {
+                    $response[] = $address ;
                 }
             }
         }
@@ -307,24 +253,30 @@ function filter_core_rules_system($fw, $defaults)
     // block bogons and private nets
     $bogontmpl = array('type' => 'block', 'log' => ($config['OPNsense']['Syslog']['Firewall']['LogBogons'] == 1), 'disablereplyto' => 1);
     $privtmpl = array('type' => 'block', 'log' => ($config['OPNsense']['Syslog']['Firewall']['LogPrivateNets'] == 1),
-      'from' => '10.0.0.0/8,127.0.0.0/8,100.64.0.0/10,172.16.0.0/12,192.168.0.0/16,fc00::/7',
+      'from' => '10.0.0.0/8,127.0.0.0/8,100.64.0.0/10,172.16.0.0/12,192.168.0.0/16',
       'disablereplyto' => 1);
     foreach ($fw->getInterfaceMapping() as $intf => $intfinfo) {
         $fw->registerFilterRule(5,
-          array('from' => "<bogons>", 'direction' => 'in', 'interface' => $intf,
-            'label' => "block bogon IPv4 networks from ".$intfinfo['descr'],
+          array('from' => "<bogons>", 'direction' => 'in', 'interface' => $intf, 'ipprotocol' => 'inet',
+            'label' => "Block bogon IPv4 networks from ".$intfinfo['descr'],
             'disabled' => !isset($intfinfo['blockbogons'])),
           $bogontmpl
         );
         $fw->registerFilterRule(5,
-          array('from' => "<bogonsv6>", 'direction' => 'in', 'interface' => $intf,
+          array('from' => "<bogonsv6>", 'direction' => 'in', 'interface' => $intf, 'ipprotocol' => 'inet6',
             'disabled' => !isset($config['system']['ipv6allow']) || !isset($intfinfo['blockbogons']),
-            'label' => "block bogon IPv6 networks from ".$intfinfo['descr']),
+            'label' => "Block bogon IPv6 networks from ".$intfinfo['descr']),
           $bogontmpl
         );
         $fw->registerFilterRule(5,
-          array('direction' => 'in', 'interface' => $intf,
+          array('direction' => 'in', 'interface' => $intf, 'ipprotocol' => 'inet',
             'label' => "Block private networks from ".$intfinfo['descr'],
+            'disabled' => !isset($intfinfo['blockpriv'])),
+          $privtmpl
+        );
+        $fw->registerFilterRule(5,
+          array('direction' => 'in', 'interface' => $intf, 'ipprotocol' => 'inet6',
+            'label' => "Block private networks from ".$intfinfo['descr'], 'from' => 'fc00::/7',
             'disabled' => !isset($intfinfo['blockpriv'])),
           $privtmpl
         );
@@ -439,7 +391,7 @@ function filter_core_rules_system($fw, $defaults)
                 break;
             default:
               if (isset($config['dhcpdv6'][$intf]['enable']) || isset($intfinfo['track6-interface'])
-                || (!empty($config['dhcrelay6']['interface'])  && in_array($intf, explode(',', $config['dhcrelay6']['interface'])))) {
+                || (!empty($config['dhcrelay6']['interface']) && in_array($intf, explode(',', $config['dhcrelay6']['interface'])))) {
                     $fw->registerFilterRule(5,
                       array('protocol' => 'udp','ipprotocol' => 'inet6', 'from' => 'fe80::/10', 'to' => 'fe80::/10,ff02::/16',
                             'to_port' => 546, 'interface' => $intf,
@@ -483,7 +435,7 @@ function filter_core_rules_system($fw, $defaults)
         $defaults['pass']
     );
     // ipsec
-    if (!empty($fw->getInterfaceMapping()['enc0'])) {
+    if (!empty(iterator_to_array($fw->getInterfaceMapping())['enc0'])) {
         $fw->registerFilterRule(5,
           array('direction' => 'out', 'statetype' => 'keep', 'quick' => false, 'interface' => 'enc0',
                 'label' =>'IPsec internal host to host'),
@@ -538,8 +490,8 @@ function filter_core_rules_system($fw, $defaults)
                 }
                 foreach ($fw->getInterfaceGateways($ifcfg['if']) as $gwname) {
                     $gwproto = $fw->getGateway($gwname)['proto'];
-                    // only try to add gateway rules for traffic leaving this interface when the correct protocol is
-                    // assigned to the interface (e.g. no ipv4 gateway when :network doesn't resolve to an ipv4 network)
+                    // only try to add gateway rules for traffic leaving this interface
+                    // when the correct protocol is assigned to the interface
                     if (($gwproto == 'inet' && $intf_has_v4) || ($gwproto == 'inet6' && $intf_has_v6)) {
                         $fw->registerFilterRule(100000,
                           array('from' => $ifcfg['if'], 'direction' => 'out', 'gateway' => $gwname,

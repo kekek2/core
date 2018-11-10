@@ -2,8 +2,8 @@
 
 /*
     Copyright (C) 2014-2015 Deciso B.V.
-    Copyright (C) 2005 Bill Marquette <bill.marquette@gmail.com>.
-    Copyright (C) 2003-2005 Manuel Kasper <mk@neon1.net>.
+    Copyright (C) 2005 Bill Marquette <bill.marquette@gmail.com>
+    Copyright (C) 2003-2005 Manuel Kasper <mk@neon1.net>
     Copyright (C) 2004-2005 Scott Ullrich <sullrich@gmail.com>
     All rights reserved.
 
@@ -274,8 +274,8 @@ $main_buttons = array(
                 </thead>
                 <tbody>
 <?php
-                  $interfaces = get_configured_interface_with_descr(false, true);
-                  $interfaces['lo0'] = "Localhost";
+                  $interfaces = legacy_config_get_interfaces(array('virtual' => false));
+                  $interfaces['lo0'] = array('descr' => 'Localhost');
                   $i = 0;
                   foreach ($a_vip as $vipent):
                     if(!empty($vipent['subnet']) || !empty($vipent['range']) || !empty($vipent['subnet_bits']) || (isset($vipent['range']['from']) && !empty($vipent['range']['from']))): ?>
@@ -289,7 +289,7 @@ $main_buttons = array(
                       <?=$vipent['mode'] == "carp" ?  " (vhid {$vipent['vhid']} , freq. {$vipent['advbase']} / {$vipent['advskew']} )" : "";?>
                     </td>
                     <td>
-                      <?=htmlspecialchars($interfaces[$vipent['interface']]);?>
+                      <?= htmlspecialchars($interfaces[$vipent['interface']]['descr']) ?>
                     </td>
                     <td>
                       <?=$vipent['mode'] == "proxyarp" ? "Proxy ARP" : "";?>
@@ -301,7 +301,7 @@ $main_buttons = array(
                       <?=htmlspecialchars($vipent['descr']);?>
                     </td>
                     <td>
-                      <a id="move_<?=$i;?>" name="move_<?=$i;?>_x" data-toggle="tooltip" title="<?= html_safe(gettext("move selected virtual IPs before this entry")) ?>" class="act_move btn btn-default btn-xs">
+                      <a id="move_<?=$i;?>" name="move_<?=$i;?>_x" data-toggle="tooltip" title="<?= html_safe(gettext("Move selected virtual IPs before this entry")) ?>" class="act_move btn btn-default btn-xs">
                         <span class="fa fa-arrow-left fa-fw"></span>
                       </a>
                       <a href="firewall_virtual_ip_edit.php?id=<?=$i;?>" data-toggle="tooltip" title="<?= html_safe(gettext('Edit')) ?>" class="btn btn-default btn-xs">
@@ -324,7 +324,7 @@ $main_buttons = array(
                   <tr>
                     <td colspan="5"></td>
                     <td>
-                      <a type="submit" id="move_<?=$i;?>" name="move_<?=$i;?>_x" data-toggle="tooltip" title="<?= html_safe(gettext("move selected virtual IPs to end")) ?>" class="act_move btn btn-default btn-xs">
+                      <a type="submit" id="move_<?=$i;?>" name="move_<?=$i;?>_x" data-toggle="tooltip" title="<?= html_safe(gettext("Move selected virtual IPs to end")) ?>" class="act_move btn btn-default btn-xs">
                         <span class="fa fa-arrow-left fa-fw"></span>
                       </a>
                       <a id="del_x" title="<?= html_safe(gettext('delete selected virtual IPs')) ?>" data-toggle="tooltip"  class="btn btn-default btn-xs">

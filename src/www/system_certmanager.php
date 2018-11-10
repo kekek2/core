@@ -209,7 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     } elseif ($act == "info") {
       if (isset($id)) {
           // use openssl to dump cert in readable format
-          $process = proc_open('/usr/local/bin/openssl x509 -text', array(array("pipe", "r"), array("pipe", "w")), $pipes);
+          $process = proc_open('/usr/local/bin/openssl x509 -fingerprint -sha256 -text', array(array("pipe", "r"), array("pipe", "w")), $pipes);
           if (is_resource($process)) {
              fwrite($pipes[0], base64_decode($a_cert[$id]['crt']));
              fclose($pipes[0]);
@@ -340,7 +340,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             foreach ($altnames as $altname) {
                 switch ($altname['type']) {
                     case "DNS":
-                        if (!is_hostname($altname['value'])) {
+                        $dns_regex = '/^(?:(?:[a-z0-9_\*]|[a-z0-9_][a-z0-9_\-]*[a-z0-9_])\.)*(?:[a-z0-9_]|[a-z0-9_][a-z0-9_\-]*[a-z0-9_])$/i';
+                        if (!preg_match($dns_regex, $altname['value'])) {
                             $input_errors[] = gettext("DNS subjectAltName values must be valid hostnames or FQDNs");
                         }
                         break;

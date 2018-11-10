@@ -151,9 +151,20 @@ abstract class ApiMutableModelControllerBase extends ApiControllerBase
             // replace absolute path to attribute for relative one at uuid.
             if ($node != null) {
                 $fieldnm = str_replace($node->__reference, $resultPrefix, $msg->getField());
-                $result["validations"][$fieldnm] = $msg->getMessage();
             } else {
-                $result["validations"][$resultPrefix.".".$msg->getField()] = $msg->getMessage();
+                $fieldnm = $resultPrefix.".".$msg->getField();
+            }
+            $msgText = $msg->getMessage();
+            if (empty($result["validations"][$fieldnm])) {
+                $result["validations"][$fieldnm] = $msgText;
+            } elseif (!is_array($result["validations"][$fieldnm])) {
+                // multiple validations, switch to array type output
+                $result["validations"][$fieldnm] = array($result["validations"][$fieldnm]);
+                if (!in_array($msgText, $result["validations"][$fieldnm])) {
+                    $result["validations"][$fieldnm][] = $msgText;
+                }
+            } elseif (!in_array($msgText, $result["validations"][$fieldnm])) {
+                $result["validations"][$fieldnm][] = $msgText;
             }
         }
         return $result;
@@ -271,7 +282,6 @@ abstract class ApiMutableModelControllerBase extends ApiControllerBase
     {
         $result = array("result" => "failed");
         if ($this->request->isPost() && $this->request->hasPost($post_field)) {
-            $result = array("result" => "failed", "validations" => array());
             $mdl = $this->getModel();
             $tmp = $mdl;
             foreach (explode('.', $path) as $step) {
@@ -279,19 +289,18 @@ abstract class ApiMutableModelControllerBase extends ApiControllerBase
             }
             $node = $tmp->Add();
             $node->setNodes($this->request->getPost($post_field));
-            $valMsgs = $mdl->performValidation();
+            $result = $this->validate($node, $post_field);
 
-            foreach ($valMsgs as $field => $msg) {
-                $fieldnm = str_replace($node->__reference, $post_field, $msg->getField());
-                $result["validations"][$fieldnm] = $msg->getMessage();
-            }
-
-            if (count($result['validations']) == 0) {
+            if (empty($result['validations'])) {
                 // save config if validated correctly
                 $mdl->serializeToConfig();
                 Config::getInstance()->save();
-                unset($result['validations']);
-                $result["result"] = "saved";
+                $result = array(
+                    "result" => "saved",
+                    "uuid" => $node->getAttribute('uuid')
+                );
+            } else {
+                $result["result"] = "failed";
             }
         }
         return $result;
@@ -307,7 +316,6 @@ abstract class ApiMutableModelControllerBase extends ApiControllerBase
      */
     public function delBase($path, $uuid)
     {
-
         $result = array("result" => "failed");
 
         if ($this->request->isPost()) {
@@ -345,20 +353,15 @@ abstract class ApiMutableModelControllerBase extends ApiControllerBase
             if ($uuid != null) {
                 $node = $mdl->getNodeByReference($path . '.' . $uuid);
                 if ($node != null) {
-                    $result = array("result" => "failed", "validations" => array());
-
                     $node->setNodes($this->request->getPost($post_field));
-                    $valMsgs = $mdl->performValidation();
-                    foreach ($valMsgs as $field => $msg) {
-                        $fieldnm = str_replace($node->__reference, $post_field, $msg->getField());
-                        $result["validations"][$fieldnm] = $msg->getMessage();
-                    }
-
-                    if (count($result['validations']) == 0) {
+                    $result = $this->validate($node, $post_field);
+                    if (empty($result['validations'])) {
                         // save config if validated correctly
                         $mdl->serializeToConfig();
                         Config::getInstance()->save();
                         $result = array("result" => "saved");
+                    } else {
+                        $result["result"] = "failed";
                     }
                     return $result;
                 }

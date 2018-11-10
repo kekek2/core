@@ -279,8 +279,7 @@ if [ "$pkg_running" == "" ]; then
             if [ -n "$base_to_reboot" ]; then
               base_to_delete="$(opnsense-update -bv)"
               base_to_delete="${base_to_delete%-*}"
-              base_is_size="$(opnsense-update -bfS)"
-              upgrade_needs_reboot="1"
+              base_is_size="$(opnsense-update -bfSr $base_to_reboot)"
               if [ "$base_to_reboot" != "$base_to_delete" -a -n "$base_is_size" ]; then
                 if [ "$packages_upgraded" == "" ]; then
                   packages_upgraded=$packages_upgraded"{\"name\":\"base\"," # If it is the first item then we do not want a seperator
@@ -291,6 +290,7 @@ if [ "$pkg_running" == "" ]; then
                 packages_upgraded=$packages_upgraded"\"current_version\":\"$base_to_delete\","
                 packages_upgraded=$packages_upgraded"\"new_version\":\"$base_to_reboot\"}"
                 updates=$(expr $updates + 1)
+                upgrade_needs_reboot="1"
               fi
             fi
 
@@ -307,8 +307,7 @@ if [ "$pkg_running" == "" ]; then
             if [ -n "$kernel_to_reboot" ]; then
               kernel_to_delete="$(opnsense-update -kv)"
               kernel_to_delete="${kernel_to_delete%-*}"
-              kernel_is_size="$(opnsense-update -fkS)"
-              upgrade_needs_reboot="1"
+              kernel_is_size="$(opnsense-update -fkSr $kernel_to_reboot)"
               if [ "$kernel_to_reboot" != "$kernel_to_delete" -a -n "$kernel_is_size" ]; then
                 if [ "$packages_upgraded" == "" ]; then
                   packages_upgraded=$packages_upgraded"{\"name\":\"kernel\"," # If it is the first item then we do not want a seperator
@@ -319,6 +318,7 @@ if [ "$pkg_running" == "" ]; then
                 packages_upgraded=$packages_upgraded"\"current_version\":\"$kernel_to_delete\","
                 packages_upgraded=$packages_upgraded"\"new_version\":\"$kernel_to_reboot\"}"
                 updates=$(expr $updates + 1)
+                upgrade_needs_reboot="1"
               fi
             fi
           fi
@@ -334,8 +334,8 @@ if [ "$pkg_running" == "" ]; then
 
       upgrade_major_message=$(cat /usr/local/opnsense/firmware-message 2> /dev/null | sed 's/"/\\&/g' | tr '\n' ' ')
       upgrade_major_version=$(cat /usr/local/opnsense/firmware-upgrade 2> /dev/null)
-      product_version=$(cat /usr/local/opnsense/version/opnsense)
-      product_name=$(cat /usr/local/opnsense/version/opnsense.name)
+      product_version=$(opnsense-version -v)
+      product_name=$(opnsense-version -n)
       os_version=$(uname -sr)
       last_check=$(date)
 else

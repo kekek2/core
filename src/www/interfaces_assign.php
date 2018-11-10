@@ -68,6 +68,9 @@ function list_interfaces() {
         if (match_wireless_interface($key)) {
             continue;
         }
+        if (preg_match('/_stf$/', $key)) {
+            continue;
+        }
         $interfaces[$key] = array('descr' => $key . ' (' . $intf_item['mac'] . ')', 'section' => 'interfaces');
     }
     // collect interfaces from defined config sections
@@ -133,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         /* find next free optional interface number */
         if(empty($config['interfaces']['lan'])) {
-            $newifname = gettext("lan");
+            $newifname = 'lan';
             $descr = gettext("LAN");
         } else {
             for ($i = 1; $i <= count($config['interfaces']); $i++) {
@@ -155,10 +158,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (match_wireless_interface($_POST['if_add'])) {
             $config['interfaces'][$newifname]['wireless'] = array();
             interface_sync_wireless_clones($config['interfaces'][$newifname], false);
-        }
-        /* lock known-to-be unreliable interfaces by default */
-        if (in_array(substr($_POST['if_add'], 0, 2), array('ue', 'zt'))) {
-            $config['interfaces'][$newifname]['lock'] = true;
         }
 
         write_config();
@@ -456,7 +455,6 @@ include("head.inc");
                       </tr>
                     </tbody>
                   </table>
-                </div>
               </div>
             </form>
           </div>
@@ -464,4 +462,5 @@ include("head.inc");
       </div>
     </div>
   </section>
-<?php include("foot.inc"); ?>
+
+<?php include("foot.inc");

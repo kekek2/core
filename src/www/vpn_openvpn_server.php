@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             ,ntp_server2,netbios_enable,netbios_ntype,netbios_scope,wins_server1
             ,wins_server2,no_tun_ipv6,push_register_dns,dns_domain,local_group
             ,client_mgmt_port,verbosity_level,caref,crlref,certref,dh_length
-            ,cert_depth,strictusercn,digest,disable,duplicate_cn,vpnid,reneg-sec,use-common-name";
+            ,cert_depth,strictusercn,digest,disable,duplicate_cn,vpnid,reneg-sec,use-common-name,cso_login_matching";
 
         foreach (explode(",", $copy_fields) as $fieldname) {
             $fieldname = trim($fieldname);
@@ -117,7 +117,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             ,ntp_server2,netbios_enable,netbios_ntype,netbios_scope,wins_server1
             ,wins_server2,no_tun_ipv6,push_register_dns,dns_domain
             ,client_mgmt_port,verbosity_level,caref,crlref,certref,dh_length
-            ,cert_depth,strictusercn,digest,disable,duplicate_cn,vpnid,shared_key,tls,reneg-sec,use-common-name";
+            ,cert_depth,strictusercn,digest,disable,duplicate_cn,vpnid,shared_key,tls,reneg-sec,use-common-name
+            ,cso_login_matching";
         foreach (explode(",", $init_fields) as $fieldname) {
             $fieldname = trim($fieldname);
             if (!isset($pconfig[$fieldname])) {
@@ -196,31 +197,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $input_errors[] = gettext("You must select a Backend for Authentication if the server mode requires User Auth.");
         }
 
-        if ($result = openvpn_validate_port($pconfig['local_port'], 'Local port')) {
+        if ($result = openvpn_validate_port($pconfig['local_port'], gettext('Local port'))) {
             $input_errors[] = $result;
         }
 
-        if ($result = openvpn_validate_cidr($pconfig['tunnel_network'], 'IPv4 Tunnel Network', false, "ipv4")) {
+        if ($result = openvpn_validate_cidr($pconfig['tunnel_network'], gettext('IPv4 Tunnel Network'), false, 'ipv4')) {
             $input_errors[] = $result;
         }
 
-        if ($result = openvpn_validate_cidr($pconfig['tunnel_networkv6'], 'IPv6 Tunnel Network', false, "ipv6")) {
+        if ($result = openvpn_validate_cidr($pconfig['tunnel_networkv6'], gettext('IPv6 Tunnel Network'), false, 'ipv6')) {
             $input_errors[] = $result;
         }
 
-        if ($result = openvpn_validate_cidr($pconfig['remote_network'], 'IPv4 Remote Network', true, "ipv4")) {
+        if ($result = openvpn_validate_cidr($pconfig['remote_network'], gettext('IPv4 Remote Network'), true, 'ipv4')) {
             $input_errors[] = $result;
         }
 
-        if ($result = openvpn_validate_cidr($pconfig['remote_networkv6'], 'IPv6 Remote Network', true, "ipv6")) {
+        if ($result = openvpn_validate_cidr($pconfig['remote_networkv6'], gettext('IPv6 Remote Network'), true, 'ipv6')) {
             $input_errors[] = $result;
         }
 
-        if ($result = openvpn_validate_cidr($pconfig['local_network'], 'IPv4 Local Network', true, "ipv4")) {
+        if ($result = openvpn_validate_cidr($pconfig['local_network'], gettext('IPv4 Local Network'), true, 'ipv4')) {
             $input_errors[] = $result;
         }
 
-        if ($result = openvpn_validate_cidr($pconfig['local_networkv6'], 'IPv6 Local Network', true, "ipv6")) {
+        if ($result = openvpn_validate_cidr($pconfig['local_networkv6'], gettext('IPv6 Local Network'), true, 'ipv6')) {
             $input_errors[] = $result;
         }
 
@@ -281,7 +282,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
 
         if (!empty($pconfig['client_mgmt_port_enable'])) {
-            if ($result = openvpn_validate_port($pconfig['client_mgmt_port'], 'Client management port')) {
+            if ($result = openvpn_validate_port($pconfig['client_mgmt_port'], gettext('Client management port'))) {
                 $input_errors[] = $result;
             }
         }
@@ -347,7 +348,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 ,serverbridge_dhcp_end,dns_domain,dns_server1,dns_server2,dns_server3
                 ,dns_server4,push_register_dns,ntp_server1,ntp_server2,netbios_enable
                 ,netbios_ntype,netbios_scope,no_tun_ipv6,verbosity_level,wins_server1
-                ,wins_server2,client_mgmt_port,strictusercn,reneg-sec,use-common-name";
+                ,wins_server2,client_mgmt_port,strictusercn,reneg-sec,use-common-name,cso_login_matching";
 
             foreach (explode(",", $copy_fields) as $fieldname) {
                 $fieldname = trim($fieldname);
@@ -1582,6 +1583,17 @@ endif; ?>
                               gettext('Renegotiate data channel key after n seconds (default=3600).%s' .
                                      'When using a one time password, be advised that your connection will automatically drop because your password is not valid anymore.%sSet to 0 to disable, remember to change your client as well.'),
                                      '<br/>','<br/>');?>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr id="chkboxLoginMatching">
+                      <td style="width:22%"><a id="help_for_cso_login_matching" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Force CSO Login Matching"); ?></td>
+                      <td>
+                        <input name="cso_login_matching" type="checkbox" value="yes" <?=!empty($pconfig['cso_login_matching']) ? "checked=\"checked\"" : "" ;?> />
+                        <div class="hidden" data-for="help_for_cso_login_matching">
+                          <span>
+                            <?=gettext("Use username instead of common name to match client specfic override."); ?><br />
+                          </span>
                         </div>
                       </td>
                     </tr>
