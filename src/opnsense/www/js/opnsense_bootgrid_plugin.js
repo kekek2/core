@@ -193,6 +193,7 @@ $.fn.UIBootgrid = function (params) {
                                         console.log("[grid] action set missing")
                                     }
                                 });
+                                $('#'+editDlg).trigger('opnsense_bootgrid_mapped', ['edit']);
                             });
                         } else {
                             console.log("[grid] action get or data-editDialog missing")
@@ -227,6 +228,7 @@ $.fn.UIBootgrid = function (params) {
                                         console.log("[grid] action add missing")
                                     }
                                 });
+                                $('#'+editDlg).trigger('opnsense_bootgrid_mapped', ['copy']);
                             });
                         } else {
                             console.log("[grid] action get or data-editDialog missing")
@@ -244,7 +246,7 @@ $.fn.UIBootgrid = function (params) {
                                 ajaxCall(url=gridParams['del'] + uuid,
                                     sendData={},callback=function(data,status){
                                         // reload grid after delete
-                                        $("#"+gridId).bootgrid("reload");
+                                        std_bootgrid_reload(gridId);
                                     });
                             });
                         } else {
@@ -280,6 +282,7 @@ $.fn.UIBootgrid = function (params) {
                             $('.selectpicker').selectpicker('refresh');
                             // clear validation errors (if any)
                             clearFormValidation('frm_' + editDlg);
+                            $('#'+editDlg).trigger('opnsense_bootgrid_mapped', ['add']);
                         });
 
                         // show dialog for edit
@@ -289,7 +292,7 @@ $.fn.UIBootgrid = function (params) {
                             saveFormToEndpoint(url=gridParams['add'],
                                 formid='frm_' + editDlg, callback_ok=function(){
                                     $("#"+editDlg).modal('hide');
-                                    $("#"+gridId).bootgrid("reload");
+                                    std_bootgrid_reload(gridId);
                                 }, true);
                         });
                     }  else {

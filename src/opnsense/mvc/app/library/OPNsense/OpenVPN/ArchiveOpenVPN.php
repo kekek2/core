@@ -1,4 +1,3 @@
-#!/usr/local/bin/php
 <?php
 
 /*
@@ -8,7 +7,7 @@
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *
- *  1. Redistributions of source code must retain the above copyright notice,
+ * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright
@@ -27,15 +26,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-$vpnid = filter_var($argv[1], FILTER_SANITIZE_NUMBER_INT);
-$common_name = getenv("common_name");
-$target_filename = "/var/etc/openvpn-csc/".$vpnid."/".$common_name;
+namespace OPNsense\OpenVPN;
 
-openlog("openvpn", LOG_ODELAY, LOG_AUTH);
-if (is_file($target_filename)) {
-    syslog(LOG_NOTICE, "client config removed @ {$target_filename}");
-    unlink($target_filename);
+class ArchiveOpenVPN extends PlainOpenVPN
+{
+    public function getName()
+    {
+        return gettext("Archive");
+    }
+
+    public function supportedOptions()
+    {
+        return array("testxx2");
+    }
 }
-
-closelog();
-exit(0);

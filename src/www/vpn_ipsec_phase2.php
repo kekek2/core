@@ -223,30 +223,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     do_input_validation($_POST, $reqdfields, $reqdfieldsn, $input_errors);
 
-    if (($pconfig['mode'] == "tunnel") || ($pconfig['mode'] == "tunnel6")) {
+    if (($pconfig['mode'] == 'tunnel') || ($pconfig['mode'] == 'tunnel6')) {
         switch ($pconfig['localid_type']) {
-            case "network":
+            case 'network':
                 if (($pconfig['localid_netbits'] != 0 && !$pconfig['localid_netbits']) || !is_numeric($pconfig['localid_netbits'])) {
-                    $input_errors[] = gettext("A valid local network bit count must be specified.");
+                    $input_errors[] = gettext('A valid local network bit count must be specified.');
                 }
-            case "address":
+            case 'address':
                 if (!$pconfig['localid_address'] || !is_ipaddr($pconfig['localid_address'])) {
-                    $input_errors[] = gettext("A valid local network IP address must be specified.");
-                } elseif (is_ipaddrv4($pconfig['localid_address']) && ($pconfig['mode'] != "tunnel"))
-                $input_errors[] = gettext("A valid local network IPv4 address must be specified or you need to change Mode to IPv6");
-                elseif (is_ipaddrv6($pconfig['localid_address']) && ($pconfig['mode'] != "tunnel6"))
-                $input_errors[] = gettext("A valid local network IPv6 address must be specified or you need to change Mode to IPv4");
+                    $input_errors[] = gettext('A valid local network IP address must be specified.');
+                } elseif (is_ipaddrv4($pconfig['localid_address']) && ($pconfig['mode'] != 'tunnel')) {
+                    $input_errors[] = gettext('A valid local network IPv4 address must be specified or you need to change Mode to IPv6');
+                } elseif (is_ipaddrv6($pconfig['localid_address']) && ($pconfig['mode'] != 'tunnel6')) {
+                    $input_errors[] = gettext('A valid local network IPv6 address must be specified or you need to change Mode to IPv4');
+                }
                 break;
-        }
-        /* Check if the localid_type is an interface, to confirm if it has a valid subnet. */
-        if (isset($config['interfaces'][$pconfig['localid_type']])) {
-            // Don't let an empty subnet into racoon.conf, it can cause parse errors. Ticket #2201.
-            $address = get_interface_ip($pconfig['localid_type']);
-            $netbits = get_interface_subnet($pconfig['localid_type']);
-
-            if (empty($address) || empty($netbits)) {
-                $input_errors[] = gettext("Invalid Local Network.") . " " . convert_friendly_interface_to_friendly_descr($pconfig['localid_type']) . " " . gettext("has no subnet.");
-            }
+            default:
+                /* XXX Don't let an empty subnet into racoon.conf, it can cause parse errors. Ticket #2201. */
+                if ($pconfig['mode'] == 'tunnel' && !is_subnetv4(find_interface_network(get_real_interface($pconfig['localid_type'])))) {
+                    $input_errors[] = sprintf(
+                        gettext('Invalid local network: %s has no valid IPv4 network.'),
+                        convert_friendly_interface_to_friendly_descr($pconfig['localid_type'])
+                    );
+                } elseif ($pconfig['mode'] == 'tunnel6' && !is_subnetv6(find_interface_networkv6(get_real_interface($pconfig['localid_type']), 'inet6'))) {
+                    $input_errors[] = sprintf(
+                        gettext('Invalid local network: %s has no valid IPv6 network.'),
+                        convert_friendly_interface_to_friendly_descr($pconfig['localid_type'])
+                    );
+                }
+                break;
         }
 
         switch ($pconfig['remoteid_type']) {
@@ -337,6 +342,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                         break;
                     }
                 }
+                $pconfig['hash-algorithm-option'] = array();
             }
         }
     }
@@ -400,7 +406,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 }
 
-$service_hook = 'ipsec';
+$service_hook = 'strongswan';
 
 legacy_html_escape_form_data($pconfig);
 
@@ -657,13 +663,13 @@ endif; ?>
                 <tr>
                   <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Hash algorithms"); ?></td>
                   <td style="width:78%" class="vtable">
-<?php
-                  foreach ($p2_halgos as $algo => $algoname) :?>
-                    <input type="checkbox" name="hash-algorithm-option[]" value="<?=$algo;?>" <?= isset($pconfig['hash-algorithm-option']) && in_array($algo, $pconfig['hash-algorithm-option']) ?  'checked="checked"' : '';?>/>
-                    <?=$algoname;?>
-                    </br>
-<?php
-                  endforeach; ?>
+                    <select name="hash-algorithm-option[]" class="selectpicker" multiple="multiple">
+<?php foreach ($p2_halgos as $algo => $algoname): ?>
+                      <option value="<?= html_safe($algo) ?>" <?= in_array($algo, $pconfig['hash-algorithm-option']) ? 'selected="selected"' : '' ?>>
+                        <?= html_safe($algoname) ?>
+                      </option>
+<?php endforeach ?>
+                    </select>
                   </td>
                 </tr>
                 <tr>
@@ -674,24 +680,26 @@ endif; ?>
                     <select name="pfsgroup" class="selectpicker">
 <?php
                     $p2_dhgroups = array(
-                      0  => gettext('off'),
-                      1  => '1 (768 bit)',
-                      2  => '2 (1024 bit)',
-                      5  => '5 (1536 bit)',
-                      14 => '14 (2048 bit)',
-                      15 => '15 (3072 bit)',
-                      16 => '16 (4096 bit)',
-                      17 => '17 (6144 bit)',
-                      18 => '18 (8192 bit)',
-                      19 => '19 (256 bit elliptic curve)',
-                      20 => '20 (384 bit elliptic curve)',
-                      21 => '21 (521 bit elliptic curve)',
-                      22 => '22 (1024(sub 160) bit)',
-                      23 => '23 (2048(sub 224) bit)',
-                      24 => '24 (2048(sub 256) bit)'
+                        0 => gettext('off'),
+                        1 => '1 (768 bits)',
+                        2 => '2 (1024 bits)',
+                        5 => '5 (1536 bits)',
+                        14 => '14 (2048 bits)',
+                        15 => '15 (3072 bits)',
+                        16 => '16 (4096 bits)',
+                        17 => '17 (6144 bits)',
+                        18 => '18 (8192 bits)',
+                        19 => '19 (NIST EC 256 bits)',
+                        20 => '20 (NIST EC 384 bits)',
+                        21 => '21 (NIST EC 521 bits)',
+                        22 => '22 (1024(sub 160) bits)',
+                        23 => '23 (2048(sub 224) bits)',
+                        24 => '24 (2048(sub 256) bits)',
+                        28 => '28 (Brainpool EC 256 bits)',
+                        29 => '29 (Brainpool EC 384 bits)',
+                        30 => '30 (Brainpool EC 512 bits)',
                     );
-
-                    foreach ($p2_dhgroups as $keygroup => $keygroupname) :?>
+                    foreach ($p2_dhgroups as $keygroup => $keygroupname): ?>
                       <option value="<?=$keygroup;?>" <?= $keygroup == $pconfig['pfsgroup'] ? "selected=\"selected\"" : "";?>>
                         <?=$keygroupname;?>
                       </option>

@@ -2,8 +2,8 @@
 
 /*
     Copyright (C) 2014-2015 Deciso B.V.
-    Copyright (C) 2005 Bill Marquette <bill.marquette@gmail.com>.
-    Copyright (C) 2003-2005 Manuel Kasper <mk@neon1.net>.
+    Copyright (C) 2005 Bill Marquette <bill.marquette@gmail.com>
+    Copyright (C) 2003-2005 Manuel Kasper <mk@neon1.net>
     Copyright (C) 2004-2005 Scott Ullrich <sullrich@gmail.com>
     All rights reserved.
 
@@ -115,17 +115,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         /* ipalias and carp should not use network or broadcast address */
         if ($pconfig['mode'] == "ipalias" || $pconfig['mode'] == "carp") {
-            if (is_ipaddrv4($pconfig['subnet']) && $pconfig['subnet_bits'] != "32") {
+            if (is_ipaddrv4($pconfig['subnet']) && $pconfig['subnet_bits'] != '32' && $pconfig['subnet_bits'] != '31') {
                 $network_addr = gen_subnet($pconfig['subnet'], $pconfig['subnet_bits']);
                 $broadcast_addr = gen_subnet_max($pconfig['subnet'], $pconfig['subnet_bits']);
-            } else if (is_ipaddrv6($pconfig['subnet']) && $_POST['subnet_bits'] != "128" ) {
-                $network_addr = gen_subnetv6($pconfig['subnet'], $pconfig['subnet_bits']);
-                $broadcast_addr = gen_subnetv6_max($pconfig['subnet'], $pconfig['subnet_bits']);
-            }
-            if (isset($network_addr) && $pconfig['subnet'] == $network_addr) {
-                $input_errors[] = gettext("You cannot use the network address for this VIP");
-            } else if (isset($broadcast_addr) && $pconfig['subnet'] == $broadcast_addr) {
-                $input_errors[] = gettext("You cannot use the broadcast address for this VIP");
+                if (isset($network_addr) && $pconfig['subnet'] == $network_addr) {
+                    $input_errors[] = gettext("You cannot use the network address for this VIP");
+                } else if (isset($broadcast_addr) && $pconfig['subnet'] == $broadcast_addr) {
+                    $input_errors[] = gettext("You cannot use the broadcast address for this VIP");
+                }
             }
         }
 
@@ -336,11 +333,11 @@ $( document ).ready(function() {
                     <td>
                       <select name="interface" class="selectpicker" data-width="auto">
 <?php
-                      $interfaces = get_configured_interface_with_descr(false, true);
-                      $interfaces['lo0'] = "Localhost";
-                      foreach ($interfaces as $iface => $ifacename): ?>
+                      $interfaces = legacy_config_get_interfaces(array('virtual' => false));
+                      $interfaces['lo0'] = array('descr' => 'Localhost');
+                      foreach ($interfaces as $iface => $ifcfg): ?>
                         <option value="<?=$iface;?>" <?= $iface == $pconfig['interface'] ? "selected=\"selected\"" :""; ?>>
-                          <?=htmlspecialchars($ifacename);?>
+                          <?= htmlspecialchars($ifcfg['descr']) ?>
                         </option>
 <?php
                       endforeach; ?>

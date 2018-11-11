@@ -12,7 +12,7 @@
             <url>https://update1.smart-soft.ru/</url>
             <description>Mirror #2 (EU)</description>
         </mirror>
-   </mirrors>
+    </mirrors>
     <flavours>
         <flavour>
             <name/>

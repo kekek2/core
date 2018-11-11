@@ -216,7 +216,10 @@ function legacy_interfaces_details($intf = null)
     $cmd = '/sbin/ifconfig -m ' . $tmp_intf;
     exec($cmd . ' 2>&1', $ifconfig_data, $ret);
     if ($ret) {
-        log_error('The command `' . $cmd . '\' failed to execute ' . implode(' ', $ifconfig_data));
+        /* only error if no explicit interface was choosen */
+        if (empty($intf)) {
+            log_error('The command `' . $cmd . '\' failed to execute ' . implode(' ', $ifconfig_data));
+        }
         return $result;
     }
 
@@ -266,16 +269,20 @@ function legacy_interfaces_details($intf = null)
         } elseif (strpos($line, "\tinet6 ") !== false) {
             // IPv6 information
             $addr = strtok($line_parts[1], '%');
+            $is_tunnel = false;
             unset($mask);
             for ($i = 0; $i < count($line_parts) - 1; ++$i) {
-              if ($line_parts[$i] == 'prefixlen') {
-                  $mask = intval($line_parts[$i + 1]);
-              }
+                if ($line_parts[$i] == 'prefixlen') {
+                    $mask = intval($line_parts[$i + 1]);
+                }
+                if ($line_parts[$i] == '-->') {
+                    $is_tunnel = true;
+                }
             }
             if (isset($mask)) {
                 $is_link_local = strpos($addr, 'fe80:') === 0;
                 $result[$current_interface]["ipv6"][] = array('ipaddr' => $addr, 'subnetbits' => $mask,
-                                                              'link-local' => $is_link_local);
+                                                              'link-local' => $is_link_local, 'tunnel' => $is_tunnel);
                 // sort link local to bottom, leave rest of sorting as-is (primary address on top)
                 usort($result[$current_interface]["ipv6"], function($a, $b) {
                     return $a['link-local'] - $b['link-local'];
@@ -306,6 +313,9 @@ function legacy_interfaces_details($intf = null)
                 $result[$current_interface]['laggport'] = array();
             }
             $result[$current_interface]['laggport'][] = explode(' ', trim($matches[1]))[0];
+        } elseif (strpos($line, "\tgroups: ") !== false) {
+            array_shift($line_parts);
+            $result[$current_interface]['groups'] = $line_parts;
         }
     }
 
@@ -319,7 +329,14 @@ function legacy_interfaces_details($intf = null)
  */
 function legacy_interface_details($intf)
 {
-    return legacy_interfaces_details($intf)[$intf];
+    $result = array();
+
+    $details = legacy_interfaces_details($intf);
+    if (isset($details[$intf])) {
+        $result = $details[$intf];
+    }
+
+    return $result;
 }
 
 /**
@@ -375,6 +392,9 @@ function legacy_getall_interface_addresses($ifs)
             continue;
         }
         foreach ($intf_details[$proto] as $address) {
+            if (!empty($address['tunnel'])) {
+                continue;
+            }
             if (!empty($address['ipaddr']) && !empty($address['subnetbits'])) {
                 $result[] = $address['ipaddr'] . '/' . $address['subnetbits'];
             }
@@ -396,7 +416,7 @@ function legacy_get_interface_addresses($ifs)
             if (empty($addrs['ipaddr6']) && empty($ipv6['link-local'])) {
                 $addrs['ipaddr6'] = $ipv6['ipaddr'];
                 $addrs['subnetbits6'] = $ipv6['subnetbits'];
-            } elseif (empty($addrs['lladdr6']) && !empty($ipv6['link-local'])) {
+            } elseif (empty($addrs['ipaddr6_ll']) && !empty($ipv6['link-local'])) {
                 $addrs['ipaddr6_ll'] = $ipv6['ipaddr'];
                 $addrs['subnetbits6_ll'] = $ipv6['subnetbits'];
             }

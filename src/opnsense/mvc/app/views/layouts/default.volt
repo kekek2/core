@@ -17,7 +17,7 @@
     {% set theme_name = ui_theme|default('opnsense') %}
 
     <!-- include (theme) style -->
-    <link href="/ui/themes/{{theme_name}}/build/css/main.css" rel="stylesheet">
+    <link href="{{ cache_safe('/ui/themes/%s/build/css/main.css' | format(theme_name)) }}" rel="stylesheet">
 
     <!-- TODO: move to theme style -->
     <style>
@@ -31,16 +31,16 @@
     </style>
 
     <!-- Favicon -->
-    <link href="/ui/themes/{{theme_name}}/build/images/favicon.png" rel="shortcut icon">
+    <link href="{{ cache_safe('/ui/themes/%s/build/images/favicon.png' | format(theme_name)) }}" rel="shortcut icon">
 
     <!-- Stylesheet for fancy select/dropdown -->
-    <link rel="stylesheet" type="text/css" href="{{theme_file_or_default('/css/bootstrap-select.css', theme_name)}}">
+    <link rel="stylesheet" type="text/css" href="{{ cache_safe(theme_file_or_default('/css/bootstrap-select.css', theme_name)) }}">
 
     <!-- bootstrap dialog -->
-    <link rel="stylesheet" type="text/css" href="{{theme_file_or_default('/css/bootstrap-dialog.css', theme_name)}}">
+    <link rel="stylesheet" type="text/css" href="{{ cache_safe(theme_file_or_default('/css/bootstrap-dialog.css', theme_name)) }}">
 
     <!-- Font awesome -->
-    <link rel="stylesheet" href="/ui/css/font-awesome.min.css">
+    <link rel="stylesheet" href="{{ cache_safe('/ui/css/font-awesome.min.css') }}">
 
     <!-- JQuery -->
     <script src="/ui/js/jquery-3.2.1.min.js"></script>
@@ -59,7 +59,7 @@
                     if (request.responseJSON != undefined && request.responseJSON.errorMessage != undefined) {
                         BootstrapDialog.show({
                             type: BootstrapDialog.TYPE_DANGER,
-                            title: '{{ lang._('An API exception occured') }}',
+                            title: request.responseJSON.errorTitle,
                             message:request.responseJSON.errorMessage,
                             buttons: [{
                                 label: '{{ lang._('Close') }}',
@@ -161,16 +161,22 @@
                 });
                 // enable bootstrap tooltips
                 $('[data-toggle="tooltip"]').tooltip();
+
+                // fix menu scroll position on page load
+                $(".list-group-item.active").each(function(){
+                    var navbar_center = ($( window ).height() - $(".collapse.navbar-collapse").height())/2;
+                    $('html,aside').scrollTop(($(this).offset().top - navbar_center));
+                });
             });
         </script>
 
         <!-- JQuery Tokenize2 (https://zellerda.github.io/Tokenize2/) -->
-        <script src="/ui/js/tokenize2.min.js"></script>
-        <link rel="stylesheet" type="text/css" href="{{theme_file_or_default('/css/tokenize2.css', theme_name)}}" rel="stylesheet" />
+        <script src="{{ cache_safe('/ui/js/tokenize2.js') }}"></script>
+        <link rel="stylesheet" type="text/css" href="{{ cache_safe(theme_file_or_default('/css/tokenize2.css', theme_name)) }}" rel="stylesheet" />
 
         <!-- Bootgrind (grid system from http://www.jquery-bootgrid.com/ )  -->
-        <link rel="stylesheet" type="text/css" href="{{theme_file_or_default('/css/jquery.bootgrid.css', theme_name)}}" />
-        <script src="/ui/js/jquery.bootgrid.js"></script>
+        <link rel="stylesheet" type="text/css" href="{{ cache_safe(theme_file_or_default('/css/jquery.bootgrid.css', theme_name)) }}" />
+        <script src="{{ cache_safe('/ui/js/jquery.bootgrid.js') }}"></script>
         <script>
         /* patch translations into bootgrid library */
         Object.assign(
@@ -187,13 +193,14 @@
         </script>
 
         <!-- Bootstrap type ahead -->
-        <script src="/ui/js/bootstrap3-typeahead.min.js"></script>
+        <script src="{{ cache_safe('/ui/js/bootstrap3-typeahead.min.js') }}"></script>
 
         <!-- OPNsense standard toolkit -->
-        <script src="/ui/js/opnsense.js"></script>
-        <script src="/ui/js/opnsense_ui.js"></script>
-        <script src="/ui/js/opnsense_bootgrid_plugin.js"></script>
-        <script src="{{theme_file_or_default('/js/theme.js', theme_name)}}"></script>
+        <script src="{{ cache_safe('/ui/js/opnsense.js') }}"></script>
+        <script src="{{ cache_safe('/ui/js/opnsense_theme.js') }}"></script>
+        <script src="{{ cache_safe('/ui/js/opnsense_ui.js') }}"></script>
+        <script src="{{ cache_safe('/ui/js/opnsense_bootgrid_plugin.js') }}"></script>
+        <script src="{{ cache_safe(theme_file_or_default('/js/theme.js', theme_name)) }}"></script>
   </head>
   <body>
   <header class="page-head">
@@ -210,6 +217,7 @@
             <span class="icon-bar"></span>
           </button>
         </div>
+        <button class="toggle-sidebar" data-toggle="tooltip right" title="{{ lang._('Toggle sidebar') }}" style="display:none;"><i class="fa fa-chevron-left"></i></button>
         <div class="collapse navbar-collapse">
           <ul class="nav navbar-nav navbar-right">
             <li>
@@ -252,6 +260,13 @@
             </div>
           </div>
         </section>
+        <!-- page footer -->
+        <footer class="page-foot">
+          <div class="container-fluid">
+            <a target="_blank" href="{{ product_website }}">{{ product_name }}</a> (c) {{ product_copyright_years }}
+            <a target="_blank" href="{{ product_copyright_url }}">{{ product_copyright_owner }}</a>
+          </div>
+        </footer>
       </div>
     </main>
 
@@ -270,10 +285,10 @@
     </div>
 
     <!-- bootstrap script -->
-    <script src="/ui/js/bootstrap.min.js"></script>
-    <script src="/ui/js/bootstrap-select.min.js"></script>
+    <script src="{{ cache_safe('/ui/js/bootstrap.min.js') }}"></script>
+    <script src="{{ cache_safe('/ui/js/bootstrap-select.min.js') }}"></script>
     <!-- bootstrap dialog -->
-    <script src="/ui/js/bootstrap-dialog.min.js"></script>
+    <script src="{{ cache_safe('/ui/js/bootstrap-dialog.min.js') }}"></script>
 
   </body>
 </html>

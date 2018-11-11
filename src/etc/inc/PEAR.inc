@@ -146,7 +146,7 @@ class PEAR
      * @access public
      * @return void
      */
-    function _construct($error_class = null)
+    function __construct($error_class = null)
     {
         $classname = strtolower(get_class($this));
         if ($this->_debug) {
@@ -864,7 +864,7 @@ class PEAR_Error
      *
      */
     function __construct($message = 'unknown error', $code = null,
-                        $mode = null, $options = null, $userinfo = null)
+                         $mode = null, $options = null, $userinfo = null)
     {
         if ($mode === null) {
             $mode = PEAR_ERROR_RETURN;

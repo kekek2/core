@@ -43,7 +43,6 @@ changelog_remove()
 changelog_fetch()
 {
 	TING_ABI=$(cat /usr/local/opnsense/version/ting.abi 2> /dev/null)
-
 	SYS_ABI=$(opnsense-verify -a 2> /dev/null)
 
 	URL=$(sed -n 's/'"^[[:space:]]*url:[[:space:]]*"'\"pkg\+\(.*\)\/\(\/*\)\${ABI.*/\1/p' ${ORIGIN})

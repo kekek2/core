@@ -43,17 +43,6 @@ import addons.template_helpers
 
 __author__ = 'Ad Schellevis'
 
-
-def idna_dot_encode(x):
-    if x.startswith('.'):
-        dots = ""
-        while x.startswith('.'):
-            x = x[1:]
-            dots += '.'
-        return dots + x.encode('idna')
-    else:
-        return x.encode('idna')
-
 class Template(object):
     def __init__(self, target_root_directory="/"):
         """ constructor
@@ -72,7 +61,13 @@ class Template(object):
 
         # register additional filters
         self._j2_env.filters['decode_idna'] = lambda x:x.decode('idna')
-        self._j2_env.filters['encode_idna'] = lambda x:idna_dot_encode(x)
+        self._j2_env.filters['encode_idna'] = self._encode_idna
+
+    @staticmethod
+    def _encode_idna(x):
+        """ encode string to idna, preserve leading dots
+        """
+        return ''.join(map(lambda x:'.', range(len(x) - len(x.lstrip('.'))))) + x.lstrip('.').encode('idna')
 
     def list_module(self, module_name):
         """ list single module content

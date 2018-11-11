@@ -57,7 +57,7 @@ function is_interface_mismatch()
             /* Do not mismatch if any lock was issued */
             $mismatch = false;
             break;
-        } elseif (preg_match("/^enc|^cua|^tun|^tap|^l2tp|^pptp|^ppp|^ovpn|^tinc|^gif|^gre|^lagg|^bridge|vlan|_wlan/i", $ifcfg['if'])) {
+        } elseif (preg_match('/^enc|^cua|^tun|^tap|^l2tp|^pptp|^ppp|^ovpn|^ocvpn|^tinc|^wg|^zt|^ue|^gif|^gre|^lagg|^bridge|vlan|_wlan|_stf/i', $ifcfg['if'])) {
             /* Do not check these interfaces */
             continue;
         } elseif (does_interface_exist($ifcfg['if']) == false) {
@@ -372,6 +372,9 @@ EOD;
         }
         if (isset($config['dhcpd']['lan'])) {
             unset($config['dhcpd']['lan']);
+        }
+        if (isset($config['dhcpdv6']['lan'])) {
+            unset($config['dhcpdv6']['lan']);
         }
         if (isset($config['interfaces']['wan']['blockpriv'])) {
             unset($config['interfaces']['wan']['blockpriv']);

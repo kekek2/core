@@ -58,23 +58,29 @@ function add_local_user($username, $userdn, $userfullname)
     local_user_set($new_user);
 }
 
-// attributes used in page
-$ldap_users= array();
 $ldap_is_connected = false;
+$ldap_users = array();
+$ldap_server = null;
 $exit_form = false;
 
-// find gui auth server
-$authcfg = auth_get_authserver($config['system']['webgui']['authmode']);
+// XXX find first LDAP GUI auth server, better select later on
+$servers = explode(',', $config['system']['webgui']['authmode']);
+foreach ($servers as $server) {
+    $authcfg = auth_get_authserver($server);
+    if ($authcfg['type'] == 'ldap' || $authcfg['type'] == 'ldap-totp') {
+        $ldap_server = $authcfg;
+        break;
+    }
+}
 
-if ($authcfg['type'] == 'ldap') {
+if ($ldap_server !== null) {
     // setup peer ca
-    ldap_setup_caenv($authcfg);
+    ldap_setup_caenv($ldap_server);
+
     // connect to ldap server
-    $ldap_auth = new OPNsense\Auth\LDAP($authcfg['ldap_basedn'], $authcfg['ldap_protver']);
-    $ldap_is_connected = $ldap_auth->connect($authcfg['ldap_full_url']
-                        , $authcfg['ldap_binddn']
-                        , $authcfg['ldap_bindpw']
-                      );
+    $ldap_auth = new OPNsense\Auth\LDAP($ldap_server['ldap_basedn'], $ldap_server['ldap_protver']);
+    $ldap_is_connected = $ldap_auth->connect($ldap_server['ldap_full_url'], $ldap_server['ldap_binddn'], $ldap_server['ldap_bindpw']);
+
     if ($ldap_is_connected) {
         // collect list of current ldap users from config
         $confDNs = array();
@@ -85,10 +91,7 @@ if ($authcfg['type'] == 'ldap') {
         }
 
         // search ldap
-        $result = $ldap_auth->searchUsers("*"
-                  , $authcfg['ldap_attr_user']
-                  , $authcfg['ldap_extended_query']
-                );
+        $result = $ldap_auth->searchUsers('*', $ldap_server['ldap_attr_user'], $ldap_server['ldap_extended_query']);
 
         // actual form action, either save new accounts or list missing
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -128,9 +131,18 @@ if ($authcfg['type'] == 'ldap') {
 }
 
 include('head.inc');
-?>
 
+?>
  <body>
+ <script>
+    // [de]select all
+    $( document ).ready(function() {
+        $("#select_all").click(function(event){
+            $(".user_option").prop('checked', $(this).is(':checked'));
+        });
+    });
+
+ </script>
 <?php if ($exit_form) :
 ?>
   <script>
@@ -147,15 +159,14 @@ else :
 ?>
 <form method="post">
   <table class="table table-clean-form">
+    <thead>
+        <th colspan="2"><?=gettext("Please select users to import:");?></th>
+        <th><input type='checkbox' id='select_all'></th>
+    </thead>
     <tbody>
-      <tr>
-      <th colspan="3">
-        <?=gettext("Please select users to import:");?>
-      </th>
-      </tr>
       <?php foreach ($ldap_users as $username => $userDN) :
 ?>
-        <tr><td><?=$username?></td><td><?=$userDN?></td><td> <input type='checkbox' value="<?=$userDN?>" id='user_dn' name='user_dn[]'>  </td></tr>
+        <tr><td><?=$username?></td><td><?=$userDN?></td><td> <input type='checkbox' value="<?=$userDN?>" id='user_dn' class='user_option' name='user_dn[]'>  </td></tr>
       <?php endforeach;
 ?>
       <tr>
@@ -169,8 +180,8 @@ else :
 <?php
 endif; ?>
 <!-- bootstrap script -->
-<script src="/ui/js/bootstrap.min.js"></script>
+<script src="<?= cache_safe('/ui/js/bootstrap.min.js') ?>"></script>
 <!-- Fancy select with search options -->
-<script src="/ui/js/bootstrap-select.min.js"></script>
+<script src="<?= cache_safe('/ui/js/bootstrap-select.min.js') ?>"></script>
  </body>
 </html>

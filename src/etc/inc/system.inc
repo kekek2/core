@@ -146,7 +146,7 @@ function system_resolvconf_generate($verbose = false)
 {
     global $config;
 
-    $syscfg = $config['system'];
+    $syscfg = config_read_array('system');
 
     if ($verbose) {
         echo 'Generating /etc/resolv.conf...';
@@ -157,9 +157,7 @@ function system_resolvconf_generate($verbose = false)
         $resolvconf = "domain {$syscfg['domain']}\n";
     }
 
-    if (((isset($config['dnsmasq']['enable']) && (empty($config['dnsmasq']['interface']) || in_array("lo0", explode(",", $config['dnsmasq']['interface']))))
-      || (isset($config['unbound']['enable'])) && (empty($config['unbound']['active_interface']) || in_array("lo0", explode(",", $config['unbound']['active_interface']))))
-      && !isset($config['system']['dnslocalhost'])) {
+    if (!isset($syscfg['dnslocalhost']) && (isset($config['dnsmasq']['enable']) || isset($config['unbound']['enable']))) {
         $resolvconf .= "nameserver 127.0.0.1\n";
     }
 
@@ -187,8 +185,8 @@ function system_resolvconf_generate($verbose = false)
     for ($dnscounter = 1; $dnscounter < 9; $dnscounter++) {
         /* setup static routes for dns servers */
         $dnsgw = "dns{$dnscounter}gw";
-        if (isset($config['system'][$dnsgw])) {
-            $gwname = $config['system'][$dnsgw];
+        if (isset($syscfg[$dnsgw])) {
+            $gwname = $syscfg[$dnsgw];
             if (($gwname <> "") && ($gwname <> "none")) {
                 $gatewayip = lookup_gateway_ip_by_name($gwname);
                 if (is_ipaddrv4($gatewayip)) {
@@ -334,7 +332,7 @@ function system_hosts_generate($verbose = false)
         flush();
     }
 
-    $syscfg = $config['system'];
+    $syscfg = config_read_array('system');
 
     $hosts = "127.0.0.1\tlocalhost localhost.{$syscfg['domain']}\n";
 
@@ -344,8 +342,7 @@ function system_hosts_generate($verbose = false)
             $hosts .= "{$cfgip}\t{$syscfg['hostname']}.{$syscfg['domain']} {$syscfg['hostname']}\n";
         }
     } else {
-        $sysiflist = get_configured_interface_list();
-        foreach ($sysiflist as $sysif) {
+        foreach (get_configured_interface_with_descr() as $sysif => $unused) {
             if (!interface_has_gateway($sysif)) {
                 $cfgip = get_interface_ip($sysif);
                 if (is_ipaddr($cfgip)) {
@@ -367,14 +364,12 @@ function system_hosts_generate($verbose = false)
 
 function system_hostname_configure($verbose = false)
 {
-    global $config;
-
     if ($verbose) {
         echo 'Setting hostname: ';
         flush();
     }
 
-    $syscfg = $config['system'];
+    $syscfg = config_read_array('system');
 
     $hostname = "{$syscfg['hostname']}.{$syscfg['domain']}";
 
@@ -406,7 +401,7 @@ function system_host_route($host, $gateway, $delete = true, $add = true)
 
 function system_default_route($gateway, $family, $interface, $far = false)
 {
-    $realif = get_real_interface($interface);
+    $realif = get_real_interface($interface, $family == 'inet' ? 'all' : 'inet6');
 
     switch ($family) {
         case 'inet':
@@ -463,8 +458,6 @@ function system_default_route($gateway, $family, $interface, $far = false)
 
 function system_routing_configure($verbose = false, $interface = '')
 {
-    global $config;
-
     if ($verbose) {
         echo 'Setting up routes...';
         flush();
@@ -485,31 +478,29 @@ function system_routing_configure($verbose = false, $interface = '')
         log_error("ROUTING: entering configure using defaults");
     }
 
-    if (isset($config['gateways']['gateway_item'])) {
-        foreach ($config['gateways']['gateway_item'] as $gateway) {
-            if (isset($gateway['defaultgw'])) {
-                if ($foundgw == false && $gateway['ipprotocol'] != 'inet6') {
-                    if ($gateway['gateway'] == 'dynamic') {
-                        $gateway['gateway'] = get_interface_gateway($gateway['interface']);
-                    }
-
-                    $interfacegw = $gateway['interface'];
-                    $fargw = isset($gateway['fargw']);
-                    $gatewayip = $gateway['gateway'];
-                    $foundgw = true;
-
-                    log_error("ROUTING: IPv4 default gateway set to {$interfacegw}");
-                } elseif ($foundgwv6 == false && $gateway['ipprotocol'] == 'inet6') {
-                    if ($gateway['gateway'] == 'dynamic') {
-                        $gateway['gateway'] = get_interface_gateway_v6($gateway['interface']);
-                    }
-
-                    $interfacegwv6 = $gateway['interface'];
-                    $gatewayipv6 = $gateway['gateway'];
-                    $foundgwv6 = true;
-
-                    log_error("ROUTING: IPv6 default gateway set to {$interfacegwv6}");
+    foreach (config_read_array('gateways', 'gateway_item') as $gateway) {
+        if (isset($gateway['defaultgw'])) {
+            if ($foundgw == false && $gateway['ipprotocol'] != 'inet6') {
+                if ($gateway['gateway'] == 'dynamic') {
+                    $gateway['gateway'] = get_interface_gateway($gateway['interface']);
                 }
+
+                $interfacegw = $gateway['interface'];
+                $fargw = isset($gateway['fargw']);
+                $gatewayip = $gateway['gateway'];
+                $foundgw = true;
+
+                log_error("ROUTING: IPv4 default gateway set to {$interfacegw}");
+            } elseif ($foundgwv6 == false && $gateway['ipprotocol'] == 'inet6') {
+                if ($gateway['gateway'] == 'dynamic') {
+                    $gateway['gateway'] = get_interface_gateway_v6($gateway['interface']);
+                }
+
+                $interfacegwv6 = $gateway['interface'];
+                $gatewayipv6 = $gateway['gateway'];
+                $foundgwv6 = true;
+
+                log_error("ROUTING: IPv6 default gateway set to {$interfacegwv6}");
             }
         }
     }
@@ -568,11 +559,8 @@ function system_routing_configure($verbose = false, $interface = '')
     }
 }
 
-
 function system_staticroutes_configure($interface = '')
 {
-    global $config, $aliastable;
-
     $static_routes = get_staticroutes(false, true);
     if (count($static_routes)) {
         $gateways_arr = return_gateways_array(false, true);
@@ -626,8 +614,6 @@ function system_staticroutes_configure($interface = '')
             }
         }
     }
-
-    return 0;
 }
 
 function system_syslogd_fixup_server($server)
@@ -641,10 +627,8 @@ function system_syslogd_fixup_server($server)
 
 }
 
-function system_syslogd_start($verbose = false)
+function system_syslogd_start($verbose = false, $restart = false)
 {
-    global $config;
-
     if ($verbose) {
         echo 'Configuring system logging...';
         flush();
@@ -696,7 +680,7 @@ function get_memory() {
 
 function system_firmware_configure($verbose = false)
 {
-    global $config;
+    global $config, $g;
 
     if ($verbose) {
         echo 'Writing firmware setting...';
@@ -705,10 +689,6 @@ function system_firmware_configure($verbose = false)
 
     /* rewrite the config via the defaults */
     $origin_conf = '/usr/local/etc/pkg/repos/OPNsense.conf';
-    /* XXX pre-18.7 fallback */
-    if (!file_exists("{$origin_conf}.sample")) {
-        $origin_conf = '/usr/local/etc/pkg/repos/origin.conf';
-    }
     copy("{$origin_conf}.sample", $origin_conf);
 
     if (!empty($config['system']['firmware']['mirror'])) {
@@ -724,8 +704,7 @@ function system_firmware_configure($verbose = false)
             str_replace('/', '\/', sprintf(
                 "%s{$config['system']['firmware']['flavour']}",
                 /* if there is no directory slash we always treat it with default ABI prefix */
-                strpos($config['system']['firmware']['flavour'], '/') === false ?
-                    trim(file_get_contents('/usr/local/opnsense/version/opnsense.abi')) . '/' : ''
+                strpos($config['system']['firmware']['flavour'], '/') === false ? "${g['product_abi']}/" : ''
             ))
         );
     }
@@ -737,9 +716,7 @@ function system_firmware_configure($verbose = false)
 
 function system_timezone_configure($verbose = false)
 {
-    global $config;
-
-    $syscfg = $config['system'];
+    $syscfg = config_read_array('system');
 
     if ($verbose) {
         echo 'Setting timezone...';
@@ -813,51 +790,6 @@ function system_arp_wrong_if()
     ));
 }
 
-function get_possible_listen_ips($include_ipv6_link_local = false, $include_loopback = true) {
-    global $config;
-    $interfaces = get_configured_interface_with_descr();
-    $carplist = get_configured_carp_interface_list();
-    $listenips = array();
-    foreach ($carplist as $cif => $carpip) {
-        $interfaces[$cif] = $carpip." (".get_vip_descr($carpip).")";
-    }
-    $aliaslist = get_configured_ip_aliases_list();
-    foreach ($aliaslist as $aliasip => $aliasif) {
-        $interfaces[$aliasip] = $aliasip." (".get_vip_descr($aliasip).")";
-    }
-    foreach ($interfaces as $iface => $ifacename) {
-        $tmp["name"]  = $ifacename;
-        $tmp["value"] = $iface;
-        $listenips[] = $tmp;
-        if ($include_ipv6_link_local) {
-            $llip = find_interface_ipv6_ll(get_real_interface($iface));
-            if (!empty($llip)) {
-                $tmp["name"]  = "{$ifacename} IPv6 Link-Local";
-                $tmp["value"] = $llip;
-                $listenips[] = $tmp;
-            }
-        }
-    }
-    if ($include_loopback) {
-        $tmp["name"]  = "Localhost";
-        $tmp["value"] = "lo0";
-        $listenips[] = $tmp;
-    }
-    foreach (array('server', 'client') as $mode) {
-        if (isset($config['openvpn']["openvpn-{$mode}"]) && is_array($config['openvpn']["openvpn-{$mode}"])) {
-            foreach ($config['openvpn']["openvpn-{$mode}"] as $id => $setting) {
-                if (!isset($setting['disable'])) {
-                    $vpn = array();
-                    $vpn['value'] = 'ovpn' . substr($mode, 0, 1) . $setting['vpnid'];
-                    $vpn['name'] = "OpenVPN {$mode}: " . htmlspecialchars($setting['description']);
-                    $listenips[] = $vpn;
-                }
-            }
-        }
-    }
-    return $listenips;
-}
-
 function system_kernel_configure($verbose = false)
 {
     global $config;
@@ -894,6 +826,7 @@ function system_kernel_configure($verbose = false)
         log_error(sprintf('Loading %s cryptographic accelerator module.', $config['system']['crypto_hardware']));
         $mods[] = $config['system']['crypto_hardware'];
     }
+
     if (!empty($config['system']['cryptodev_enable'])) {
         log_error('Loading cryptodev kernel module.');
         $mods[] = 'cryptodev';
@@ -1140,8 +1073,9 @@ function system_login_configure($verbose = false)
             }
         }
         /* serial terminals */
-        foreach (array('ttyu0', 'ttyu1', 'ttyu2', 'ttyu3') as $serialport) {
-            if (strpos($tty, $serialport) === 0) {
+        foreach (array('tty%s0', 'tty%s1', 'tty%s2', 'tty%s3') as $serialport) {
+            $serialport = sprintf($serialport, isset($config['system']['serialusb']) ? 'U' : 'u');
+            if (stripos($tty, $serialport) === 0) {
                 fwrite($fd, "{$serialport}\t\"/usr/libexec/getty {$serial_type}\"\tvt100\t{$on_off_secure_u}\n");
                 continue 2;
             }

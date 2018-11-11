@@ -311,7 +311,7 @@ $( document ).ready(function() {
                   <tr>
                     <td>
                         <input class="rule_select" type="checkbox" name="rule[]" value="<?=$i;?>"  />
-                        <a href="#" class="act_toggle" data-id="<?=$i;?>" data-toggle="tooltip" title="<?=(empty($scrubEntry['disabled'])) ? gettext("Disable") : gettext("Enable");?>">
+                        <a href="#" class="act_toggle" data-id="<?=$i;?>" data-toggle="tooltip" data-html="true" title="<?=(empty($scrubEntry['disabled'])) ? gettext("Disable") : gettext("Enable");?>">
                           <span class="fa fa-play fa-fw <?=(empty($scrubEntry['disabled'])) ? "text-success" : "text-muted";?>"></span>
                         </a>
                     </td>
@@ -319,10 +319,10 @@ $( document ).ready(function() {
                     <td class="hidden-xs hidden-sm">
 <?php
                         if (is_alias($scrubEntry['src'])):?>
-                        <span title="<?=htmlspecialchars(get_alias_description($scrubEntry['src']));?>" data-toggle="tooltip">
+                        <span title="<?=htmlspecialchars(get_alias_description($scrubEntry['src']));?>" data-toggle="tooltip" data-html="true">
                           <?=$scrubEntry['src'];?>&nbsp;
                         </span>
-                        <a href="/firewall_aliases_edit.php?name=<?=$scrubEntry['src'];?>"
+                        <a href="/ui/firewall/alias/index/<?=$scrubEntry['src'];?>"
                             title="<?=gettext("edit alias");?>" data-toggle="tooltip">
                           <i class="fa fa-list fa-fw"></i>
                         </a>
@@ -339,10 +339,10 @@ $( document ).ready(function() {
                     <td class="hidden-xs hidden-sm">
 <?php
                         if (is_alias($scrubEntry['dst'])):?>
-                        <span title="<?=htmlspecialchars(get_alias_description($scrubEntry['dst']));?>" data-toggle="tooltip">
+                        <span title="<?=htmlspecialchars(get_alias_description($scrubEntry['dst']));?>" data-toggle="tooltip" data-html="true">
                           <?=$scrubEntry['dst'];?>&nbsp;
                         </span>
-                        <a href="/firewall_aliases_edit.php?name=<?=$scrubEntry['dst'];?>"
+                        <a href="/ui/firewall/alias/index/<?=$scrubEntry['dst'];?>"
                             title="<?=gettext("edit alias");?>" data-toggle="tooltip">
                           <i class="fa fa-list fa-fw"></i>
                         </a>
@@ -360,11 +360,11 @@ $( document ).ready(function() {
                         <?=$scrubEntry['descr'];?>
                     </td>
                     <td>
+                        <a data-id="<?=$i;?>" name="move_<?=$i;?>_x" data-toggle="tooltip" title="<?= html_safe(gettext("Move selected rules before this rule")) ?>" class="act_move btn btn-default btn-xs">
+                          <span class="fa fa-arrow-left fa-fw"></span>
+                        </a>
                         <a href="firewall_scrub_edit.php?id=<?=$i;?>" data-toggle="tooltip" title="<?= html_safe(gettext('Edit')) ?>" class="btn btn-default btn-xs">
                           <span class="fa fa-pencil fa-fw"></span>
-                        </a>
-                        <a data-id="<?=$i;?>" name="move_<?=$i;?>_x" data-toggle="tooltip" title="<?= html_safe(gettext("move selected rules before this rule")) ?>" class="act_move btn btn-default btn-xs">
-                          <span class="fa fa-arrow-left fa-fw"></span>
                         </a>
                         <a data-id="<?=$i;?>" title="<?= html_safe(gettext('Delete')) ?>" data-toggle="tooltip"  class="act_delete btn btn-default btn-xs">
                           <span class="fa fa-trash fa-fw"></span>
@@ -385,7 +385,7 @@ $( document ).ready(function() {
                         <a><i class="fa fa-list fa-fw"></i></a> <?=gettext("Alias (click to view/edit)");?>
                       </td>
                       <td>
-                        <a id="move_<?=$i;?>" name="move_<?=$i;?>_x" data-toggle="tooltip" title="<?= html_safe(gettext("move selected rules to end")) ?>" class="act_move btn btn-default btn-xs">
+                        <a id="move_<?=$i;?>" name="move_<?=$i;?>_x" data-toggle="tooltip" title="<?= html_safe(gettext("Move selected rules to end")) ?>" class="act_move btn btn-default btn-xs">
                           <span class="fa fa-arrow-left fa-fw"></span>
                         </a>
                         <a data-id="x" title="<?= html_safe(gettext("delete selected rules")) ?>" data-toggle="tooltip"  class="act_delete btn btn-default btn-xs">
