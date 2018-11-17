@@ -28,6 +28,10 @@ all:
 
 .include "Mk/defaults.mk"
 
+# TING overrides
+.include "Mk/ting.mk"
+
+
 CORE_COMMIT!=	${.CURDIR}/Scripts/version.sh
 CORE_VERSION=	${CORE_COMMIT:C/-.*$//1}
 CORE_HASH=	${CORE_COMMIT:C/^.*-//1}
