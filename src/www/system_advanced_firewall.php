@@ -36,12 +36,6 @@ require_once("logs.inc");
 require_once("gwlb.inc");
 require_once("rrd.inc");
 
-function default_table_entries_size()
-{
-    $current = `pfctl -sm | grep table-entries | awk '{print $4};'`;
-    return $current;
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = array();
     $pconfig['ipv6allow'] = isset($config['system']['ipv6allow']);
