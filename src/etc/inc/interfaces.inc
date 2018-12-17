@@ -1265,7 +1265,6 @@ startup:
 default:
 {$ppp['type']}client:
   create bundle static {$interface}
-  set bundle enable ipv6cp
   set iface name {$ifcfg['if']}
 
 EOD;
@@ -1329,6 +1328,11 @@ EOD;
     if (isset($ppp['vjcomp'])) {
         $mpdconf .= "  set ipcp no vjcomp\n";
     }
+    $mpdconf .= "  set bundle enable compression\n";
+    $mpdconf .= "  set ccp yes mppc\n";
+    $mpdconf .= "  set mppc accept compress\n";
+    $mpdconf .= "  set mppc yes e40 e56 e128\n";
+    $mpdconf .= "  set mppc yes stateless\n";
 
     if (isset($config['system']['dnsallowoverride'])) {
         $mpdconf .= "  set ipcp enable req-pri-dns\n";
@@ -1361,6 +1365,7 @@ EOD;
         }
         if (isset($ppp['mschap'])) {
             $mpdconf_arr[] = "set link no pap eap";
+            $mpdconf_arr[] = "set link accept chap chap-msv2";
         }
         else {
             $mpdconf_arr[] = "set link disable chap pap";
