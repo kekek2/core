@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     // boolean fields
-    $bool_fields = array('ondemand', 'mschap', 'shortseq', 'acfcomp', 'protocomp', 'vjcomp', 'tcpmssfix');
+    $bool_fields = array('ondemand', 'mschap', 'ccp', 'shortseq', 'acfcomp', 'protocomp', 'vjcomp', 'tcpmssfix');
     foreach ($bool_fields as $fieldname) {
         $pconfig[$fieldname] = isset($a_ppps[$id][$fieldname]);
     }
@@ -111,6 +111,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             if (!empty($pconfig['mschap'])) {
                 $reqdfields[] = "mschap";
                 $reqdfieldsn[] = gettext("MS CHAP");
+            }
+            if (!empty($pconfig['ccp'])) {
+                $reqdfields[] = "ccp";
+                $reqdfieldsn[] = gettext("Compression Control Protocol");
             }
             do_input_validation($pconfig, $reqdfields, $reqdfieldsn, $input_errors);
             break;
@@ -168,6 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $ppp['idletimeout'] = $pconfig['idletimeout'];
         }
         $ppp['mschap'] = !empty($pconfig['mschap']);
+        $ppp['ccp'] = !empty($pconfig['ccp']);
         $ppp['uptime'] = !empty($pconfig['uptime']);
         if (!empty($pconfig['descr'])) {
             $ppp['descr'] = $pconfig['descr'];
@@ -710,6 +715,16 @@ include("head.inc");
                           <strong><?= gettext("Enable Microsoft chap authentication protocol (not safe)"); ?></strong>
                           <div class="hidden" data-for="help_for_mschap">
                             <?= gettext("Enable Microsoft mschap protocol for authentication to remote point. It is not safe method and is not recommended."); ?> </span>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr style="display:none" class="act_show_advanced">
+                        <td style="width:22%"><a id="help_for_ccp" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Enable CCP negotiation"); ?></td>
+                        <td style="width:78%">
+                          <input type="checkbox" value="on" id="ccp" name="ccp" <?=!empty($pconfig['ccp']) ? "checked=\"checked\"" : ""; ?> />
+                          <strong><?= gettext("Enable CCP (Compression Control Protocol) negotiation"); ?></strong>
+                          <div class="hidden" data-for="help_for_ccp">
+                            <?= gettext("CCP configuration options are used for only one purpose: to negotiate the type of compression to be used by the two devices, and the specifics of how that algorithm is to be employed."); ?> </span>
                           </div>
                         </td>
                       </tr>
