@@ -704,6 +704,16 @@ include("head.inc");
                         </td>
                       </tr>
                       <tr style="display:none" class="act_show_advanced">
+                        <td style="width:22%"><a id="help_for_mschap" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Enable mschap authentication"); ?></td>
+                        <td style="width:78%">
+                          <input type="checkbox" value="on" id="mschap" name="mschap" <?=!empty($pconfig['mschap']) ? "checked=\"checked\"" : ""; ?> />
+                          <strong><?= gettext("Enable Microsoft chap authentication protocol (not safe)"); ?></strong>
+                          <div class="hidden" data-for="help_for_mschap">
+                            <?= gettext("Enable Microsoft mschap protocol for authentication to remote point. It is not safe method and is not recommended."); ?> </span>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr style="display:none" class="act_show_advanced">
                         <td><a id="help_for_vjcomp" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Compression"); ?></td>
                         <td>
                           <input type="checkbox" value="on" id="vjcomp" name="vjcomp" <?= !empty($pconfig['vjcomp']) ? 'checked="checked"' : '' ?> />
