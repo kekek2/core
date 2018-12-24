@@ -1368,8 +1368,8 @@ EOD;
             $mpdconf_arr[] = "set link accept chap chap-msv2";
         }
         else {
-            $mpdconf_arr[] = "set link no pap eap";
-            $mpdconf_arr[] = "set link accept chap chap-msv2";
+            $mpdconf_arr[] = "set link disable chap pap";
+            $mpdconf_arr[] = "set link accept chap pap eap";
         }
         $mpdconf_arr[] = "set link disable incoming";
         $bandwidths = !empty($ppp['bandwidth']) ? explode(',', $ppp['bandwidth']) : null;
