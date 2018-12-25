@@ -1345,7 +1345,11 @@ EOD;
                 $mpdconf .= "  set mppc yes e40\n";
             }
 
-            $mpdconf .= "  set mppc yes e56 e128\n";
+            if (isset($ppp['mppc-e56'])) {
+                $mpdconf .= "  set mppc yes e56\n";
+            }
+
+            $mpdconf .= "  set mppc yes e128\n";
             $mpdconf .= "  set mppc yes stateless\n";
         }
     }
