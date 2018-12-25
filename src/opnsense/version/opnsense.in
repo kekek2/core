@@ -10,5 +10,6 @@
     "product_id": "%%CORE_NAME%%",
     "product_name": "%%CORE_PRODUCT%%",
     "product_version": "%%CORE_VERSION%%",
-    "product_website": "%%CORE_WWW%%"
+    "product_website": "%%CORE_WWW%%",
+    "product_tingabi": "%%TING_ABI%%"
 }

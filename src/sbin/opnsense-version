@@ -34,7 +34,7 @@ fi
 
 eval "$(grep -v '[{}]' ${VERSION} | sed 's/[^"]*"\([^"]*\)"[^"]*"\([^"]*\)".*/\1="\2"/')"
 
-while getopts AaefHNnvw OPT; do
+while getopts AaefHNnvwT OPT; do
 	case ${OPT} in
 	A)
 		OUTPUT="${OUTPUT} \${product_arch}"
@@ -62,6 +62,9 @@ while getopts AaefHNnvw OPT; do
 		;;
 	w)
 		OUTPUT="${OUTPUT} \${product_website}"
+		;;
+	T)
+		OUTPUT="${OUTPUT} \${product_tingabi}"
 		;;
 	*)
 		echo "Usage: man opnsense-version" >&2
