@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     // boolean fields
-    $bool_fields = array('ondemand', 'mschap', 'ccp', 'shortseq', 'acfcomp', 'protocomp', 'vjcomp', 'tcpmssfix');
+    $bool_fields = array('ondemand', 'mschap', 'ccp', 'mppc', 'shortseq', 'acfcomp', 'protocomp', 'vjcomp', 'tcpmssfix');
     foreach ($bool_fields as $fieldname) {
         $pconfig[$fieldname] = isset($a_ppps[$id][$fieldname]);
     }
@@ -115,6 +115,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             if (!empty($pconfig['ccp'])) {
                 $reqdfields[] = "ccp";
                 $reqdfieldsn[] = gettext("Compression Control Protocol");
+            }
+            if (!empty($pconfig['mppc'])) {
+                $reqdfields[] = "mppc";
+                $reqdfieldsn[] = gettext("Microsoft Point-to-point compression");
             }
             do_input_validation($pconfig, $reqdfields, $reqdfieldsn, $input_errors);
             break;
@@ -173,6 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         $ppp['mschap'] = !empty($pconfig['mschap']);
         $ppp['ccp'] = !empty($pconfig['ccp']);
+        $ppp['mppc'] = !empty($pconfig['mppc']);
         $ppp['uptime'] = !empty($pconfig['uptime']);
         if (!empty($pconfig['descr'])) {
             $ppp['descr'] = $pconfig['descr'];
@@ -725,6 +730,16 @@ include("head.inc");
                           <strong><?= gettext("Enable CCP (Compression Control Protocol) negotiation"); ?></strong>
                           <div class="hidden" data-for="help_for_ccp">
                             <?= gettext("CCP configuration options are used for only one purpose: to negotiate the type of compression to be used by the two devices, and the specifics of how that algorithm is to be employed."); ?> </span>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr style="display:none" class="act_show_advanced">
+                        <td style="width:22%"><a id="help_for_mppc" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Enable MPPC subprotocol"); ?></td>
+                        <td style="width:78%">
+                          <input type="checkbox" value="on" id="mppc" name="mppc" <?=!empty($pconfig['mppc']) ? "checked=\"checked\"" : ""; ?> />
+                          <strong><?= gettext("Enable MPPC (Microsoft Point-To-Point Compression) compression/encryption subprotocol"); ?></strong>
+                          <div class="hidden" data-for="help_for_mppc">
+                            <?= gettext("MPPC (described in RFC 2118) is a streaming data compression algorithm based on an implementation of Lempel–Ziv using a sliding window buffer."); ?> </span>
                           </div>
                         </td>
                       </tr>
