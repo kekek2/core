@@ -297,7 +297,7 @@ package: plist-check package-check clean-work
 	else \
 	    exit 1; \
 	fi
-	@sed -i '' 's/url:.*/url: "file:\/\/\/var\/tmp\/sets"/' ${WRKDIR}/src-enc/usr/local/etc/pkg/repos/origin.conf.sample
+	@sed -i '' 's/url:.*/url: "file:\/\/\/var\/tmp\/sets"/' ${WRKDIR}/src-enc/usr/local/etc/pkg/repos/SmartSoft.conf.sample
 	@echo '{"file:///var/tmp/sets/":"Local repo"}' > ${WRKDIR}/src-enc/usr/local/opnsense/firmware-mirrors
 	@echo " done"
 	@echo ">>> Packaging files for ${CORE_NAME}-${CORE_VERSION}:"

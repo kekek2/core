@@ -29,7 +29,7 @@ set -e
 
 CLIENT_KEY="/usr/local/etc/ssl/ting-client.key"
 CLIENT_CERT="/usr/local/etc/ssl/ting-client.crt"
-ORIGIN="/usr/local/etc/pkg/repos/origin.conf"
+ORIGIN="/usr/local/etc/pkg/repos/SmartSoft.conf"
 DESTDIR="/usr/local/opnsense/changelog"
 WORKDIR="/tmp/changelog"
 FETCH="fetch -qT 5 --cert=${CLIENT_CERT} --key=${CLIENT_KEY}"
