@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     // boolean fields
-    $bool_fields = array('ondemand', 'mschap', 'ccp', 'mppc', 'shortseq', 'acfcomp', 'protocomp', 'vjcomp', 'tcpmssfix');
+    $bool_fields = array('ondemand', 'mschap', 'ccp', 'mppc', 'mppc-compression', 'shortseq', 'acfcomp', 'protocomp', 'vjcomp', 'tcpmssfix');
     foreach ($bool_fields as $fieldname) {
         $pconfig[$fieldname] = isset($a_ppps[$id][$fieldname]);
     }
@@ -118,6 +118,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
             if (!empty($pconfig['mppc'])) {
                 $reqdfields[] = "mppc";
+                $reqdfieldsn[] = gettext("Microsoft Point-to-point compression");
+            }
+            if (!empty($pconfig['mppc-compression'])) {
+                $reqdfields[] = "mppc-compression";
                 $reqdfieldsn[] = gettext("Microsoft Point-to-point compression");
             }
             do_input_validation($pconfig, $reqdfields, $reqdfieldsn, $input_errors);
@@ -178,6 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $ppp['mschap'] = !empty($pconfig['mschap']);
         $ppp['ccp'] = !empty($pconfig['ccp']);
         $ppp['mppc'] = !empty($pconfig['mppc']);
+        $ppp['mppc-compression'] = !empty($pconfig['mppc-compression']);
         $ppp['uptime'] = !empty($pconfig['uptime']);
         if (!empty($pconfig['descr'])) {
             $ppp['descr'] = $pconfig['descr'];
@@ -740,6 +745,16 @@ include("head.inc");
                           <strong><?= gettext("Enable MPPC (Microsoft Point-To-Point Compression) compression/encryption subprotocol"); ?></strong>
                           <div class="hidden" data-for="help_for_mppc">
                             <?= gettext("MPPC (described in RFC 2118) is a streaming data compression algorithm based on an implementation of Lempel–Ziv using a sliding window buffer."); ?> </span>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr style="display:none" class="act_show_advanced">
+                        <td style="width:22%"><a id="help_for_mppc_compression" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Enable MPPC compression"); ?></td>
+                        <td style="width:78%">
+                          <input type="checkbox" value="on" id="mppc-compression" name="mppc-compression" <?=!empty($pconfig['mppc-compression']) ? "checked=\"checked\"" : ""; ?> />
+                          <strong><?= gettext("Enable MPPC (Microsoft Point-To-Point Compression) compression"); ?></strong>
+                          <div class="hidden" data-for="help_for_mppc_compression">
+                            <?= gettext("MPPC (described in RFC 2118) is a streaming data compression algorithm based on an implementation of Lempel–Ziv using a sliding window buffer. This is the only compression method supported by Microsoft Windows RAS."); ?> </span>
                           </div>
                         </td>
                       </tr>
