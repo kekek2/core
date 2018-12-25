@@ -31,8 +31,6 @@ EOF
 cat /etc/rc.shutdown.bak >> /etc/rc.shutdown
 rm -f /etc/rc.shutdown.bak
 
-echo "%%TING_ABI%%" > /usr/local/opnsense/version/ting.abi
-
 /usr/local/etc/rc.d/configd start
 
 /usr/local/etc/rc.configure_firmware
