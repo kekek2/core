@@ -1333,10 +1333,13 @@ EOD;
 
     if (isset($ppp['ccp'])) {
         $mpdconf .= "  set bundle enable compression\n";
-        $mpdconf .= "  set ccp yes mppc\n";
-        $mpdconf .= "  set mppc accept compress\n";
-        $mpdconf .= "  set mppc yes e40 e56 e128\n";
-        $mpdconf .= "  set mppc yes stateless\n";
+
+        if (isset($ppp['mppc'])) {
+            $mpdconf .= "  set ccp yes mppc\n";
+            $mpdconf .= "  set mppc accept compress\n";
+            $mpdconf .= "  set mppc yes e40 e56 e128\n";
+            $mpdconf .= "  set mppc yes stateless\n";
+        }
     }
 
     if (isset($config['system']['dnsallowoverride'])) {
