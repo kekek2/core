@@ -1334,7 +1334,11 @@ EOD;
 
         if (isset($ppp['mppc'])) {
             $mpdconf .= "  set ccp yes mppc\n";
-            $mpdconf .= "  set mppc accept compress\n";
+
+            if (isset($ppp['mppc-compression'])) {
+                $mpdconf .= "  set mppc accept compress\n";
+            }
+
             $mpdconf .= "  set mppc yes e40 e56 e128\n";
             $mpdconf .= "  set mppc yes stateless\n";
         }
