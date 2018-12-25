@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     // boolean fields
-    $bool_fields = array('ondemand', 'mschap', 'ccp', 'mppc', 'mppc-compression', 'shortseq', 'acfcomp', 'protocomp', 'vjcomp', 'tcpmssfix');
+    $bool_fields = array('ondemand', 'mschap', 'ccp', 'mppc', 'mppc-compression', 'mppc-e40', 'shortseq', 'acfcomp', 'protocomp', 'vjcomp', 'tcpmssfix');
     foreach ($bool_fields as $fieldname) {
         $pconfig[$fieldname] = isset($a_ppps[$id][$fieldname]);
     }
@@ -124,6 +124,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $reqdfields[] = "mppc-compression";
                 $reqdfieldsn[] = gettext("Microsoft Point-to-point compression");
             }
+            if (!empty($pconfig['mppc-e40'])) {
+                $reqdfields[] = "mppc-e40";
+                $reqdfieldsn[] = gettext("40-bit Microsoft Point-to-point encryption");
+            }
             do_input_validation($pconfig, $reqdfields, $reqdfieldsn, $input_errors);
             break;
         default:
@@ -183,6 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $ppp['ccp'] = !empty($pconfig['ccp']);
         $ppp['mppc'] = !empty($pconfig['mppc']);
         $ppp['mppc-compression'] = !empty($pconfig['mppc-compression']);
+        $ppp['mppc-e40'] = !empty($pconfig['mppc-e40']);
         $ppp['uptime'] = !empty($pconfig['uptime']);
         if (!empty($pconfig['descr'])) {
             $ppp['descr'] = $pconfig['descr'];
@@ -755,6 +760,16 @@ include("head.inc");
                           <strong><?= gettext("Enable MPPC (Microsoft Point-To-Point Compression) compression"); ?></strong>
                           <div class="hidden" data-for="help_for_mppc_compression">
                             <?= gettext("MPPC (described in RFC 2118) is a streaming data compression algorithm based on an implementation of Lempel–Ziv using a sliding window buffer. This is the only compression method supported by Microsoft Windows RAS."); ?> </span>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr style="display:none" class="act_show_advanced">
+                        <td style="width:22%"><a id="help_for_mppc_e40" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Enable 40-bit MPPE encryption"); ?></td>
+                        <td style="width:78%">
+                          <input type="checkbox" value="on" id="mppc-e40" name="mppc-e40" <?=!empty($pconfig['mppc-e40']) ? "checked=\"checked\"" : ""; ?> />
+                          <strong><?= gettext("Enable 40-bit MPPE (Microsoft Point-To-Point Encryption)"); ?></strong>
+                          <div class="hidden" data-for="help_for_mppc_e40">
+                            <?= gettext("MPPE provides data security for the PPTP connection that is between the VPN client and the VPN server. MPPE alone does not compress or expand data. In order for MPPE encryption to work, MS-CHAPv1 or MS-CHAPv2 auth is mandatory, because the MPPE keys are generated using the authentication results. If MS-CHAP auth is not used by link, encryption will not be negotiated."); ?> </span>
                           </div>
                         </td>
                       </tr>
