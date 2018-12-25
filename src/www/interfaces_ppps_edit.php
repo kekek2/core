@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     // boolean fields
-    $bool_fields = array('ondemand', 'mschap', 'ccp', 'mppc', 'mppc-compression', 'mppc-e40', 'mppc-e56', 'shortseq', 'acfcomp', 'protocomp', 'vjcomp', 'tcpmssfix');
+    $bool_fields = array('ondemand', 'mschap', 'ccp', 'mppc', 'mppc-compression', 'mppc-e40', 'mppc-e56', 'mppc-e128', 'shortseq', 'acfcomp', 'protocomp', 'vjcomp', 'tcpmssfix');
     foreach ($bool_fields as $fieldname) {
         $pconfig[$fieldname] = isset($a_ppps[$id][$fieldname]);
     }
@@ -132,6 +132,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $reqdfields[] = "mppc-e56";
                 $reqdfieldsn[] = gettext("56-bit Microsoft Point-to-point encryption");
             }
+            if (!empty($pconfig['mppc-e128'])) {
+                $reqdfields[] = "mppc-e128";
+                $reqdfieldsn[] = gettext("128-bit Microsoft Point-to-point encryption");
+            }
             do_input_validation($pconfig, $reqdfields, $reqdfieldsn, $input_errors);
             break;
         default:
@@ -193,6 +197,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $ppp['mppc-compression'] = !empty($pconfig['mppc-compression']);
         $ppp['mppc-e40'] = !empty($pconfig['mppc-e40']);
         $ppp['mppc-e56'] = !empty($pconfig['mppc-e56']);
+        $ppp['mppc-e128'] = !empty($pconfig['mppc-e128']);
         $ppp['uptime'] = !empty($pconfig['uptime']);
         if (!empty($pconfig['descr'])) {
             $ppp['descr'] = $pconfig['descr'];
@@ -784,6 +789,16 @@ include("head.inc");
                           <input type="checkbox" value="on" id="mppc-e56" name="mppc-e56" <?=!empty($pconfig['mppc-e56']) ? "checked=\"checked\"" : ""; ?> />
                           <strong><?= gettext("Enable 56-bit MPPE (Microsoft Point-To-Point Encryption)"); ?></strong>
                           <div class="hidden" data-for="help_for_mppc_e56">
+                            <?= gettext("MPPE provides data security for the PPTP connection that is between the VPN client and the VPN server. MPPE alone does not compress or expand data. In order for MPPE encryption to work, MS-CHAPv1 or MS-CHAPv2 auth is mandatory, because the MPPE keys are generated using the authentication results. If MS-CHAP auth is not used by link, encryption will not be negotiated."); ?> </span>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr style="display:none" class="act_show_advanced">
+                        <td style="width:22%"><a id="help_for_mppc_e128" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Enable 128-bit MPPE encryption"); ?></td>
+                        <td style="width:78%">
+                          <input type="checkbox" value="on" id="mppc-e128" name="mppc-e128" <?=!empty($pconfig['mppc-e128']) ? "checked=\"checked\"" : ""; ?> />
+                          <strong><?= gettext("Enable 128-bit MPPE (Microsoft Point-To-Point Encryption)"); ?></strong>
+                          <div class="hidden" data-for="help_for_mppc_e128">
                             <?= gettext("MPPE provides data security for the PPTP connection that is between the VPN client and the VPN server. MPPE alone does not compress or expand data. In order for MPPE encryption to work, MS-CHAPv1 or MS-CHAPv2 auth is mandatory, because the MPPE keys are generated using the authentication results. If MS-CHAP auth is not used by link, encryption will not be negotiated."); ?> </span>
                           </div>
                         </td>
