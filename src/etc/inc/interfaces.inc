@@ -1330,11 +1330,34 @@ EOD;
     if (isset($ppp['vjcomp'])) {
         $mpdconf .= "  set ipcp no vjcomp\n";
     }
-    $mpdconf .= "  set bundle enable compression\n";
-    $mpdconf .= "  set ccp yes mppc\n";
-    $mpdconf .= "  set mppc accept compress\n";
-    $mpdconf .= "  set mppc yes e40 e56 e128\n";
-    $mpdconf .= "  set mppc yes stateless\n";
+
+    if (isset($ppp['ccp'])) {
+        $mpdconf .= "  set bundle enable compression\n";
+
+        if (isset($ppp['mppc'])) {
+            $mpdconf .= "  set ccp yes mppc\n";
+
+            if (isset($ppp['mppc-compression'])) {
+                $mpdconf .= "  set mppc accept compress\n";
+            }
+
+            if (isset($ppp['mppc-e40'])) {
+                $mpdconf .= "  set mppc yes e40\n";
+            }
+
+            if (isset($ppp['mppc-e56'])) {
+                $mpdconf .= "  set mppc yes e56\n";
+            }
+
+            if (isset($ppp['mppc-e128'])) {
+                $mpdconf .= "  set mppc yes e128\n";
+            }
+
+            if (isset($ppp['mppc-stateless'])) {
+                $mpdconf .= "  set mppc yes stateless\n";
+            }
+        }
+    }
 
     if (isset($config['system']['dnsallowoverride'])) {
         $mpdconf .= "  set ipcp enable req-pri-dns\n";
@@ -1370,8 +1393,8 @@ EOD;
             $mpdconf_arr[] = "set link accept chap chap-msv2";
         }
         else {
-            $mpdconf_arr[] = "set link no pap eap";
-            $mpdconf_arr[] = "set link accept chap chap-msv2";
+            $mpdconf_arr[] = "set link disable chap pap";
+            $mpdconf_arr[] = "set link accept chap pap eap";
         }
         $mpdconf_arr[] = "set link disable incoming";
         $bandwidths = !empty($ppp['bandwidth']) ? explode(',', $ppp['bandwidth']) : null;
