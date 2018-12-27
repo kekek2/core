@@ -105,7 +105,14 @@ shell)
 	;;
 esac
 
-alias GETTEXT='gettext "OPNsense"'
+if [ `sysctl -n kern.vty` = "sc" ] && tty | grep -q ttyv; then
+    alias GETTEXT=echo
+    unset LC_CTYPE
+    unset LANG
+else
+    alias GETTEXT='gettext "OPNsense"'
+fi
+
 MENU_0_07=$(GETTEXT "  0) Logout                              7) Ping host")
 MENU_1_08=$(GETTEXT "  1) Assign interfaces                   8) Shell")
 MENU_2_09=$(GETTEXT "  2) Set interface IP address            9) pfTop")
