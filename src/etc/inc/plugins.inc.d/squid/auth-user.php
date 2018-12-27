@@ -62,7 +62,7 @@ while (!(feof($f))) {
                     // authenticator not found, use local
                     $authServer = $authFactory->get('Local Database');
                 }
-                if (count($domain) != "" && $authFactory->listServers()[$authServerName]["ldap_basedn"] != implode(",", $baseSearchDN)) {
+                if ($domain != "" && $authFactory->listServers()[$authServerName]["ldap_basedn"] != implode(",", $baseSearchDN)) {
                     continue;
                 }
                 $isAuthenticated = $authServer->authenticate($username, $password);
