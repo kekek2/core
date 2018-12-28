@@ -23,6 +23,7 @@
 /usr/local/etc/inc/notices.basic_sasl_client.inc
 /usr/local/etc/inc/notices.cram_md5_sasl_client.inc
 /usr/local/etc/inc/notices.digest_sasl_client.inc
+/usr/local/etc/inc/notices.growl.inc
 /usr/local/etc/inc/notices.inc
 /usr/local/etc/inc/notices.login_sasl_client.inc
 /usr/local/etc/inc/notices.ntlm_sasl_client.inc
@@ -160,6 +161,7 @@
 /usr/local/etc/rc.syshook.d/stop/80-freebsd
 /usr/local/etc/rc.syshook.d/stop/90-backup
 /usr/local/etc/rc.syshook.d/stop/99-config
+/usr/local/etc/rc.update_bogons
 /usr/local/etc/squid/errors/en/ERR_BANNED_ACCESS_DENIED
 /usr/local/etc/squid/errors/en/ERR_BLACKLIST_ACCESS_DENIED
 /usr/local/etc/squid/errors/en/ERR_BLOCKMIMETYPES_ACCESS_DENIED
@@ -410,9 +412,6 @@
 /usr/local/opnsense/mvc/app/controllers/OPNsense/Monit/forms/general.xml
 /usr/local/opnsense/mvc/app/controllers/OPNsense/Monit/forms/services.xml
 /usr/local/opnsense/mvc/app/controllers/OPNsense/Monit/forms/tests.xml
-/usr/local/opnsense/mvc/app/controllers/OPNsense/OpenVPN/Api/ExportController.php
-/usr/local/opnsense/mvc/app/controllers/OPNsense/OpenVPN/ExportController.php
-/usr/local/opnsense/mvc/app/controllers/OPNsense/OpenVPN/forms/export_options.xml
 /usr/local/opnsense/mvc/app/controllers/OPNsense/Proxy/Api/ServiceController.php
 /usr/local/opnsense/mvc/app/controllers/OPNsense/Proxy/Api/SettingsController.php
 /usr/local/opnsense/mvc/app/controllers/OPNsense/Proxy/IndexController.php
@@ -445,7 +444,6 @@
 /usr/local/opnsense/mvc/app/library/OPNsense/Auth/Base.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Auth/IAuthConnector.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Auth/LDAP.php
-/usr/local/opnsense/mvc/app/library/OPNsense/Auth/LDAPTOTP.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Auth/Local.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Auth/LocalTOTP.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Auth/Radius.php
@@ -457,7 +455,6 @@
 /usr/local/opnsense/mvc/app/library/OPNsense/Backup/IBackupProvider.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Backup/Local.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Backup/Nextcloud.php
-/usr/local/opnsense/mvc/app/library/OPNsense/Backup/Scp.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Base/Filters/QueryFilter.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Base/UIModelGrid.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Base/ViewTranslator.php
@@ -475,16 +472,9 @@
 /usr/local/opnsense/mvc/app/library/OPNsense/Firewall/Rule.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Firewall/SNatRule.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Firewall/Util.php
-/usr/local/opnsense/mvc/app/library/OPNsense/OpenVPN/ArchiveOpenVPN.php
-/usr/local/opnsense/mvc/app/library/OPNsense/OpenVPN/BaseExporter.php
-/usr/local/opnsense/mvc/app/library/OPNsense/OpenVPN/ExportFactory.php
-/usr/local/opnsense/mvc/app/library/OPNsense/OpenVPN/IExportProvider.php
-/usr/local/opnsense/mvc/app/library/OPNsense/OpenVPN/PlainOpenVPN.php
 /usr/local/opnsense/mvc/app/library/SmartSoft/Core/Tools.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Backup/NextcloudSettings.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Backup/NextcloudSettings.xml
-/usr/local/opnsense/mvc/app/models/OPNsense/Backup/ScpSettings.php
-/usr/local/opnsense/mvc/app/models/OPNsense/Backup/ScpSettings.xml
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/BaseModel.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/BaseModelMigration.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/Constraints/AllOrNoneConstraint.php
@@ -565,8 +555,6 @@
 /usr/local/opnsense/mvc/app/models/OPNsense/Monit/Monit.xml
 /usr/local/opnsense/mvc/app/models/OPNsense/Ntpd/ACL/ACL.xml
 /usr/local/opnsense/mvc/app/models/OPNsense/Ntpd/Menu/Menu.xml
-/usr/local/opnsense/mvc/app/models/OPNsense/OpenVPN/Export.php
-/usr/local/opnsense/mvc/app/models/OPNsense/OpenVPN/Export.xml
 /usr/local/opnsense/mvc/app/models/OPNsense/Proxy/ACL/ACL.xml
 /usr/local/opnsense/mvc/app/models/OPNsense/Proxy/Menu/Menu.xml
 /usr/local/opnsense/mvc/app/models/OPNsense/Proxy/Migrations/M1_0_0.php
@@ -609,7 +597,6 @@
 /usr/local/opnsense/mvc/app/views/OPNsense/IDS/index.volt
 /usr/local/opnsense/mvc/app/views/OPNsense/Monit/index.volt
 /usr/local/opnsense/mvc/app/views/OPNsense/Monit/status.volt
-/usr/local/opnsense/mvc/app/views/OPNsense/OpenVPN/export.volt
 /usr/local/opnsense/mvc/app/views/OPNsense/Proxy/index.volt
 /usr/local/opnsense/mvc/app/views/OPNsense/Routes/index.volt
 /usr/local/opnsense/mvc/app/views/OPNsense/Syslog/index.volt
@@ -699,7 +686,6 @@
 /usr/local/opnsense/scripts/filter/pfinfo.py
 /usr/local/opnsense/scripts/filter/pflog_start.php
 /usr/local/opnsense/scripts/filter/read_log.py
-/usr/local/opnsense/scripts/filter/update_bogons.sh
 /usr/local/opnsense/scripts/filter/update_tables.py
 /usr/local/opnsense/scripts/firmware/changelog.sh
 /usr/local/opnsense/scripts/firmware/check.sh
@@ -794,7 +780,6 @@
 /usr/local/opnsense/scripts/systemhealth/fetchData.py
 /usr/local/opnsense/scripts/systemhealth/flush_rrd.py
 /usr/local/opnsense/scripts/systemhealth/listReports.py
-/usr/local/opnsense/scripts/unbound/cache.sh
 /usr/local/opnsense/scripts/unbound/wrapper.py
 /usr/local/opnsense/service/conf/actions.d/actions_captiveportal.conf
 /usr/local/opnsense/service/conf/actions.d/actions_configd.conf
@@ -1603,7 +1588,7 @@
 /usr/local/opnsense/www/themes/opnsense/build/fonts/bootstrap/glyphicons-halflings-regular.ttf
 /usr/local/opnsense/www/themes/opnsense/build/fonts/bootstrap/glyphicons-halflings-regular.woff
 /usr/local/opnsense/www/themes/opnsense/build/images/caret.png
-/usr/local/opnsense/www/themes/opnsense/build/images/default-logo.svg
+/usr/local/opnsense/www/themes/opnsense/build/images/default-logo.png
 /usr/local/opnsense/www/themes/opnsense/build/images/favicon.png
 /usr/local/opnsense/www/themes/opnsense/build/images/icon-logo.svg
 /usr/local/opnsense/www/themes/opnsense/build/images/ting-green.png
@@ -1653,7 +1638,6 @@
 /usr/local/www/diag_logs_gateways.php
 /usr/local/www/diag_logs_ipsec.php
 /usr/local/www/diag_logs_ntpd.php
-/usr/local/www/diag_logs_pkg.php
 /usr/local/www/diag_logs_proxy.php
 /usr/local/www/diag_logs_resolver.php
 /usr/local/www/diag_logs_squid.inc

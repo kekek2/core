@@ -42,7 +42,7 @@
             <Packages order="30" url="/ui/core/firmware#packages"/>
             <Settings order="40" url="/ui/core/firmware#settings"/>
             <Reporter order="50" url="/crash_reporter.php"/>
-            <LogFile order="100" VisibleName="Log File" url="/diag_logs_pkg.php"/>
+            <LogFile order="100" VisibleName="Log File" url="/ui/syslog/logview/showlog/pkg"/>
         </Firmware>
         <Gateways cssClass="fa fa-location-arrow fa-fw">
             <Single order="10" url="/system_gateways.php">
