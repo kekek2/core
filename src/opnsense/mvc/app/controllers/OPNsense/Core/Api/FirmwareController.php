@@ -191,6 +191,9 @@ class FirmwareController extends ApiControllerBase
             } elseif (array_key_exists('connection', $response) && $response['connection'] == 'unauthenticated') {
                 $response['status_msg'] = gettext('Could not authenticate the selected mirror.');
                 $response['status'] = 'error';
+            } elseif (array_key_exists('connection', $response) && $response['connection'] == 'refused') {
+                $response['status_msg'] = gettext('No valid license.');
+                $response['status'] = 'error';
             } elseif (array_key_exists('connection', $response) && $response['connection'] == 'misconfigured') {
                 $response['status_msg'] = gettext('The current package configuration is invalid.');
                 $response['status'] = 'error';
