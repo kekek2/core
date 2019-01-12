@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     // boolean fields
-    $bool_fields = array('ondemand', 'mschap', 'shortseq', 'acfcomp', 'protocomp', 'vjcomp', 'tcpmssfix');
+    $bool_fields = array('ondemand', 'mschap', 'ccp', 'mppc', 'mppc-compression', 'mppc-e40', 'mppc-e56', 'mppc-e128', 'mppc-stateless', 'shortseq', 'acfcomp', 'protocomp', 'vjcomp', 'tcpmssfix');
     foreach ($bool_fields as $fieldname) {
         $pconfig[$fieldname] = isset($a_ppps[$id][$fieldname]);
     }
@@ -111,6 +111,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             if (!empty($pconfig['mschap'])) {
                 $reqdfields[] = "mschap";
                 $reqdfieldsn[] = gettext("MS CHAP");
+            }
+            if (!empty($pconfig['ccp'])) {
+                $reqdfields[] = "ccp";
+                $reqdfieldsn[] = gettext("Compression Control Protocol");
+            }
+            if (!empty($pconfig['mppc'])) {
+                $reqdfields[] = "mppc";
+                $reqdfieldsn[] = gettext("Microsoft Point-to-point compression");
+            }
+            if (!empty($pconfig['mppc-compression'])) {
+                $reqdfields[] = "mppc-compression";
+                $reqdfieldsn[] = gettext("Microsoft Point-to-point compression");
+            }
+            if (!empty($pconfig['mppc-e40'])) {
+                $reqdfields[] = "mppc-e40";
+                $reqdfieldsn[] = gettext("40-bit Microsoft Point-to-point encryption");
+            }
+            if (!empty($pconfig['mppc-e56'])) {
+                $reqdfields[] = "mppc-e56";
+                $reqdfieldsn[] = gettext("56-bit Microsoft Point-to-point encryption");
+            }
+            if (!empty($pconfig['mppc-e128'])) {
+                $reqdfields[] = "mppc-e128";
+                $reqdfieldsn[] = gettext("128-bit Microsoft Point-to-point encryption");
+            }
+            if (!empty($pconfig['mppc-stateless'])) {
+                $reqdfields[] = "mppc-stateless";
+                $reqdfieldsn[] = gettext("Microsoft Point-to-point stateless mode");
             }
             do_input_validation($pconfig, $reqdfields, $reqdfieldsn, $input_errors);
             break;
@@ -168,6 +196,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $ppp['idletimeout'] = $pconfig['idletimeout'];
         }
         $ppp['mschap'] = !empty($pconfig['mschap']);
+        $ppp['ccp'] = !empty($pconfig['ccp']);
+        $ppp['mppc'] = !empty($pconfig['mppc']);
+        $ppp['mppc-compression'] = !empty($pconfig['mppc-compression']);
+        $ppp['mppc-e40'] = !empty($pconfig['mppc-e40']);
+        $ppp['mppc-e56'] = !empty($pconfig['mppc-e56']);
+        $ppp['mppc-e128'] = !empty($pconfig['mppc-e128']);
+        $ppp['mppc-stateless'] = !empty($pconfig['mppc-stateless']);
         $ppp['uptime'] = !empty($pconfig['uptime']);
         if (!empty($pconfig['descr'])) {
             $ppp['descr'] = $pconfig['descr'];
@@ -700,6 +735,86 @@ include("head.inc");
                             <?= gettext("(seconds) Default is 0, which disables the timeout feature."); ?><br /><br />
                             <?= gettext("If no incoming or outgoing packets are transmitted for the entered number of seconds the connection is brought down.");?>
                             <br /><?=gettext("When the idle timeout occurs, if the dial-on-demand option is enabled, mpd goes back into dial-on-demand mode. Otherwise, the interface is brought down and all associated routes removed."); ?>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr style="display:none" class="act_show_advanced">
+                        <td style="width:22%"><a id="help_for_mschap" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Enable mschap authentication"); ?></td>
+                        <td style="width:78%">
+                          <input type="checkbox" value="on" id="mschap" name="mschap" <?=!empty($pconfig['mschap']) ? "checked=\"checked\"" : ""; ?> />
+                          <strong><?= gettext("Enable Microsoft chap authentication protocol (not safe)"); ?></strong>
+                          <div class="hidden" data-for="help_for_mschap">
+                            <?= gettext("Enable Microsoft mschap protocol for authentication to remote point. It is not safe method and is not recommended."); ?> </span>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr style="display:none" class="act_show_advanced">
+                        <td style="width:22%"><a id="help_for_ccp" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Enable CCP negotiation"); ?></td>
+                        <td style="width:78%">
+                          <input type="checkbox" value="on" id="ccp" name="ccp" <?=!empty($pconfig['ccp']) ? "checked=\"checked\"" : ""; ?> />
+                          <strong><?= gettext("Enable CCP (Compression Control Protocol) negotiation"); ?></strong>
+                          <div class="hidden" data-for="help_for_ccp">
+                            <?= gettext("CCP configuration options are used for only one purpose: to negotiate the type of compression to be used by the two devices, and the specifics of how that algorithm is to be employed."); ?> </span>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr style="display:none" class="act_show_advanced">
+                        <td style="width:22%"><a id="help_for_mppc" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Enable MPPC subprotocol"); ?></td>
+                        <td style="width:78%">
+                          <input type="checkbox" value="on" id="mppc" name="mppc" <?=!empty($pconfig['mppc']) ? "checked=\"checked\"" : ""; ?> />
+                          <strong><?= gettext("Enable MPPC (Microsoft Point-To-Point Compression) compression/encryption subprotocol"); ?></strong>
+                          <div class="hidden" data-for="help_for_mppc">
+                            <?= gettext("MPPC (described in RFC 2118) is a streaming data compression algorithm based on an implementation of Lempel–Ziv using a sliding window buffer."); ?> </span>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr style="display:none" class="act_show_advanced">
+                        <td style="width:22%"><a id="help_for_mppc_compression" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Enable MPPC compression"); ?></td>
+                        <td style="width:78%">
+                          <input type="checkbox" value="on" id="mppc-compression" name="mppc-compression" <?=!empty($pconfig['mppc-compression']) ? "checked=\"checked\"" : ""; ?> />
+                          <strong><?= gettext("Enable MPPC (Microsoft Point-To-Point Compression) compression"); ?></strong>
+                          <div class="hidden" data-for="help_for_mppc_compression">
+                            <?= gettext("MPPC (described in RFC 2118) is a streaming data compression algorithm based on an implementation of Lempel–Ziv using a sliding window buffer. This is the only compression method supported by Microsoft Windows RAS."); ?> </span>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr style="display:none" class="act_show_advanced">
+                        <td style="width:22%"><a id="help_for_mppc_e40" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Enable 40-bit MPPE encryption"); ?></td>
+                        <td style="width:78%">
+                          <input type="checkbox" value="on" id="mppc-e40" name="mppc-e40" <?=!empty($pconfig['mppc-e40']) ? "checked=\"checked\"" : ""; ?> />
+                          <strong><?= gettext("Enable 40-bit MPPE (Microsoft Point-To-Point Encryption)"); ?></strong>
+                          <div class="hidden" data-for="help_for_mppc_e40">
+                            <?= gettext("MPPE provides data security for the PPTP connection that is between the VPN client and the VPN server. MPPE alone does not compress or expand data. In order for MPPE encryption to work, MS-CHAPv1 or MS-CHAPv2 auth is mandatory, because the MPPE keys are generated using the authentication results. If MS-CHAP auth is not used by link, encryption will not be negotiated."); ?> </span>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr style="display:none" class="act_show_advanced">
+                        <td style="width:22%"><a id="help_for_mppc_e56" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Enable 56-bit MPPE encryption"); ?></td>
+                        <td style="width:78%">
+                          <input type="checkbox" value="on" id="mppc-e56" name="mppc-e56" <?=!empty($pconfig['mppc-e56']) ? "checked=\"checked\"" : ""; ?> />
+                          <strong><?= gettext("Enable 56-bit MPPE (Microsoft Point-To-Point Encryption)"); ?></strong>
+                          <div class="hidden" data-for="help_for_mppc_e56">
+                            <?= gettext("MPPE provides data security for the PPTP connection that is between the VPN client and the VPN server. MPPE alone does not compress or expand data. In order for MPPE encryption to work, MS-CHAPv1 or MS-CHAPv2 auth is mandatory, because the MPPE keys are generated using the authentication results. If MS-CHAP auth is not used by link, encryption will not be negotiated."); ?> </span>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr style="display:none" class="act_show_advanced">
+                        <td style="width:22%"><a id="help_for_mppc_e128" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Enable 128-bit MPPE encryption"); ?></td>
+                        <td style="width:78%">
+                          <input type="checkbox" value="on" id="mppc-e128" name="mppc-e128" <?=!empty($pconfig['mppc-e128']) ? "checked=\"checked\"" : ""; ?> />
+                          <strong><?= gettext("Enable 128-bit MPPE (Microsoft Point-To-Point Encryption)"); ?></strong>
+                          <div class="hidden" data-for="help_for_mppc_e128">
+                            <?= gettext("MPPE provides data security for the PPTP connection that is between the VPN client and the VPN server. MPPE alone does not compress or expand data. In order for MPPE encryption to work, MS-CHAPv1 or MS-CHAPv2 auth is mandatory, because the MPPE keys are generated using the authentication results. If MS-CHAP auth is not used by link, encryption will not be negotiated."); ?> </span>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr style="display:none" class="act_show_advanced">
+                        <td style="width:22%"><a id="help_for_mppc_stateless" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Enable MPPC stateless mode"); ?></td>
+                        <td style="width:78%">
+                          <input type="checkbox" value="on" id="mppc-stateless" name="mppc-stateless" <?=!empty($pconfig['mppc-stateless']) ? "checked=\"checked\"" : ""; ?> />
+                          <strong><?= gettext("Enable MPPC (Microsoft Point-To-Point Compression/Encryption) stateless mode"); ?></strong>
+                          <div class="hidden" data-for="help_for_mppc_stateless">
+                            <?= gettext("This mode requires more CPU time and is somewhat less secure, but allows faster recovery in the face of lost packets."); ?> </span>
                           </div>
                         </td>
                       </tr>

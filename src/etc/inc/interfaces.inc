@@ -1265,7 +1265,6 @@ startup:
 default:
 {$ppp['type']}client:
   create bundle static {$interface}
-  set bundle enable ipv6cp
   set iface name {$ifcfg['if']}
 
 EOD;
@@ -1330,6 +1329,34 @@ EOD;
         $mpdconf .= "  set ipcp no vjcomp\n";
     }
 
+    if (isset($ppp['ccp'])) {
+        $mpdconf .= "  set bundle enable compression\n";
+
+        if (isset($ppp['mppc'])) {
+            $mpdconf .= "  set ccp yes mppc\n";
+
+            if (isset($ppp['mppc-compression'])) {
+                $mpdconf .= "  set mppc accept compress\n";
+            }
+
+            if (isset($ppp['mppc-e40'])) {
+                $mpdconf .= "  set mppc yes e40\n";
+            }
+
+            if (isset($ppp['mppc-e56'])) {
+                $mpdconf .= "  set mppc yes e56\n";
+            }
+
+            if (isset($ppp['mppc-e128'])) {
+                $mpdconf .= "  set mppc yes e128\n";
+            }
+
+            if (isset($ppp['mppc-stateless'])) {
+                $mpdconf .= "  set mppc yes stateless\n";
+            }
+        }
+    }
+
     if (isset($config['system']['dnsallowoverride'])) {
         $mpdconf .= "  set ipcp enable req-pri-dns\n";
         $mpdconf .= "  set ipcp enable req-sec-dns\n";
@@ -1361,6 +1388,7 @@ EOD;
         }
         if (isset($ppp['mschap'])) {
             $mpdconf_arr[] = "set link no pap eap";
+            $mpdconf_arr[] = "set link accept chap chap-msv2";
         }
         else {
             $mpdconf_arr[] = "set link disable chap pap";
