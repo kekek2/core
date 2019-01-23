@@ -40,6 +40,8 @@ import copy
 import codecs
 import jinja2
 import addons.template_helpers
+import netaddr
+import ujson
 
 __author__ = 'Ad Schellevis'
 
@@ -63,12 +65,64 @@ class Template(object):
         # register additional filters
         self._j2_env.filters['decode_idna'] = lambda x:x.decode('idna')
         self._j2_env.filters['encode_idna'] = self._encode_idna
+        self._j2_env.filters['get_interface_ip'] = self._get_interface_ip
+        self._j2_env.filters['get_subnet_mask'] = self._get_subnet_mask
+        self._j2_env.filters['openvpn_get_interface_ip'] = self._openvpn_get_interface_ip
+        self._j2_env.filters['openvpn_get_interface_ipv6'] = self._openvpn_get_interface_ipv6
+        self._j2_env.filters['openvpn_get_routes'] = self._openvpn_get_routes
 
     @staticmethod
     def _encode_idna(x):
         """ encode string to idna, preserve leading dots
         """
         return ''.join(map(lambda x:'.', range(len(x) - len(x.lstrip('.'))))) + x.lstrip('.').encode('idna')
+
+    def _get_interface_ip(self, interface, protocol, mask=False):
+        if type(interface) is jinja2.runtime.Undefined:
+            return ""
+        ip_ver = 'ipv6' if protocol[-1:] == '6' else 'ipv4'
+        ip = ujson.load(os.popen("/usr/local/opnsense/scripts/interfaces/list_interfaces.php json", "r"))[self._config['interfaces'][interface]['if']][ip_ver]
+        if len(ip) < 1:
+            return; ""
+        ipaddr = ip[0]['ipaddr']
+        return ipaddr + (' ' + netaddr.IPNetwork(ipaddr + '/' + str(ip[0]['subnetbits'])).netmask.__str__()) if mask else ""
+
+    @staticmethod
+    def _get_subnet_mask(ipnetwork):
+        ipnetwork = netaddr.IPNetwork(ipnetwork)
+        return ipnetwork.ip.__str__() + ' ' + ipnetwork.netmask.__str__()
+
+    @staticmethod
+    def _openvpn_get_interface_ip(ipnetwork):
+        first = netaddr.IPAddress(netaddr.IPNetwork(ipnetwork).first)
+        if ipnetwork.netmask.__long__() == 0xfffffffe:
+            return [first.__str__(), first.__add__(1).__str__()]
+        return [first.__add__(1).__str__(), first.__add__(2).__str__()]
+
+    @staticmethod
+    def _openvpn_get_interface_ipv6(ipnetwork):
+        first = netaddr.IPAddress(netaddr.IPNetwork(ipnetwork).first)
+        return [first.__add__(1).__str__(), first.__add__(2).__str__()]
+
+    @staticmethod
+    def _openvpn_gen_route_ipv4(network, iroute=False):
+        return 'i' if iroute else '' + 'route ' + Template._get_subnet_mask(network)
+
+    @staticmethod
+    def _openvpn_gen_route_ipv6(network, iroute=False):
+        split = network.split('/')
+        prefix = split[1] if len(split) == 2 else '128'
+        return 'i' if iroute else '' + 'route-ipv6 ' + split[0] + '/' + prefix
+
+    @staticmethod
+    def _openvpn_get_routes(value, ipproto="ipv4", push=False, iroute=False):
+        if value == '':
+            return ''
+        routes = ''
+        for network in value.split(','):
+            route = Template._openvpn_gen_route_ipv4(network, iroute) if ipproto == "ipv4" else Template._openvpn_gen_route_ipv6(network, iroute)
+            routes += ('push "' + route + '"\n') if push else (route + '\n')
+        return routes
 
     def list_module(self, module_name):
         """ list single module content
