@@ -240,12 +240,13 @@ outputs:
   # a line based alerts log similar to fast.log into syslog
   - syslog:
       enabled: {% if helpers.exists('OPNsense.IDS.general.syslog') and OPNsense.IDS.general.syslog|default('0') == '0' %}no{% else %}yes{% endif %}
+
       # reported identity to syslog. If ommited the program name (usually
       # suricata) will be used.
       #identity: "suricata"
       facility: local5
-      #level: Info ## possible levels: Emergency, Alert, Critical,
-                   ## Error, Warning, Notice, Info, Debug
+      level: Notice ## possible levels: Emergency, Alert, Critical,
+                    ## Error, Warning, Notice, Info, Debug
 
   # a line based information for dropped packets in IPS mode
   - drop:
@@ -750,8 +751,7 @@ logging:
   - console:
       enabled: no
   - syslog:
-      enabled: {% if helpers.exists('OPNsense.IDS.general.syslog') and OPNsense.IDS.general.syslog|default('0') == '0' %}no{% else %}yes{% endif %}
-
+      enabled: yes
       facility: local5
       format: "[%i] <%d> -- "
 
@@ -814,6 +814,7 @@ vars:
     DNS_SERVERS: "$HOME_NET"
     TELNET_SERVERS: "$HOME_NET"
     AIM_SERVERS: "$EXTERNAL_NET"
+    DC_SERVERS: "$HOME_NET"
     DNP3_SERVER: "$HOME_NET"
     DNP3_CLIENT: "$HOME_NET"
     MODBUS_CLIENT: "$HOME_NET"

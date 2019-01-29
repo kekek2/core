@@ -1,50 +1,47 @@
 <?php
 
 /*
-    Copyright (C) 2014-2015 Deciso B.V.
-    Copyright (C) 2005-2007 Scott Ullrich <sullrich@gmail.com>
-    Copyright (C) 2008 Shrew Soft Inc. <mgrooms@shrew.net>
-    Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
-    All rights reserved.
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are met:
-
-    1. Redistributions of source code must retain the above copyright notice,
-       this list of conditions and the following disclaimer.
-
-    2. Redistributions in binary form must reproduce the above copyright
-       notice, this list of conditions and the following disclaimer in the
-       documentation and/or other materials provided with the distribution.
-
-    THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
-    INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-    AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-    AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-    OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-    POSSIBILITY OF SUCH DAMAGE.
-*/
+ * Copyright (C) 2014-2015 Deciso B.V.
+ * Copyright (C) 2005-2007 Scott Ullrich <sullrich@gmail.com>
+ * Copyright (C) 2008 Shrew Soft Inc. <mgrooms@shrew.net>
+ * Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
 require_once("guiconfig.inc");
 require_once("filter.inc");
 require_once("system.inc");
 require_once("logs.inc");
-
-function default_table_entries_size()
-{
-    $current = `pfctl -sm | grep table-entries | awk '{print $4};'`;
-    return $current;
-}
+require_once("gwlb.inc");
+require_once("rrd.inc");
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = array();
     $pconfig['ipv6allow'] = isset($config['system']['ipv6allow']);
     $pconfig['disablefilter'] = !empty($config['system']['disablefilter']);
     $pconfig['optimization'] = isset($config['system']['optimization']) ? $config['system']['optimization'] : "normal";
+    $pconfig['state-policy'] = isset($config['system']['state-policy']) ;
     $pconfig['rulesetoptimization'] = isset($config['system']['rulesetoptimization']) ? $config['system']['rulesetoptimization'] : "basic";
     $pconfig['maximumstates'] = isset($config['system']['maximumstates']) ? $config['system']['maximumstates'] : null;
     $pconfig['maximumfrags'] = isset($config['system']['maximumfrags']) ? $config['system']['maximumfrags'] : null;
@@ -68,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['enablebinatreflection'] = !empty($config['system']['enablebinatreflection']);
     $pconfig['enablenatreflectionhelper'] = isset($config['system']['enablenatreflectionhelper']) ? $config['system']['enablenatreflectionhelper'] : null;
     $pconfig['bypassstaticroutes'] = isset($config['filter']['bypassstaticroutes']);
+    $pconfig['ip_change_kill_states'] = isset($config['system']['ip_change_kill_states']);
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pconfig = $_POST;
     $input_errors = array();
@@ -179,6 +177,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             unset($config['system']['enablenatreflectionhelper']);
         }
 
+        if (!empty($pconfig['state-policy'])) {
+            $config['system']['state-policy'] = true;
+        } elseif (!empty($config['system']['state-policy'])) {
+            unset($config['system']['state-policy']);
+        }
+
         $config['system']['optimization'] = $pconfig['optimization'];
         $config['system']['rulesetoptimization'] = $pconfig['rulesetoptimization'];
         $config['system']['maximumstates'] = $pconfig['maximumstates'];
@@ -218,6 +222,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $config['system']['gw_switch_default'] = true;
         } elseif (isset($config['system']['gw_switch_default'])) {
             unset($config['system']['gw_switch_default']);
+        }
+
+        if (!empty($pconfig['ip_change_kill_states'])) {
+            $config['system']['ip_change_kill_states'] = true;
+        } elseif (isset($config['system']['ip_change_kill_states'])) {
+            unset($config['system']['ip_change_kill_states']);
         }
 
         if (write_config())
@@ -416,7 +426,7 @@ include("head.inc");
                     <?= gettext('Using policy routing in the packet filter rules causes packets to skip ' .
                                 'processing for the traffic shaper and captive portal tasks. ' .
                                 'Using this option enables the sharing of such forwarding decisions ' .
-                                'between all components to accomodate complex setups. Use with care.') ?>
+                                'between all components to accomodate complex setups.') ?>
                   </div>
                 </td>
               </tr>
@@ -532,6 +542,16 @@ include("head.inc");
                 </td>
               </tr>
               <tr>
+                <td><a id="help_for_state-policy" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Bind states to interface");?></td>
+                <td>
+                  <input name="state-policy" type="checkbox" <?= !empty($pconfig['state-policy']) ? "checked=\"checked\"" : "";?>/>
+                  <div class="hidden" data-for="help_for_state-policy">
+                    <?= gettext('Set behaviour for keeping states, by default states are floating, but when this option is set they should match the interface.') ?><br />
+                    <?= gettext('The default option (unchecked) matches states regardless of the interface, which is in most setups the best choice.') ?><br />
+                  </div>
+                </td>
+              </tr>
+              <tr>
                 <td><a id="help_for_disablefilter" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Disable Firewall");?></td>
                 <td>
                   <input name="disablefilter" type="checkbox" value="yes" <?= !empty($pconfig['disablefilter']) ? "checked=\"checked\"" : "";?>/>
@@ -602,7 +622,7 @@ include("head.inc");
                 <td>
                   <input name="maximumtableentries" type="text" id="maximumtableentries" value="<?= html_safe($pconfig['maximumtableentries']) ?>"/>
                   <div class="hidden" data-for="help_for_maximumtableentries">
-                    <?=gettext("Maximum number of table entries for systems such as aliases, sshlockout, snort, etc, combined.");?><br/>
+                    <?= gettext('Maximum number of table entries for systems such as aliases, sshlockout, bogons, etc, combined.') ?><br/>
                     <?=gettext("Note: Leave this blank for the default.");?>
 <?php
                      if (empty($pconfig['maximumtableentries'])) :?>
@@ -669,6 +689,16 @@ include("head.inc");
                   <?=gettext("Verify HTTPS certificates when downloading alias URLs");?>
                   <div class="hidden" data-for="help_for_checkaliasesurlcert">
                     <?=gettext("Make sure the certificate is valid for all HTTPS addresses on aliases. If it's not valid or is revoked, do not download it.");?>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td><a id="help_for_ip_change_kill_states" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Dynamic state reset') ?></td>
+                <td>
+                  <input name="ip_change_kill_states" type="checkbox" value="yes" <?=!empty($pconfig['ip_change_kill_states']) ? 'checked="checked"' : '' ?> />
+                  <?= gettext('Reset all states when a dynamic IP address changes.') ?>
+                  <div class="hidden" data-for="help_for_ip_change_kill_states">
+                    <?=gettext("This option flushes the entire state table on IPv4 address changes in dynamic setups to e.g. allow VoIP servers to re-register.");?>
                   </div>
                 </td>
               </tr>

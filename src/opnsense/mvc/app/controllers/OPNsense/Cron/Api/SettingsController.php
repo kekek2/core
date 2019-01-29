@@ -45,7 +45,7 @@ class SettingsController extends ApiMutableModelControllerBase
     static protected $internalModelClass = '\OPNsense\Cron\Cron';
 
     /**
-     * etrieve job settings or return defaults
+     * retrieve job settings or return defaults
      * @param $uuid item unique id
      * @return array job contents
      * @throws \ReflectionException when not bound to model
@@ -159,8 +159,7 @@ class SettingsController extends ApiMutableModelControllerBase
     {
         return $this->searchBase(
             "jobs.job",
-            array("enabled", "minutes","hours", "days", "months", "weekdays", "description", "command", "origin",
-                  "cronPermissions"),
+            array("enabled", "minutes","hours", "days", "months", "weekdays", "description", "command", "origin"),
             "description"
         );
     }

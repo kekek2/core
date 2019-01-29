@@ -1,31 +1,31 @@
 <?php
 
 /*
-    Copyright (C) 2014-2016 Deciso B.V.
-    Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
-    All rights reserved.
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are met:
-
-    1. Redistributions of source code must retain the above copyright notice,
-       this list of conditions and the following disclaimer.
-
-    2. Redistributions in binary form must reproduce the above copyright
-       notice, this list of conditions and the following disclaimer in the
-       documentation and/or other materials provided with the distribution.
-
-    THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
-    INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-    AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-    AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-    OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-    POSSIBILITY OF SUCH DAMAGE.
-*/
+ * Copyright (C) 2014-2016 Deciso B.V.
+ * Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
 require_once("guiconfig.inc");
 require_once("filter.inc");
@@ -96,9 +96,9 @@ function reconfigure_dhcpd()
 
 $config_copy_fieldsnames = array('enable', 'staticarp', 'failover_peerip', 'dhcpleaseinlocaltime','descr',
   'defaultleasetime', 'maxleasetime', 'gateway', 'domain', 'domainsearchlist', 'denyunknown', 'ddnsdomain',
-  'ddnsdomainprimary', 'ddnsdomainkeyname', 'ddnsdomainkey', 'ddnsupdate', 'mac_allow', 'mac_deny', 'tftp', 'ldap',
+  'ddnsdomainprimary', 'ddnsdomainkeyname', 'ddnsdomainkey', 'ddnsdomainalgorithm', 'ddnsupdate', 'mac_allow', 'mac_deny', 'tftp', 'ldap',
   'netboot', 'nextserver', 'filename', 'filename32', 'filename64', 'rootpath', 'netmask', 'numberoptions',
-  'interface_mtu');
+  'interface_mtu', 'wpad');
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // handle identifiers and action
@@ -140,6 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
     // handle booleans
     $pconfig['enable'] =  isset($dhcpdconf['enable']);
+    $pconfig['wpad'] =  isset($dhcpdconf['wpad']);
     $pconfig['staticarp'] = isset($dhcpdconf['staticarp']);
     $pconfig['denyunknown'] = isset($dhcpdconf['denyunknown']);
     $pconfig['ddnsupdate'] = isset($dhcpdconf['ddnsupdate']);
@@ -527,6 +528,11 @@ include("head.inc");
         $("#showldap").show();
     }
 
+    function show_wpad_config() {
+        $("#showwpadbox").html('');
+        $("#showwpad").show();
+    }
+
     function show_netboot_config() {
         $("#shownetbootbox").html('');
         $("#shownetboot").show();
@@ -727,7 +733,9 @@ include("head.inc");
                                 <th><?=gettext("Pool Start");?></th>
                                 <th><?=gettext("Pool End");?></th>
                                 <th><?=gettext("Description");?></th>
-                                <th><a href="services_dhcp.php?if=<?=htmlspecialchars($if);?>&amp;act=newpool" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-plus"></span></a></th>
+                                <th class="text-nowrap">
+                                  <a href="services_dhcp.php?if=<?=htmlspecialchars($if);?>&amp;act=newpool" class="btn btn-default btn-xs"><i class="fa fa-plus fa-fw"></i></a>
+                                </th>
                               </tr>
                             </thead>
                             <tbody>
@@ -738,9 +746,9 @@ include("head.inc");
                               <td><?=htmlspecialchars($poolent['range']['from']);?></td>
                               <td><?=htmlspecialchars($poolent['range']['to']);?></td>
                               <td><?=htmlspecialchars($poolent['descr']);?></td>
-                              <td>
-                                <a href="services_dhcp.php?if=<?=$if;?>&amp;pool=<?=$i;?>" class="btn btn-xs btn-default"><i class="fa fa-pencil"></i></a>
-                                <a href="#" data-if="<?=$if;?>" data-id="<?=$i;?>" class="act_delete_pool btn btn-xs btn-default"><i class="fa fa-trash text-muted"></i></a>
+                              <td class="text-nowrap">
+                                <a href="services_dhcp.php?if=<?=$if;?>&amp;pool=<?=$i;?>" class="btn btn-xs btn-default"><i class="fa fa-pencil fa-fw"></i></a>
+                                <a href="#" data-if="<?=$if;?>" data-id="<?=$i;?>" class="act_delete_pool btn btn-xs btn-default"><i class="fa fa-trash fa-fw"></i></a>
                               </td>
                             </tr>
 <?php
@@ -882,6 +890,20 @@ include("head.inc");
                         <input name="ddnsdomainkeyname" type="text" value="<?=$pconfig['ddnsdomainkeyname'];?>" />
                         <?=gettext("Enter the dynamic DNS domain key secret which will be used to register client names in the DNS server.");?>
                         <input name="ddnsdomainkey" type="text" value="<?=$pconfig['ddnsdomainkey'];?>" />
+                        <?=gettext("Choose the dynamic DNS domain key algorithm.");?><br />
+                        <select name='ddnsdomainalgorithm' id="ddnsdomainalgorithm" class="selectpicker">
+<?php
+                        foreach (array("hmac-md5", "hmac-sha512") as $algorithm) :
+                          $selected = "";
+                          if (! empty($pconfig['ddnsdomainalgorithm'])) {
+                            if ($pconfig['ddnsdomainalgorithm'] == $algorithm) {
+                              $selected = "selected=\"selected\"";
+                            }
+                          }?>
+                          <option value="<?=$algorithm;?>" <?=$selected;?>><?=$algorithm;?></option>
+<?php
+                        endforeach; ?>
+                        </select>
                       </div>
                     </td>
                     </tr>
@@ -962,6 +984,18 @@ include("head.inc");
                         </div>
                       </td>
                     </tr>
+                    <tr>
+                      <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("WPAD");?> </td>
+                      <td>
+                        <div id="showwpadbox">
+                          <input type="button" onclick="show_wpad_config()" class="btn btn-default btn-xs" value="<?=gettext("Advanced");?>" /> - <?=gettext("Show WPAD");?>
+                        </div>
+                        <div id="showwpad" style="display:none">
+                          <input name="wpad" id="wpad" type="checkbox" value="yes" <?=!empty($pconfig['wpad']) ? "checked=\"checked\"" : ""; ?> />
+                          <strong><?= gettext("Enable Web Proxy Auto Discovery") ?></strong>
+                        </div>
+                      </td>
+                    </tr>
 <?php
                     if (!isset($pool) && !($act == "newpool")): ?>
                     <tr>
@@ -991,13 +1025,13 @@ include("head.inc");
                             foreach($numberoptions as $item):?>
                               <tr>
                                 <td>
-                                  <div style="cursor:pointer;" class="act-removerow btn btn-default btn-xs" alt="remove"><span class="glyphicon glyphicon-minus"></span></div>
+                                  <div style="cursor:pointer;" class="act-removerow btn btn-default btn-xs" alt="remove"><i class="fa fa-minus fa-fw"></i></div>
                                 </td>
                                 <td>
                                   <input name="numberoptions_number[]" type="text" value="<?=$item['number'];?>" />
                                 </td>
                                 <td>
-                                  <select name="numberoptions_type[]">
+                                  <select name="numberoptions_type[]" class="selectpicker">
                                     <option value="text" <?=$item['type'] == "text" ? "selected=\"selected\"" : "";?>>
                                       <?=gettext('Text');?>
                                     </option>
@@ -1038,7 +1072,7 @@ include("head.inc");
                             <tfoot>
                               <tr>
                                 <td colspan="4">
-                                  <div id="addNew" style="cursor:pointer;" class="btn btn-default btn-xs" alt="add"><span class="glyphicon glyphicon-plus"></span></div>
+                                  <div id="addNew" style="cursor:pointer;" class="btn btn-default btn-xs" alt="add"><i class="fa fa-plus fa-fw"></i></div>
                                 </td>
                               </tr>
                             </tfoot>
@@ -1097,8 +1131,8 @@ include("head.inc");
                     <td><?=gettext("IP address");?></td>
                     <td><?=gettext("Hostname");?></td>
                     <td><?=gettext("Description");?></td>
-                    <td>
-                      <a href="services_dhcp_edit.php?if=<?=htmlspecialchars($if);?>" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-plus"></span></a>
+                    <td class="text-nowrap">
+                      <a href="services_dhcp_edit.php?if=<?=htmlspecialchars($if);?>" class="btn btn-default btn-xs"><i class="fa fa-plus fa-fw"></i></a>
                     </td>
                   </tr>
 <?php
@@ -1111,7 +1145,7 @@ include("head.inc");
                       <td>
 <?php
                           if (isset($mapent['arp_table_static_entry'])): ?>
-                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <i class="fa fa-info-circle fa-fw"></i>
 <?php
                           endif; ?>
                       </td>
@@ -1127,9 +1161,9 @@ include("head.inc");
                       <td>
                         <?=htmlspecialchars($mapent['descr']);?>
                       </td>
-                      <td>
-                        <a href="services_dhcp_edit.php?if=<?=htmlspecialchars($if);?>&amp;id=<?=$i;?>" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-pencil"></span></a>
-                        <a href="#" data-if="<?=$if;?>" data-id="<?=$i;?>" class="act_delete_static btn btn-xs btn-default"><i class="fa fa-trash text-muted"></i></a>
+                      <td class="text-nowrap">
+                        <a href="services_dhcp_edit.php?if=<?=htmlspecialchars($if);?>&amp;id=<?=$i;?>" class="btn btn-default btn-xs"><i class="fa fa-pencil fa-fw"></i></a>
+                        <a href="#" data-if="<?=$if;?>" data-id="<?=$i;?>" class="act_delete_static btn btn-xs btn-default"><i class="fa fa-trash fa-fw"></i></a>
                       </td>
                     </tr>
 <?php

@@ -109,9 +109,9 @@
     <page-diagnostics-logs-system>
         <name>Diagnostics: Logs: System</name>
         <patterns>
-            <pattern>diag_logs.php*</pattern>
-            <pattern>httpd_logs.php*</pattern>
-            <pattern>configd_logs.php*</pattern>
+            <pattern>configd_logs.php</pattern>
+            <pattern>diag_logs.php</pattern>
+            <pattern>httpd_logs.php</pattern>
         </patterns>
     </page-diagnostics-logs-system>
     <page-diagnostics-packetcapture>
@@ -123,7 +123,8 @@
     <page-diagnostics-tables>
         <name>Diagnostics: PF Table IP addresses</name>
         <patterns>
-            <pattern>diag_tables.php*</pattern>
+            <pattern>ui/firewall/alias_util/*</pattern>
+            <pattern>api/firewall/alias_util/*</pattern>
         </patterns>
     </page-diagnostics-tables>
     <page-diagnostics-pf-info>
@@ -189,19 +190,17 @@
     <page-firewall-alias-edit>
         <name>Firewall: Alias: Edit</name>
         <patterns>
-            <pattern>firewall_aliases_edit.php*</pattern>
+            <pattern>ui/firewall/alias/*</pattern>
+            <pattern>api/firewall/alias/*</pattern>
         </patterns>
     </page-firewall-alias-edit>
-    <page-firewall-alias-import>
-        <name>Firewall: Alias: Import</name>
-        <patterns>
-            <pattern>firewall_aliases_import.php*</pattern>
-        </patterns>
-    </page-firewall-alias-import>
     <page-firewall-aliases>
         <name>Firewall: Aliases</name>
         <patterns>
-            <pattern>firewall_aliases.php*</pattern>
+            <pattern>ui/firewall/alias/*</pattern>
+            <pattern>api/firewall/alias/search*</pattern>
+            <pattern>api/firewall/alias/list*</pattern>
+            <pattern>api/firewall/alias/getItem*</pattern>
         </patterns>
     </page-firewall-aliases>
     <page-firewall-nat-1-1>
@@ -427,7 +426,7 @@
     <page-wizard-system>
         <name>System Setup Wizard</name>
         <patterns>
-            <pattern>wizard.php?xml=system*</pattern>
+            <pattern>wizard.php?xml=system</pattern>
         </patterns>
     </page-wizard-system>
     <page-services-dhcprelay>
@@ -437,7 +436,7 @@
         </patterns>
     </page-services-dhcprelay>
     <page-services-dhcpserver-editstaticmapping>
-        <name>Services: DHCP Server : Edit static mapping</name>
+        <name>Services: DHCP Server: Edit static mapping</name>
         <patterns>
             <pattern>services_dhcp_edit.php*</pattern>
         </patterns>
@@ -455,7 +454,7 @@
         </patterns>
     </page-services-dhcpv6relay>
     <page-services-dhcpserverv6-editstaticmapping>
-        <name>Services: DHCPv6 Server : Edit static mapping</name>
+        <name>Services: DHCPv6 Server: Edit static mapping</name>
         <patterns>
             <pattern>services_dhcpv6_edit.php*</pattern>
         </patterns>
@@ -632,6 +631,7 @@
         <name>System: Authentication Servers</name>
         <patterns>
             <pattern>system_authservers.php*</pattern>
+            <pattern>system_usermanager_settings_ldapacpicker.php*</pattern>
         </patterns>
     </page-system-authservers>
     <page-system-camanager>
@@ -657,6 +657,7 @@
         <patterns>
             <pattern>ui/core/firmware/*</pattern>
             <pattern>api/core/firmware/*</pattern>
+            <pattern>ui/syslog/logview/showlog/pkg</pattern>
         </patterns>
     </page-system-firmware-manualupdate>
     <page-system-gatewaygroups>
@@ -707,12 +708,12 @@
             <pattern>system_hasync.php*</pattern>
         </patterns>
     </page-system-hasync>
-    <page-system-license>
-        <name>System: License</name>
+    <page-lobby-eula>
+        <name>System: EULA</name>
         <patterns>
             <pattern>license.php*</pattern>
         </patterns>
-    </page-system-license>
+    </page-lobby-eula>
     <page-system-staticroutes>
         <name>System: Static Routes</name>
         <patterns>
@@ -733,18 +734,6 @@
             <pattern>system_usermanager_addprivs.php?user*</pattern>
         </patterns>
     </page-system-usermanager-addprivs>
-    <page-system-usermanager-settings>
-        <name>System: User Manager: settings</name>
-        <patterns>
-            <pattern>system_usermanager_settings.php*</pattern>
-        </patterns>
-    </page-system-usermanager-settings>
-    <page-system-usermanager-settings-testldap>
-        <name>System: User Manager: Settings: Test LDAP</name>
-        <patterns>
-            <pattern>system_usermanager_settings_test.php*</pattern>
-        </patterns>
-    </page-system-usermanager-settings-testldap>
     <page-system-usermanager-passwordmg>
         <name>System: User Password Manager</name>
         <patterns>
@@ -809,7 +798,7 @@
         <name>VPN: OpenVPN: Server</name>
         <patterns>
             <pattern>vpn_openvpn_server.php*</pattern>
-            <pattern>wizard.php?xml=openvpn*</pattern>
+            <pattern>wizard.php?xml=openvpn&amp;*</pattern>
         </patterns>
     </page-openvpn-server>
     <page-xmlrpclibrary>

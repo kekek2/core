@@ -1,33 +1,33 @@
 <?php
 
 /*
-    Copyright (C) 2014-2015 Deciso B.V.
-    Copyright (C) 2012 Jim Pingle <jimp@pfsense.org>
-    Copyright (C) 2007-2008 Scott Ullrich <sullrich@gmail.com>
-    Copyright (C) 2005-2006 Colin Smith <ethethlay@gmail.com>
-    All rights reserved.
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are met:
-
-    1. Redistributions of source code must retain the above copyright notice,
-       this list of conditions and the following disclaimer.
-
-    2. Redistributions in binary form must reproduce the above copyright
-       notice, this list of conditions and the following disclaimer in the
-       documentation and/or other materials provided with the distribution.
-
-    THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
-    INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-    AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-    AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-    OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-    POSSIBILITY OF SUCH DAMAGE.
-*/
+ * Copyright (C) 2014-2015 Deciso B.V.
+ * Copyright (C) 2012 Jim Pingle <jimp@pfsense.org>
+ * Copyright (C) 2007-2008 Scott Ullrich <sullrich@gmail.com>
+ * Copyright (C) 2005-2006 Colin Smith <ethethlay@gmail.com>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
 $aclObj = new \OPNsense\Core\ACL();
 
@@ -61,6 +61,7 @@ if($need_alert_display == true) {
           <span class="icon-bar"></span>
         </button>
       </div>
+      <button class="toggle-sidebar" data-toggle="tooltip right" title="<?= html_safe(gettext('Toggle sidebar')) ?>" style="display:none"><i class="fa fa-chevron-left"></i></button>
       <div class="collapse navbar-collapse">
         <ul class="nav navbar-nav navbar-right">
           <li>
@@ -87,6 +88,8 @@ if($need_alert_display == true) {
                     <div class="panel list-group" style="border:0px">
 <?php
                           foreach($menuSystem as $topMenuItem): ?>
+<?php
+                          if (count($topMenuItem->Children) >= 1): ?>
                             <a href="#<?=$topMenuItem->Id;?>" class="list-group-item <?= $topMenuItem->Selected ? 'active-menu-title' : ""; ?>" data-toggle="collapse" data-parent="#mainmenu"><span class="<?=$topMenuItem->CssClass;?> __iconspacer"></span><?=gettext($topMenuItem->VisibleName);?>  </a>
                             <div class="collapse <?=$topMenuItem->Selected ? 'active-menu in' :"";?>" id="<?=$topMenuItem->Id;?>">
 <?php
@@ -106,7 +109,7 @@ if($need_alert_display == true) {
                                   foreach ($subMenuItem->Children as $subsubMenuItem):?>
 <?php
                                     if ($subsubMenuItem->IsExternal == "Y"):?>
-                                            <a href="<?=$subsubMenuItem->Url;?>" target="_blank" class="list-group-item menu-level-3-item <?=$subsubMenuItem->Selected ? "active" :"";?>"><?=gettext($subsubMenuItem->VisibleName);?></a>
+                                            <a href="<?=$subsubMenuItem->Url;?>" target="_blank" rel="noopener noreferrer" class="list-group-item menu-level-3-item <?=$subsubMenuItem->Selected ? "active" :"";?>"><?=gettext($subsubMenuItem->VisibleName);?></a>
 <?php
                                     elseif ($aclObj->isPageAccessible($_SESSION['Username'],$subsubMenuItem->Url)):?>
                                             <a href="<?=$subsubMenuItem->Url;?>" class="list-group-item menu-level-3-item <?=$subsubMenuItem->Selected ? "active" :"";?>"><?=gettext($subsubMenuItem->VisibleName);?></a>
@@ -116,7 +119,7 @@ if($need_alert_display == true) {
                                 </div>
 <?php
                               elseif ($subMenuItem->IsExternal == "Y" ):?>
-                                <a href="<?=$subMenuItem->Url;?>" target="_blank" class="list-group-item <?=$subMenuItem->Selected ? "active" : "";?>" aria-expanded="<?=$subMenuItem->Selected ? "true" : "false";?>">
+                                <a href="<?=$subMenuItem->Url;?>" target="_blank" rel="noopener noreferrer" class="list-group-item <?=$subMenuItem->Selected ? "active" : "";?>" aria-expanded="<?=$subMenuItem->Selected ? "true" : "false";?>">
                                   <div style="display: table;width: 100%;">
                                     <div style="display: table-row">
                                       <div style="display: table-cell"><?=gettext($subMenuItem->VisibleName);?></div>
@@ -134,11 +137,29 @@ if($need_alert_display == true) {
                                     </div>
                                   </div>
                                 </a>
+
 <?php
                               endif;?>
 <?php
                             endforeach; ?>
                             </div>
+<?php
+                          else: ?>
+<?php
+                              if ($topMenuItem->IsExternal == "Y" ):?>
+                                <a href="<?=$topMenuItem->Url;?>" target="_blank" rel="noopener noreferrer" class="list-group-item <?=$topMenuItem->Selected ? "active-menu-title" : "";?>" data-parent="#mainmenu">
+                                    <span class="<?=$topMenuItem->CssClass;?> __iconspacer"></span><?=gettext($topMenuItem->VisibleName);?>
+                                </a>
+<?php
+                              elseif ($aclObj->isPageAccessible($_SESSION['Username'],$topMenuItem->Url)):?>
+                                <a href="<?=$topMenuItem->Url;?>" class="list-group-item <?=$topMenuItem->Selected ? "active-menu-title" : "";?>" data-parent="#mainmenu">
+                                    <span class="<?=$topMenuItem->CssClass;?> __iconspacer"></span><?=gettext($topMenuItem->VisibleName);?>
+                                </a>
+
+<?php
+                              endif;?>
+<?php
+                        endif;?>
 <?php
                         endforeach; ?>
                     </div>
@@ -162,17 +183,18 @@ if($need_alert_display == true) {
                 }
               } ?>
               <?php if (!empty($main_buttons)): foreach ($main_buttons as $button): ?>
-                <a href="<?=$button['href'];?>" class="btn btn-primary"><span class="glyphicon glyphicon-plus-sign __iconspacer"></span><?=$button['label'];?></a>
+                <a href="<?=$button['href'];?>" class="btn btn-primary"><i class="fa fa-plus-circle fa-fw"></i> <?= $button['label'] ?></a>
               <?php endforeach; endif; ?>
 
               <?php if (isset($widgetCollection)): ?>
                 <a href="#" id="updatepref" style="display:none" onclick="return updatePref();" class="btn btn-primary"><?=gettext("Save Settings");?></a>
-                <button id="add_widget_btn" type="button" class="btn btn-default" data-toggle="modal" data-target="#modal_widgets"><span class="glyphicon glyphicon-plus-sign __iconspacer"></span><?= gettext('Add widget') ?></button>
+                <button id="add_widget_btn" type="button" class="btn btn-default" data-toggle="modal" data-target="#modal_widgets"><i class="fa fa-plus-circle fa-fw"></i> <?= gettext('Add widget') ?></button>
                 <select class="selectpicker" data-width="120px" id="column_count">
-                    <option value="1" <?=$pconfig['column_count'] == "1" ? 'selected="selected"' : "";?>><?=gettext("1 column");?></option>
-                    <option value="2" <?=$pconfig['column_count'] == "2" ? 'selected="selected"' : "";?>><?=gettext("2 columns");?></option>
-                    <option value="3" <?=$pconfig['column_count'] == "3" ? 'selected="selected"' : "";?>><?=gettext("3 columns");?></option>
-                    <option value="4" <?=$pconfig['column_count'] == "4" ? 'selected="selected"' : "";?>><?=gettext("4 columns");?></option>
+                    <option value="1" <?=$pconfig['column_count'] == "1" ? 'selected="selected"' : "";?>><?= gettext('1 column');?></option>
+                    <option value="2" <?=$pconfig['column_count'] == "2" ? 'selected="selected"' : "";?>><?= sprintf(gettext('%s columns'), '2') ?></option>
+                    <option value="3" <?=$pconfig['column_count'] == "3" ? 'selected="selected"' : "";?>><?= sprintf(gettext('%s columns'), '3') ?></option>
+                    <option value="4" <?=$pconfig['column_count'] == "4" ? 'selected="selected"' : "";?>><?= sprintf(gettext('%s columns'), '4') ?></option>
+                    <option value="6" <?=$pconfig['column_count'] == "6" ? 'selected="selected"' : "";?>><?= sprintf(gettext('%s columns'), '6') ?></option>
                 </select>
               <?php endif; ?>
              </form>

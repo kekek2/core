@@ -1,44 +1,46 @@
 <?php
 
 /*
-    Copyright (C) 2014 Deciso B.V.
-    Copyright (C) 2005 Colin Smith <ethethlay@gmail.com>
-    Copyright (C) 2010 Jim Pingle <jimp@pfsense.org>
-    All rights reserved.
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are met:
-
-    1. Redistributions of source code must retain the above copyright notice,
-       this list of conditions and the following disclaimer.
-
-    2. Redistributions in binary form must reproduce the above copyright
-       notice, this list of conditions and the following disclaimer in the
-       documentation and/or other materials provided with the distribution.
-
-    THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
-    INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-    AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-    AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-    OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-    POSSIBILITY OF SUCH DAMAGE.
-*/
+ * Copyright (C) 2014 Deciso B.V.
+ * Copyright (C) 2005 Colin Smith <ethethlay@gmail.com>
+ * Copyright (C) 2010 Jim Pingle <jimp@pfsense.org>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
 require_once("guiconfig.inc");
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $cnf = OPNsense\Core\Config::getInstance();
-    $confvers = $cnf->getBackups(true);
     if (isset($config['system']['backupcount'])) {
         $pconfig['backupcount'] = $config['system']['backupcount'];
     } else {
         # XXX fallback value for older configs
         $pconfig['backupcount'] = 60;
     }
+
+    $cnf = OPNsense\Core\Config::getInstance();
+    $confvers = $cnf->getBackups(true);
+
     if (!empty($_GET['getcfg'])) {
         foreach ($confvers as $filename => $revision) {
             if ($revision['time'] == $_GET['getcfg']) {
@@ -53,11 +55,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 exit;
             }
         }
-    } elseif (!empty($_GET['diff']) && isset($_GET['oldtime']) && isset($_GET['newtime'])
+    }
+
+    $oldfile = '';
+    $newfile = '';
+    $diff = '';
+
+    if (!empty($_GET['diff']) && isset($_GET['oldtime']) && isset($_GET['newtime'])
           && is_numeric($_GET['oldtime']) && (is_numeric($_GET['newtime']) || ($_GET['newtime'] == 'current'))) {
-        $oldfile = '';
-        $newfile = '';
-        // search filenames to compare
         foreach ($confvers as $filename => $revision) {
             if ($revision['time'] == $_GET['oldtime']) {
                 $oldfile = $filename;
@@ -66,8 +71,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $newfile = $filename;
             }
         }
-
-        $diff = '';
 
         $oldtime = $_GET['oldtime'];
         $oldcheck = $oldtime;
@@ -79,10 +82,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $newtime = $_GET['newtime'];
             $newcheck = $newtime;
         }
+    } elseif (count($confvers)) {
+        $files = array_keys($confvers);
+        $newfile = '/conf/config.xml';
+        $newtime = $config['revision']['time'];
+        $oldfile = $files[0];
+        $oldtime = $confvers[$oldfile]['time'];
+    }
 
-        if (file_exists($oldfile) && file_exists($newfile)) {
-            exec("/usr/bin/diff -u " . escapeshellarg($oldfile) . " " . escapeshellarg($newfile), $diff);
-        }
+    if (file_exists($oldfile) && file_exists($newfile)) {
+        exec("/usr/bin/diff -u " . escapeshellarg($oldfile) . " " . escapeshellarg($newfile), $diff);
     }
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $input_errors = array();
@@ -102,10 +111,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $cnf = OPNsense\Core\Config::getInstance();
     $confvers = $cnf->getBackups(true);
 
-    if (!empty($_POST['act']) && $_POST['act'] == "revert") {
+    $user = getUserEntry($_SESSION['Username']);
+    $readonly = userHasPrivilege($user, 'user-config-readonly');
+
+    if (!empty($_POST['act']) && $_POST['act'] == 'revert') {
         foreach ($confvers as $filename => $revision) {
             if (isset($revision['time']) && $revision['time'] == $_POST['time']) {
-                if (config_restore($filename) == 0) {
+                if (!$readonly && config_restore($filename) == 0) {
                     $savemsg = sprintf(gettext('Successfully reverted to timestamp %s with description "%s".'), date(gettext("n/j/y H:i:s"), $_POST['id']), $revision['description']);
                 } else {
                     $savemsg = gettext("Unable to revert to the selected configuration.");
@@ -116,14 +128,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     } elseif (!empty($_POST['act']) && $_POST['act'] == "delete") {
         foreach ($confvers as $filename => $revision) {
             if (isset($revision['time']) && $revision['time'] == $_POST['time']) {
-                if (file_exists($filename)) {
+                if (!$readonly && file_exists($filename)) {
+                    $savemsg = sprintf(gettext('Deleted backup with timestamp %s and description "%s".'), date(gettext("n/j/y H:i:s"), $revision['time']), $revision['description']);
+                    unset($confvers[$filename]);
                     @unlink($filename);
                     @unlink($filename . ".sum");
-                    $savemsg = sprintf(gettext('Deleted backup with timestamp %s and description "%s".'), date(gettext("n/j/y H:i:s"), $revision['time']),$revision['description']);
                 } else {
                     $savemsg = gettext("Unable to delete the selected configuration.");
                 }
-                unset($confvers[$filename]);
                 break;
             }
         }
@@ -184,20 +196,18 @@ $( document ).ready(function() {
 //]]>
 </script>
 
-
 <body>
-  <?php
-    include("fbegin.inc");
-    if (isset($input_errors) && count($input_errors) > 0) {
-        print_input_errors($input_errors);
-    }
-    if ($savemsg) {
-      print_info_box($savemsg);
-    }
-  ?>
+
+<?php
+
+include("fbegin.inc");
+
+?>
   <section class="page-content-main">
     <div class="container-fluid">
       <div class="row">
+        <?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
+        <?php if ($savemsg) print_info_box($savemsg); ?>
         <section class="col-xs-12">
           <form method="post" id="iform">
             <input type="hidden" id="time" name="time" value="" />
@@ -287,17 +297,17 @@ $( document ).ready(function() {
                     <th><?=gettext("Date");?></th>
                     <th><?=gettext("Size");?></th>
                     <th><?=gettext("Configuration Change");?></th>
-                    <th>&nbsp;</th>
+                    <th class="text-nowrap"></th>
                   </tr>
                   <tr>
                     <td></td>
                     <td>
                       <input type="radio" name="newtime" value="current" <?= !isset($newcheck) || $newcheck == 'current' ? 'checked="checked"' : '' ?>/>
                     </td>
-                    <td> <?=date(gettext("n/j/y H:i:s"), $config['revision']['time']) ?></td>
-                    <td> <?=format_bytes(filesize("/conf/config.xml")) ?></td>
-                    <td> <?="{$config['revision']['username']}: {$config['revision']['description']}" ?></td>
-                    <td><b><?=gettext("Current");?></b></td>
+                    <td><?=date(gettext("n/j/y H:i:s"), $config['revision']['time']) ?></td>
+                    <td><?=format_bytes(filesize("/conf/config.xml")) ?></td>
+                    <td><?="{$config['revision']['username']}: {$config['revision']['description']}" ?></td>
+                    <td class="text-nowrap"><strong><?=gettext("Current");?></strong></td>
                   </tr>
 <?php
                 $last = count($confvers);
@@ -315,15 +325,15 @@ $( document ).ready(function() {
                     <td><?= date(gettext("n/j/y H:i:s"), $version['time']) ?></td>
                     <td><?= format_bytes($version['filesize']) ?></td>
                     <td><?= "{$version['username']}: {$version['description']}" ?></td>
-                    <td>
+                    <td class="text-nowrap">
                       <a data-id="<?=$version['time'];?>" href="#" class="act_revert btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("Revert to this configuration");?>">
-                         <span class="glyphicon glyphicon-log-in"></span>
+                         <i class="fa fa-sign-in fa-fw"></i>
                        </a>
-                       <a data-id="<?=$version['time'];?>" href="#" class="act_delete btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("Remove this backup");?>" >
-                         <span class="fa fa-trash text-muted"></span>
+                       <a data-id="<?=$version['time'];?>" href="#" class="act_delete btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("Remove this backup");?>">
+                         <i class="fa fa-trash fa-fw"></i>
                        </a>
-                       <a href="diag_confbak.php?getcfg=<?=$version['time'];?>" class="btn btn-default btn-xs" title="<?=gettext("Download this backup");?>">
-                       <span class="glyphicon glyphicon-download"></span>
+                       <a href="diag_confbak.php?getcfg=<?=$version['time'];?>" class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("Download this backup");?>">
+                         <i class="fa fa-download fa-fw"></i>
                      </a>
                     </td>
                   </tr>

@@ -1,41 +1,37 @@
 <?php
 
 /*
-    Copyright (C) 2017 Deciso B.V.
-    Copyright (C) 2004-2007 Scott Ullrich <sullrich@gmail.com>
-    Copyright (C) 2005 Bill Marquette <bill.marquette@gmail.com>
-    Copyright (C) 2006 Peter Allgeyer <allgeyer@web.de>
-    Copyright (C) 2008-2010 Ermal Luçi
-    Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
-    All rights reserved.
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are met:
-
-    1. Redistributions of source code must retain the above copyright notice,
-       this list of conditions and the following disclaimer.
-
-    2. Redistributions in binary form must reproduce the above copyright
-       notice, this list of conditions and the following disclaimer in the
-       documentation and/or other materials provided with the distribution.
-
-    THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
-    INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-    AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-    AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-    OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-    POSSIBILITY OF SUCH DAMAGE.
-*/
+ * Copyright (C) 2017 Deciso B.V.
+ * Copyright (C) 2004-2007 Scott Ullrich <sullrich@gmail.com>
+ * Copyright (C) 2005 Bill Marquette <bill.marquette@gmail.com>
+ * Copyright (C) 2006 Peter Allgeyer <allgeyer@web.de>
+ * Copyright (C) 2008-2010 Ermal Luçi
+ * Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
 require_once('filter.lib.inc');
-
-/* Create a global array to avoid errors on rulesets. */
-$GatewaysList = array();
-
 
 function fix_rule_label($descr)
 {
@@ -144,10 +140,10 @@ function filter_configure()
 
 function filter_delete_states_for_down_gateways()
 {
-    global $config, $GatewaysList;
-
-    $any_gateway_down = false;
+    $GatewaysList = return_gateways_array(false, true) + return_gateway_groups_array();
     $a_gateways = return_gateways_status();
+    $any_gateway_down = false;
+
     if (is_array($GatewaysList)) {
         foreach ($GatewaysList as $gwname => $gateway) {
           if (empty($gateway['monitor'])) {
@@ -159,25 +155,24 @@ function filter_delete_states_for_down_gateways()
           } elseif (empty($a_gateways[$gateway['monitor']])) {
               continue;
           }
-          $gwstatus =& $a_gateways[$gateway['monitor']];
+          $gwstatus = &$a_gateways[$gateway['monitor']];
           if (strstr($gwstatus['status'], "down")) {
               $any_gateway_down = true;
               break;
           }
         }
     }
+
     if ($any_gateway_down == true) {
         mwexec("/sbin/pfctl -Fs");
     }
 }
 
-function filter_configure_sync($verbose = false)
+function filter_configure_sync($verbose = false, $flush_states = false)
 {
-    global $config, $GatewaysList;
-    $sched_kill_states = array(); // kill states for schedules
+    global $config;
 
-    // Temporary fill $GatewaysList, the global is still used by some old functions
-    $GatewaysList = return_gateways_array(false, true) + return_gateway_groups_array();
+    $sched_kill_states = array(); // kill states for schedules
 
     /* Use filter lock to not allow concurrent filter reloads during this run. */
     $filterlck = lock('filter', LOCK_EX);
@@ -185,8 +180,7 @@ function filter_configure_sync($verbose = false)
     // initialize fw plugin object
     $fw = filter_core_get_initialized_plugin_system();
     filter_core_bootstrap($fw);
-    $cnfint = $fw->getInterfaceMapping();
-
+    $cnfint = iterator_to_array($fw->getInterfaceMapping());
     plugins_firewall($fw);
 
     if (isset($config['filter']['rule'])) {
@@ -273,25 +267,18 @@ function filter_configure_sync($verbose = false)
     }
 
     // prevent redirection on ports with "lock out" protection
-    $lockoutprts = filter_core_antilockout_ports();
-    if (count($lockoutprts) > 0 &&
-        (!empty($cnfint['lan']['if']) || (count($config['interfaces']) == 1 && !empty($cnfint['wan']['if'])))
-    ) {
+    foreach(filter_core_get_antilockout() as $lockoutif => $lockoutprts) {
         foreach ($lockoutprts as $port) {
             $rule = array(
-                "interface" => !empty($cnfint['lan']['if']) ? "lan" : "wan",
+                'interface' => $lockoutif,
                 "nordr" => true,
                 "protocol" => "tcp",
-                "destination" => array(
-                    "network" => !empty($cnfint['lan']['if']) ? "lanip" : "wanip",
-                    "port" => $port
-                ),
+                'destination' => array('network' => "{$lockoutif}ip", 'port' => $port),
                 "descr" => "Anti lockout, prevent redirects for protected ports to this interface ip"
             );
             $fw->registerForwardRule(300, $rule);
         }
     }
-
 
     if (!empty($config['nat']['npt'])) {
         // register user npt rules
@@ -313,7 +300,6 @@ function filter_configure_sync($verbose = false)
         }
     }
 
-
     filter_pflog_start();
 
     if ($verbose) {
@@ -322,9 +308,7 @@ function filter_configure_sync($verbose = false)
     }
 
     if (isset($config['system']['gw_switch_default'])) {
-        $gateways_status = return_gateways_status(true);
-        $gateways_arr = return_gateways_array();
-        fixup_default_gateway($gateways_status, $gateways_arr);
+        fixup_default_gateway();
     }
 
     $aliases = filter_generate_aliases();
@@ -363,10 +347,15 @@ function filter_configure_sync($verbose = false)
         flush();
     }
 
-    $limitrules = "";
-    /* User defined maximum table entries in Advanced menu. */
-    if (!empty($config['system']['maximumtableentries']) && is_numeric($config['system']['maximumtableentries'])) {
+    $limitrules = '';
+
+    if (!empty($config['system']['maximumtableentries'])) {
         $limitrules .= "set limit table-entries {$config['system']['maximumtableentries']}\n";
+    } elseif (is_bogonsv6_used()) {
+        $max_table_entries = default_table_entries_size();
+        if ($max_table_entries <= 500000) {
+            $limitrules .= "set limit table-entries 500000\n";
+        }
     }
 
     if (!empty($config['system']['rulesetoptimization'])) {
@@ -389,9 +378,11 @@ function filter_configure_sync($verbose = false)
     } else {
         $limitrules .= "set timeout { adaptive.start 0, adaptive.end 0 }\n";
     }
+    if (!empty($config['system']['state-policy'])) {
+        $limitrules .= "set state-policy if-bound\n";
+    }
 
-    if (!empty($config['system']['maximumstates']) && is_numeric($config['system']['maximumstates'])) {
-        /* User defined maximum states in Advanced menu. */
+    if (!empty($config['system']['maximumstates'])) {
         $limitrules .= "set limit states {$config['system']['maximumstates']}\n";
         $limitrules .= "set limit src-nodes {$config['system']['maximumstates']}\n";
     } else {
@@ -431,6 +422,9 @@ function filter_configure_sync($verbose = false)
     if (!@file_put_contents('/tmp/rules.debug', $rules, LOCK_EX)) {
         log_error("WARNING: Could not write new rules!");
         unlock($filterlck);
+        if ($verbose) {
+            echo "failed.\n";
+        }
         return;
     }
 
@@ -442,46 +436,38 @@ function filter_configure_sync($verbose = false)
         mwexecf('/sbin/pfctl -k label -k %s', $label);
     }
 
-
     /*
      * check for a error while loading the rules file.  if an error has occurred
      * then output the contents of the error to the caller
      */
     if ($rules_loading) {
-        /* XXX ALTQ not loaded message compat */
-        $altq_strip = 2;
-        if (count($rules_error) >= $altq_strip) {
-            foreach (range(1, $altq_strip) as $altq_unused) {
-                if (strpos($rules_error[0], 'ALTQ') !== false) {
-                    array_shift($rules_error);
-                }
-            }
-        }
+        $config_line = '';
 
-        $saved_line_error = $rules_error[0];
-        $config_line_error = '';
-
-        $line_error = explode(":", $rules_error[0]);
-        if (isset($line_error[1])) {
-            // only report issues with line numbers
+        /* only report issues with line numbers */
+        $line_error = explode(':', $rules_error[0]);
+        if (isset($line_error[1]) && (string)((int)$line_error[1]) == $line_error[1] && $line_error[1] > 0) {
             $line_number = $line_error[1];
             $line_split = file('/tmp/rules.debug');
             if (is_array($line_split)) {
-                $config_line_error = sprintf(' - ' . gettext('The line in question reads [%d]: %s'), $line_number, $line_split[$line_number-1]);
+                $config_line = sprintf(' - ' . gettext('The line in question reads [%s]: %s'), $line_number, $line_split[$line_number-1]);
             }
         }
 
         /* Brutal ugly hack but required -- PF is stuck, unwedge */
         if (strstr("$rules_error[0]", "busy")) {
             exec('/sbin/pfctl -d; /sbin/pfctl -e; /sbin/pfctl -f /tmp/rules.debug');
-            $error_msg = gettext("PF was wedged/busy and has been reset.");
-            file_notice("pf_busy", $error_msg, "pf_busy", "");
+            file_notice('pf_busy', gettext('PF was wedged/busy and has been reset.'), 'pf_busy', '');
         } else {
             exec('/sbin/pfctl -o basic -f /tmp/rules.debug.old 2>&1');
         }
 
-        file_notice('filter_load', sprintf(gettext('There were error(s) loading the rules: %s%s'), $saved_line_error, $config_line_error), 'Filter Reload', '');
+        file_notice('filter_load', sprintf(gettext('There were error(s) loading the rules: %s%s'), $rules_error[0], $config_line), 'Filter Reload', '');
         unlock($filterlck);
+
+        if ($verbose) {
+            echo "failed.\n";
+        }
+
         return;
     }
 
@@ -495,7 +481,7 @@ function filter_configure_sync($verbose = false)
      * not there, the kill is still fine).
      */
     if (!is_bogonsv6_used()) {
-        exec('/sbin/pfctl -t bogonsv6 -T kill 2>/dev/null');
+        mwexec('/sbin/pfctl -t bogonsv6 -T kill');
     }
 
     if ($verbose) {
@@ -512,6 +498,15 @@ function filter_configure_sync($verbose = false)
         flush();
     }
 
+    if ($flush_states) {
+        mwexec('/sbin/pfctl -Fs');
+    }
+
+    if ($verbose) {
+        echo '.';
+        flush();
+    }
+
     configd_run('template reload OPNsense/Filter');
     configd_run('filter refresh_aliases', true);
 
@@ -520,7 +515,6 @@ function filter_configure_sync($verbose = false)
     }
 
     unlock($filterlck);
-    return 0;
 }
 
 function filter_generate_scrubing(&$FilterIflist)
@@ -606,8 +600,6 @@ function filter_generate_scrubing(&$FilterIflist)
 
 function filter_generate_aliases()
 {
-    global $config;
-
     $aliases .= "\n# Lockout tables\n";
     $aliases .= "table <sshlockout> persist\n";
     $aliases .= "table <webConfiguratorlockout> persist\n";
@@ -619,25 +611,24 @@ function filter_generate_aliases()
         $aliases .= "table <bogonsv6> persist file \"/usr/local/etc/bogonsv6\"\n";
     }
 
-    if (isset($config['aliases']['alias'])) {
-        $aliases .= "\n# User Aliases\n";
-        foreach ($config['aliases']['alias'] as $aliased) {
-            switch ($aliased['type']) {
-
-                case "urltable_ports":
-                case "url_ports":
-                    $tmp_ports = filter_core_get_url_port_alias($aliased['name']);
-                    $aliases .= "{$aliased['name']} = \"{ {$tmp_ports} }\"\n";
-                    break;
-                case "port":
-                    $tmp_ports = implode(" ", filter_core_get_port_alias($aliased['name']));
-                    $aliases .= "{$aliased['name']} = \"{ {$tmp_ports} }\"\n";
-                    break;
-                default:
-                    $aliases .= "table <{$aliased['name']}> persist\n";
-                    $aliases .= "{$aliased['name']} = \"<{$aliased['name']}>\"\n";
-                    break;
-            }
+    $aliases .= "\n# User Aliases\n";
+    foreach ((new \OPNsense\Firewall\Alias())->aliasIterator() as $aliased) {
+        switch ($aliased['type']) {
+            case "urltable_ports":
+            case "url_ports":
+                # a bit of a hack, but prevents the ruleset from not being able to load if these types are in
+                # the configuration.
+                $aliases .= "{$aliased['name']} = \"{ 0 <> 65535 }\"\n";
+                file_notice('filter_load', sprintf(gettext('URL port aliases types not supported [%s]'), $aliased['name']), 'Filter Reload', '');
+                break;
+            case "port":
+                $tmp_ports = implode(" ", filter_core_get_port_alias($aliased['name']));
+                $aliases .= "{$aliased['name']} = \"{ {$tmp_ports} }\"\n";
+                break;
+            default:
+                $aliases .= "table <{$aliased['name']}> persist\n";
+                $aliases .= "{$aliased['name']} = \"<{$aliased['name']}>\"\n";
+                break;
         }
     }
 
@@ -801,15 +792,22 @@ function filter_tdr_month($schedule)
 
 function filter_setup_logging_interfaces(&$FilterIflist)
 {
-    global $config;
-
     $rules = '';
+
     if (isset($FilterIflist['lan'])) {
         $rules .= "set loginterface {$FilterIflist['lan']['if']}\n";
     } elseif (isset($FilterIflist['wan'])) {
         $rules .= "set loginterface {$FilterIflist['wan']['if']}\n";
     }
+
     return $rules;
+}
+
+function default_table_entries_size()
+{
+    $current = `pfctl -sm | grep table-entries | awk '{print $4};'`;
+
+    return $current;
 }
 
 function default_state_size()

@@ -71,23 +71,16 @@ function legacy_html_escape_form_data(&$settings)
  */
 function legacy_list_aliases($type)
 {
-    global $config;
     $result = array();
-    if (isset($config['aliases']['alias'])) {
-        foreach ($config['aliases']['alias'] as $alias) {
-            if (!empty($alias['address']) || !empty($alias['url']) || !empty($alias['aliasurl'])) {
-                if ($type == "port") {
-                    if (preg_match("/port/i", $alias['type'])) {
-                        $result[] = $alias;
-                    }
-                } else {
-                    if (!preg_match("/port/i", $alias['type'])){
-                        $result[] = $alias;
-                    }
-                }
-            }
+
+    foreach ((new \OPNsense\Firewall\Alias())->aliasIterator() as $alias) {
+        if ($type == "port" && preg_match("/port/i", $alias['type'])) {
+            $result[] = array('name' => $alias['name'], 'type' => $alias['type']);
+        } elseif ($type != "port" && !preg_match("/port/i", $alias['type'])) {
+            $result[] = array('name' => $alias['name'], 'type' => $alias['type']);
         }
     }
+
     return $result;
 }
 
@@ -147,12 +140,18 @@ function legacy_move_config_list_items($source, $id, $items) {
  */
 function get_alias_description($name)
 {
-    global $config;
-
-    if (isset($config['aliases']['alias'])) {
-        foreach ($config['aliases']['alias'] as $alias) {
-            if ($alias['name'] == $name) {
-                return (isset($alias['descr'])) ? $alias['descr'] : "";
+    $aliasMdl = new \OPNsense\Firewall\Alias();
+    // MVC defined aliases
+    foreach ((new \OPNsense\Firewall\Alias())->aliasIterator()  as $alias) {
+        if ($alias['name'] == $name) {
+            if (!empty($alias['descr'])) {
+                return $alias['descr'];
+            } elseif (!empty($alias['description'])) {
+                return $alias['description'];
+            } elseif (!empty($alias['content'])) {
+                $tmp = array_slice(explode("\n", $alias['content']), 0, 10);
+                asort($tmp);
+                return implode("<br/>", $tmp);
             }
         }
     }

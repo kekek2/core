@@ -91,7 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $config['system']['dnsserver'][] = $v4_server[0];
                 $config['system']['dnsserver'][] = $v4_server[1];
             }
-            $config['system']['dnsallowoverride'] = false;
+            if (isset($config['system']['dnsallowoverride'])) {
+                unset($config['system']['dnsallowoverride']);
+            }
         } else {
             $config['system']['dnsserver'] = array();
             $config['system']['dnsserver'][] = '';
@@ -198,8 +200,8 @@ include 'head.inc';
                       }
 
                       echo sprintf(
-                        '<span class="glyphicon glyphicon-%s"></span> %s<br />',
-                        strpos($result, 'good') === 0 ? 'ok text-success' : 'remove text-danger',
+                        '<i class="fa fa-%s"></i> %s<br />',
+                        strpos($result, 'good') === 0 ? 'check text-success' : 'times text-danger',
                         $result
                       );
                     }?>

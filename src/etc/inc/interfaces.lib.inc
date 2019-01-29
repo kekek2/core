@@ -1,30 +1,30 @@
 <?php
 
 /*
-    Copyright (c) 2015-2017 Franco Fichtner <franco@opnsense.org>
-    All rights reserved.
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are met:
-
-    1. Redistributions of source code must retain the above copyright notice,
-       this list of conditions and the following disclaimer.
-
-    2. Redistributions in binary form must reproduce the above copyright
-       notice, this list of conditions and the following disclaimer in the
-       documentation and/or other materials provided with the distribution.
-
-    THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
-    INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-    AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-    AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-    OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-    POSSIBILITY OF SUCH DAMAGE.
-*/
+ * Copyright (c) 2015-2017 Franco Fichtner <franco@opnsense.org>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
 function legacy_interface_listget($flag = '')
 {
@@ -216,7 +216,10 @@ function legacy_interfaces_details($intf = null)
     $cmd = '/sbin/ifconfig -m ' . $tmp_intf;
     exec($cmd . ' 2>&1', $ifconfig_data, $ret);
     if ($ret) {
-        log_error('The command `' . $cmd . '\' failed to execute ' . implode(' ', $ifconfig_data));
+        /* only error if no explicit interface was choosen */
+        if (empty($intf)) {
+            log_error('The command `' . $cmd . '\' failed to execute ' . implode(' ', $ifconfig_data));
+        }
         return $result;
     }
 
@@ -257,7 +260,7 @@ function legacy_interfaces_details($intf = null)
             unset($mask);
             for ($i = 0; $i < count($line_parts) - 1; ++$i) {
                 if ($line_parts[$i] == 'netmask') {
-                    $mask = substr_count(base_convert(hexdec($line_parts[($i + 1)]), 10, 2), '1');
+                    $mask = substr_count(base_convert(hexdec($line_parts[$i + 1]), 10, 2), '1');
                 }
             }
             if (isset($mask)) {
@@ -266,21 +269,31 @@ function legacy_interfaces_details($intf = null)
         } elseif (strpos($line, "\tinet6 ") !== false) {
             // IPv6 information
             $addr = strtok($line_parts[1], '%');
+            $is_tunnel = false;
             unset($mask);
             for ($i = 0; $i < count($line_parts) - 1; ++$i) {
-              if ($line_parts[$i] == 'prefixlen') {
-                  $mask = intval($line_parts[$i + 1]);
-              }
+                if ($line_parts[$i] == 'prefixlen') {
+                    $mask = intval($line_parts[$i + 1]);
+                }
+                if ($line_parts[$i] == '-->') {
+                    $is_tunnel = true;
+                }
             }
             if (isset($mask)) {
                 $is_link_local = strpos($addr, 'fe80:') === 0;
                 $result[$current_interface]["ipv6"][] = array('ipaddr' => $addr, 'subnetbits' => $mask,
-                                                              'link-local' => $is_link_local);
+                                                              'link-local' => $is_link_local, 'tunnel' => $is_tunnel);
                 // sort link local to bottom, leave rest of sorting as-is (primary address on top)
                 usort($result[$current_interface]["ipv6"], function($a, $b) {
                     return $a['link-local'] - $b['link-local'];
                 });
             }
+        } elseif (strpos($line, "\ttunnel ") !== false) {
+            // extract tunnel proto, source and destination
+            $result[$current_interface]["tunnel"] = array();
+            $result[$current_interface]["tunnel"]["proto"] = $line_parts[1];
+            $result[$current_interface]["tunnel"]["src_addr"] = $line_parts[2];
+            $result[$current_interface]["tunnel"]["dest_addr"] = $line_parts[4];
         } elseif (preg_match("/media: (.*)/", $line, $matches)) {
             // media, when link is between parenthesis grep only the link part
             $result[$current_interface]['media'] = $matches[1];
@@ -300,6 +313,9 @@ function legacy_interfaces_details($intf = null)
                 $result[$current_interface]['laggport'] = array();
             }
             $result[$current_interface]['laggport'][] = explode(' ', trim($matches[1]))[0];
+        } elseif (strpos($line, "\tgroups: ") !== false) {
+            array_shift($line_parts);
+            $result[$current_interface]['groups'] = $line_parts;
         }
     }
 
@@ -313,7 +329,14 @@ function legacy_interfaces_details($intf = null)
  */
 function legacy_interface_details($intf)
 {
-    return legacy_interfaces_details($intf)[$intf];
+    $result = array();
+
+    $details = legacy_interfaces_details($intf);
+    if (isset($details[$intf])) {
+        $result = $details[$intf];
+    }
+
+    return $result;
 }
 
 /**
@@ -360,7 +383,6 @@ function configure_interface_hardware($ifs)
     }
 }
 
-
 function legacy_getall_interface_addresses($ifs)
 {
     $result = array();
@@ -370,6 +392,9 @@ function legacy_getall_interface_addresses($ifs)
             continue;
         }
         foreach ($intf_details[$proto] as $address) {
+            if (!empty($address['tunnel'])) {
+                continue;
+            }
             if (!empty($address['ipaddr']) && !empty($address['subnetbits'])) {
                 $result[] = $address['ipaddr'] . '/' . $address['subnetbits'];
             }
@@ -391,7 +416,7 @@ function legacy_get_interface_addresses($ifs)
             if (empty($addrs['ipaddr6']) && empty($ipv6['link-local'])) {
                 $addrs['ipaddr6'] = $ipv6['ipaddr'];
                 $addrs['subnetbits6'] = $ipv6['subnetbits'];
-            } elseif (empty($addrs['lladdr6']) && !empty($ipv6['link-local'])) {
+            } elseif (empty($addrs['ipaddr6_ll']) && !empty($ipv6['link-local'])) {
                 $addrs['ipaddr6_ll'] = $ipv6['ipaddr'];
                 $addrs['subnetbits6_ll'] = $ipv6['subnetbits'];
             }

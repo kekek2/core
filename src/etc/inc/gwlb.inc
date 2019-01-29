@@ -1,152 +1,79 @@
 <?php
 
 /*
-    Copyright (C) 2016-2018 Franco Fichtner <franco@opnsense.org>
-    Copyright (C) 2008 Bill Marquette <bill.marquette@gmail.com>
-    Copyright (C) 2008 Seth Mos <seth.mos@dds.nl>
-    Copyright (C) 2010 Ermal Luçi
-    All rights reserved.
+ * Copyright (C) 2018 Martin Wasley <martin@team-rebellion.net>
+ * Copyright (C) 2016-2018 Franco Fichtner <franco@opnsense.org>
+ * Copyright (C) 2008 Bill Marquette <bill.marquette@gmail.com>
+ * Copyright (C) 2008 Seth Mos <seth.mos@dds.nl>
+ * Copyright (C) 2010 Ermal Luçi
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are met:
-
-    1. Redistributions of source code must retain the above copyright notice,
-    this list of conditions and the following disclaimer.
-
-    2. Redistributions in binary form must reproduce the above copyright
-    notice, this list of conditions and the following disclaimer in the
-    documentation and/or other materials provided with the distribution.
-
-    THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
-    INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-    AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-    AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-    OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-    POSSIBILITY OF SUCH DAMAGE.
-*/
-
-function return_apinger_defaults()
+function return_dpinger_defaults()
 {
     return array(
-      "latencylow" => "200",
-      "latencyhigh" => "500",
-      "losslow" => "10",
-      "losshigh" => "20",
-      "interval" => "1",
-      "down" => "10",
-      "avg_delay_samples" => "10",
-      "avg_loss_samples" => "50",
-      "avg_loss_delay_samples" => "20"
+        'alert_interval' => '1',	/* XXX not implemented in GUI */
+        'data_payload' => '0',		/* XXX not implemented in GUI */
+        'interval' => '1',
+        'latencyhigh' => '500',
+        'latencylow' => '200',
+        'loss_interval' => '2',		/* XXX not implemented in GUI */
+        'losshigh' => '20',
+        'losslow' => '10',
+        'time_period' => '60',		/* XXX not implemented in GUI */
     );
 }
 
-function setup_gateways_monitor($verbose = false)
+function setup_gateways_monitor($verbose = false, $gwname = null)
 {
-    global $config;
-
     if ($verbose) {
         echo 'Setting up gateway monitors...';
         flush();
     }
 
-    killbypid('/var/run/apinger.pid', 'TERM', true);
-    @unlink('/var/run/apinger.status');
+    $running_processes = running_dpinger_processes();
+    foreach ($running_processes as $running_gwname => $process) {
+        if (!empty($gwname) && $running_gwname != $gwname) {
+            continue;
+        }
+        killbypid($process['pidfile'], 'TERM', true);
+        @unlink($process['pidfile']);
+        @unlink($process['socket']);
+    }
 
     @mkdir('/var/db/rrd', 0775);
     @chown('/var/db/rrd', 'nobody');
 
     $gateways_arr_all = return_gateways_array(true);
-
-    $apinger_default = return_apinger_defaults();
-    $apingerconfig = <<<EOD
-
-# OPNsense apinger configuration file. Automatically Generated!
-
-## User and group the pinger should run as
-user "root"
-group "wheel"
-
-## Mailer to use (default: "/usr/lib/sendmail -t")
-#mailer "/var/qmail/bin/qmail-inject"
-
-## Location of the pid-file (default: "/var/run/apinger.pid")
-pid_file "/var/run/apinger.pid"
-
-## Format of timestamp (%s macro) (default: "%b %d %H:%M:%S")
-#timestamp_format "%Y%m%d%H%M%S"
-
-status {
-  ## File where the status information should be written to
-  file "/var/run/apinger.status"
-  ## Interval between file updates
-  ## when 0 or not set, file is written only when SIGUSR1 is received
-  interval 5s
-}
-
-########################################
-# RRDTool status gathering configuration
-# Interval between RRD updates
-rrd interval 60s;
-
-## These parameters can be overridden in a specific alarm configuration
-alarm default {
-  command on "/usr/local/opnsense/service/configd_ctl.py -m 'filter reload' 'openvpn reload %T' 'dyndns reload %T' 'rfc2136 reload %T'"
-  command off "/usr/local/opnsense/service/configd_ctl.py -m 'filter reload' 'openvpn reload %T' 'dyndns reload %T' 'rfc2136 reload %T'"
-  combine 10s
-}
-
-## "Down" alarm definition.
-## This alarm will be fired when target doesn't respond for 30 seconds.
-alarm down "down" {
-  time {$apinger_default['down']}s
-}
-
-## "Delay" alarm definition.
-## This alarm will be fired when responses are delayed more than 200ms
-## it will be canceled, when the delay drops below 100ms
-alarm delay "delay" {
-  delay_low {$apinger_default['latencylow']}ms
-  delay_high {$apinger_default['latencyhigh']}ms
-}
-
-## "Loss" alarm definition.
-## This alarm will be fired when packet loss goes over 20%
-## it will be canceled, when the loss drops below 10%
-alarm loss "loss" {
-  percent_low {$apinger_default['losslow']}
-  percent_high {$apinger_default['losshigh']}
-}
-
-target default {
-  ## How often the probe should be sent
-  interval {$apinger_default['interval']}s
-
-  ## How many replies should be used to compute average delay
-  ## for controlling "delay" alarms
-  avg_delay_samples {$apinger_default['avg_delay_samples']}
-
-  ## How many probes should be used to compute average loss
-  avg_loss_samples {$apinger_default['avg_loss_samples']}
-
-  ## The delay (in samples) after which loss is computed
-  ## without this delays larger than interval would be treated as loss
-  avg_loss_delay_samples {$apinger_default['avg_loss_delay_samples']}
-
-  ## Names of the alarms that may be generated for the target
-  alarms "down","delay","loss"
-
-  ## Location of the RRD
-  #rrd file "/var/db/rrd/apinger-%t.rrd"
-}
-
-EOD;
-
     $monitor_ips = array();
-    foreach($gateways_arr_all as $name => $gateway) {
+
+    $dpinger_default = return_dpinger_defaults();
+    foreach ($gateways_arr_all as $name => $gateway) {
+        if (!empty($gwname) && $gwname != $name) {
+            continue;
+        }
+
         if (empty($gateway['monitor']) || !is_ipaddr($gateway['monitor'])) {
             if (is_ipaddr($gateway['gateway'])) {
                 $gateway['monitor'] = $gateway['gateway'];
@@ -162,12 +89,13 @@ EOD;
         }
 
         /*
-         * Interface IP is needed since apinger will bind a socket to it.
+         * Interface IP is needed since dpinger will bind a socket to it.
          * However the config GUI should already have checked this and when
-         * PPoE is used the IP address is set to "dynamic". So using is_ipaddrv4
-         * or is_ipaddrv6 to identify packet type would be wrong, especially as
-         * further checks (that can cope with the "dynamic" case) are present inside
-         * the if block. So using $gateway['ipprotocol'] is the better option.
+         * PPPoE is used the IP address is set to "dynamic". So using
+         * is_ipaddrv4 * or is_ipaddrv6 to identify packet type would be
+         * wrong, especially as further checks (that can cope with the
+         * "dynamic" case) are present inside the if block. So using
+         * $gateway['ipprotocol'] is the better option.
          */
         if ($gateway['ipprotocol'] == "inet") { // This is an IPv4 gateway...
             $gwifip = find_interface_ip($gateway['interface']);
@@ -250,136 +178,80 @@ EOD;
         }
 
         $monitor_ips[] = $gateway['monitor'];
-        $apingercfg = "target \"{$gateway['monitor']}\" {\n";
-        $apingercfg .= "  description \"{$name}\"\n";
-        $apingercfg .= "  srcip \"{$gwifip}\"\n";
 
-        ## How often the probe should be sent
-        if (!empty($gateway['interval']) &&  is_numeric($gateway['interval'])) {
-            $interval = intval($gateway['interval']);  # Restrict to Integer
-            if ($interval <  1) {
-                $interval =  1;  # Minimum
-            }
-            if ($interval != $apinger_default['interval'])  {
-                $apingercfg .= "  interval " . $interval . "s\n"; # If not default value
-            }
-        }
-
-        ## How many replies should be used to compute average delay
-        ## for controlling "delay" alarms
-        if (!empty($gateway['avg_delay_samples']) && is_numeric($gateway['avg_delay_samples'])) {
-            $avg_delay_samples = intval($gateway['avg_delay_samples']);  # Restrict to Integer
-            if ($avg_delay_samples <  1) {
-                $avg_delay_samples =  1;  # Minimum
-            }
-            if ($avg_delay_samples != $apinger_default['avg_delay_samples']) {
-                # If not default value
-                $apingercfg .= "  avg_delay_samples " . $avg_delay_samples . "\n";
-            }
-        }
-
-        ## How many probes should be used to compute average loss
-        if (!empty($gateway['avg_loss_samples']) && is_numeric($gateway['avg_loss_samples'])) {
-            $avg_loss_samples = intval($gateway['avg_loss_samples']);  # Restrict to Integer
-            if ($avg_loss_samples < 1) {
-                $avg_loss_samples = 1;  # Minimum
-            }
-            if ($avg_loss_samples != $apinger_default['avg_loss_samples']) {
-                # If not default value
-                $apingercfg .= "  avg_loss_samples " . $avg_loss_samples . "\n";
-            }
-        }
-
-        ## The delay (in samples) after which loss is computed
-        ## without this delays larger than interval would be treated as loss
-        if (!empty($gateway['avg_loss_delay_samples']) && is_numeric($gateway['avg_loss_delay_samples'])) {
-            $avg_loss_delay_samples = intval($gateway['avg_loss_delay_samples']);  # Restrict to Integer
-            if ($avg_loss_delay_samples < 1) {
-                $avg_loss_delay_samples = 1;  # Minimum
-            }
-            if ($avg_loss_delay_samples != $apinger_default['avg_loss_delay_samples']) {
-                # If not default value
-                $apingercfg .= "  avg_loss_delay_samples " . $avg_loss_delay_samples . "\n";
-            }
-        }
-
-        $alarms = "";
-        $alarmscfg = "";
-        $override = false;
-        if (!empty($gateway['losslow'])) {
-            $alarmscfg .= "alarm loss \"{$name}loss\" {\n";
-            $alarmscfg .= "\tpercent_low {$gateway['losslow']}\n";
-            $alarmscfg .= "\tpercent_high {$gateway['losshigh']}\n";
-            $alarmscfg .= "}\n";
-            $alarms .= "\"{$name}loss\"";
-            $override = true;
-        } else {
-            if ($override == true) {
-                $alarms .= ",";
-            }
-            $alarms .= "\"loss\"";
-            $override = true;
-        }
-        if (!empty($gateway['latencylow'])) {
-            $alarmscfg .= "alarm delay \"{$name}delay\" {\n";
-            $alarmscfg .= "\tdelay_low {$gateway['latencylow']}ms\n";
-            $alarmscfg .= "\tdelay_high {$gateway['latencyhigh']}ms\n";
-            $alarmscfg .= "}\n";
-            if ($override == true) {
-                $alarms .= ",";
-            }
-            $alarms .= "\"{$name}delay\"";
-            $override = true;
-        } else {
-            if ($override == true) {
-                $alarms .= ",";
-            }
-            $alarms .= "\"delay\"";
-            $override = true;
-        }
-        if (!empty($gateway['down'])) {
-            $alarmscfg .= "alarm down \"{$name}down\" {\n";
-            $alarmscfg .= "\ttime {$gateway['down']}s\n";
-            $alarmscfg .= "}\n";
-            if ($override == true) {
-                $alarms .= ",";
-            }
-            $alarms .= "\"{$name}down\"";
-            $override = true;
-        } else {
-            if ($override == true) {
-                $alarms .= ",";
-            }
-            $alarms .= "\"down\"";
-            $override = true;
-        }
-        if ($override == true) {
-            $apingercfg .= "\talarms override {$alarms};\n";
-        }
-
-        if (isset($gateway['force_down'])) {
-            $apingercfg .= "\tforce_down on\n";
-        }
-
-        $apingercfg .= "  rrd file \"/var/db/rrd/{$gateway['name']}-quality.rrd\"\n";
-        $apingercfg .= "}\n";
-        $apingercfg .= "\n";
-
-        $apingerconfig .= $alarmscfg;
-        $apingerconfig .= $apingercfg;
-
-        # Create gateway quality RRD with settings more suitable for OPNsense graph set,
-        # since apinger uses default step (300; 5 minutes) and other settings that don't
-        # match the OPNsense gateway quality graph set.
+        /*
+         * Create custom RRD graph with suitable settings that
+         * may differ from the daemon's standards.
+         */
         rrd_create_gateway_quality("/var/db/rrd/{$gateway['name']}-quality.rrd");
-    }
 
-    $gateways_arr = return_gateways_array();
-    if (!is_array($gateways_arr)) {
-        log_error("No gateways to monitor. Apinger will not be run.");
-    } else {
-        file_put_contents('/var/etc/apinger.conf', $apingerconfig);
-        mwexec_bg('/usr/local/sbin/apinger -c /var/etc/apinger.conf');
+        /* log warnings via syslog */
+        $params  = '-S ';
+
+        /* disable unused reporting thread */
+        $params .= '-r 0 ';
+
+        /* identifier */
+        $params .= exec_safe('-i %s ', $name);
+
+        /* bind src address */
+        $params .= exec_safe('-B %s ', $gwifip);
+
+        /* PID filename */
+        $params .= exec_safe('-p %s ', "/var/run/dpinger_{$name}.pid");
+
+        /* status socket */
+        $params .= exec_safe('-u %s ', "/var/run/dpinger_{$name}.sock");
+
+        /* command to run on alarm */
+        $params .= '-C /usr/local/etc/rc.monitor ';
+
+        $params .= exec_safe(
+            '-d %s ',
+            isset($gateway['data_payload']) && is_numeric($gateway['data_payload']) ?
+                $gateway['data_payload'] : $dpinger_default['data_payload']
+        );
+
+        $params .= exec_safe(
+            '-s %ss ',
+            isset($gateway['interval']) && is_numeric($gateway['interval']) ?
+                $gateway['interval'] : $dpinger_default['interval']
+        );
+
+        $params .= exec_safe(
+            '-l %ss ',
+            isset($gateway['loss_interval']) && is_numeric($gateway['loss_interval']) ?
+                $gateway['loss_interval'] : $dpinger_default['loss_interval']
+        );
+
+        $params .= exec_safe(
+            '-t %ss ',
+            isset($gateway['time_period']) && is_numeric($gateway['time_period']) ?
+                $gateway['time_period'] : $dpinger_default['time_period']
+        );
+
+        $params .= exec_safe(
+            '-A %ss ',
+            isset($gateway['alert_interval']) && is_numeric($gateway['alert_interval']) ?
+                $gateway['alert_interval'] : $dpinger_default['alert_interval']
+        );
+
+        $params .= exec_safe(
+            '-D %s ',
+            isset($gateway['latencyhigh']) && is_numeric($gateway['latencyhigh']) ?
+                $gateway['latencyhigh'] : $dpinger_default['latencyhigh']
+        );
+
+        $params .= exec_safe(
+            '-L %s ',
+            isset($gateway['losshigh']) && is_numeric($gateway['losshigh']) ?
+                $gateway['losshigh'] : $dpinger_default['losshigh']
+        );
+
+        $params .= exec_safe('%s ', $gateway['monitor']);
+
+        /* daemonises forground mode because background mode does not work? */
+        mwexec_bg("/usr/local/bin/dpinger -f {$params}");
     }
 
     if ($verbose) {
@@ -387,44 +259,40 @@ EOD;
     }
 }
 
-/* return the status of the apinger targets as a array */
 function return_gateways_status($byname = false)
 {
-    global $config;
-
     $status = array();
 
-    if (isvalidpid('/var/run/apinger.pid')) {
-        /* always get the latest status from apinger */
-        killbypid('/var/run/apinger.pid', 'USR1');
+    $dpinger_gws = running_dpinger_processes();
+    $status = array();
 
-        /* we may read the wrong file here as it's async: */
-        if (file_exists('/var/run/apinger.status')) {
-            $apingerstatus = file('/var/run/apinger.status');
-
-            foreach ($apingerstatus as $line) {
-                $info = explode('|', $line);
-                if ($byname == false) {
-                    $target = $info[0];
-                } else {
-                    $target = $info[2];
-                }
-
-                $status[$target] = array();
-                $status[$target]['monitorip'] = $info[0];
-                $status[$target]['srcip'] = $info[1];
-                $status[$target]['name'] = $info[2];
-                $status[$target]['delay'] = sprintf('%0.1f ms', empty($info[6]) ? 0.0 : round($info[6], 1));
-                $status[$target]['loss'] = sprintf('%0.1f %%', empty($info[7]) ? 0.0 : round($info[7], 1));
-                $status[$target]['status'] = trim($info[8]);
-            }
+    $gateways_arr = return_gateways_array();
+    foreach ($dpinger_gws as $gwname => $gwdata) {
+        $dpinger_status = get_dpinger_status($gwname);
+        if ($dpinger_status === false) {
+            continue;
         }
+
+        if ($byname == false) {
+            $target = $dpinger_status['monitorip'];
+        } else {
+            $target = $gwname;
+        }
+
+        $status[$target] = array();
+        $status[$target]['monitorip'] = $dpinger_status['monitorip'];
+        $status[$target]['srcip'] = $dpinger_status['srcip'];
+        $status[$target]['name'] = $gwname;
+        $status[$target]['delay'] = sprintf('%0.1f ms', empty($dpinger_status['latency_avg']) ? 0.0 : round($dpinger_status['latency_avg'], 1));
+        $status[$target]['stddev'] = sprintf('%0.1f ms', empty($dpinger_status['latency_stddev']) ? 0.0 : round($dpinger_status['latency_stddev'], 1));
+        $status[$target]['loss'] = sprintf('%0.1f %%', empty($dpinger_status['loss']) ? 0.0 : round($dpinger_status['loss'], 1));
+        $status[$target]['status'] = $dpinger_status['status'];
     }
 
     /* tack on any gateways that have monitoring disabled
      * or are down, which could cause gateway groups to fail */
     $gateways_arr = return_gateways_array();
-    foreach($gateways_arr as $gwitem) {
+    foreach ($gateways_arr as $gwitem) {
         if (!isset($gwitem['monitor_disable'])) {
             continue;
         }
@@ -450,6 +318,7 @@ function return_gateways_status($byname = false)
             $target = $gwitem['name'];
             $status[$target]['name'] = $gwitem['name'];
             $status[$target]['delay'] = '0.0 ms';
+            $status[$target]['stddev'] = '0.0 ms';
             $status[$target]['loss'] = '100.0 %';
             $status[$target]['status'] = 'down';
         } else {
@@ -457,6 +326,7 @@ function return_gateways_status($byname = false)
             $status[$target]['srcip'] = $srcip;
             $status[$target]['name'] = $gwitem['name'];
             $status[$target]['delay'] = '0.0 ms';
+            $status[$target]['stddev'] = '0.0 ms';
             $status[$target]['loss'] = '0.0 %';
             $status[$target]['status'] = 'none';
         }
@@ -476,6 +346,7 @@ function return_gateways_array($disabled = false, $localhost = false, $inactive 
     $found_defaultv6 = 0;
 
     $iflist = get_configured_interface_with_descr();
+    $ifdetails = legacy_interfaces_details();
 
     /* Process/add dynamic v4 gateways. */
     foreach ($iflist as $ifname => $friendly) {
@@ -490,7 +361,8 @@ function return_gateways_array($disabled = false, $localhost = false, $inactive 
         }
 
         $ctype = '';
-        switch($ifcfg['ipaddr']) {
+
+        switch ($ifcfg['ipaddr']) {
             case "dhcp":
             case "pppoe":
             case "pptp":
@@ -505,6 +377,10 @@ function return_gateways_array($disabled = false, $localhost = false, $inactive 
                     }
 
                     $ctype = "VPNv4";
+                } elseif (in_array(substr($ifcfg['if'], 0, 3), array('gif', 'gre'))) {
+                    if (!empty($ifcfg['if']) && !empty($ifdetails[$ifcfg['if']]['ipv4'])) {
+                        $ctype = "TUNNELv4";
+                    }
                 }
                 break;
         }
@@ -513,15 +389,13 @@ function return_gateways_array($disabled = false, $localhost = false, $inactive 
             continue;
         }
 
-        $ctype = "_". strtoupper($ctype);
-
         $gateway = array();
         $gateway['dynamic'] = false;
-        $gateway['ipprotocol'] = "inet";
+        $gateway['ipprotocol'] = 'inet';
         $gateway['gateway'] = get_interface_gateway($ifname, $gateway['dynamic']);
         $gateway['interface'] = get_real_interface($ifname);
         $gateway['friendlyiface'] = $ifname;
-        $gateway['name'] = "{$friendly}{$ctype}";
+        $gateway['name'] = strtoupper("{$friendly}_{$ctype}");
         $gateway['attribute'] = "system";
 
         if ($gateway['dynamic'] === "default" && $found_defaultv4 == 0) {
@@ -529,7 +403,8 @@ function return_gateways_array($disabled = false, $localhost = false, $inactive 
             $gateway['dynamic'] = true;
             $found_defaultv4 = 1;
         }
-        /* Loopback dummy for dynamic interfaces without a IP */
+
+        /* loopback dummy for dynamic interfaces without an IP */
         if (!is_ipaddrv4($gateway['gateway']) && $gateway['dynamic'] == true) {
             $gateway['gateway'] = "dynamic";
         }
@@ -538,7 +413,7 @@ function return_gateways_array($disabled = false, $localhost = false, $inactive 
             $gateway['monitor'] = $gateway['gateway'];
         }
 
-        $gateway['descr'] = "Interface {$friendly}{$ctype} Gateway";
+        $gateway['descr'] = "Interface {$friendly} {$ctype} Gateway";
         $gateway['monitor_disable'] = true;
         $gateways_arr[$gateway['name']] = $gateway;
     }
@@ -565,24 +440,43 @@ function return_gateways_array($disabled = false, $localhost = false, $inactive 
         }
 
         $ctype = '';
-        switch($ifcfg['ipaddrv6']) {
-            case "slaac":
-            case "dhcp6":
-            case "6to4":
-            case "6rd":
+
+        switch ($ifcfg['ipaddrv6']) {
+            case 'slaac':
+            case 'dhcp6':
+            case '6to4':
+            case '6rd':
                 $ctype = $ifcfg['ipaddrv6'];
                 break;
             default:
-                $tunnelif = substr($ifcfg['if'], 0, 3);
-                if (substr($ifcfg['if'], 0, 4) ==  "ovpn") {
+                if (substr($ifcfg['if'], 0, 4) ==  'ovpn') {
                     // if current iface is an ovpn server endpoint then skip it
                     if (substr($ifcfg['if'], 4, 1) == 's') {
                         continue 2;
                     }
 
-                    $ctype = "VPNv6";
-                } elseif ($tunnelif == "gif" || $tunnelif == "gre") {
-                    $ctype = "TUNNELv6";
+                    $vpnid = substr($ifcfg['if'], 5);
+                    $vpnv6 = false;
+
+                    if (isset($config['openvpn']['openvpn-client'])) {
+                        foreach ($config['openvpn']['openvpn-client'] as $settings) {
+                            if ($settings['vpnid'] == $vpnid) {
+                                $vpnv6 = !isset($settings['no_tun_ipv6']);
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!$vpnv6) {
+                        continue 2;
+                    }
+
+                    $ctype = 'VPNv6';
+                } elseif (in_array(substr($ifcfg['if'], 0, 3), array('gif', 'gre'))) {
+                    if (!empty($ifcfg['if']) && !empty($ifdetails[$ifcfg['if']]['ipv6'])
+                            && $ifdetails[$ifcfg['if']]['ipv6'][0]['link-local'] != 1) {
+                        $ctype = 'TUNNELv6';
+                    }
                 }
                 break;
         }
@@ -591,21 +485,19 @@ function return_gateways_array($disabled = false, $localhost = false, $inactive 
             continue;
         }
 
-        $ctype = "_". strtoupper($ctype);
-
         $gateway = array();
         $gateway['dynamic'] = false;
-        $gateway['ipprotocol'] = "inet6";
+        $gateway['ipprotocol'] = 'inet6';
         $gateway['gateway'] = get_interface_gateway_v6($ifname, $gateway['dynamic']);
-        $gateway['interface'] = get_real_interface($ifname, "inet6");
-        switch($ifcfg['ipaddrv6']) {
+        $gateway['interface'] = get_real_interface($ifname, 'inet6');
+        switch ($ifcfg['ipaddrv6']) {
             case "6rd":
             case "6to4":
                 $gateway['dynamic'] = "default";
                 break;
         }
         $gateway['friendlyiface'] = $ifname;
-        $gateway['name'] = "{$friendly}{$ctype}";
+        $gateway['name'] = strtoupper("{$friendly}_{$ctype}");
         $gateway['attribute'] = "system";
 
         if (($gateway['dynamic'] === "default")  && ($found_defaultv6 == 0)) {
@@ -614,7 +506,7 @@ function return_gateways_array($disabled = false, $localhost = false, $inactive 
             $found_defaultv6 = 1;
         }
 
-        /* Loopback dummy for dynamic interfaces without a IP */
+        /* loopback dummy for dynamic interfaces without an IP */
         if (!is_ipaddrv6($gateway['gateway']) && $gateway['dynamic'] == true) {
             $gateway['gateway'] = "dynamic";
         }
@@ -623,7 +515,7 @@ function return_gateways_array($disabled = false, $localhost = false, $inactive 
             $gateway['monitor'] = $gateway['gateway'];
         }
 
-        $gateway['descr'] = "Interface {$friendly}{$ctype} Gateway";
+        $gateway['descr'] = "Interface {$friendly} {$ctype} Gateway";
         $gateway['monitor_disable'] = true;
         $gateways_arr[$gateway['name']] = $gateway;
     }
@@ -656,16 +548,16 @@ function return_gateways_array($disabled = false, $localhost = false, $inactive 
                     $gateway['gateway'] = get_interface_gateway($gateway['interface']);
                     /* no IP address found, set to dynamic */
                     if (!is_ipaddrv4($gateway['gateway'])) {
-                        $gateway['gateway'] = "dynamic";
+                        $gateway['gateway'] = 'dynamic';
                     }
                     $gateway['dynamic'] = true;
-                } elseif ($gateway['ipprotocol'] == "inet6") {
+                } elseif ($gateway['ipprotocol'] == 'inet6') {
                     /* if the gateway is dynamic and we can find the IPv6, Great! */
                     /* we know which interfaces is dynamic, this should be made a function, and for v6 too */
                     $gateway['gateway'] = get_interface_gateway_v6($gateway['interface']);
                     /* no IPv6 address found, set to dynamic */
                     if (!is_ipaddrv6($gateway['gateway'])) {
-                        $gateway['gateway'] = "dynamic";
+                        $gateway['gateway'] = 'dynamic';
                     }
                     $gateway['dynamic'] = true;
                 }
@@ -678,13 +570,10 @@ function return_gateways_array($disabled = false, $localhost = false, $inactive 
             }
 
             $gateway['friendlyiface'] = $gateway['interface'];
-
-            /* special treatment for tunnel interfaces */
-            if ($gateway['ipprotocol'] == "inet6") {
-                $gateway['interface'] = get_real_interface($gateway['interface'], "inet6", false);
-            } else {
-                $gateway['interface'] = get_real_interface($gateway['interface'], "all", false);
-            }
+            $gateway['interface'] = get_real_interface(
+                $gateway['interface'],
+                $gateway['ipprotocol'] != 'inet6' ? 'all' : 'inet6'
+            );
 
             /* entry has a default flag, use it */
             if (isset($gateway['defaultgw'])) {
@@ -716,8 +605,11 @@ function return_gateways_array($disabled = false, $localhost = false, $inactive 
     return $gateways_arr;
 }
 
-function fixup_default_gateway($gateways_status, $gateways_arr)
+function fixup_default_gateway()
 {
+    $gateways_status = return_gateways_status(true);
+    $gateways_arr = return_gateways_array();
+
     foreach (array("inet", "inet6") as $ipprotocol) {
         $dfltgwname = null;
         $dfltgwip = null;
@@ -732,7 +624,7 @@ function fixup_default_gateway($gateways_status, $gateways_arr)
                 /* wrong address family */
                 continue;
             }
-            if (!isset($gwsttng['monitoring_disabled']) && $gateways_status[$gwname]['status'] === 'down') {
+            if (strpos($gateways_status[$gwname]['status'], 'down') !== false) {
                 /* cannot use down gateway */
                 continue;
             }
@@ -813,7 +705,7 @@ function return_gateway_groups_array()
                     }
                     if (!empty($msg)) {
                         log_error($msg);
-                        notify_all_remote($msg);
+                        notify_via_smtp($msg);
                     } else {
                         $tiers_online++;
                         $gwup = true;
@@ -832,7 +724,7 @@ function return_gateway_groups_array()
                 /* Oh dear, we have no members!*/
                 $msg = sprintf(gettext('Gateways status could not be determined, considering all as up/active. (Group: %s)'), $group['name']);
                 log_error($msg);
-                notify_via_growl($msg);
+                notify_via_smtp($msg);
             }
 
             /* sort the tiers array by the tier key */
@@ -916,68 +808,74 @@ function get_interface_gateway($interface, &$dynamic = false)
 {
     global $config;
 
-    $gw = NULL;
+    $gw = null;
 
-    if (isset($config['interfaces'][$interface])) {
-        $gwcfg = $config['interfaces'][$interface];
-        if (!empty($gwcfg['gateway']) && isset($config['gateways']['gateway_item'])) {
-            foreach($config['gateways']['gateway_item'] as $gateway) {
-                if (($gateway['name'] == $gwcfg['gateway']) && (is_ipaddrv4($gateway['gateway']))) {
-                    $gw = $gateway['gateway'];
-                    break;
-                }
-            }
-        }
-
-        // for dynamic interfaces we handle them through the $interface_router file.
-        if (!is_ipaddrv4($gw) && !is_ipaddrv4($gwcfg['ipaddr'])) {
-            $realif = get_real_interface($interface);
-            if (file_exists("/tmp/{$realif}_router")) {
-                $gw = trim(file_get_contents("/tmp/{$realif}_router"), " \n");
-                $dynamic = true;
-            }
-            if (file_exists("/tmp/{$realif}_defaultgw")) {
-                $dynamic = "default";
-            }
-        }
+    if (!isset($config['interfaces'][$interface])) {
+        return $gw;
     }
 
-    /* return gateway */
-    return ($gw);
-}
-
-function get_interface_gateway_v6($interface, &$dynamic = false)
-{
-    global $config;
-
-    $gw = NULL;
     $gwcfg = $config['interfaces'][$interface];
-    if (!empty($gwcfg['gatewayv6']) && isset($config['gateways']['gateway_item'])) {
-        foreach($config['gateways']['gateway_item'] as $gateway) {
-            if (($gateway['name'] == $gwcfg['gatewayv6']) && (is_ipaddrv6($gateway['gateway']))) {
+    if (!empty($gwcfg['gateway']) && isset($config['gateways']['gateway_item'])) {
+        foreach ($config['gateways']['gateway_item'] as $gateway) {
+            if (($gateway['name'] == $gwcfg['gateway']) && (is_ipaddrv4($gateway['gateway']))) {
                 $gw = $gateway['gateway'];
                 break;
             }
         }
     }
 
-    // for dynamic interfaces we handle them through the $interface_router file.
-    if (!is_ipaddrv6($gw) && ( !isset($gwcfg['ipaddrv6']) || !is_ipaddrv6($gwcfg['ipaddrv6']))) {
-          $realif = get_real_interface($interface);
+    if (!is_ipaddrv4($gw) && !is_ipaddrv4($gwcfg['ipaddr'])) {
+        $realif = get_real_interface($interface);
+        if (file_exists("/tmp/{$realif}_router")) {
+            $gw = trim(file_get_contents("/tmp/{$realif}_router"), " \n");
+            $dynamic = true;
+        }
+        if (file_exists("/tmp/{$realif}_defaultgw")) {
+            $dynamic = 'default';
+        }
+    }
+
+    return $gw;
+}
+
+function get_interface_gateway_v6($interface, &$dynamic = false)
+{
+    global $config;
+
+    $gw = null;
+
+    if (!isset($config['interfaces'][$interface])) {
+        return $gw;
+    }
+
+    $gwcfg = $config['interfaces'][$interface];
+    if (!empty($gwcfg['gatewayv6']) && isset($config['gateways']['gateway_item'])) {
+        foreach ($config['gateways']['gateway_item'] as $gateway) {
+            if ($gateway['name'] == $gwcfg['gatewayv6'] && is_ipaddrv6($gateway['gateway'])) {
+                $gw = $gateway['gateway'];
+                break;
+            }
+        }
+    }
+
+    if (!is_ipaddrv6($gw) && (!isset($gwcfg['ipaddrv6']) || !is_ipaddrv6($gwcfg['ipaddrv6']))) {
+          $realif = get_real_interface($interface, 'inet6');
           if (file_exists("/tmp/{$realif}_routerv6")) {
               $gw = trim(file_get_contents("/tmp/{$realif}_routerv6"), " \n");
               $dynamic = true;
           }
           if (file_exists("/tmp/{$realif}_defaultgwv6")) {
-              $dynamic = "default";
+              $dynamic = 'default';
           }
     }
-    /* return gateway */
-    return ($gw);
+
+    return $gw;
 }
 
-/* Check a IP address against a gateway IP or name
- * to verify it's address family */
+/*
+ * Check an IP address against a gateway IP
+ * or name to verify its address family
+ */
 function validate_address_family($ipaddr, $gwname)
 {
     $v4ip = false;
@@ -1015,7 +913,7 @@ function validate_address_family($ipaddr, $gwname)
 
     $gw_array = return_gateways_array();
     if (is_array($gw_array[$gwname])) {
-        switch($gw_array[$gwname]['ipprotocol']) {
+        switch ($gw_array[$gwname]['ipprotocol']) {
             case "inet":
                 $v4gw = true;
                 break;
@@ -1033,4 +931,103 @@ function validate_address_family($ipaddr, $gwname)
     }
 
     return false;
+}
+
+function running_dpinger_processes()
+{
+    $result = array();
+
+    $pidfiles = glob('/var/run/dpinger_*.pid');
+    if ($pidfiles === false) {
+        return $result;
+    }
+
+    foreach ($pidfiles as $pidfile) {
+        if (!isvalidpid($pidfile)) {
+            /* spare caller from trying to read a stale socket later on */
+            continue;
+        }
+        if (preg_match('/^dpinger_(.+)\.pid$/', basename($pidfile), $matches)) {
+            $socket_file = preg_replace('/\.pid$/', '.sock', $pidfile);
+            $result[$matches[1]] = array('socket' => $socket_file, 'pidfile' => $pidfile);
+        }
+    }
+
+    return $result;
+}
+
+function get_dpinger_status($gwname)
+{
+    $running_processes = running_dpinger_processes();
+
+    if (!isset($running_processes[$gwname])) {
+        return false;
+    }
+
+    $proc = $running_processes[$gwname];
+
+    $fp = @stream_socket_client("unix://{$proc['socket']}", $errno, $errstr, 3);
+    if (!$fp) {
+        return false;
+    }
+
+    $status = '';
+    while (!feof($fp)) {
+        $status .= fgets($fp, 1024);
+    }
+
+    fclose($fp);
+
+    $r = array();
+
+    list($r['gwname'], $r['latency_avg'], $r['latency_stddev'], $r['loss']) =
+        explode(' ', preg_replace('/\n/', '', $status));
+
+    /* not yet ready, act like nothing was returned */
+    if ($r['latency_stddev'] == '0' && $r['loss'] == '0') {
+        return false;
+    }
+
+    $r['latency_stddev'] = round($r['latency_stddev'] / 1000, 1);
+    $r['latency_avg'] = round($r['latency_avg'] / 1000, 1);
+    $r['status'] = 'none';
+
+    /* XXX tried to read info via file name, this is not good by any standard */
+    $r['monitorip'] = 'NOT_NEEDED';
+    $r['srcip'] = 'BUT_WHY';
+
+    $gateways_arr = return_gateways_array();
+    if (!isset($gateways_arr[$gwname])) {
+        return $r;
+    }
+
+    $gw = $gateways_arr[$gwname];
+
+    if (isset($gw['force_down'])) {
+        $r['status'] = 'force_down';
+        return $r;
+    }
+
+    $settings = return_dpinger_defaults();
+
+    $keys = array('latencylow', 'latencyhigh', 'losslow', 'losshigh');
+
+    /* Replace default values by user-defined */
+    foreach ($keys as $key) {
+        if (isset($gw[$key]) && is_numeric($gw[$key])) {
+            $settings[$key] = $gw[$key];
+        }
+    }
+
+    if ($r['latency_avg'] > $settings['latencyhigh']) {
+        $r['status'] = 'down';
+    } elseif ($r['loss'] > $settings['losshigh']) {
+        $r['status'] = 'down';
+    } elseif ($r['latency_avg'] > $settings['latencylow']) {
+        $r['status'] = 'delay';
+    } elseif ($r['loss'] > $settings['losslow']) {
+        $r['status'] = 'loss';
+    }
+
+    return $r;
 }

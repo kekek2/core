@@ -1,40 +1,41 @@
 <?php
 
 /*
-    Copyright (C) 2014-2016 Deciso B.V.
-    Copyright (C) 2007 Scott Dale
-    Copyright (C) 2004-2005 T. Lechat <dev@lechat.org>
-    Copyright (C) 2004-2005 Manuel Kasper <mk@neon1.net>
-    Copyright (C) 2004-2005 Jonathan Watt <jwatt@jwatt.org>
-    All rights reserved.
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are met:
-
-    1. Redistributions of source code must retain the above copyright notice,
-       this list of conditions and the following disclaimer.
-
-    2. Redistributions in binary form must reproduce the above copyright
-       notice, this list of conditions and the following disclaimer in the
-       documentation and/or other materials provided with the distribution.
-
-    THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
-    INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-    AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-    AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-    OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-    POSSIBILITY OF SUCH DAMAGE.
-*/
+ * Copyright (C) 2014-2016 Deciso B.V.
+ * Copyright (C) 2007 Scott Dale
+ * Copyright (C) 2004-2005 T. Lechat <dev@lechat.org>
+ * Copyright (C) 2004-2005 Manuel Kasper <mk@neon1.net>
+ * Copyright (C) 2004-2005 Jonathan Watt <jwatt@jwatt.org>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
 require_once("guiconfig.inc");
 require_once("system.inc");
 
+$system_information = gettext("System Information");
 ?>
-<script src="/ui/js/moment-with-locales.min.js"></script>
+<script src="<?= cache_safe('/ui/js/moment-with-locales.min.js') ?>"></script>
 <script>
   var system_information_widget_cpu_data = []; // reference to measures
   var system_information_widget_cpu_chart = null; // reference to chart object
@@ -45,9 +46,6 @@ require_once("system.inc");
    */
   function system_information_widget_cpu_update(sender, data)
   {
-      // tooltip current percentage
-      $("#system_information_widget_chart_cpu_usage").tooltip({ title: ''});
-      $("#system_information_widget_chart_cpu_usage").attr("title", data['cpu']['used'] + ' %').tooltip('fixTitle');
       // push new measurement, keep a maximum of 100 measures in
       system_information_widget_cpu_data.push(parseInt(data['cpu']['used']));
       if (system_information_widget_cpu_data.length > 100) {
@@ -84,6 +82,8 @@ require_once("system.inc");
       $("#system_information_widget_datetime").html(data['date_frmt']);
       $("#system_information_widget_last_config_change").html(data['config']['last_change_frmt']);
       $("#system_information_widget_versions").html(data['versions'].join('<br/>'));
+      $("#system_information_widget_hardware").html(data['hardware'].join('<br/>'));
+      $("#system_information_widget_bios").html(data['bios'].join('<br/>'));
 
       var states_perc = parseInt((parseInt(data['kernel']['pf']['states']) / parseInt(data['kernel']['pf']['maxstates']))*100);
       $("#system_information_widget_states .progress-bar").css("width",  states_perc + "%").attr("aria-valuenow", states_perc + "%");
@@ -166,9 +166,17 @@ require_once("system.inc");
       <td id="system_information_widget_versions"></td>
     </tr>
     <tr>
+      <td><?=gettext("Hardware");?></td>
+      <td id="system_information_widget_hardware"></td>
+    </tr>
+    <tr>
+      <td><?=gettext("BIOS");?></td>
+      <td id="system_information_widget_bios"></td>
+    </tr>
+    <tr>
       <td><?= gettext('Updates') ?></td>
       <td>
-        <a href='/ui/core/firmware/#checkupdate'><?= gettext('Click to check for updates.') ?></a>
+        <a href='/ui/core/firmware#checkupdate'><?= gettext('Click to check for updates.') ?></a>
       </td>
     </tr>
     <tr>

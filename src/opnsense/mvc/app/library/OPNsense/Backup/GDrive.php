@@ -144,7 +144,7 @@ class Gdrive extends Base implements IBackupProvider
         if (count($input_errors) == 0) {
             $config = Config::getInstance()->object();
             if (!isset($config->system->remotebackup)) {
-                $config->system->remotebackup = array();
+                $config->system->addChild('remotebackup');
             }
             foreach ($this->getConfigurationFields() as $field) {
                 $fieldname = $field['name'];
@@ -199,9 +199,7 @@ class Gdrive extends Base implements IBackupProvider
 
                 // backup source data to local strings (plain/encrypted)
                 $confdata = file_get_contents('/conf/config.xml');
-                $confdata_enc = chunk_split(
-                    $this->encrypt($confdata, (string)$config->system->remotebackup->GDrivePassword)
-                );
+                $confdata_enc = $this->encrypt($confdata, (string)$config->system->remotebackup->GDrivePassword);
 
                 // read filelist ({prefix}*.xml)
                 try {

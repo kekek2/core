@@ -42,7 +42,7 @@ function available_interfaces($selected_id=null)
     global $config;
     // configured interfaces
     $configured_interfaces = array();
-    foreach (get_configured_interface_list(false, true) as $intf) {
+    foreach (legacy_config_get_interfaces(array('virtual' => false)) as $intf => $unused) {
         $configured_interfaces[] = get_real_interface($intf);
     }
     // lagg members from other lagg interfaces
@@ -145,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             write_config();
             $confif = convert_real_interface_to_friendly_interface_name($lagg['laggif']);
             if ($confif <> "") {
-                interface_configure($confif);
+                interface_configure(false, $confif);
             }
             header(url_safe('Location: /interfaces_lagg.php'));
             exit;

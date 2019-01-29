@@ -117,7 +117,18 @@ class AccessController extends ApiControllerBase
      */
     public function logonAction($zoneid = 0)
     {
+        $mdlCP = new CaptivePortal();
+        $cpZone = $mdlCP->getByZoneID($zoneid);
         $clientIp = $this->getClientIp();
+        $backend = new Backend();
+        $mac_list = json_decode($backend->configdpRun("captiveportal list_arptable json"), true);
+        if (isset($mac_list[$clientIp]["mac"])) {
+            $mac = $mac_list[$clientIp]["mac"];
+            if ($cpZone->denyMACAddresses != null && in_array($mac, explode(",", $cpZone->denyMACAddresses->__toString()))) {
+                $this->getLogger("captiveportal")->info("DENY " . $mac .  " (".$clientIp.") zone " . $zoneid);
+                return array("clientState" => 'NOT_AUTHORIZED', "ipAddress" => $clientIp);
+            }
+        }
         if ($this->request->isOptions()) {
             // return empty result on CORS preflight
             return array();
@@ -132,8 +143,6 @@ class AccessController extends ApiControllerBase
             $userName = $this->request->getPost("user", "striptags", null);
 
             // search zone info, to retrieve list of authenticators
-            $mdlCP = new CaptivePortal();
-            $cpZone = $mdlCP->getByZoneID($zoneid);
             if ($cpZone != null) {
                 if (trim((string)$cpZone->authservers) != "") {
                     // authenticate user
@@ -174,7 +183,6 @@ class AccessController extends ApiControllerBase
                         return $clientSession;
                     } else {
                         // allow client to this captiveportal zone
-                        $backend = new Backend();
                         $CPsession = $backend->configdpRun(
                             "captiveportal allow",
                             array(

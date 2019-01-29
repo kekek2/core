@@ -59,6 +59,16 @@ class Template(object):
         self._j2_env = jinja2.Environment(loader=jinja2.FileSystemLoader(self._template_dir), trim_blocks=True,
                                           extensions=["jinja2.ext.do", "jinja2.ext.loopcontrols"])
 
+        # register additional filters
+        self._j2_env.filters['decode_idna'] = lambda x:x.decode('idna')
+        self._j2_env.filters['encode_idna'] = self._encode_idna
+
+    @staticmethod
+    def _encode_idna(x):
+        """ encode string to idna, preserve leading dots
+        """
+        return ''.join(map(lambda x:'.', range(len(x) - len(x.lstrip('.'))))) + x.lstrip('.').encode('idna')
+
     def list_module(self, module_name):
         """ list single module content
         :param module_name: module name in dot notation ( company.module )
@@ -95,7 +105,7 @@ class Template(object):
 
         :return: list (dict) of registered modules
         """
-        result =list()
+        result = list()
         for root, dirs, files in os.walk(self._template_dir):
             if root.count('/') > self._template_dir.count('/'):
                 module_name = root.replace(self._template_dir, '')
@@ -191,7 +201,7 @@ class Template(object):
         for fpart in filename.strip().split('/')[:-1]:
             fparts.append(fpart)
             if len(fpart) > 1:
-                tmppart = '/'.join(fparts);
+                tmppart = '/'.join(fparts)
                 if os.path.isfile(tmppart):
                     os.remove(tmppart)
                 if not os.path.exists(tmppart):
@@ -319,7 +329,6 @@ class Template(object):
                                                                                          traceback.format_exc()))
                 else:
                     raise render_exception
-
 
         return result
 

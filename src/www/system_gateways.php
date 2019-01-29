@@ -196,12 +196,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 legacy_html_escape_form_data($a_gateways);
 
-$service_hook = 'apinger';
+$service_hook = 'dpinger';
 
 include("head.inc");
 
 $main_buttons = array(
-    array('label'=> gettext('Add gateway'), 'href'=>'system_gateways_edit.php'),
+    array('label'=> gettext('Add'), 'href'=>'system_gateways_edit.php'),
 );
 
 ?>
@@ -296,8 +296,9 @@ $( document ).ready(function() {
                     <th class="hidden-xs hidden-sm hidden-md"><?=gettext("Interface"); ?></th>
                     <th class="hidden-xs hidden-sm hidden-md"><?=gettext("Gateway"); ?></th>
                     <th class="hidden-xs hidden-sm hidden-md"><?=gettext("Monitor IP"); ?></th>
-                    <th class="text-nowrap hidden-xs"><?=gettext("RTT"); ?></th>
-                    <th class="text-nowrap hidden-xs"><?=gettext("Loss"); ?></th>
+                    <th class="text-nowrap hidden-xs"><?= gettext('RTT') ?></th>
+                    <th class="text-nowrap hidden-xs"><?= gettext('RTTd') ?></th>
+                    <th class="text-nowrap hidden-xs"><?= gettext('Loss') ?></th>
                     <th><?=gettext("Status"); ?></th>
                     <th class="hidden-xs hidden-sm hidden-md"><?=gettext("Description"); ?></th>
                     <th class="text-nowrap"></th>
@@ -347,10 +348,13 @@ $( document ).ready(function() {
                         <?=$gateway['monitor'];?>
                       </td>
                       <td class="text-nowrap hidden-xs">
-                        <?=	!empty($gateways_status[$gateway['gname']]) ? $gateways_status[$gateway['gname']]['delay'] : gettext("Pending") ;?>
+                        <?= !empty($gateways_status[$gateway['gname']]) ? $gateways_status[$gateway['gname']]['delay'] : gettext("Pending") ?>
                       </td>
                       <td class="text-nowrap hidden-xs">
-                        <?=	!empty($gateways_status[$gateway['gname']]) ? $gateways_status[$gateway['gname']]['loss'] : gettext("Pending"); ?>
+                        <?= !empty($gateways_status[$gateway['gname']]) ? $gateways_status[$gateway['gname']]['stddev'] : gettext("Pending") ?>
+                      </td>
+                      <td class="text-nowrap hidden-xs">
+                        <?= !empty($gateways_status[$gateway['gname']]) ? $gateways_status[$gateway['gname']]['loss'] : gettext("Pending") ?>
                       </td>
                       <td>
   <?php
@@ -390,19 +394,19 @@ $( document ).ready(function() {
                       <td class="text-nowrap">
                         <a href="system_gateways_edit.php?id=<?=$i;?>" class="btn btn-default btn-xs"
                           data-toggle="tooltip" title="<?= html_safe(gettext('Edit')) ?>">
-                          <span class="glyphicon glyphicon-pencil"></span>
+                          <i class="fa fa-pencil fa-fw"></i>
                         </a>
 <?php
                         if (is_numeric($gateway['attribute'])) :?>
                           <button data-id="<?=$i;?>" title="<?= html_safe(gettext('Delete')) ?>" data-toggle="tooltip"
                                   class="act_delete btn btn-default btn-xs">
-                            <span class="fa fa-trash text-muted"></span>
+                            <i class="fa fa-trash fa-fw"></i>
                           </button>
 <?php
                         endif;?>
                           <a href="system_gateways_edit.php?dup=<?=$i;?>" class="btn btn-default btn-xs"
                              data-toggle="tooltip" title="<?= html_safe(gettext('Clone')) ?>">
-                            <span class="fa fa-clone text-muted"></span>
+                            <i class="fa fa-clone fa-fw"></i>
                           </a>
                         </td>
                       </tr>
@@ -417,6 +421,7 @@ $( document ).ready(function() {
                       <td class="hidden-xs hidden-sm hidden-md"></td>
                       <td class="text-nowrap hidden-xs"></td>
                       <td class="text-nowrap hidden-xs"></td>
+                      <td class="text-nowrap hidden-xs"></td>
                       <td></td>
                       <td class="hidden-xs hidden-sm hidden-md"></td>
                       <td class="text-nowrap">
@@ -425,7 +430,7 @@ $( document ).ready(function() {
                                       ?>
                           <button type="submit" id="btn_delete" name="del_x" class="btn btn-default btn-xs" data-toggle="tooltip"
                                   title="<?= html_safe(gettext('Delete selected items')) ?>">
-                              <span class="fa fa-trash text-muted"></span>
+                              <i class="fa fa-trash fa-fw"></i>
                           </button>
 <?php
                       endif;?>

@@ -1,33 +1,33 @@
 <?php
 
 /*
-    Copyright (C) 2014-2016 Deciso B.V.
-    Copyright (C) 2008 Shrew Soft Inc. <mgrooms@shrew.net>
-    Copyright (C) 2005 Paul Taylor <paultaylor@winn-dixie.com>
-    Copyright (C) 2003-2005 Manuel Kasper <mk@neon1.net>
-    All rights reserved.
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are met:
-
-    1. Redistributions of source code must retain the above copyright notice,
-       this list of conditions and the following disclaimer.
-
-    2. Redistributions in binary form must reproduce the above copyright
-       notice, this list of conditions and the following disclaimer in the
-       documentation and/or other materials provided with the distribution.
-
-    THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
-    INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-    AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-    AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-    OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-    POSSIBILITY OF SUCH DAMAGE.
-*/
+ * Copyright (C) 2014-2016 Deciso B.V.
+ * Copyright (C) 2008 Shrew Soft Inc. <mgrooms@shrew.net>
+ * Copyright (C) 2005 Paul Taylor <paultaylor@winn-dixie.com>
+ * Copyright (C) 2003-2005 Manuel Kasper <mk@neon1.net>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
 require_once 'guiconfig.inc';
 require_once 'system.inc';
@@ -79,7 +79,6 @@ function get_user_privdesc(& $user)
 $a_user = &config_read_array('system', 'user');
 
 // reset errors and action
-$input_errors = array();
 $act = null;
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // process get type actions
@@ -119,7 +118,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     } elseif ($act == 'new' || $act == 'edit') {
         // edit user, load or init data
-        $fieldnames = array('user_dn', 'descr', 'expires', 'scope', 'uid', 'priv', 'ipsecpsk', 'lifetime', 'otp_seed', 'email', 'shell', 'comment');
+        $fieldnames = array('user_dn', 'descr', 'expires', 'scope', 'uid', 'priv', 'ipsecpsk',
+                            'lifetime', 'otp_seed', 'email', 'shell', 'comment', 'landing_page');
         if (isset($id)) {
             if (isset($a_user[$id]['authorizedkeys'])) {
                 $pconfig['authorizedkeys'] = base64_decode($a_user[$id]['authorizedkeys']);
@@ -169,8 +169,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $act = $_POST['act'];
     }
     $pconfig = $_POST;
+    $input_errors = array();
 
-    if ($act == "deluser" && isset($id)) {
+    $user = getUserEntry($_SESSION['Username']);
+    if (userHasPrivilege($user, 'user-config-readonly')) {
+        $input_errors[] = gettext('You do not have the permission to perform this action.');
+    } elseif ($act == "deluser" && isset($id)) {
         // drop user
         if ($_SESSION['Username'] === $a_user[$id]['name']) {
             $input_errors[] = gettext('You cannot delete yourself.');
@@ -190,7 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         unset($a_user[$id]['cert'][$pconfig['certid']]);
         write_config();
         $savemsg = sprintf(gettext('The certificate association "%s" was successfully removed.'), $certdeleted);
-        header(url_safe('Location: /system_usermanager.php?savemsg=%s&act=edit&userid=%s', array($savemsg, $id)));
+        header(url_safe('Location: /system_usermanager.php?savemsg=%s&act=edit&userid=%d', array($savemsg, $id)));
         exit;
     } elseif ($act == "newApiKey" && isset($id)) {
         // every action is using the sequence of the user, to keep it understandable, we will use
@@ -216,11 +220,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $savemsg = gettext('No API key found');
         }
         // redirect
-        header(url_safe('Location: /system_usermanager.php?savemsg=%s&act=edit&userid=%s', array($savemsg, $id)));
+        header(url_safe('Location: /system_usermanager.php?savemsg=%s&act=edit&userid=%d', array($savemsg, $id)));
         exit;
     } elseif (isset($pconfig['save']) || isset($pconfig['save_close'])) {
-        // save user
-        /* input validation */
         $reqdfields = explode(' ', 'usernamefld');
         $reqdfieldsn = array(gettext('Username'));
 
@@ -234,18 +236,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $input_errors[] = gettext("The username is longer than 32 characters.");
         }
 
-        if ($pconfig['passwordfld1'] != $pconfig['passwordfld2']) {
-            $input_errors[] = gettext('The passwords do not match.');
-        } elseif (empty($pconfig['gen_new_password'])) {
-            // check against local password policy
-            $authenticator = get_authenticator();
-            $input_errors = array_merge(
-                $input_errors, $authenticator->checkPolicy($pconfig['usernamefld'], null, $pconfig['passwordfld1'])
-            );
-        }
-
-        if (!empty($pconfig['passwordfld1']) && !empty($pconfig['gen_new_password'])) {
-            $input_errors[] = gettext('Cannot set random password due to explicit input.');
+        if (!empty($pconfig['passwordfld1']) || !empty($pconfig['passwordfld2'])) {
+            if ($pconfig['passwordfld1'] != $pconfig['passwordfld2']) {
+                $input_errors[] = gettext('The passwords do not match.');
+            } elseif (empty($pconfig['gen_new_password'])) {
+                // check against local password policy
+                $authenticator = get_authenticator();
+                $input_errors = array_merge(
+                    $input_errors,
+                    $authenticator->checkPolicy($pconfig['usernamefld'], null, $pconfig['passwordfld1'])
+                );
+            } else {
+                $input_errors[] = gettext('Cannot set random password due to explicit input.');
+            }
         }
 
         if (!empty($pconfig['disabled']) && $_SESSION['Username'] === $a_user[$id]['name']) {
@@ -362,6 +365,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             } elseif (isset($userent['comment'])) {
                 unset($userent['comment']);
             }
+            if (!empty($pconfig['landing_page'])) {
+                $userent['landing_page'] = $pconfig['landing_page'];
+            } elseif (isset($userent['landing_page'])) {
+                unset($userent['landing_page']);
+            }
 
             if (!empty($pconfig['shell'])) {
                 $userent['shell'] = $pconfig['shell'];
@@ -381,14 +389,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             write_config();
 
             if (!empty($pconfig['chkNewCert'])) {
-                // redirect to cert manager when a new cert is requested for this user
-                header(url_safe('Location: /system_certmanager.php?act=new&userid=%s', array(isset($id) ? $id : count($a_user) - 1)));
+                header(url_safe('Location: /system_certmanager.php?act=new&userid=%d', array(isset($id) ? $id : count($a_user) - 1)));
             } elseif (isset($pconfig['save_close'])) {
                 header(url_safe('Location: /system_usermanager.php?savemsg=%s', array(get_std_save_message())));
             } else {
-                header(url_safe('Location: /system_usermanager.php?act=edit&userid=%s&savemsg=%s', array(isset($id) ? $id : count($a_user) - 1, get_std_save_message())));
-                exit;
+                header(url_safe('Location: /system_usermanager.php?act=edit&userid=%d&savemsg=%s', array(isset($id) ? $id : count($a_user) - 1, get_std_save_message())));
             }
+            exit;
         }
     } else {
         header(url_safe('Location: /system_usermanager.php'));
@@ -401,9 +408,14 @@ legacy_html_escape_form_data($a_user);
 
 include("head.inc");
 
+$main_buttons = array();
+if (!isset($_GET['act'])) {
+    $main_buttons[] = array('label' => gettext('Add'), 'href' => 'system_usermanager.php?act=new');
+}
+
 ?>
-<script src="/ui/js/jquery.qrcode.js"></script>
-<script src="/ui/js/qrcode.js"></script>
+<script src="<?= cache_safe('/ui/js/jquery.qrcode.js') ?>"></script>
+<script src="<?= cache_safe('/ui/js/qrcode.js') ?>"></script>
 
 <body>
 
@@ -470,6 +482,7 @@ $( document ).ready(function() {
 
     // import ldap users
     $("#import_ldap_users").click(function(){
+      event.preventDefault();
       url="system_usermanager_import_ldap.php";
       var oWin = window.open(url,"OPNsense","width=620,height=400,top=150,left=150,scrollbars=yes");
       if (oWin==null || typeof(oWin)=="undefined") {
@@ -547,18 +560,11 @@ $( document ).ready(function() {
 });
 </script>
 
-
   <section class="page-content-main">
     <div class="container-fluid">
       <div class="row">
-<?php
-      if (isset($input_errors) && count($input_errors) > 0) {
-          print_input_errors($input_errors);
-      }
-      if (isset($savemsg)) {
-          print_info_box($savemsg);
-      }
-?>
+        <?php if (isset($input_errors) && count($input_errors)) print_input_errors($input_errors); ?>
+        <?php if (isset($savemsg)) print_info_box($savemsg); ?>
         <section class="col-xs-12">
             <div class="tab-content content-box col-xs-12 table-responsive">
 <?php
@@ -613,7 +619,8 @@ $( document ).ready(function() {
                       <input name="passwordfld1" type="password" class="formfld pwd" id="passwordfld1" size="20" value="" /><br/>
                       <input name="passwordfld2" type="password" class="formfld pwd" id="passwordfld2" size="20" value="" />
                       <small><?= gettext("(confirmation)"); ?></small><br/><br/>
-                      <input type="checkbox" name="gen_new_password" <?= !empty($pconfig['gen_new_password']) ? 'checked="checked"' : '' ?>/>&nbsp;<small><?=gettext('Generate a scrambled password to prevent local database logins for this user.') ?></small>
+                      <input type="checkbox" name="gen_new_password" <?= !empty($pconfig['gen_new_password']) ? 'checked="checked"' : '' ?>/>
+                      <small><?=gettext('Generate a scrambled password to prevent local database logins for this user.') ?></small>
                     </td>
                   </tr>
                   <tr>
@@ -640,6 +647,15 @@ $( document ).ready(function() {
                       <textarea name="comment" id="comment" class="form-control" cols="65" rows="3"><?= $pconfig['comment'] ?></textarea>
                       <div class="hidden" data-for="help_for_comment">
                         <?= gettext('User comment, for your own information only') ?>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><a id="help_for_landing_page" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Preferred landing page");?></td>
+                    <td>
+                      <input name="landing_page" type="text" value="<?=$pconfig['landing_page'];?>">
+                      <div class="hidden" data-for="help_for_landing_page">
+                        <?= gettext('Preferred landing page after login or authentication failure') ?>
                       </div>
                     </td>
                   </tr>
@@ -685,7 +701,7 @@ $( document ).ready(function() {
                         <tbody>
                           <tr>
                             <td>
-                              <select size="10" name="notgroups[]" id="notgroups" onchange="clear_selected('groups')" multiple="multiple">
+                              <select size="10" name="notgroups[]" id="notgroups" onchange="clear_selected('groups')" multiple="multiple" class="selectpicker">
 <?php
                               foreach ($config['system']['group'] as $group) :
                                 if (!empty($pconfig['groups']) && in_array($group['name'], $pconfig['groups'])) {
@@ -702,15 +718,15 @@ $( document ).ready(function() {
                             <td class="text-center">
                               <br />
                               <a id="add_groups" class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("Add groups"); ?>">
-                                  <span class="glyphicon glyphicon-arrow-right"></span>
+                                  <span class="fa fa-arrow-right fa-fw"></span>
                               </a>
                               <br /><br />
                               <a id="remove_groups" class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("Remove groups"); ?>">
-                                  <span class="glyphicon glyphicon-arrow-left"></span>
+                                  <span class="fa fa-arrow-left fa-fw"></span>
                               </a>
                             </td>
                             <td>
-                              <select size="10" name="groups[]" id="groups" onchange="clear_selected('notgroups')" multiple="multiple">
+                              <select size="10" name="groups[]" id="groups" onchange="clear_selected('notgroups')" multiple="multiple" class="selectpicker">
 <?php
                               if (!empty($pconfig['groups'])) :
                                 foreach ($config['system']['group'] as $group) :
@@ -771,7 +787,7 @@ $( document ).ready(function() {
                           <td colspan="3">
                               <a href="system_usermanager_addprivs.php?userid=<?=$id?>" class="btn btn-xs btn-default"
                                   title="<?=gettext("edit privileges");?>" data-toggle="tooltip">
-                                <span class="fa fa-pencil"></span>
+                                <span class="fa fa-pencil fa-fw"></span>
                               </a>
                           </td>
                         </tr>
@@ -804,15 +820,15 @@ $( document ).ready(function() {
                           <td>
                             <a href="system_usermanager.php?act=expckey&amp;certid=<?=$i?>&amp;userid=<?=$id?>"
                                 class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("export private key");?>">
-                              <span class="glyphicon glyphicon-arrow-down"></span>
+                              <span class="fa fa-arrow-down fa-fw"></span>
                             </a>
                             <a href="system_usermanager.php?act=expcert&amp;certid=<?=$i?>&amp;userid=<?=$id?>"
                                 class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("export certificate");?>">
-                              <span class="glyphicon glyphicon-arrow-down"></span>
+                              <span class="fa fa-arrow-down fa-fw"></span>
                             </a>
                             <button type="submit" data-certid="<?=$i;?>" class="btn btn-default btn-xs act-del-cert"
                                 title="<?=gettext("unlink certificate");?>" data-toggle="tooltip">
-                              <span class="fa fa-trash text-muted"></span>
+                              <span class="fa fa-trash fa-fw"></span>
                             </button>
                           </td>
                         </tr>
@@ -824,7 +840,7 @@ $( document ).ready(function() {
                           <td colspan="3">
                             <a href="system_certmanager.php?act=new&amp;userid=<?=$id?>" class="btn btn-default btn-xs"
                                 title="<?=gettext("create or link user certificate");?>" data-toggle="tooltip">
-                              <span class="glyphicon glyphicon-plus"></span>
+                              <span class="fa fa-plus fa-fw"></span>
                             </a>
                           </td>
                         </tr>
@@ -834,7 +850,6 @@ $( document ).ready(function() {
                   <tr>
                       <td><a id="help_for_apikeys" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("API keys");?> </td>
                       <td>
-                          <!-- -->
                           <table class="table table-condensed">
                               <thead>
                                   <tr>
@@ -860,7 +875,7 @@ $( document ).ready(function() {
                                       <td>
                                         <button data-key="<?=$userApiKey['key'][0];?>" type="button" class="btn btn-default btn-xs act-del-api-key"
                                             title="<?=gettext("delete API key");?>" data-toggle="tooltip">
-                                          <span class="glyphicon glyphicon-trash"></span>
+                                          <span class="fa fa-trash fa-fw"></span>
                                         </button>
                                       </td>
                                   </tr>
@@ -873,7 +888,7 @@ $( document ).ready(function() {
                                     <td colspan="2">
                                       <button type="button" class="btn btn-default btn-xs" id="newApiKey"
                                           title="<?=gettext('Create API key');?>" data-toggle="tooltip">
-                                        <span class="glyphicon glyphicon-plus"></span>
+                                        <span class="fa fa-plus fa-fw"></span>
                                       </button>
                                     </td>
                                   </tr>
@@ -899,7 +914,8 @@ $( document ).ready(function() {
                     <td><a id="help_for_otp_seed" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('OTP seed') ?></td>
                     <td>
                       <input name="otp_seed" type="text" value="<?=$pconfig['otp_seed'];?>"/>
-                      <input type="checkbox" name="gen_otp_seed"/>&nbsp;<small><?= gettext('Generate new secret (160 bit)') ?></small>
+                      <input type="checkbox" name="gen_otp_seed"/>
+                      <small><?= gettext('Generate new secret (160 bit)') ?></small>
                       <div class="hidden" data-for="help_for_otp_seed">
                         <?=gettext("OTP (base32) seed to use when a one time password authenticator is used");?><br/>
                       </div>
@@ -973,84 +989,79 @@ $( document ).ready(function() {
                   </thead>
                   <tbody>
 <?php
-                  $i = 0;
-                  foreach ($a_user as $userent) :?>
+                  /* create a copy for sorting */
+                  $a_user_ro = $a_user;
+                  uasort($a_user_ro, function($a, $b) {
+                    return strnatcasecmp($a['name'], $b['name']);
+                  });
+                  foreach ($a_user_ro as $i => $userent): ?>
                     <tr>
                       <td>
 <?php
-                        if ($userent['scope'] != "user") {
-                            $usrimg = "glyphicon glyphicon-user text-danger";
-                        } elseif (isset($userent['disabled'])) {
-                                $usrimg = "glyphicon glyphicon-user text-muted";
+                        if (isset($userent['disabled'])) {
+                            $usrimg = 'text-muted';
+                        } elseif (userHasPrivilege($userent, 'page-all')) {
+                            $usrimg = 'text-danger';
                         } else {
-                                $usrimg = "glyphicon glyphicon-user text-info";
+                            $usrimg = 'text-info';
                         }?>
-                        <span class="<?=$usrimg;?>"></span> <?=$userent['name'];?>
+                        <span class="fa fa-user <?=$usrimg;?>"></span> <?=$userent['name'];?>
                       </td>
-                      <td><?=$userent['descr'];?></td>
-                      <td>
-                        <?=implode(",", local_user_get_groups($userent));?>
-                      </td>
-                      <td>
+                      <td><?= $userent['descr'] ?></td>
+                      <td><?= implode(', ', local_user_get_groups($userent)) ?></td>
+                      <td class="text-nowrap">
                         <a href="system_usermanager.php?act=edit&userid=<?=$i?>"
-                            class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("edit user");?>">
-                          <span class="glyphicon glyphicon-pencil"></span>
+                            class="btn btn-default btn-xs" data-toggle="tooltip" title="<?= html_safe(gettext('Edit')) ?>">
+                          <span class="fa fa-pencil fa-fw"></span>
                         </a>
-<?php
-                        if ($userent['scope'] != "system") :?>
+<?php if ($userent['scope'] != 'system'): ?>
                         <button type="button" class="btn btn-default btn-xs act-del-user"
                             data-username="<?=$userent['name'];?>"
-                            data-userid="<?=$i?>" title="<?=gettext("delete user");?>" data-toggle="tooltip">
-                          <span class="fa fa-trash text-muted"></span>
+                            data-userid="<?=$i?>" title="<?= html_safe(gettext('Delete')) ?>" data-toggle="tooltip">
+                          <span class="fa fa-trash fa-fw"></span>
                         </button>
-<?php
-                        endif;?>
+<?php endif ?>
                       </td>
                     </tr>
-<?php
-                  $i++;
-                  endforeach;
-?>
+<?php endforeach ?>
                     <tr>
                       <td colspan="3">
                         <table>
                           <tr>
                             <td></td>
                             <td style="width:20px"></td>
-                            <td style="width:20px"><span class="glyphicon glyphicon-user text-danger"></span></td>
+                            <td style="width:20px"><span class="fa fa-user text-danger"></span></td>
                             <td style="width:200px"><?= gettext('System Administrator') ?></td>
-                            <td style="width:20px"><span class="glyphicon glyphicon-user text-muted"></span></td>
+                            <td style="width:20px"><span class="fa fa-user text-muted"></span></td>
                             <td style="width:200px"><?= gettext('Disabled User') ?></td>
-                            <td style="width:20px"><span class="glyphicon glyphicon-user text-info"></span></td>
+                            <td style="width:20px"><span class="fa fa-user text-info"></span></td>
                             <td style="width:200px"><?= gettext('Normal User') ?></td>
                             <td></td>
                           </tr>
                         </table>
                       </td>
-                      <td>
-                        <a href="system_usermanager.php?act=new" class="btn btn-default btn-xs"
-                           title="<?=gettext("add user");?>" data-toggle="tooltip">
-                          <span class="glyphicon glyphicon-plus"></span>
-                        </a>
+                      <td class="text-nowrap">
 <?php
-                        $authcfg_type = auth_get_authserver($config['system']['webgui']['authmode'])['type'];
-                        if ($authcfg_type == 'ldap') :?>
+                        $can_import = false;
+                        if (!empty($config['system']['webgui']['authmode'])) {
+                            $servers = explode(',', $config['system']['webgui']['authmode']);
+                            foreach ($servers as $server) {
+                                $authcfg_type = auth_get_authserver($server)['type'];
+                                if ($authcfg_type == 'ldap' || $authcfg_type == 'ldap-totp') {
+                                    $can_import = true;
+                                }
+                            }
+                        }
+?>
+<?php if ($can_import): ?>
                           <button type="submit" name="import"
                                   id="import_ldap_users"
-                                  class="btn btn-default btn-xs"
-                                  title="<?=gettext("import users")?>">
-                              <i class="fa fa-cloud-download"></i>
+                                  data-toggle="tooltip"
+                                  class="btn btn-primary btn-xs"
+                                  title="<?= html_safe(gettext('Import')) ?>">
+                              <i class="fa fa-cloud-download fa-fw"></i>
                           </button>
-<?php
-                      endif;?>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td colspan="4">
-                          <?=gettext("Additional users can be added here. User permissions for accessing " .
-                                        "the web GUI or other subsystems can be assigned directly or inherited from group memberships. " .
-                                        "An icon that appears grey indicates that it is a system defined object. " .
-                                        "Some system object properties can be modified but they cannot be deleted."); ?>
+<?php endif ?>
                       </td>
                     </tr>
                   </tbody>

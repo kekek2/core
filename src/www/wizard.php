@@ -44,10 +44,7 @@ function find_ip_interface($ip, $bits = null) {
 
 	$isv6ip = is_ipaddrv6($ip);
 
-	/* if list */
-	$ifdescrs = get_configured_interface_list();
-
-	foreach ($ifdescrs as $ifdescr => $ifname) {
+	foreach (get_configured_interface_with_descr() as $ifname => $unused) {
 		$ifip = ($isv6ip) ? get_interface_ipv6($ifname) : get_interface_ip($ifname);
 		if (is_null($ifip))
 			continue;
@@ -520,7 +517,7 @@ function showchange() {
 					$multiple = "multiple=\"multiple\"";
 					$name .= "[]";
 				}
-				echo "<select class='form-control' id='{$name}' name='{$name}' {$size} {$multiple}>\n";
+				echo "<select class='selectpicker' id='{$name}' name='{$name}' {$size} {$multiple}>\n";
 				if($field['add_to_interfaces_selection'] <> "") {
 					$SELECTED = "";
 					if($field['add_to_interfaces_selection'] == $value) $SELECTED = " selected=\"selected\"";
@@ -583,7 +580,7 @@ function showchange() {
 				echo "</td>";
 				echo "<td class=\"vtable\">\n";
 				if($field['size'] <> "") $size = "size=\"{$field['size']}\"";
-				echo "<select id='{$name}' name='{$name}' {$size}>\n";
+				echo "<select id='{$name}' name='{$name}' class='selectpicker' {$size}>\n";
 				if($field['add_to_certca_selection'] <> "") {
 					$SELECTED = "";
 					if($field['add_to_certca_selection'] == $value) $SELECTED = " selected=\"selected\"";
@@ -624,7 +621,7 @@ function showchange() {
 				echo "</td>";
 				echo "<td class=\"vtable\">\n";
 				if($field['size'] <> "") $size = "size=\"{$field['size']}\"";
-				echo "<select id='{$name}' name='{$name}' {$size}>\n";
+				echo "<select id='{$name}' name='{$name}' {$size} class='selectpicker'>\n";
 				if($field['add_to_cert_selection'] <> "") {
 					$SELECTED = "";
 					if($field['add_to_cert_selection'] == $value) $SELECTED = " selected=\"selected\"";
@@ -655,6 +652,36 @@ function showchange() {
 				}
 
 				break;
+			case 'dhparam_selection':
+				if ($field['displayname']) {
+					echo "<td style=\"width:22%; text-align:right\">\n";
+					echo gettext($field['displayname']);
+					echo ":</td>\n";
+				} else if(!$field['dontdisplayname']) {
+					echo "<td style=\"width:22%; text-align:right\">\n";
+					echo gettext($field['name']);
+					echo ":</td>\n";
+				}
+				if($field['size']) $size = " size='" . $field['size'] . "' ";
+				if(!$field['dontcombinecells'])
+					echo "<td class=\"vtable\">\n";
+				echo "<select class='form-control' " . $size . "id='" . $name . "' name='" . $name . "'>\n";
+				foreach (list_dh_parameters() as $length) {
+					$selected = "";
+					if($value == $length)
+						$selected = " selected=\"selected\"";
+					echo "\t<option value=\"" . html_safe($length) . "\"" . $selected . ">";
+					echo sprintf(gettext('%s bit'), $length);
+					echo "</option>\n";
+				}
+				echo "</select>\n";
+				echo "<!-- {$value} -->\n";
+
+				if($field['description'] <> "") {
+					echo "<br /> " . gettext($field['description']);
+				}
+
+				break;
 			case "select":
 				if ($field['displayname']) {
 					echo "<td style=\"width:22%; text-align:right\">\n";
@@ -675,7 +702,7 @@ function showchange() {
 						$onchange = "onchange=\"enableitems(this.selectedIndex);\" ";
 					}
 				}
-				echo "<select class='form-control' " . $onchange . $multiple . $size . "id='" . $name . "' name='" . $name . "'>\n";
+				echo "<select class='selectpicker' " . $onchange . $multiple . $size . "id='" . $name . "' name='" . $name . "'>\n";
 				foreach ($field['options']['option'] as $opt) {
 					$selected = "";
 					if($value == $opt['value'])
@@ -745,7 +772,7 @@ function showchange() {
 				}
 				if(!$field['dontcombinecells'])
 					echo "<td class=\"vtable\">";
-				echo "<select class='form-control' name='{$name}' style='max-width:5em;'>\n";
+				echo "<select class='form-control' id='{$name}' name='{$name}' style='max-width:5em;'>\n";
 				$CHECKED = ' selected="selected"';
 				for ($x = 1; $x <= 32; $x++) {
 					if ($x == 31) {
@@ -781,7 +808,7 @@ function showchange() {
 				}
 				if(!$field['dontcombinecells'])
 					echo "<td class=\"vtable\">";
-				echo "<select class='form-control' name='{$name}'>\n";
+				echo "<select class='selectpicker' id='{$name}' name='{$name}'>\n";
 				foreach ($languagelist as $langkey => $langval) {
 					$SELECTED = "";
 					if ($value == $langkey) $SELECTED = " selected=\"selected\"";
@@ -810,7 +837,7 @@ function showchange() {
 				}
 				if(!$field['dontcombinecells'])
 					echo "<td class=\"vtable\">";
-				echo "<select class='form-control' name='{$name}'>\n";
+				echo "<select class='selectpicker' id='{$name}' name='{$name}'>\n";
 				foreach ($timezonelist as $tz) {
 					if(strstr($tz, "GMT"))
 						continue;
@@ -911,14 +938,12 @@ function showchange() {
 	$aliases = "";
 	$addrisfirst = 0;
 	$aliasesaddr = "";
-	if (isset($config['aliases']['alias'])) {
-		foreach ($config['aliases']['alias'] as $alias_name) {
-				if ($isfirst == 1) {
-					$aliases .= ",";
-				}
-				$aliases .= "'" . $alias_name['name'] . "'";
-				$isfirst = 1;
-		}
+	foreach ((new \OPNsense\Firewall\Alias())->aliasIterator() as $alias_name) {
+			if ($isfirst == 1) {
+				$aliases .= ",";
+			}
+			$aliases .= "'" . $alias_name['name'] . "'";
+			$isfirst = 1;
 	}
 ?>
 

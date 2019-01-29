@@ -448,17 +448,20 @@ class SystemhealthController extends ApiControllerBase
     private function getRRDdetails($rrd)
     {
         # Source of data: xml fields of corresponding .xml metadata
+        $rrd = urldecode($rrd);
         $result = array();
         $backend = new Backend();
-        $response = $backend->configdpRun("systemhealth list");
+        $response = $backend->configdRun('systemhealth list');
         $healthList = json_decode($response, true);
         // search by topic and name, return array with filename
         if (is_array($healthList)) {
             foreach ($healthList as $filename => $healthItem) {
-                if ($healthItem['itemName'] .'-' . $healthItem['topic'] == $rrd) {
+                if (gettext($healthItem['itemName']) .'-' . gettext($healthItem['topic']) == $rrd) {
                     $result["result"] = "ok";
                     $healthItem['filename'] = $filename;
                     $result["data"] = $healthItem;
+                    $result["data"]['title'] = gettext($healthItem['title']);
+                    $result["data"]["y-axis_label"] = gettext($healthItem["y-axis_label"]);
                     return $result;
                 }
             }
@@ -480,16 +483,17 @@ class SystemhealthController extends ApiControllerBase
         # Source of data: filelisting of /var/db/rrd/*.rrd
         $result = array();
         $backend = new Backend();
-        $response = $backend->configdpRun("systemhealth list");
+        $response = $backend->configdRun('systemhealth list');
         $healthList = json_decode($response, true);
 
         $result['data'] = array();
         if (is_array($healthList)) {
             foreach ($healthList as $healthItem => $details) {
-                if (!array_key_exists($details['topic'], $result['data'])) {
-                    $result['data'][$details['topic']] = array();
+                $topic = gettext($details['topic']);
+                if (!array_key_exists($topic, $result['data'])) {
+                    $result['data'][$topic] = array();
                 }
-                $result['data'][$details['topic']][] = $details['itemName'];
+                $result['data'][$topic][] = gettext($details['itemName']);
             }
         }
         ksort($result['data']);
@@ -530,7 +534,7 @@ class SystemhealthController extends ApiControllerBase
         $xml = false;
         if ($rrd_details['filename'] != "") {
             $backend = new Backend();
-            $response = $backend->configdpRun("systemhealth fetch ", array($rrd_details['filename']));
+            $response = $backend->configdpRun('systemhealth fetch', array($rrd_details['filename']));
             if ($response != null) {
                 $xml = @simplexml_load_string($response);
             }

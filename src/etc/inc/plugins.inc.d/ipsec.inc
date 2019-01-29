@@ -1,34 +1,34 @@
 <?php
 
 /*
-    Copyright (C) 2016 Deciso B.V.
-    Copyright (C) 2008 Shrew Soft Inc. <mgrooms@shrew.net>
-    Copyright (C) 2008 Ermal Luçi
-    Copyright (C) 2004-2007 Scott Ullrich <sullrich@gmail.com>
-    Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
-    All rights reserved.
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are met:
-
-    1. Redistributions of source code must retain the above copyright notice,
-       this list of conditions and the following disclaimer.
-
-    2. Redistributions in binary form must reproduce the above copyright
-       notice, this list of conditions and the following disclaimer in the
-       documentation and/or other materials provided with the distribution.
-
-    THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
-    INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-    AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-    AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-    OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-    POSSIBILITY OF SUCH DAMAGE.
-*/
+ * Copyright (C) 2016 Deciso B.V.
+ * Copyright (C) 2008 Shrew Soft Inc. <mgrooms@shrew.net>
+ * Copyright (C) 2008 Ermal Luçi
+ * Copyright (C) 2004-2007 Scott Ullrich <sullrich@gmail.com>
+ * Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
 $ipsec_loglevels = array(
     "asn" => "Low-level encoding/decoding (ASN.1, X.509 etc.)",
@@ -67,7 +67,9 @@ $p1_authentication_methods = array(
     'xauth_rsa_server' => array( 'name' => 'Mutual RSA + Xauth', 'mobile' => true ),
     'xauth_psk_server' => array( 'name' => 'Mutual PSK + Xauth', 'mobile' => true ),
     'eap-tls' => array( 'name' => 'EAP-TLS', 'mobile' => true),
+    'psk_eap-tls' => array( 'name' => 'RSA (local) + EAP-TLS (remote)', 'mobile' => true),
     'eap-mschapv2' => array( 'name' => 'EAP-MSCHAPV2', 'mobile' => true),
+    'rsa_eap-mschapv2' => array( 'name' => 'Mutual RSA + EAP-MSCHAPV2', 'mobile' => true),
     'eap-radius' => array( 'name' => 'EAP-RADIUS', 'mobile' => true),
     'rsasig' => array( 'name' => 'Mutual RSA', 'mobile' => false ),
     'pre_shared_key' => array( 'name' => 'Mutual PSK', 'mobile' => false ),
@@ -97,18 +99,6 @@ $p2_halgos = array(
 $p2_protos = array(
     'esp' => 'ESP',
     'ah' => 'AH'
-);
-
-$p2_pfskeygroups = array(
-    0 => 'off',
-    1  => '1 (768 bit)',
-    2  => '2 (1024 bit)',
-    5  => '5 (1536 bit)',
-    14 => '14 (2048 bit)',
-    15 => '15 (3072 bit)',
-    16 => '16 (4096 bit)',
-    17 => '17 (6144 bit)',
-    18 => '18 (8192 bit)'
 );
 
 function ipsec_configure()
@@ -374,17 +364,10 @@ function ipsec_idinfo_to_cidr(&$idinfo, $addrbits = false, $mode = '')
             if (empty($mode) && !empty($idinfo['mode'])) {
                 $mode = $idinfo['mode'];
             }
-
-            if ($mode == "tunnel6") {
-                $address = get_interface_ipv6($idinfo['type']);
-                $netbits = get_interface_subnetv6($idinfo['type']);
-                $address = gen_subnetv6($address, $netbits);
-                return "{$address}/{$netbits}";
+            if ($mode == 'tunnel6') {
+                return find_interface_networkv6(get_real_interface($idinfo['type']), 'inet6');
             } else {
-                $address = get_interface_ip($idinfo['type']);
-                $netbits = get_interface_subnet($idinfo['type']);
-                $address = gen_subnet($address, $netbits);
-                return "{$address}/{$netbits}";
+                return find_interface_network(get_real_interface($idinfo['type']));
             }
             break; /* NOTREACHED */
     }
@@ -571,6 +554,19 @@ function ipsec_get_number_of_phase2($ikeid)
     return $nbph2;
 }
 
+function ipsec_resolve($hostname)
+{
+    if (!is_ipaddr($hostname)) {
+        /* XXX IPv4-only */
+        $ip = gethostbyname($hostname);
+        if ($ip && $ip != $hostname) {
+            $hostname = $ip;
+        }
+    }
+
+    return $hostname;
+}
+
 function ipsec_find_id(&$ph1ent, $side = 'local')
 {
     $id_data = null;
@@ -591,17 +587,10 @@ function ipsec_find_id(&$ph1ent, $side = 'local')
             $thisid_data = ipsec_get_phase1_src($ph1ent);
             break;
         case "dyn_dns":
-            $thisid_data = resolve_retry($id_data);
+            $thisid_data = ipsec_resolve($id_data);
             break;
         case "peeraddress":
-            if (!is_ipaddr($ph1ent['remote-gateway'])) {
-                $thisid_data = resolve_retry($ph1ent['remote-gateway']);
-            } else {
-                $thisid_data = $ph1ent['remote-gateway'];
-            }
-            break;
-        case "address":
-            $thisid_data = $id_data;
+            $thisid_data = ipsec_resolve($ph1ent['remote-gateway']);
             break;
         default:
             $thisid_data = !empty($id_data) ? "{$id_data}" : null;
@@ -656,6 +645,15 @@ function ipsec_convert_to_modp($index)
             break;
         case '24':
             $convertion = "modp2048s256";
+            break;
+        case '28':
+            $convertion = "ecp256bp";
+            break;
+        case '29':
+            $convertion = "ecp384bp";
+            break;
+        case '30':
+            $convertion = "ecp512bp";
             break;
     }
 
@@ -827,13 +825,13 @@ function ipsec_configure_do($verbose = false, $interface = '')
                 /* add an ipsec pinghosts entry */
                 if ($ph2ent['pinghost']) {
                     if (!isset($iflist) || !is_array($iflist)) {
-                        $iflist = get_configured_interface_list();
+                        $iflist = get_configured_interface_with_descr();
                     }
                     $viplist = get_configured_vips_list();
                     $srcip = null;
                     $local_subnet = ipsec_idinfo_to_cidr($ph2ent['localid'], true, $ph2ent['mode']);
                     if (is_ipaddrv6($ph2ent['pinghost'])) {
-                        foreach ($iflist as $ifent => $ifname) {
+                        foreach ($iflist as $ifent => $unused) {
                             $interface_ip = get_interface_ipv6($ifent);
                             if (!is_ipaddrv6($interface_ip)) {
                                 continue;
@@ -844,7 +842,7 @@ function ipsec_configure_do($verbose = false, $interface = '')
                             }
                         }
                     } else {
-                        foreach ($iflist as $ifent => $ifname) {
+                        foreach ($iflist as $ifent => $unused) {
                             $interface_ip = get_interface_ip($ifent);
                             if (!is_ipaddrv4($interface_ip)) {
                                 continue;
@@ -893,12 +891,17 @@ starter {
 }
 
 charon {
-
     # number of worker threads in charon
     threads = 16
     ikesa_table_size = 32
     ikesa_table_segments = 4
-    init_limit_half_open = 1000;
+    init_limit_half_open = 1000
+    ignore_acquire_ts = yes
+    syslog {
+        daemon {
+            ike_name = yes
+        }
+    }
 {$cnf_add_to_charon_section}
 
 EOD;
@@ -906,9 +909,20 @@ EOD;
         $strongswan .= "\tplugins {\n";
 
         if (isset($a_client['enable'])) {
+            $net_list = array();
+            if (isset($a_client['net_list'])) {
+                foreach ($a_phase2 as $ph2ent) {
+                    if (!isset($ph2ent['disabled']) && isset($ph2ent['mobile'])) {
+                        $net_list[] =  ipsec_idinfo_to_cidr($ph2ent['localid'], true, $ph2ent['mode']);
+                    }
+                }
+            }
+
             $strongswan .= "\t\tattr {\n";
-            if ($a_client['pool_address'] && $a_client['pool_netbits']) {
-                $strongswan .= "\t\t\tsubnet = {$a_client['pool_address']}/{$a_client['pool_netbits']}\n";
+            if (!empty($net_list)) {
+                $net_list_str = implode(",", $net_list);
+                $strongswan .= "\t\t\tsubnet = {$net_list_str}\n";
+                $strongswan .= "\t\t\tsplit-include = {$net_list_str}\n";
             }
             $cfgservers = array();
             foreach (array('dns_server1', 'dns_server2', 'dns_server3', 'dns_server4') as $dns_server) {
@@ -931,28 +945,6 @@ EOD;
                 $strongswan .= "\t\t\tnbns = " . implode(",", $cfgservers) . "\n";
             }
             unset($cfgservers);
-
-            if (isset($a_client['net_list'])) {
-                $net_list = '';
-                foreach ($a_phase2 as $ph2ent) {
-                    if (isset($ph2ent['disabled'])) {
-                        continue;
-                    }
-                    if (!isset($ph2ent['mobile'])) {
-                        continue;
-                    }
-                    $localid = ipsec_idinfo_to_cidr($ph2ent['localid'], true, $ph2ent['mode']);
-                    if (!empty($net_list)) {
-                        $net_list .= ",";
-                    }
-                    $net_list .= $localid;
-                }
-
-                if (!empty($net_list)) {
-                    $strongswan .= "\t\t\tsplit-include = {$net_list}\n";
-                    unset($net_list);
-                }
-            }
 
             if (!empty($a_client['dns_domain'])) {
                 $strongswan .= "\t\t\t# Search domain and default domain\n";
@@ -993,7 +985,7 @@ EOD;
                             if (in_array($auth_server['name'], explode(',', $ph1ent['authservers']))) {
                                 $radius_servers .= "\t\t\t\tserver" . $radius_server_num . " {\n";
                                 $radius_servers .= "\t\t\t\t\taddress = " . $auth_server['host'] . "\n";
-                                $radius_servers .= "\t\t\t\t\tsecret = " . $auth_server['radius_secret'] . "\n";
+                                $radius_servers .= "\t\t\t\t\tsecret = \"" . $auth_server['radius_secret'] . "\"\n";
                                 $radius_servers .= "\t\t\t\t\tauth_port = " . $auth_server['radius_auth_port'] . "\n";
 
                                 if (!empty($auth_server['radius_acct_port'])) {
@@ -1134,7 +1126,7 @@ EOD;
                 foreach ($ipsec_loglevels as $lkey => $ldescr) {
                     if (isset($config['ipsec']["ipsec_{$lkey}"]) && is_numeric($config['ipsec']["ipsec_{$lkey}"]) &&
                       intval($config['ipsec']["ipsec_{$lkey}"]) >= -1 && intval($config['ipsec']["ipsec_{$lkey}"]) <= 4) {
-                          $cfg_loglevels[] = "${lkey} " . $config['ipsec']["ipsec_{$lkey}"];
+                          $cfg_loglevels[] = $lkey . " " . $config['ipsec']["ipsec_{$lkey}"];
                     }
                 }
             }
@@ -1162,8 +1154,8 @@ EOD;
                 }
 
                 $keyexchange = "ikev1";
-                if (!empty($ph1ent['iketype']) && $ph1ent['iketype'] != "ikev1") {
-                    $keyexchange = "ikev2";
+                if (!empty($ph1ent['iketype'])) {
+                    $keyexchange = $ph1ent['iketype'];
                     $mobike = !empty($ph1ent['mobike']) ? "mobike = no" : "mobike = yes";
                 }
 
@@ -1185,17 +1177,25 @@ EOD;
                 $peerid_spec = ipsec_find_id($ph1ent, "peer");
 
                 if (!empty($ph1ent['encryption-algorithm']['name']) && !empty($ph1ent['hash-algorithm'])) {
-                    $ealg_id = $ph1ent['encryption-algorithm']['name'];
-                    if (isset($ph1ent['encryption-algorithm']['keylen'])) {
-                        $ealgosp1 = "ike = {$ealg_id}{$ph1ent['encryption-algorithm']['keylen']}-{$ph1ent['hash-algorithm']}";
-                    } else {
-                        $ealgosp1 = "ike = {$ealg_id}-{$ph1ent['hash-algorithm']}";
+                    $list = array();
+                    foreach (explode(',', $ph1ent['hash-algorithm']) as $halgo) {
+                        $entry = "{$ph1ent['encryption-algorithm']['name']}";
+                        if (isset($ph1ent['encryption-algorithm']['keylen'])) {
+                             $entry .= "{$ph1ent['encryption-algorithm']['keylen']}";
+                        }
+                        $entry .= "-{$halgo}";
+                        if (!empty($ph1ent['dhgroup'])) {
+                            foreach (explode(',', $ph1ent['dhgroup']) as $dhgrp) {
+                                $entryd = $entry;
+                                $modp = ipsec_convert_to_modp($dhgrp);
+                                if (!empty($modp)) {
+                                    $entryd .= "-{$modp}";
+                                }
+                                $list[] = $entryd;
+                            }
+                        }
                     }
-                    $modp = ipsec_convert_to_modp($ph1ent['dhgroup']);
-                    if (!empty($modp)) {
-                        $ealgosp1 .= "-{$modp}";
-                    }
-                    $ealgosp1 .= "!";
+                    $ealgosp1 = 'ike = ' . implode(',', array_reverse($list)) . '!';
                 }
 
                 if (!empty($ph1ent['dpd_delay']) && !empty($ph1ent['dpd_maxfail'])) {
@@ -1227,8 +1227,16 @@ EOD;
                     case 'eap-tls':
                         $authentication = "leftauth=eap-tls\n\trightauth=eap-tls";
                         break;
+                    case 'psk_eap-tls':
+                        $authentication = "leftauth=pubkey\n\trightauth=eap-tls";
+                        $authentication .= "\n\teap_identity=%identity";
+                        break;
                     case 'eap-mschapv2':
                         $authentication = "leftauth = pubkey\n\trightauth = eap-mschapv2";
+                        $authentication .= "\n\teap_identity = %any";
+                        break;
+                    case 'rsa_eap-mschapv2':
+                        $authentication = "leftauth = pubkey\n\trightauth = pubkey\n\trightauth2 = eap-mschapv2";
                         $authentication .= "\n\teap_identity = %any";
                         break;
                     case 'eap-radius':
@@ -1265,11 +1273,11 @@ EOD;
                 if (!empty($ph1ent['caref'])) {
                     $ca = lookup_ca($ph1ent['caref']);
                     if (!empty($ca)) {
-                         $rightca = "";
+                        $rightca = "";
                         foreach (cert_get_subject_array($ca['crt']) as $ca_field) {
                             $rightca .= "{$ca_field['a']}={$ca_field['v']}/";
                         }
-                         $authentication .= "\n\trightca = \"/$rightca\"";
+                        $authentication .= "\n\trightca = \"/$rightca\"";
                     }
                 }
                 $left_spec = $ep;
@@ -1330,8 +1338,6 @@ EOD;
                             if (!isset($ph2ent['mobile'])) {
                                 $tmpsubnet = ipsec_idinfo_to_cidr($ph2ent['remoteid'], false, $ph2ent['mode']);
                                 $rightsubnet_spec[] = $tmpsubnet;
-                            } elseif (!empty($a_client['pool_address'])) {
-                                $rightsubnet_spec[] = "{$a_client['pool_address']}/{$a_client['pool_netbits']}";
                             }
                         } else {
                             $tunneltype = "type = transport";
@@ -1503,7 +1509,9 @@ EOD;
                             // name from the first configured tunnel ($idx == 0):
                             $conn_suffix = $idx ? sprintf('-%03d', $idx) : '';
                             $tmpconf[] = "conn con{$ph1ent['ikeid']}{$conn_suffix}";
-                            $tmpconf[] = "\trightsubnet = {$rightsubnet_spec[$idx]}";
+                            if (!empty($rightsubnet_spec[$idx])) {
+                                $tmpconf[] = "\trightsubnet = {$rightsubnet_spec[$idx]}";
+                            }
                             $tmpconf[] = "\tleftsubnet = {$leftsubnet_spec[$idx]}";
                             if (!empty($ealgoESPsp2arr[$idx])) {
                                 $tmpconf[] = "\tesp = " . join(',', $ealgoESPsp2arr[$idx]) . '!';

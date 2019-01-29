@@ -29,7 +29,7 @@ set -e
 
 CLIENT_KEY="/usr/local/etc/ssl/ting-client.key"
 CLIENT_CERT="/usr/local/etc/ssl/ting-client.crt"
-ORIGIN="/usr/local/etc/pkg/repos/origin.conf"
+ORIGIN="/usr/local/etc/pkg/repos/SmartSoft.conf"
 DESTDIR="/usr/local/opnsense/changelog"
 WORKDIR="/tmp/changelog"
 FETCH="fetch -qT 5 --cert=${CLIENT_CERT} --key=${CLIENT_KEY}"
@@ -42,8 +42,7 @@ changelog_remove()
 
 changelog_fetch()
 {
-	TING_ABI=$(cat /usr/local/opnsense/version/ting.abi 2> /dev/null)
-
+	TING_ABI=$(opnsense-version -T 2> /dev/null)
 	SYS_ABI=$(opnsense-verify -a 2> /dev/null)
 
 	URL=$(sed -n 's/'"^[[:space:]]*url:[[:space:]]*"'\"pkg\+\(.*\)\/\(\/*\)\${ABI.*/\1/p' ${ORIGIN})

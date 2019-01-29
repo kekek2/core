@@ -35,6 +35,22 @@ require_once("services.inc");
 require_once("filter.inc");
 require_once("interfaces.inc");
 
+
+/* expand a host or network alias, if necessary */
+function alias_expand($name)
+{
+    global $aliastable;
+
+    if (array_key_exists($name, $aliastable)) {
+        return "\${$name}";
+    } elseif (is_ipaddr($name) || is_subnet($name) || is_port($name) || is_portrange($name)) {
+        return "{$name}";
+    } else {
+        return null;
+    }
+}
+
+
 function filter_generate_port(& $rule, $target = "source", $isnat = false) {
     $src = "";
 
@@ -55,8 +71,6 @@ function filter_generate_port(& $rule, $target = "source", $isnat = false) {
 
 function filter_generate_address(&$FilterIflist, &$rule, $target = 'source', $isnat = false)
 {
-    global $config;
-
     $src = '';
 
     if (isset($rule[$target]['any'])) {
@@ -212,7 +226,7 @@ function openvpn_client_export_validate_config($srvid, $usrid, $crtid)
 
 function openvpn_client_export_config($srvid, $usrid, $crtid, $useaddr, $verifyservercn, $randomlocalport, $usetoken, $nokeys = false, $proxy, $expformat = "baseconf", $outpass = "", $skiptls=false, $doslines=false, $openvpnmanager, $advancedoptions = "")
 {
-    global $config, $input_errors;
+    global $input_errors;
 
     $nl = ($doslines) ? "\r\n" : "\n";
     $conf = "";
@@ -523,8 +537,6 @@ function openvpn_client_export_config($srvid, $usrid, $crtid, $useaddr, $verifys
 
 function viscosity_openvpn_client_config_exporter($srvid, $usrid, $crtid, $useaddr, $verifyservercn, $randomlocalport, $usetoken, $outpass, $proxy, $openvpnmanager, $advancedoptions, $compression_type)
 {
-    global $config;
-
     $validconfig = openvpn_client_export_validate_config($srvid, $usrid, $crtid);
     if (!$validconfig) {
         return false;
@@ -701,11 +713,18 @@ function openvpn_client_export_sharedkey_config($srvid, $useaddr, $proxy, $zipco
         $conf .= openvpn_gen_routes($settings['local_networkv6'], 'ipv6');
     }
     if (!empty($settings['tunnel_network'])) {
-        list($ip, $mask) = explode('/', $settings['tunnel_network']);
-        $mask = gen_subnet_mask($mask);
+        list($ip, $prefix_length) = explode('/', $settings['tunnel_network']);
+        $mask = gen_subnet_mask($prefix_length);
         $baselong = ip2long32($ip) & ip2long($mask);
-        $ip1 = long2ip32($baselong + 1);
-        $ip2 = long2ip32($baselong + 2);
+
+        if ($prefix_length == "31") {
+            // As per RFC3021, in a /31 network, first address is the first host address
+            $ip1 = long2ip32($baselong);
+            $ip2 = long2ip32($baselong + 1);
+        } else {
+            $ip1 = long2ip32($baselong + 1);
+            $ip2 = long2ip32($baselong + 2);
+        }
         $conf .= "ifconfig $ip2 $ip1\n";
     }
     $conf .= "keepalive 10 60\n";
@@ -766,7 +785,8 @@ function openvpn_client_export_sharedkey_config($srvid, $useaddr, $proxy, $zipco
     }
 }
 
-function openvpn_client_export_build_remote_lines($settings, $useaddr, $interface, $expformat, $nl) {
+function openvpn_client_export_build_remote_lines($settings, $useaddr, $interface, $expformat, $nl)
+{
     global $config;
     $remotes = array();
     if (($useaddr == "serveraddr") || ($useaddr == "servermagic") || ($useaddr == "servermagichost")) {
@@ -1280,7 +1300,7 @@ if (isset($savemsg)) {
               <tr>
                 <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Remote Access Server");?></td>
                 <td>
-                  <select name="server" id="server">
+                  <select name="server" id="server" class="selectpicker">
 <?php
                     foreach ($ras_server as $server) :?>
                     <option value="<?=$server['index'];?>" data-mode="<?=$server['mode'];?>"><?=htmlspecialchars($server['name']);?></option>
@@ -1292,7 +1312,7 @@ if (isset($savemsg)) {
               <tr>
                 <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Host Name Resolution");?></td>
                 <td>
-                      <select name="useaddr" id="useaddr">
+                      <select name="useaddr" id="useaddr" class="selectpicker">
                         <option value="serveraddr" ><?=gettext("Interface IP Address");?></option>
                         <option value="servermagic" ><?=gettext("Automatic Multi-WAN IPs (port forward targets)");?></option>
                         <option value="servermagichost" ><?=gettext("Automatic Multi-WAN dynamic DNS Hostnames (port forward targets)");?></option>
@@ -1328,7 +1348,7 @@ if (isset($savemsg)) {
               <tr class="mode_server">
                 <td><a id="help_for_verify_server_cn" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Verify Server CN");?></td>
                 <td>
-                      <select name="verifyservercn" id="verifyservercn">
+                      <select name="verifyservercn" id="verifyservercn" class="selectpicker">
                         <option value="auto"><?=gettext("Automatic - Use verify-x509-name (OpenVPN 2.3+) where possible");?></option>
                         <option value="tls-remote"><?=gettext("Use tls-remote (deprecated, use only on clients prior to OpenVPN 2.3)");?></option>
                         <option value="tls-remote-quote"><?=gettext("Use tls-remote and quote the server CN");?></option>
@@ -1379,7 +1399,7 @@ if (isset($savemsg)) {
                       </div>
                       <div id="useproxy_opts" style="display:none" >
                         <label for="useproxytype"><?=gettext("Type");?></label>
-                        <select name="useproxytype" id="useproxytype">
+                        <select name="useproxytype" id="useproxytype"class="selectpicker">
                           <option value="http"><?=gettext("HTTP");?></option>
                           <option value="socks"><?=gettext("SOCKS");?></option>
                         </select>
@@ -1389,7 +1409,7 @@ if (isset($savemsg)) {
                         <input name="proxyport" id="proxyport" type="text" class="formfld unknown" size="5" value="" />
                         <div>
                           <label for="useproxypass"><?=gettext("Choose proxy authentication if any.");?></label>
-                          <select name="useproxypass" id="useproxypass">
+                          <select name="useproxypass" id="useproxypass" class="selectpicker">
                             <option value="none"><?=gettext("none");?></option>
                             <option value="basic"><?=gettext("basic");?></option>
                             <option value="ntlm"><?=gettext("ntlm");?></option>

@@ -29,15 +29,16 @@
 
 require_once("guiconfig.inc");
 
-
-function lagg_inuse($lagg_intf) {
+function lagg_inuse($lagg_intf)
+{
     global $config;
-    $iflist = get_configured_interface_list(false, true);
-    foreach ($iflist as $if) {
+
+    foreach (legacy_config_get_interfaces(array('virtual' => false)) as $if => $unused) {
         if ($config['interfaces'][$if]['if'] == $lagg_intf) {
             return true;
         }
     }
+
     if (isset($config['vlans']['vlan'])) {
         foreach ($config['vlans']['vlan'] as $vlan) {
             if($vlan['if'] == $lagg_intf) {
@@ -45,10 +46,11 @@ function lagg_inuse($lagg_intf) {
             }
         }
     }
+
     return false;
 }
 
-$a_laggs = &config_read_array('laggs', 'lagg') ;
+$a_laggs = &config_read_array('laggs', 'lagg');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($a_laggs[$_POST['id']])) {
@@ -124,7 +126,7 @@ $main_buttons = array(
                         <th><?=gettext("Members");?></th>
                         <th><?=gettext("Protocol");?></th>
                         <th><?=gettext("Description");?></th>
-                        <th>&nbsp;</th>
+                        <th class="text-nowrap"></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -136,12 +138,12 @@ $main_buttons = array(
                         <td><?=$lagg['members'];?></td>
                         <td><?=strtoupper($lagg['proto']);?></td>
                         <td><?=$lagg['descr'];?></td>
-                        <td>
-                          <a href="interfaces_lagg_edit.php?id=<?=$i;?>" class="btn btn-xs btn-default" data-toggle="tooltip" title="<?=gettext("edit interface");?>">
-                            <span class="glyphicon glyphicon-edit"></span>
+                        <td class="text-nowrap">
+                          <a href="interfaces_lagg_edit.php?id=<?=$i;?>" class="btn btn-xs btn-default" data-toggle="tooltip" title="<?= html_safe(gettext('Edit')) ?>">
+                            <i class="fa fa-pencil fa-fw"></i>
                           </a>
-                         <button title="<?=gettext("delete interface");?>" data-toggle="tooltip" data-id="<?=$i;?>" class="btn btn-default btn-xs act_delete" type="submit">
-                           <span class="fa fa-trash text-muted"></span>
+                         <button title="<?= html_safe(gettext('Delete')) ?>" data-toggle="tooltip" data-id="<?=$i;?>" class="btn btn-default btn-xs act_delete" type="submit">
+                           <i class="fa fa-trash fa-fw"></i>
                          </button>
                         </td>
                       </tr>

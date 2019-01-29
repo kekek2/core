@@ -30,7 +30,7 @@
 
 namespace OPNsense\Syslog\Api;
 
-use \OPNsense\Base\ApiControllerBase;
+use \OPNsense\Base\ApiMutableServiceControllerBase;
 use \OPNsense\Core\Backend;
 use \OPNsense\Syslog\Syslog;
 use \OPNsense\Core\Config;
@@ -40,9 +40,12 @@ use \Phalcon\Filter;
  * Class ServiceController
  * @package OPNsense\Syslog
  */
-class ServiceController extends ApiControllerBase
+class ServiceController extends ApiMutableServiceControllerBase
 {
-
+    static protected $internalServiceClass = 'OPNsense\Syslog\Syslog';
+    static protected $internalServiceTemplate = 'OPNSense/Syslog';
+    static protected $internalServiceEnabled = 'Enabled';
+    static protected $internalServiceName = 'syslog';
     /**
      * restart syslog service
      * @return array
@@ -179,6 +182,16 @@ class ServiceController extends ApiControllerBase
             if($filename != '') {
                 $backend = new Backend();
                 $logdatastr = $backend->configdRun("syslog dumplog {$filename} {$numentries} {$reverse} {$dump_filter}");
+
+                // Detect UTF-8 encoding.  See the note:
+                //
+                //     http://php.net/manual/en/function.mb-detect-encoding.php#112391
+                //
+                // for more detals.
+
+                if (!preg_match("//u", $logdatastr))
+                    $logdatastr = utf8_encode($logdatastr);
+
                 $logdata = explode("\n", $logdatastr);
             }
 
@@ -204,7 +217,7 @@ class ServiceController extends ApiControllerBase
                     $entry_text = trim(substr($entry_text, strlen($hostname)));
                 }
 
-                $formatted[] = array('time' => utf8_encode($entry_date_time), 'filter' => $filter, 'message' => utf8_encode($entry_text));
+                $formatted[] = array('time' => $entry_date_time, 'filter' => $filter, 'message' => $entry_text);
             }
 
             if(count($formatted) == 0)

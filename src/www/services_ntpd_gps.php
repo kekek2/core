@@ -315,12 +315,12 @@ SureGPS =    #Sure Electronics SKG16B
                       <td><a id="help_for_gps" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("GPS"); ?></td>
                       <td>
                         <!-- Start with the original "Default", list a "Generic" and then specific configs alphabetically -->
-                        <select id="gpstype" name="type">
+                        <select id="gpstype" name="type" class="selectpicker">
                           <option value="Generic" title="Generic"<?=empty($pconfig['type']) || $pconfig['type'] == 'Generic' ? " selected=\"selected\"" : "";?>><?=gettext('Generic') ?></option>
                           <option value="Default"<?=$pconfig['type'] == 'Default' ? " selected=\"selected\"" : ""; ?>><?=gettext('Default') ?></option>
                           <option value="Garmin" title="$PGRM... Most Garmin"<?=$pconfig['type'] == 'Garmin' ? " selected=\"selected\"" :"";?>><?=gettext('Garmin') ?></option>
                           <option value="MediaTek" title="$PMTK... Adafruit, Fastrax, some Garmin and others"<?=$pconfig['type'] == 'MediaTek' ? " selected=\"selected\"" :"";?>>MediaTek</option>
-                          <option value="SiRF" title="$PSRF... Used by many devices"<?=$pconfig['type'] == 'sirf' ? " selected=\"selected\"" :"";?>><?=gettext('SiRF') ?></option>
+                          <option value="SiRF" title="$PSRF... Used by many devices"<?=$pconfig['type'] == 'SiRF' ? " selected=\"selected\"" :"";?>><?=gettext('SiRF') ?></option>
                           <option value="U-Blox" title="$PUBX... U-Blox 5, 6 and probably 7"<?=$pconfig['type'] == 'U-Blox' ? " selected=\"selected\"" : "";?>><?=gettext('U-Blox') ?></option>
                           <option value="SureGPS" title="$PMTK... Sure Electronics SKG16B"<?=$pconfig['type'] == 'SureGPS' ? " selected=\"selected\"" : "";?>><?=gettext('SureGPS') ?></option>
                           <option value="Custom"<?=$pconfig['type'] == 'Custom' ? " selected=\"selected\"" : ""; ?>><?=gettext('Custom') ?></option>

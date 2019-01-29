@@ -131,6 +131,9 @@ class InterfaceField extends BaseField
             // Iterate over all interfaces configuration and collect data
             if (isset($configObj->interfaces) && $configObj->interfaces->count() > 0) {
                 foreach ($configObj->interfaces->children() as $key => $value) {
+                    if (!empty($value->internal_dynamic)) {
+                        continue;
+                    }
                     $allInterfaces[$key] = $value;
                     if (!empty($value->if)) {
                         $allInterfacesDevices[(string)$value->if] = $key;
@@ -183,11 +186,8 @@ class InterfaceField extends BaseField
                     }
                 }
                 if ($isMatched) {
-                    if ($value->descr == '') {
-                        self::$internalOptionList[$this->internalCacheKey][$key] = $key;
-                    } else {
-                        self::$internalOptionList[$this->internalCacheKey][$key] = (string)$value->descr;
-                    }
+                    self::$internalOptionList[$this->internalCacheKey][$key] =
+                        !empty($value->descr) ? (string)$value->descr : strtoupper($key);
                 }
             }
         }

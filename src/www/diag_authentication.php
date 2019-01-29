@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if ($authcfg['type'] == 'local') {
             // avoid gettext type issues on Local Database, authenticator should always be named "Local Database"
             $authName = 'Local Database';
-        } elseif ($authcfg['type'] == 'ldap') {
+        } elseif ($authcfg['type'] == 'ldap' || $authcfg['type'] == 'ldap-totp') {
             // temporary fix, ldap handler doesn't do this init yet.
             ldap_setup_caenv($authcfg);
         }
@@ -69,6 +69,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $savemsg .= "<br/><br/>" . gettext("Attributes received from server") . ": <br />";
             }
             foreach ($authenticator->getLastAuthProperties() as $attr_name => $attr_value) {
+                if (is_array($attr_value)) {
+                    $attr_value = implode(",", $attr_value);
+                }
                 $savemsg .= "{$attr_name} => {$attr_value}<br/>";
             }
         } else {
@@ -97,7 +100,7 @@ include("head.inc");
                 <tr>
                   <td style="width:22%"><?=gettext("Authentication Server"); ?></td>
                   <td style="width:78%">
-                    <select name="authmode" id="authmode" class="form-control" >
+                    <select class="selectpicker" name="authmode" id="authmode" >
 <?php
                     foreach (auth_get_authserver_list() as $auth_server_id => $auth_server):?>
                       <option value="<?=$auth_server_id;?>" <?=$auth_server['name'] == $pconfig['authmode'] ? "selected=\"selected\"" : "";?>>

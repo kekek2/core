@@ -35,7 +35,7 @@ import ujson
 
 
 arp_list = ARP().list_items()
-if len(sys.argv) > 1 and sys.argv[1].trim().lower() == 'json':
+if len(sys.argv) > 1 and sys.argv[1].strip().lower() == 'json':
     # dump as json
     print(ujson.dumps(arp_list))
 else:

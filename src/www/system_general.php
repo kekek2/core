@@ -123,6 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     if (count($input_errors) == 0) {
+        $oldlanguage = !empty($config['system']["language"]) ? $config['system']["language"] : "en_US" ;
         $config['system']['domain'] = $pconfig['domain'];
         $config['system']['hostname'] = $pconfig['hostname'];
         $config['system']['language'] = $pconfig['language'];
@@ -134,7 +135,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             unset($config['system']['prefer_ipv4']);
         }
 
-        $config['system']['dnsallowoverride'] = !empty($pconfig['dnsallowoverride']);
+        if (!empty($pconfig['dnsallowoverride'])) {
+            $config['system']['dnsallowoverride'] = true;
+        } elseif (isset($config['system']['dnsallowoverride'])) {
+            unset($config['system']['dnsallowoverride']);
+        }
 
         if($pconfig['dnslocalhost'] == "yes") {
           $config['system']['dnslocalhost'] = true;
@@ -209,6 +214,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         plugins_configure('dns');
         services_dhcpd_configure();
         filter_configure();
+        if ($oldlanguage != $pconfig['language']) {
+            configd_run('template reload OPNsense/Lang');
+        }
 
         header(url_safe('Location: /system_general.php?savemsg=%s', array(get_std_save_message(true))));
         exit;
@@ -288,7 +296,7 @@ include("head.inc");
             <tr>
               <td><a id="help_for_language" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Language");?></td>
               <td>
-                <select name="language" class="selectpicker" data-size="10" data-style="btn-default" data-width="auto">
+                <select name="language" class="selectpicker" data-style="btn-default">
 <?php
                   foreach (get_locale_list() as $lcode => $ldesc):?>
                   <option value="<?=$lcode;?>" <?= $lcode == $pconfig['language'] ? 'selected="selected"' : '' ?>>
@@ -397,9 +405,9 @@ include("head.inc");
               <td></td>
               <td>
                 <input name="dnslocalhost" type="checkbox" value="yes" <?=$pconfig['dnslocalhost'] ? "checked=\"checked\"" : ""; ?> />
-                <?=gettext("Do not use the DNS Forwarder/Resolver as a DNS server for the firewall"); ?>
+                <?= gettext('Do not use the local DNS service as a nameserver for this system') ?>
                 <div class="hidden" data-for="help_for_dnsservers_opt">
-                  <?=gettext("By default localhost (127.0.0.1) will be used as the first DNS server where the DNS Forwarder or DNS Resolver is enabled and set to listen on Localhost, so system can use the local DNS service to perform lookups. ".
+                  <?=gettext("By default localhost (127.0.0.1) will be used as the first nameserver when e.g. Dnsmasq or Unbund is enabled, so system can use the local DNS service to perform lookups. ".
                   "Checking this box omits localhost from the list of DNS servers."); ?>
                 </div>
               </td>

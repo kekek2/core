@@ -414,7 +414,12 @@ function cert_get_purpose($str_crt, $decode = true)
     $crt_details = openssl_x509_parse($str_crt);
     $purpose = array();
     $purpose['ca'] = (stristr($crt_details['extensions']['basicConstraints'], 'CA:TRUE') === false) ? 'No': 'Yes';
-    if (isset($crt_details['extensions']['nsCertType']) && $crt_details['extensions']['nsCertType'] == "SSL Server") {
+    if (isset($crt_details['extensions']['extendedKeyUsage']) &&
+        strstr($crt_details['extensions']['extendedKeyUsage'], 'TLS Web Server Authentication') !== false &&
+        isset($crt_details['extensions']['keyUsage']) &&
+        strpos($crt_details['extensions']['keyUsage'], 'Digital Signature') !== false &&
+        (strpos($crt_details['extensions']['keyUsage'], 'Key Encipherment') !== false ||
+        strpos($crt_details['extensions']['keyUsage'], 'Key Agreement') !== false)) {
         $purpose['server'] = 'Yes';
     } else {
         $purpose['server'] = 'No';
@@ -538,7 +543,6 @@ function cert_in_use($certref) {
 
 function crl_update(& $crl)
 {
-    global $config;
     $ca =& lookup_ca($crl['caref']);
     if (!$ca) {
         return false;
@@ -563,7 +567,6 @@ function crl_update(& $crl)
 
 function cert_revoke($cert, & $crl, $reason=OCSP_REVOKED_STATUS_UNSPECIFIED)
 {
-    global $config;
     if (is_cert_revoked($cert, $crl['refid'])) {
         return true;
     }

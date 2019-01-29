@@ -127,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             write_config();
             $confif = convert_real_interface_to_friendly_interface_name($gif['gifif']);
             if ($confif <> "") {
-                interface_configure($confif);
+                interface_configure(false, $confif);
             }
             header(url_safe('Location: /interfaces_gif.php'));
             exit;
@@ -213,9 +213,9 @@ include("head.inc");
                   <tr>
                     <td><a id="help_for_tunnel-remote-addr" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("GIF tunnel remote address "); ?></td>
                     <td>
-                      <table class="table table-condensed">
+                      <table>
                         <tr>
-                          <td style="width:285px">
+                          <td style="width:292px">
                             <input name="tunnel-remote-addr" type="text" id="tunnel-remote-addr" value="<?=$pconfig['tunnel-remote-addr'];?>" />
                           </td>
                           <td>

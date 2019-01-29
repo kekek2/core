@@ -68,7 +68,7 @@
 if (isset($config['wizardtemp'])) {
 	unset($config['wizardtemp']);
 }
-        </stepsubmitbeforesave>
+	</stepsubmitbeforesave>
 	<stepsubmitphpaction>step1_submitphpaction();</stepsubmitphpaction>
 </step>
 <step>
@@ -371,6 +371,10 @@ if (isset($config['wizardtemp'])) {
 					<value>2048</value>
 				</option>
 				<option>
+					<name>3072 bit</name>
+					<value>3072</value>
+				</option>
+				<option>
 					<name>4096 bit</name>
 					<value>4096</value>
 				</option>
@@ -496,6 +500,10 @@ if (isset($config['wizardtemp'])) {
 					<value>2048</value>
 				</option>
 				<option>
+					<name>3072 bit</name>
+					<value>3072</value>
+				</option>
+				<option>
 					<name>4096 bit</name>
 					<value>4096</value>
 				</option>
@@ -569,8 +577,8 @@ if (isset($config['wizardtemp'])) {
 		<field>
 			<name>interface</name>
 			<type>interfaces_selection</type>
-                        <subtype>openvpn</subtype>
-                        <value>any</value>
+			<subtype>openvpn</subtype>
+			<value>any</value>
 			<description>The interface where OpenVPN will listen for incoming connections.</description>
 			<displayname>Interface</displayname>
 			<bindstofield>wizardtemp->step10->interface</bindstofield>
@@ -656,22 +664,9 @@ if (isset($config['wizardtemp'])) {
 		<field>
 			<displayname>DH Parameters Length</displayname>
 			<name>dhparameters</name>
-			<type>select</type>
+			<type>dhparam_selection</type>
+			<value>2048</value>
 			<bindstofield>wizardtemp->step10->dhkey</bindstofield>
-			<options>
-				<option>
-					<name>1024 bit</name>
-					<value>1024</value>
-				</option>
-				<option>
-					<name>2048 bit</name>
-					<value>2048</value>
-				</option>
-				<option>
-					<name>4096 bit</name>
-					<value>4096</value>
-				</option>
-			</options>
 			<description>Length of Diffie-Hellman (DH) key exchange parameters, used for establishing a secure communications channel. As with other such settings, the larger values are more secure, but may be slower in operation.</description>
 		</field>
 		<field>

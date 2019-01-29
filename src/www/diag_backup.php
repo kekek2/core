@@ -1,32 +1,34 @@
 <?php
 
 /*
-    Copyright (C) 2014 Deciso B.V.
-    Copyright (C) 2004-2009 Scott Ullrich <sullrich@gmail.com>
-    Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
-    All rights reserved.
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are met:
-
-    1. Redistributions of source code must retain the above copyright notice,
-       this list of conditions and the following disclaimer.
-
-    2. Redistributions in binary form must reproduce the above copyright
-       notice, this list of conditions and the following disclaimer in the
-       documentation and/or other materials provided with the distribution.
-
-    THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
-    INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-    AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-    AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-    OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-    POSSIBILITY OF SUCH DAMAGE.
-*/
+ * Copyright (C) 2015-2018 Franco Fichtner <franco@opnsense.org>
+ * Copyright (C) 2014 Deciso B.V.
+ * Copyright (C) 2004-2009 Scott Ullrich <sullrich@gmail.com>
+ * Copyright (C) 2008 Shrew Soft Inc. <mgrooms@shrew.net>
+ * Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
 require_once("guiconfig.inc");
 require_once("interfaces.inc");
@@ -34,6 +36,8 @@ require_once("filter.inc");
 require_once("services.inc");
 require_once("rrd.inc");
 require_once("system.inc");
+
+use OPNsense\Backup\Local;
 
 /**
  * restore config section
@@ -69,7 +73,6 @@ function restore_config_section($section_name, $new_contents)
 
 $areas = array(
     'OPNsense' => gettext('OPNsense Additions'),	/* XXX need specifics */
-    'aliases' => gettext('Aliases'),
     'bridges' => gettext('Bridge Devices'),
     'ca' => gettext('SSL Certificate Authorities'),
     'cert' => gettext('SSL Certificates'),
@@ -145,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if (!empty($_POST['encrypt']) && (empty($_POST['encrypt_password']) || empty($_POST['encrypt_passconf']))) {
             $input_errors[] = gettext("You must supply and confirm the password for encryption.");
         } elseif (!empty($_POST['encrypt']) && $_POST['encrypt_password'] != $_POST['encrypt_passconf']) {
-            $input_errors[] = gettext("The supplied 'Password' and 'Confirm' field values must match.");
+            $input_errors[] = gettext('The passwords do not match.');
         }
         if (count($input_errors) == 0) {
             $host = "{$config['system']['hostname']}.{$config['system']['domain']}";
@@ -163,8 +166,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
 
             if (!empty($_POST['encrypt'])) {
-                $data = encrypt_data($data, $_POST['encrypt_password']);
-                tagfile_reformat($data, $data, "config.xml");
+                $crypter = new Local();
+                /* XXX this *could* fail, not handled */
+                $data = $crypter->encrypt($data, $_POST['encrypt_password']);
             }
 
             $size = strlen($data);
@@ -184,10 +188,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     } elseif ($mode == "restore") {
         // unpack data and perform validation
         $data = null;
-        if (!empty($_POST['decrypt']) && (empty($_POST['decrypt_password']) || empty($_POST['decrypt_passconf']))) {
-            $input_errors[] = gettext("You must supply and confirm the password for decryption.");
-        } elseif (!empty($_POST['decrypt']) && $_POST['decrypt_password'] != $_POST['decrypt_passconf']) {
-            $input_errors[] = gettext("The supplied 'Password' and 'Confirm' field values must match.");
+        if (!empty($_POST['decrypt']) && empty($_POST['decrypt_password'])) {
+            $input_errors[] = gettext('You must supply the password for decryption.');
+        }
+        $user = getUserEntry($_SESSION['Username']);
+        if (userHasPrivilege($user, 'user-config-readonly')) {
+            $input_errors[] = gettext('You do not have the permission to perform this action.');
         }
         /* read the file contents */
         if (is_uploaded_file($_FILES['conffile']['tmp_name'])) {
@@ -201,10 +207,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
 
         if (!empty($_POST['decrypt'])) {
-            if (!tagfile_deformat($data, $data, "config.xml")) {
-                $input_errors[] = gettext("The uploaded file does not appear to contain an encrypted OPNsense configuration.");
+            $crypter = new Local();
+            $data = $crypter->decrypt($data, $_POST['decrypt_password']);
+            if (empty($data)) {
+                $input_errors[] = gettext('The uploaded file could not be decrypted.');
             }
-            $data = decrypt_data($data, $_POST['decrypt_password']);
         }
 
         if(!empty($_POST['restorearea']) && !stristr($data, "<" . $_POST['restorearea'] . ">")) {
@@ -354,12 +361,12 @@ $( document ).ready(function() {
                     <div class="hidden table-responsive __mt" id="encrypt_opts">
                       <table class="table table-condensed">
                         <tr>
-                          <td><?=gettext("Password:"); ?></td>
-                          <td><input name="encrypt_password" type="password" value="" /></td>
+                          <td><?= gettext('Password') ?></td>
+                          <td><input name="encrypt_password" type="password"/></td>
                         </tr>
                         <tr>
-                          <td><?=gettext("confirm:"); ?></td>
-                          <td><input name="encrypt_passconf" type="password" value="" /> </td>
+                          <td><?= gettext('Confirmation') ?></td>
+                          <td><input name="encrypt_passconf" type="password"/> </td>
                         </tr>
                       </table>
                     </div>
@@ -385,14 +392,16 @@ $( document ).ready(function() {
                 <tr>
                   <td>
                     <?=gettext("Restore area:"); ?>
-                    <select name="restorearea" id="restorearea">
-                      <option value=""><?=gettext("ALL");?></option>
+                    <div>
+                      <select name="restorearea" id="restorearea" class="selectpicker">
+                        <option value=""><?=gettext("ALL");?></option>
 <?php
-                    foreach($areas as $area => $areaname):?>
-                      <option value="<?=$area;?>"><?=$areaname;?></option>
+                      foreach($areas as $area => $areaname):?>
+                        <option value="<?=$area;?>"><?=$areaname;?></option>
 <?php
-                    endforeach;?>
-                    </select><br/>
+                      endforeach;?>
+                      </select>
+                    </div>
                     <input name="conffile" type="file" id="conffile" /><br/>
                     <input name="rebootafterrestore" type="checkbox" id="rebootafterrestore" checked="checked" />
                     <?=gettext("Reboot after a successful restore."); ?><br/>
@@ -401,12 +410,8 @@ $( document ).ready(function() {
                     <div class="hidden table-responsive __mt" id="decrypt_opts">
                       <table class="table table-condensed">
                         <tr>
-                          <td><?=gettext("Password:"); ?></td>
-                          <td><input name="decrypt_password" type="password" value="" /></td>
-                        </tr>
-                        <tr>
-                          <td><?=gettext("confirm:"); ?></td>
-                          <td><input name="decrypt_passconf" type="password" value="" /> </td>
+                          <td><?= gettext('Password') ?></td>
+                          <td><input name="decrypt_password" type="password"/></td>
                         </tr>
                       </table>
                     </div>
@@ -455,6 +460,9 @@ $( document ).ready(function() {
                         elseif ($field['type'] == 'password'):?>
 
                         <input name="<?=$fieldId;?>" type="password" value="<?=$field['value'];?>" />
+<?php
+                        elseif ($field['type'] == 'textarea'):?>
+                        <textarea name="<?=$fieldId;?>" type="text" rows="10"><?=$pconfig[$fieldId];?></textarea>
 <?php
                         endif;?>
                         <div class="hidden" data-for="help_for_<?=$fieldId;?>">

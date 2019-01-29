@@ -68,6 +68,9 @@ function list_interfaces() {
         if (match_wireless_interface($key)) {
             continue;
         }
+        if (preg_match('/_stf$/', $key)) {
+            continue;
+        }
         $interfaces[$key] = array('descr' => $key . ' (' . $intf_item['mac'] . ')', 'section' => 'interfaces');
     }
     // collect interfaces from defined config sections
@@ -133,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         /* find next free optional interface number */
         if(empty($config['interfaces']['lan'])) {
-            $newifname = gettext("lan");
+            $newifname = 'lan';
             $descr = gettext("LAN");
         } else {
             for ($i = 1; $i <= count($config['interfaces']); $i++) {
@@ -155,10 +158,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (match_wireless_interface($_POST['if_add'])) {
             $config['interfaces'][$newifname]['wireless'] = array();
             interface_sync_wireless_clones($config['interfaces'][$newifname], false);
-        }
-        /* lock known-to-be unreliable interfaces by default */
-        if (in_array(substr($_POST['if_add'], 0, 2), array('ue', 'zt'))) {
-            $config['interfaces'][$newifname]['lock'] = true;
         }
 
         write_config();
@@ -291,9 +290,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                   /* check for wireless interfaces, set or clear ['wireless'] */
                   if (match_wireless_interface($ifport)) {
-                      if (empty($config['interfaces'][$ifname]['wireless'])) {
-                          $config['interfaces'][$ifname]['wireless'] = array();
-                      }
+                      config_read_array('interfaces', $ifname, 'wireless');
                   } elseif (isset($config['interfaces'][$ifname]['wireless'])) {
                       unset($config['interfaces'][$ifname]['wireless']);
                   }
@@ -309,7 +306,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                           interface_sync_wireless_clones($config['interfaces'][$ifname], false);
                       }
                       /* Reload all for the interface. */
-                      interface_configure($ifname, INTERFACE_RELOAD_SINGLE);
+                      interface_configure(false, $ifname, true);
                       // count changes
                       $changes++;
                   }
@@ -408,7 +405,7 @@ include("head.inc");
                           <strong><u><span onclick="location.href='/interfaces.php?if=<?=$ifname;?>'" style="cursor: pointer;"><?=$iface['descr'];?></span></u></strong>
                         </td>
                         <td>
-                          <select name="<?=$ifname;?>" id="<?=$ifname;?>">
+                          <select name="<?=$ifname;?>" id="<?=$ifname;?>" class="selectpicker">
 <?php
                           foreach ($interfaces as $portname => $portinfo):?>
                             <option  value="<?=$portname;?>"  <?= $portname == $iface['if'] ? " selected=\"selected\"" : "";?>>
@@ -421,8 +418,8 @@ include("head.inc");
                         <td>
 <?php
                           if (empty($iface['lock'])): ?>
-                          <button title="<?= html_safe(gettext('Delete interface')) ?>" data-toggle="tooltip" data-id="<?=$ifname;?>" class="btn btn-default act_delete" type="submit">
-                            <span class="fa fa-trash"></span>
+                          <button title="<?= html_safe(gettext('Delete')) ?>" data-toggle="tooltip" data-id="<?=$ifname;?>" class="btn btn-default act_delete" type="submit">
+                            <i class="fa fa-trash fa-fw"></i>
                           </button>
 <?php
                           endif ?>
@@ -434,7 +431,7 @@ include("head.inc");
                       <tr>
                         <td><?= gettext('New interface:') ?></td>
                         <td>
-                          <select name="if_add" id="if_add">
+                          <select name="if_add" id="if_add" class="selectpicker">
 <?php
                           foreach ($unused_interfaces as $portname => $portinfo): ?>
                             <option  value="<?=$portname;?>"> <?=$portinfo['descr'];?></option>
@@ -443,8 +440,8 @@ include("head.inc");
                           </select>
                         </td>
                         <td>
-                          <button name="add_x" type="submit" value="<?=$portname;?>" class="btn btn-primary" title="<?=gettext("add selected interface");?>" data-toggle="tooltip">
-                            <span class="glyphicon glyphicon-plus"></span>
+                          <button name="add_x" type="submit" value="<?=$portname;?>" class="btn btn-primary" title="<?= html_safe(gettext('Add')) ?>" data-toggle="tooltip">
+                            <i class="fa fa-plus fa-fw"></i>
                           </button>
                         </td>
                       </tr>
@@ -453,12 +450,11 @@ include("head.inc");
                       <tr>
                         <td colspan="2"></td>
                         <td>
-                          <input name="Submit" type="submit" class="btn btn-primary" value="<?=gettext("Save"); ?>" />
+                          <button name="Submit" type="submit" class="btn btn-primary" value="yes"><?= gettext('Save') ?></button>
                         </td>
                       </tr>
                     </tbody>
                   </table>
-                </div>
               </div>
             </form>
           </div>
@@ -466,4 +462,5 @@ include("head.inc");
       </div>
     </div>
   </section>
-<?php include("foot.inc"); ?>
+
+<?php include("foot.inc");

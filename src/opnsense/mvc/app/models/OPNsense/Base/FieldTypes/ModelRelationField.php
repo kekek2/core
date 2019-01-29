@@ -107,7 +107,7 @@ class ModelRelationField extends BaseField
 
                 $searchItems = $modelObj->getNodeByReference($modelData['items']);
                 if (!empty($searchItems)) {
-                    foreach ($modelObj->getNodeByReference($modelData['items'])->__items as $node) {
+                    foreach ($modelObj->getNodeByReference($modelData['items'])->iterateItems() as $node) {
                         if (!isset($node->getAttributes()['uuid']) || $node->$displayKey == null) {
                             continue;
                         }
@@ -156,6 +156,13 @@ class ModelRelationField extends BaseField
             // set internal key for this node based on sources and filter criteria
             $this->internalCacheKey = md5(serialize($mdlStructure));
         }
+    }
+
+    /**
+     * load model options when initialized
+     */
+    protected function actionPostLoadingEvent()
+    {
         $this->loadModelOptions();
     }
 
@@ -182,7 +189,7 @@ class ModelRelationField extends BaseField
         if (isset(self::$internalOptionList[$this->internalCacheKey]) &&
             is_array(self::$internalOptionList[$this->internalCacheKey])) {
             // if relation is not required, add empty option
-            if (!$this->internalIsRequired) {
+            if (!$this->internalIsRequired && !$this->internalMultiSelect) {
                 $result[""] = array("value"=>"none", "selected" => 0);
             }
 

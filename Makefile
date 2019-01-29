@@ -35,12 +35,17 @@ CORE_COMMIT!=	${.CURDIR}/Scripts/version.sh
 CORE_VERSION=	${CORE_COMMIT:C/-.*$//1}
 CORE_HASH=	${CORE_COMMIT:C/^.*-//1}
 
-TING_ABI?=	1.3
-CORE_ABI?=	18.1
+TING_ABI?=	1.4
+CORE_ABI?=	18.7
 CORE_ARCH?=	${ARCH}
+CORE_FLAVOUR=	${FLAVOUR}
 CORE_OPENVPN?=	# empty
 CORE_PHP?=	71
-CORE_PY?=	27
+CORE_PYTHON2?=	27
+CORE_PYTHON3?=	36
+CORE_RADVD?=	1
+CORE_SQUID?=	
+CORE_SURICATA?=	-devel
 
 _FLAVOUR!=	if [ -f ${OPENSSL} ]; then ${OPENSSL} version; fi
 FLAVOUR?=	${_FLAVOUR:[1]}
@@ -53,38 +58,44 @@ CORE_REPOSITORY?=	${TING_ABI}/libressl
 CORE_REPOSITORY?=	${FLAVOUR}
 .endif
 
-CORE_NAME?=		ting
+CORE_MESSAGE?=		Insert Name Here
+CORE_NAME?=		opnsense-devel
 CORE_TYPE?=		development
-CORE_MESSAGE?=		
 
-CORE_MAINTAINER?=	evbevz@gmail.com
-CORE_PACKAGESITE?=	https://update0.smart-soft.ru
-CORE_ORIGIN?=		ting
-CORE_COMMENT?=		TING ${CORE_TYPE} package
-CORE_WWW?=		http://smart-soft.ru/
+CORE_COMMENT?=		${CORE_PRODUCT} ${CORE_TYPE} package
+CORE_MAINTAINER?=	project@opnsense.org
+CORE_ORIGIN?=		opnsense/${CORE_NAME}
+CORE_PACKAGESITE?=	https://pkg.opnsense.org
+CORE_PRODUCT?=		OPNsense
+CORE_WWW?=		https://opnsense.org/
 
-# CORE_DEPENDS_armv6 is empty
+CORE_COPYRIGHT_HOLDER?=	Deciso B.V.
+CORE_COPYRIGHT_WWW?=	https://www.deciso.com/
+CORE_COPYRIGHT_YEARS?=	2014-2018
+
 CORE_DEPENDS_amd64?=	beep bsdinstaller
 CORE_DEPENDS_i386?=	${CORE_DEPENDS_amd64}
 
 CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			apinger \
+			apuledctld \
 			ca_root_nss \
 			cfv \
 			choparp \
 			cpustats \
-			dhcp6 \
+			dhcp6c \
 			dhcpleases \
+			dmidecode \
 			dnsmasq \
+			dpinger \
 			expiretable \
 			filterlog \
 			ifinfo \
 			flock \
 			flowd \
 			hostapd \
-			isc-dhcp43-client \
-			isc-dhcp43-relay \
-			isc-dhcp43-server \
+			isc-dhcp44-relay \
+			isc-dhcp44-server \
 			lighttpd \
 			monit \
 			mpd5 \
@@ -114,22 +125,22 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			php${CORE_PHP}-sqlite3 \
 			php${CORE_PHP}-xml \
 			php${CORE_PHP}-zlib \
-			py${CORE_PY}-Jinja2 \
-			py${CORE_PY}-dnspython \
-			py${CORE_PY}-ipaddress \
-			py${CORE_PY}-netaddr \
-			py${CORE_PY}-requests \
-			py${CORE_PY}-sqlite3 \
-			py${CORE_PY}-ujson \
-			radvd \
+			py${CORE_PYTHON2}-Jinja2 \
+			py${CORE_PYTHON2}-dnspython \
+			py${CORE_PYTHON2}-ipaddress \
+			py${CORE_PYTHON2}-netaddr \
+			py${CORE_PYTHON2}-requests \
+			py${CORE_PYTHON2}-sqlite3 \
+			py${CORE_PYTHON2}-ujson \
+			radvd${CORE_RADVD} \
 			rate \
-			rrdtool12 \
+			rrdtool \
 			samplicator \
-			squid \
+			squid${CORE_SQUID} \
 			sshlockout_pf \
 			strongswan \
 			sudo \
-			suricata \
+			suricata${CORE_SURICATA} \
 			syslog-ng \
 			unbound \
 			ting-update \
@@ -142,13 +153,17 @@ WRKDIR?=${.CURDIR}/work
 WRKSRC?=${WRKDIR}/src
 PKGDIR?=${WRKDIR}/pkg
 
+.if defined(DEMO)
+FILES_TO_ENCODE=${WRKSRC}
+.else
 FILES_TO_ENCODE=${WRKSRC}${LOCALBASE}/etc/inc/authgui.inc \
 		${WRKSRC}${LOCALBASE}/www/ting_cert.php \
 		${WRKSRC}${LOCALBASE}/www/ting_cert_manual.php \
 		${WRKSRC}${LOCALBASE}/opnsense/mvc/app/library/SmartSoft/Core/Tools.php
+.endif
 
 WANTS=		p5-File-Slurp php${CORE_PHP}-pear-PHP_CodeSniffer \
-		phpunit6-php${CORE_PHP}
+		phpunit6-php${CORE_PHP} py${CORE_PYTHON2}-pycodestyle
 
 .for WANT in ${WANTS}
 want-${WANT}:
@@ -158,7 +173,7 @@ want-${WANT}:
 mount:
 	@if [ ! -f ${WRKDIR}/.mount_done ]; then \
 	    echo -n "Enabling core.git live mount..."; \
-	    echo "${CORE_COMMIT}" > \
+	    sed ${SED_REPLACE} ${.CURDIR}/src/opnsense/version/opnsense.in > \
 	        ${.CURDIR}/src/opnsense/version/opnsense; \
 	    mount_unionfs ${.CURDIR}/src ${LOCALBASE}; \
 	    touch ${WRKDIR}/.mount_done; \
@@ -170,7 +185,6 @@ umount:
 	@if [ -f ${WRKDIR}/.mount_done ]; then \
 	    echo -n "Disabling core.git live mount..."; \
 	    umount -f "<above>:${.CURDIR}/src"; \
-	    rm ${.CURDIR}/src/opnsense/version/opnsense; \
 	    rm ${WRKDIR}/.mount_done; \
 	    echo "done"; \
 	    service configd restart; \
@@ -211,22 +225,14 @@ PKG_SCRIPTS=	+PRE_INSTALL +POST_INSTALL \
 
 scripts:
 .for PKG_SCRIPT in ${PKG_SCRIPTS}
-	@if [ -e ${.CURDIR}/${PKG_SCRIPT} ]; then \
-		cp -v -- ${.CURDIR}/${PKG_SCRIPT} ${DESTDIR}/; \
-		sed -i '' -e "s/%%CORE_COMMIT%%/${CORE_COMMIT}/g" \
-		    -e "s/%%CORE_NAME%%/${CORE_NAME}/g" \
-		    -e "s/%%CORE_ABI%%/${CORE_ABI}/g" \
-		    -e "s/%%TING_ABI%%/${TING_ABI}/g" \
-		    ${DESTDIR}/${PKG_SCRIPT}; \
+	@if [ -f ${.CURDIR}/${PKG_SCRIPT} ]; then \
+		cp -- ${.CURDIR}/${PKG_SCRIPT} ${DESTDIR}/; \
 	fi
 .endfor
 
 install:
 	@${MAKE} -C ${.CURDIR}/contrib install DESTDIR=${DESTDIR}
-	@${MAKE} -C ${.CURDIR}/src install DESTDIR=${DESTDIR} \
-	    CORE_NAME=${CORE_NAME} CORE_ABI=${CORE_ABI} \
-	    CORE_PACKAGESITE=${CORE_PACKAGESITE} \
-	    CORE_REPOSITORY=${CORE_REPOSITORY}
+	@${MAKE} -C ${.CURDIR}/src install DESTDIR=${DESTDIR} ${MAKE_REPLACE}
 
 collect:
 	@(cd ${.CURDIR}/src; find * -type f) | while read FILE; do \
@@ -238,9 +244,7 @@ collect:
 
 bootstrap:
 	@${MAKE} -C ${.CURDIR}/src install-bootstrap DESTDIR=${DESTDIR} \
-	    NO_SAMPLE=please CORE_PACKAGESITE=${CORE_PACKAGESITE} \
-	    CORE_NAME=${CORE_NAME} CORE_ABI=${CORE_ABI} \
-	    CORE_REPOSITORY=${CORE_REPOSITORY}
+	    NO_SAMPLE=please ${MAKE_REPLACE}
 
 plist:
 	@${SHA1} -q ${.CURDIR}/src/etc/config.xml.sample > ${.CURDIR}/src/etc/config.xml.sum.sample
@@ -251,6 +255,7 @@ plist-fix:
 	@${MAKE} DESTDIR=${DESTDIR} plist > ${.CURDIR}/plist
 
 plist-check:
+	@mkdir -p ${WRKDIR}
 	@${MAKE} DESTDIR=${DESTDIR} plist > ${WRKDIR}/plist.new
 	@cat ${.CURDIR}/plist > ${WRKDIR}/plist.old
 	@if ! diff -uq ${WRKDIR}/plist.old ${WRKDIR}/plist.new > /dev/null ; then \
@@ -277,12 +282,33 @@ REMOTESHELL?=ssh -q encoder
 RCP?=scp -q
 RCPHOST?=encoder
 
-package: package-check clean-work
+package: plist-check package-check clean-work
 .for CORE_DEPEND in ${CORE_DEPENDS}
-	@if ! ${PKG} info ${CORE_DEPEND} > /dev/null; then ${PKG} install -yA ${CORE_DEPEND}; fi
+	@if ! ${PKG} info ${CORE_DEPEND} > /dev/null; then ${PKG} install -yfA ${CORE_DEPEND}; fi
 .endfor
+	@echo -n ">>> Generating metadata for ${CORE_NAME}-${CORE_VERSION}..."
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} metadata
+	@echo " done"
+	@echo -n ">>> Installing files for ${CORE_NAME}-${CORE_VERSION}..."
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} install
+.if defined(DEMO)
+	@echo ">>> Encoding all files for DEMO..."
+	@if [ -f /root/.ssh/encoder_rsa ]; then \
+	    ENC_TEMP=`${REMOTESHELL} 'mktemp -d'`; \
+	    ${RCP} -r ${WRKSRC} ${RCPHOST}:$${ENC_TEMP}; \
+	    ${REMOTESHELL} "cd $${ENC_TEMP}; /usr/local/ioncube/ioncube_encoder.sh -C -71 --encode '*.inc' --expire-in ${DEMO} --copy src/usr/local/opnsense/contrib/ --copy src/usr/local/opnsense/mvc/app/library/OPNsense/Core/Config.php src -o src-enc --shell-script-line '#\!/usr/bin/env php'"; \
+	    ${RCP} -r ${RCPHOST}:$${ENC_TEMP}/src-enc ${WRKDIR} ; \
+	    ${REMOTESHELL} "rm -rf $${ENC_TEMP}"; \
+	else \
+	    exit 1; \
+	fi
+	@sed -i '' 's/url:.*/url: "file:\/\/\/var\/tmp\/sets"/' ${WRKDIR}/src-enc/usr/local/etc/pkg/repos/SmartSoft.conf.sample
+	@echo '{"file:///var/tmp/sets/":"Local repo"}' > ${WRKDIR}/src-enc/usr/local/opnsense/firmware-mirrors
+	@echo " done"
+	@echo ">>> Packaging files for ${CORE_NAME}-${CORE_VERSION}:"
+	@PORTSDIR=${.CURDIR} ${PKG} create -v -m ${WRKSRC} -r ${WRKDIR}/src-enc \
+	    -p ${WRKSRC}/plist -o ${PKGDIR}
+.else
 	@if [ -f /root/.ssh/encoder_rsa ]; then \
 	    echo ">>> Encode some files"; \
 	    ENC_TEMP=`${REMOTESHELL} 'mktemp -d'`; \
@@ -295,8 +321,11 @@ package: package-check clean-work
 	    done; \
 	    ${REMOTESHELL} "rm -rf $${ENC_TEMP}"; \
 	fi
+	@echo " done"
+	@echo ">>> Packaging files for ${CORE_NAME}-${CORE_VERSION}:"
 	@PORTSDIR=${.CURDIR} ${PKG} create -v -m ${WRKSRC} -r ${WRKSRC} \
 	    -p ${WRKSRC}/plist -o ${PKGDIR}
+.endif
 
 upgrade-check:
 	@if ! ${PKG} info ${CORE_NAME} > /dev/null; then \
@@ -304,13 +333,10 @@ upgrade-check:
 		exit 1; \
 	fi
 
-upgrade: plist-check upgrade-check clean-package package
-	@${PKG} delete -fy ${CORE_NAME}
+upgrade: upgrade-check clean-package package
+	@${PKG} delete -fy ${CORE_NAME} || true
 	@${PKG} add ${PKGDIR}/*.txz
-	@/usr/local/etc/rc.restart_webgui
-
-update:
-	@${GIT} pull
+	@${LOCALBASE}/etc/rc.restart_webgui
 
 lint: plist-check
 	find ${.CURDIR}/src ${.CURDIR}/Scripts \
@@ -342,7 +368,10 @@ sweep:
 
 STYLEDIRS?=	src/etc/inc/plugins.inc.d src/opnsense
 
-style: want-php${CORE_PHP}-pear-PHP_CodeSniffer
+style-python: want-py${CORE_PYTHON2}-pycodestyle
+	@pycodestyle --ignore=E501 ${.CURDIR}/src || true
+
+style-php: want-php${CORE_PHP}-pear-PHP_CodeSniffer
 	@: > ${WRKDIR}/style.out
 .for STYLEDIR in ${STYLEDIRS}
 	@(phpcs --standard=ruleset.xml ${.CURDIR}/${STYLEDIR} \
@@ -360,16 +389,48 @@ style-fix: want-php${CORE_PHP}-pear-PHP_CodeSniffer
 	phpcbf --standard=ruleset.xml ${.CURDIR}/${STYLEDIR} || true
 .endfor
 
+style: style-python style-php
+
 license: want-p5-File-Slurp
 	@${.CURDIR}/Scripts/license > ${.CURDIR}/LICENSE
 
 dhparam:
 .for BITS in 1024 2048 4096
 	${OPENSSL} dhparam -out \
-	    ${.CURDIR}/src/etc/dh-parameters.${BITS} ${BITS}
+	    ${.CURDIR}/src/etc/dh-parameters.${BITS}.sample ${BITS}
 .endfor
 
+ARGS=	diff mfc
+
+# handle argument expansion for required targets
+.for TARGET in ${.TARGETS}
+_TARGET=		${TARGET:C/\-.*//}
+.if ${_TARGET} != ${TARGET}
+.for ARGUMENT in ${ARGS}
+.if ${_TARGET} == ${ARGUMENT}
+${_TARGET}_ARGS+=	${TARGET:C/^[^\-]*(\-|\$)//:S/,/ /g}
+${TARGET}: ${_TARGET}
+.endif
+.endfor
+${_TARGET}_ARG=		${${_TARGET}_ARGS:[0]}
+.endif
+.endfor
+
+diff:
+	@git diff --stat -p stable/${CORE_ABI} ${.CURDIR}/${diff_ARGS:[1]}
+
+mfc:
+	@git checkout stable/${CORE_ABI}
+.for MFC in ${mfc_ARGS}
+	@git cherry-pick -x ${MFC}
+.endfor
+	@git checkout master
+
 test: want-phpunit6-php${CORE_PHP}
+	@if [ "$$(${PKG} query %n-%v ${CORE_NAME})" != "${CORE_NAME}-${CORE_VERSION}" ]; then \
+		echo "Installed version does not match, expected ${CORE_NAME}-${CORE_VERSION}"; \
+		exit 1; \
+	fi
 	@cd ${.CURDIR}/src/opnsense/mvc/tests && \
 	    phpunit --configuration PHPunit.xml
 

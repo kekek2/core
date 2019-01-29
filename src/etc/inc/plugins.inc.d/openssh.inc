@@ -2,7 +2,7 @@
 
 /*
  * Copyright (C) 2004 Scott Ullrich <sullrich@gmail.com>
- * Copyright (C) 2004 Fred Mol <fredmol@xs4all.nl>.
+ * Copyright (C) 2004 Fred Mol <fredmol@xs4all.nl>
  * Copyright (C) 2015-2018 Franco Fichtner <franco@opnsense.org>
  * All rights reserved.
  *
@@ -90,6 +90,7 @@ function openssh_configure_do($verbose = false, $interface = '')
     $interfaces = array();
     if (!empty($sshcfg['interfaces'])) {
         $interfaces = explode(',', $sshcfg['interfaces']);
+        $interfaces[] = 'lo0';
     }
 
     if (!empty($interface) && !in_array($interface, $interfaces)) {
@@ -185,21 +186,13 @@ function openssh_configure_do($verbose = false, $interface = '')
 
     $listeners = array();
 
-    foreach ($interfaces as $interface) {
-        $realif = get_real_interface($interface);
-        $addrs = legacy_get_interface_addresses($realif);
-        foreach (array('ipaddr', 'ipaddr6', 'ipaddr6_ll') as $type) {
-            if (!empty($addrs[$type])) {
-                $listeners[] = $addrs[$type];
-            }
+    foreach (interfaces_addresses($interfaces) as $tmpaddr => $info) {
+        if ($info['scope']) {
+            /* link-local does not seem to be supported */
+            continue;
         }
 
-        $viparr = &config_read_array('virtualip', 'vip');
-        foreach ($viparr as $vip) {
-            if ($vip['interface'] == $interface && is_ipaddr($vip['subnet'])) {
-                $listeners[] = $vip['subnet'];
-            }
-        }
+        $listeners[] = $tmpaddr;
     }
 
     foreach ($listeners as $listener) {

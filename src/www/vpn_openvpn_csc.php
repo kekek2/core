@@ -80,7 +80,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     if ($act == "del") {
         if (isset($id)) {
-            @unlink("/var/etc/openvpn-csc/{$a_csc[$id]['common_name']}");
             unset($a_csc[$id]);
             write_config();
         }
@@ -90,7 +89,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if (!empty($pconfig['rule']) && is_array($pconfig['rule'])) {
             foreach ($pconfig['rule'] as $rulei) {
                 if (isset($a_csc[$rulei])) {
-                    @unlink("/var/etc/openvpn-csc/{$a_csc[$rulei]['common_name']}");
                     unset($a_csc[$rulei]);
                 }
             }
@@ -116,28 +114,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $a_csc[$id]['disable'] = true;
             }
             write_config();
-            openvpn_configure_csc();
         }
         header(url_safe('Location: /vpn_openvpn_csc.php'));
         exit;
     } else {
-        /* perform validations */
-        if ($result = openvpn_validate_cidr($pconfig['tunnel_network'], 'IPv4 Tunnel Network', false, 'ipv4', true)) {
+        if ($result = openvpn_validate_cidr($pconfig['tunnel_network'], gettext('IPv4 Tunnel Network'), false, 'ipv4', true)) {
             $input_errors[] = $result;
         }
-        if ($result = openvpn_validate_cidr($pconfig['tunnel_networkv6'], 'IPv6 Tunnel Network', false, 'ipv6', true)) {
+        if ($result = openvpn_validate_cidr($pconfig['tunnel_networkv6'], gettext('IPv6 Tunnel Network'), false, 'ipv6', true)) {
             $input_errors[] = $result;
         }
-        if ($result = openvpn_validate_cidr($pconfig['local_network'], 'IPv4 Local Network', true, "ipv4")) {
+        if ($result = openvpn_validate_cidr($pconfig['local_network'], gettext('IPv4 Local Network'), true, 'ipv4')) {
             $input_errors[] = $result;
         }
-        if ($result = openvpn_validate_cidr($pconfig['local_networkv6'], 'IPv6 Local Network', true, "ipv6")) {
+        if ($result = openvpn_validate_cidr($pconfig['local_networkv6'], gettext('IPv6 Local Network'), true, 'ipv6')) {
             $input_errors[] = $result;
         }
-        if ($result = openvpn_validate_cidr($pconfig['remote_network'], 'IPv4 Remote Network', true, "ipv4")) {
+        if ($result = openvpn_validate_cidr($pconfig['remote_network'], gettext('IPv4 Remote Network'), true, 'ipv4')) {
             $input_errors[] = $result;
         }
-        if ($result = openvpn_validate_cidr($pconfig['remote_networkv6'], 'IPv6 Remote Network', true, "ipv6")) {
+        if ($result = openvpn_validate_cidr($pconfig['remote_networkv6'], gettext('IPv6 Remote Network'), true, 'ipv6')) {
             $input_errors[] = $result;
         }
 
@@ -213,11 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $a_csc[] = $csc;
             }
 
-            if (!empty($old_csc_cn)) {
-                @unlink('/var/etc/openvpn-csc/' . basename($old_csc_cn));
-            }
             write_config();
-            openvpn_configure_csc();
 
             header(url_safe('Location: /vpn_openvpn_csc.php'));
             exit;
@@ -356,7 +348,7 @@ $( document ).ready(function() {
 <?
 if ($act!="new" && $act!="edit") {
     $main_buttons = array(
-        array('href'=>'vpn_openvpn_csc.php?act=new', 'label'=>gettext("add csc")),
+        array('href' => 'vpn_openvpn_csc.php?act=new', 'label' => gettext('Add')),
     );
 }
 ?>
@@ -615,7 +607,7 @@ if ($act!="new" && $act!="edit") {
 
                       <div id="netbios_data">
                         <?=gettext("Node Type"); ?>:&nbsp;
-                        <select name='netbios_ntype'>
+                        <select name='netbios_ntype' class="selectpicker">
 <?php
                         foreach ($netbios_nodetypes as $type => $name) :
                             $selected = "";
@@ -696,17 +688,16 @@ if ($act!="new" && $act!="edit") {
                       <td><?=gettext("Common Name"); ?></td>
                       <td><?=gettext("Tunnel Network");?></td>
                       <td><?=gettext("Description"); ?></td>
-                      <td></td>
+                      <td class="text-nowrap"></td>
                     </tr>
 <?php
                     $i = 0;
                     foreach ($a_csc as $csc):?>
                     <tr>
                       <td>
-                        <input type="checkbox" name="rule[]" value="<?=$i;?>"  />
-                        &nbsp;
+                        <input type="checkbox" name="rule[]" value="<?=$i;?>"/>
                         <a href="#" class="act_toggle" data-id="<?=$i;?>" data-toggle="tooltip" title="<?=(empty($csc['disable'])) ? gettext("Disable") : gettext("Enable");?>">
-                          <span class="fa fa-play <?=(empty($csc['disable'])) ? "text-success" : "text-muted";?>"></span>
+                          <span class="fa fa-play fa-fw <?=(empty($csc['disable'])) ? "text-success" : "text-muted";?>"></span>
                         </a>
                       </td>
                       <td>
@@ -718,14 +709,14 @@ if ($act!="new" && $act!="edit") {
                       <td>
                           <?=htmlspecialchars($csc['description']);?>
                       </td>
-                      <td>
-                        <a data-id="<?=$i;?>" data-toggle="tooltip" title="<?=gettext("move selected before this item");?>" class="act_move btn btn-default btn-xs">
-                          <span class="glyphicon glyphicon-arrow-left"></span>
+                      <td class="text-nowrap">
+                        <a data-id="<?=$i;?>" data-toggle="tooltip" title="<?=gettext("Move selected before this item");?>" class="act_move btn btn-default btn-xs">
+                          <span class="fa fa-arrow-left fa-fw"></span>
                         </a>
-                        <a href="vpn_openvpn_csc.php?act=edit&amp;id=<?=$i;?>" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-pencil"></span></a>
-                        <a data-id="<?=$i;?>" title="<?=gettext("delete csc"); ?>" class="act_delete btn btn-default btn-xs"><span class="fa fa-trash text-muted"></span></a>
+                        <a href="vpn_openvpn_csc.php?act=edit&amp;id=<?=$i;?>" class="btn btn-default btn-xs"><span class="fa fa-pencil fa-fw"></span></a>
+                        <a data-id="<?=$i;?>" title="<?=gettext("delete csc"); ?>" class="act_delete btn btn-default btn-xs"><span class="fa fa-trash fa-fw"></span></a>
                         <a href="vpn_openvpn_csc.php?act=new&dup=<?=$i;?>" class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("clone rule");?>">
-                          <span class="fa fa-clone text-muted"></span>
+                          <span class="fa fa-clone fa-fw"></span>
                         </a>
                       </td>
                     </tr>
@@ -736,12 +727,12 @@ if ($act!="new" && $act!="edit") {
                       <td colspan="4">
                         <?=gettext("Additional OpenVPN client specific overrides can be added here.");?>
                       </td>
-                      <td>
-                        <a data-id="<?=$i;?>" data-toggle="tooltip" title="<?=gettext("move selected items to end");?>" class="act_move btn btn-default btn-xs">
-                          <span class="glyphicon glyphicon-arrow-down"></span>
+                      <td class="text-nowrap">
+                        <a data-id="<?=$i;?>" data-toggle="tooltip" title="<?=gettext("Move selected items to end");?>" class="act_move btn btn-default btn-xs">
+                          <span class="fa fa-arrow-down fa-fw"></span>
                         </a>
                         <a data-id="x" title="<?=gettext("delete selected rules"); ?>" data-toggle="tooltip"  class="act_delete btn btn-default btn-xs">
-                          <span class="fa fa-trash text-muted"></span>
+                          <span class="fa fa-trash fa-fw"></span>
                         </a>
                       </td>
                     </tr>

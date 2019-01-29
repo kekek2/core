@@ -251,16 +251,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 }
             }
         }
-        if ($result = openvpn_validate_cidr($pconfig['tunnel_network'], 'IPv4 Tunnel Network', false, "ipv4")) {
+        if ($result = openvpn_validate_cidr($pconfig['tunnel_network'], gettext('IPv4 Tunnel Network'), false, 'ipv4')) {
             $input_errors[] = $result;
         }
-        if ($result = openvpn_validate_cidr($pconfig['tunnel_networkv6'], 'IPv6 Tunnel Network', false, "ipv6")) {
+        if ($result = openvpn_validate_cidr($pconfig['tunnel_networkv6'], gettext('IPv6 Tunnel Network'), false, 'ipv6')) {
             $input_errors[] = $result;
         }
-        if ($result = openvpn_validate_cidr($pconfig['remote_network'], 'IPv4 Remote Network', true, "ipv4")) {
+        if ($result = openvpn_validate_cidr($pconfig['remote_network'], gettext('IPv4 Remote Network'), true, 'ipv4')) {
             $input_errors[] = $result;
         }
-        if ($result = openvpn_validate_cidr($pconfig['remote_networkv6'], 'IPv6 Remote Network', true, "ipv6")) {
+        if ($result = openvpn_validate_cidr($pconfig['remote_networkv6'], gettext('IPv6 Remote Network'), true, 'ipv6')) {
             $input_errors[] = $result;
         }
         if (!empty($pconfig['use_shaper']) && (!is_numeric($pconfig['use_shaper']) || ($pconfig['use_shaper'] <= 0))) {
@@ -362,9 +362,11 @@ legacy_html_escape_form_data($pconfig);
 
 include("head.inc");
 
-$main_buttons = array(
-    array('href'=>'vpn_openvpn_client.php?act=new', 'label'=>gettext("add client")),
-);
+$main_buttons = array();
+
+if (empty($act)) {
+    $main_buttons[] = array('href' => 'vpn_openvpn_client.php?act=new', 'label' => gettext('Add'));
+}
 
 ?>
 
@@ -587,7 +589,7 @@ $( document ).ready(function() {
             <tr>
               <td><a id="help_for_protocol" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Protocol");?></td>
               <td>
-                <select name='protocol' class="form-control">
+                <select name='protocol' class="selectpicker">
 <?php
                 foreach (openvpn_get_protocols() as $prot):
                     $selected = "";
@@ -624,7 +626,7 @@ $( document ).ready(function() {
           <tr>
             <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Interface"); ?></td>
             <td>
-              <select name="interface" class="form-control">
+              <select name="interface" class="selectpicker">
 <?php
               $interfaces = get_configured_interface_with_descr();
               $carplist = get_configured_carp_interface_list();
@@ -684,13 +686,13 @@ $( document ).ready(function() {
 <?php
                   if (!empty($item)): ?>
                       <label class="act-removerow btn btn-default btn-xs">
-                        <span class="fa fa-minus"></span>
+                        <span class="fa fa-minus fa-fw"></span>
                         <span class="sr-only"><?= gettext('Remove') ?></span>
                       </label>
 <?php
                   else: ?>
                       <label class="act-addrow btn btn-default btn-xs">
-                        <span class="fa fa-plus"></span>
+                        <span class="fa fa-plus fa-fw"></span>
                         <span class="sr-only"><?= gettext('Add') ?></span>
                       </label>
 <?php
@@ -829,7 +831,7 @@ $( document ).ready(function() {
             <td>
 <?php
               if (isset($config['ca'])) :?>
-              <select name='caref' class="form-control">
+              <select name='caref' class="selectpicker">
 <?php
               foreach ($config['ca'] as $ca) :
                   $selected = "";
@@ -851,7 +853,7 @@ $( document ).ready(function() {
           <tr class="tls_option">
             <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Client Certificate"); ?></td>
             <td>
-              <select name='certref' class="form-control">
+              <select name='certref' class="selectpicker">
 <?php
               foreach (isset($config['cert']) ? $config['cert'] : array() as $cert) :
                   $selected = "";
@@ -906,7 +908,7 @@ $( document ).ready(function() {
           <tr>
             <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Encryption algorithm"); ?></td>
             <td>
-              <select name="crypto" class="form-control">
+              <select name="crypto" class="selectpicker">
 <?php
               $cipherlist = openvpn_get_cipherlist();
               foreach ($cipherlist as $name => $desc) :
@@ -923,7 +925,7 @@ $( document ).ready(function() {
           <tr>
             <td><a id="help_for_digest" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Auth Digest Algorithm"); ?></td>
             <td>
-              <select name="digest" class="form-control">
+              <select name="digest" class="selectpicker">
 <?php
               $digestlist = openvpn_get_digestlist();
               foreach ($digestlist as $name => $desc) :
@@ -943,7 +945,7 @@ $( document ).ready(function() {
           <tr id="engine">
             <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Hardware Crypto"); ?></td>
             <td>
-              <select name="engine" class="form-control">
+              <select name="engine" class="selectpicker">
 <?php
               $engines = openvpn_get_engines();
               foreach ($engines as $name => $desc) :
@@ -1043,7 +1045,7 @@ $( document ).ready(function() {
           <tr>
             <td><a id="help_for_compression" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Compression"); ?></td>
             <td>
-              <select name="compression" class="form-control">
+              <select name="compression" class="selectpicker">
                 <?php
                                 foreach (openvpn_compression_modes() as $cmode => $cmodedesc):
                                     $selected = "";
@@ -1119,7 +1121,7 @@ $( document ).ready(function() {
           <tr id="comboboxVerbosityLevel">
               <td><a id="help_for_verbosity_level" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Verbosity level");?></td>
               <td>
-              <select name="verbosity_level" class="form-control">
+              <select name="verbosity_level" class="selectpicker">
               <?php
                             foreach (openvpn_verbosity_level() as $verb_value => $verb_desc):
                                 $selected = '';
@@ -1178,7 +1180,7 @@ $( document ).ready(function() {
                 <td><?=gettext("Protocol"); ?></td>
                 <td><?=gettext("Server"); ?></td>
                 <td><?=gettext("Description"); ?></td>
-                <td></td>
+                <td class="text-nowrap"></td>
               </tr>
             </thead>
             <tbody>
@@ -1196,24 +1198,24 @@ $( document ).ready(function() {
                   <input type="checkbox" name="rule[]" value="<?=$i;?>"  />
                   &nbsp;
                   <a href="#" class="act_toggle" data-id="<?=$i;?>" data-toggle="tooltip" title="<?=(empty($client['disable'])) ? gettext("Disable") : gettext("Enable");?>">
-                    <span class="fa fa-play <?=(empty($client['disable'])) ? "text-success" : "text-muted";?>"></span>
+                    <span class="fa fa-play fa-fw <?=(empty($client['disable'])) ? "text-success" : "text-muted";?>"></span>
                   </a>
                 </td>
                 <td><?= htmlspecialchars($client['protocol']) ?></td>
                 <td><?= htmlspecialchars(implode(', ', $server)) ?></td>
                 <td><?= htmlspecialchars($client['description']) ?></td>
-                <td>
-                    <a data-id="<?=$i;?>" data-toggle="tooltip" title="<?=gettext("move selected before this item");?>" class="act_move btn btn-default btn-xs">
-                      <span class="glyphicon glyphicon-arrow-left"></span>
+                <td class="text-nowrap">
+                    <a data-id="<?=$i;?>" data-toggle="tooltip" title="<?=gettext("Move selected before this item");?>" class="act_move btn btn-default btn-xs">
+                      <span class="fa fa-arrow-left fa-fw"></span>
                     </a>
                     <a href="vpn_openvpn_client.php?act=edit&amp;id=<?=$i;?>" class="btn btn-default btn-xs">
-                      <span class="glyphicon glyphicon-pencil"></span>
+                      <span class="fa fa-pencil fa-fw"></span>
                     </a>
                     <a data-id="<?=$i;?>" title="<?=gettext("delete client"); ?>" class="act_delete btn btn-default btn-xs">
-                      <span class="fa fa-trash text-muted"></span>
+                      <span class="fa fa-trash fa-fw"></span>
                     </a>
                     <a href="vpn_openvpn_client.php?act=new&amp;dup=<?=$i;?>" class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("clone client");?>">
-                      <span class="fa fa-clone text-muted"></span>
+                      <span class="fa fa-clone fa-fw"></span>
                     </a>
                 </td>
               </tr>
@@ -1222,12 +1224,12 @@ $( document ).ready(function() {
               endforeach;?>
               <tr>
                 <td colspan="4"></td>
-                <td>
-                  <a data-id="<?=$i;?>" data-toggle="tooltip" title="<?=gettext("move selected items to end");?>" class="act_move btn btn-default btn-xs">
-                    <span class="glyphicon glyphicon-arrow-down"></span>
+                <td class="text-nowrap">
+                  <a data-id="<?=$i;?>" data-toggle="tooltip" title="<?=gettext("Move selected items to end");?>" class="act_move btn btn-default btn-xs">
+                    <span class="fa fa-arrow-down fa-fw"></span>
                   </a>
                   <a data-id="x" title="<?=gettext("delete selected rules"); ?>" data-toggle="tooltip"  class="act_delete btn btn-default btn-xs">
-                    <span class="fa fa-trash text-muted"></span>
+                    <span class="fa fa-trash fa-fw"></span>
                   </a>
                 </td>
               </tr>

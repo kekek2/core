@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $pconfig['prefixrange_length'] = $config['dhcpdv6'][$if]['prefixrange']['prefixlength'];
     }
     $config_copy_fieldsnames = array('defaultleasetime', 'maxleasetime', 'domain', 'domainsearchlist', 'ddnsdomain',
-        'ddnsdomainprimary', 'ddnsdomainkeyname', 'ddnsdomainkey', 'ldap', 'bootfile_url', 'netmask',
+        'ddnsdomainprimary', 'ddnsdomainkeyname', 'ddnsdomainkey', 'bootfile_url', 'netmask',
         'numberoptions', 'dhcpv6leaseinlocaltime', 'staticmap');
     foreach ($config_copy_fieldsnames as $fieldname) {
         if (isset($config['dhcpdv6'][$if][$fieldname])) {
@@ -131,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             /* Disallow a range that includes the virtualip */
             if (!empty($config['virtualip']['vip'])) {
                 foreach($config['virtualip']['vip'] as $vip) {
-                    if($vip['interface'] == $if) {
+                    if ($vip['interface'] == $if) {
                         if (!empty($vip['subnetv6']) && is_inrange_v6($vip['subnetv6'], $pconfig['range_from'], $pconfig['range_to'])) {
                             $input_errors[] = sprintf(gettext("The subnet range cannot overlap with virtual IPv6 address %s."),$vip['subnetv6']);
                         }
@@ -188,15 +188,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         if (count($input_errors) == 0) {
             /* make sure the range lies within the current subnet */
-            $ifcfgip = get_interface_ipv6($if);
-            $ifcfgsn = get_interface_subnetv6($if);
+            list ($ifcfgip, $ifcfgsn) = explode('/', find_interface_networkv6(get_real_interface($if, 'inet6'), false));
             $subnet_start = gen_subnetv6($ifcfgip, $ifcfgsn);
             $subnet_end = gen_subnetv6_max($ifcfgip, $ifcfgsn);
 
+            $range_from = $pconfig['range_from'];
+            $range_to = $pconfig['range_to'];
+
+            if (isset($config['interfaces'][$if]['dhcpd6track6allowoverride'])) {
+                $range_from = make_ipv6_64_address($ifcfgip, $pconfig['range_from']);
+                $range_to = make_ipv6_64_address($ifcfgip, $pconfig['range_to']);
+            }
+
             if (!empty($pconfig['range_from']) && !empty($pconfig['range_to'])) {
                 if (is_ipaddrv6($ifcfgip) && !empty($pconfig['range_from']) && !empty($pconfig['range_to'])) {
-                    if ((!is_inrange_v6($pconfig['range_from'], $subnet_start, $subnet_end)) ||
-                        (!is_inrange_v6($pconfig['range_to'], $subnet_start, $subnet_end))) {
+                    if ((!is_inrange_v6($range_from, $subnet_start, $subnet_end)) ||
+                        (!is_inrange_v6($range_to, $subnet_start, $subnet_end))) {
                         $input_errors[] = gettext("The specified range lies outside of the current subnet.");
                     }
                 }
@@ -234,7 +241,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
             // simple 1-on-1 copy
             $config_copy_fieldsnames = array('defaultleasetime', 'maxleasetime', 'netmask', 'domain', 'domainsearchlist',
-              'ddnsdomain', 'ddnsdomainprimary', 'ddnsdomainkeyname', 'ddnsdomainkey', 'ldap', 'bootfile_url',
+              'ddnsdomain', 'ddnsdomainprimary', 'ddnsdomainkeyname', 'ddnsdomainkey', 'bootfile_url',
               'dhcpv6leaseinlocaltime');
             foreach ($config_copy_fieldsnames as $fieldname) {
                 if (!empty($pconfig[$fieldname])) {
@@ -321,8 +328,20 @@ legacy_html_escape_form_data($pconfig);
 
 include("head.inc");
 
-?>
+list ($wifcfgip, $wifcfgsn) = explode('/', find_interface_networkv6(get_real_interface($if, 'inet6'), false));
 
+if (isset($config['interfaces'][$if]['dhcpd6track6allowoverride'])) {
+    $prefix_array = array();
+    $prefix_array = explode(':', $wifcfgip);
+    $prefix_array[4] = '0';
+    $prefix_array[5] = '0';
+    $prefix_array[6] = '0';
+    $prefix_array[7] = '0';
+    $wifprefix = Net_IPv6::compress(implode(':', $prefix_array));
+    $pdlen = calculate_ipv6_delegation_length($config['interfaces'][$if]['track6-interface']) - 1;
+}
+
+?>
 <body>
 <script>
   $( document ).ready(function() {
@@ -391,11 +410,6 @@ include("head.inc");
     $("#showntp").show();
   }
 
-  function show_ldap_config() {
-    $("#showldapbox").hide();
-    $("#showldap").show();
-  }
-
   function show_netboot_config() {
     $("#shownetbootbox").hide();
     $("#shownetboot").show();
@@ -436,28 +450,40 @@ include("head.inc");
                     </tr>
                     <tr>
                       <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Subnet");?></td>
-                      <td>
-                        <?=gen_subnetv6($config['interfaces'][$if]['ipaddrv6'], $config['interfaces'][$if]['subnetv6']);?>
-                      </td>
+                      <td><?= gen_subnetv6($wifcfgip, $wifcfgsn) ?></td>
                     </tr>
                     <tr>
                       <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Subnet mask");?></td>
-                      <td>
-                        <?=htmlspecialchars($config['interfaces'][$if]['subnetv6']);?> <?=gettext("bits");?>
-                      </td>
+                      <td><?= htmlspecialchars($wifcfgsn) ?> <?= gettext('bits') ?></td>
                     </tr>
-                      <tr>
+<?php if (isset($config['interfaces'][$if]['dhcpd6track6allowoverride'])): ?>
+                     <tr>
+                      <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Current LAN IPv6 prefix");?></td>
+                      <td><?= htmlspecialchars($wifprefix) ?></td>
+                    </tr>
+<?php if ($pdlen >= 0): ?>
+                     <tr>
+                      <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Available prefix delegation size");?></td>
+                      <td><?= 64 - $pdlen ?></td>
+                    </tr>
+<?php endif ?>
+<?php endif ?>
+                    <tr>
                       <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Available range");?></td>
                       <td>
 <?php
-                        $range_from = gen_subnetv6($config['interfaces'][$if]['ipaddrv6'], $config['interfaces'][$if]['subnetv6']);
+                        $range_from = gen_subnetv6($wifcfgip, $wifcfgsn);
                         $range_from++;
-                        $range_to = gen_subnetv6_max($config['interfaces'][$if]['ipaddrv6'], $config['interfaces'][$if]['subnetv6']);?>
+                        $range_to = gen_subnetv6_max($wifcfgip, $wifcfgsn);?>
                         <?=$range_from;?> - <?=$range_to;?>
+<?php if (isset($config['interfaces'][$if]['dhcpd6track6allowoverride'])): ?>
+                        <br/>
+                        <?= gettext('Prefix subnet will be prefixed to the available range.') ?>
+<?php endif ?>
                       </td>
                     </tr>
                     <tr>
-                      <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Range");?></td>
+                      <td><a id="help_for_range" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Range");?></td>
                       <td>
                         <table class="table table-condensed">
                           <thead>
@@ -473,6 +499,9 @@ include("head.inc");
                             </tr>
                           </tbody>
                         </table>
+                        <div class="hidden" data-for="help_for_range">
+                            <?= gettext("When using a static WAN address, the range should be entered using the full IPv6 address. " .
+                            "When using a dynamic WAN address, only enter the suffix part (i.e. ::1:2:3:4)."); ?>
                       </td>
                     </tr>
                     <tr>
@@ -493,7 +522,7 @@ include("head.inc");
                             <tr>
                               <td>
                                 <strong><?=gettext("Prefix Delegation Size"); ?>:</strong>
-                                <select name="prefixrange_length" id="prefixrange_length">
+                                <select name="prefixrange_length" id="prefixrange_length" class="selectpicker">
                                   <option value="48" <?=$pconfig['prefixrange_length'] == 48 ? "selected=\"selected\"" : ""; ?>>48</option>
                                   <option value="52" <?=$pconfig['prefixrange_length'] == 52 ? "selected=\"selected\"" : ""; ?>>52</option>
                                   <option value="56" <?=$pconfig['prefixrange_length'] == 56 ? "selected=\"selected\"" : ""; ?>>56</option>
@@ -509,6 +538,14 @@ include("head.inc");
                         <div class="hidden" data-for="help_for_prefixrange">
                           <?= gettext("You can define a Prefix range here for DHCP Prefix Delegation. This allows for assigning networks to subrouters. " .
                           "The start and end of the range must end on boundaries of the prefix delegation size."); ?>
+                           <?= gettext("Ensure that any prefix delegation range does not overlap the LAN prefix range."); ?>
+                          <br/><br/>
+                          <?= gettext('The system does not check the validity of your emtry against the selected mask - please refer to an online net ' .
+                            'calculator to ensure you have entered a correct range if the dhcpd6 server fails to start.') ?>
+<?php if (isset($config['interfaces'][$if]['dhcpd6track6allowoverride'])): ?>
+                          <br/><br/>
+                          <?= gettext('When using a tracked interface then please only enter the range itself. i.e. ::xx. For example, for a /60 subnet from ::20 to ::40.') ?>
+<?php endif ?>
                         </div>
                       </td>
                     </tr>
@@ -525,7 +562,7 @@ include("head.inc");
                     <tr>
                       <td><a id="help_for_domain" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Domain name");?></td>
                       <td>
-                        <input name="domain" type="text" id="domain" value="<?=$pconfig['domain'];?>" /><br />
+                        <input name="domain" type="text" id="domain" value="<?=$pconfig['domain'];?>" />
                         <div class="hidden" data-for="help_for_domain">
                           <?=gettext("The default is to use the domain name of this system as the default domain name provided by DHCP. You may specify an alternate domain name here.");?>
                         </div>
@@ -534,9 +571,9 @@ include("head.inc");
                     <tr>
                       <td><a id="help_for_domainsearchlist" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Domain search list");?></td>
                       <td>
-                        <input name="domainsearchlist" type="text" id="domainsearchlist" value="<?=$pconfig['domainsearchlist'];?>" /><br />
+                        <input name="domainsearchlist" type="text" id="domainsearchlist" value="<?=$pconfig['domainsearchlist'];?>" />
                         <div class="hidden" data-for="help_for_domainsearchlist">
-                          <?=gettext("The DHCP server can optionally provide a domain search list. Use the semicolon character as separator");?>
+                          <?=gettext("The DHCP server can optionally provide a domain search list. Use the semicolon character as separator.");?>
                         </div>
                       </td>
                     </tr>
@@ -579,7 +616,7 @@ include("head.inc");
                           <input type="button" onclick="show_ddns_config()" value="<?=gettext("Advanced");?>" class="btn btn-xs btn-default"/> - <?=gettext("Show Dynamic DNS");?>
                         </div>
                         <div id="showddns" style="display:none">
-                          <input type="checkbox" value="yes" name="ddnsupdate" id="ddnsupdate" <?php if($pconfig['ddnsupdate']) echo " checked=\"checked\""; ?> />&nbsp;
+                          <input type="checkbox" value="yes" name="ddnsupdate" id="ddnsupdate" <?php if ($pconfig['ddnsupdate']) echo " checked=\"checked\""; ?> />&nbsp;
                           <b><?=gettext("Enable registration of DHCP client names in DNS.");?></b><br />
                           <?=gettext("Note: Leave blank to disable dynamic DNS registration.");?><br />
                           <?=gettext("Enter the dynamic DNS domain which will be used to register client names in the DNS server.");?>
@@ -602,18 +639,6 @@ include("head.inc");
                         <div id="showntp" style="display:none">
                           <input name="ntp1" type="text" id="ntp1" value="<?=$pconfig['ntp1'];?>" /><br />
                           <input name="ntp2" type="text" id="ntp2" value="<?=$pconfig['ntp2'];?>" />
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("LDAP URI");?></td>
-                      <td>
-                        <div id="showldapbox">
-                          <input type="button" onclick="show_ldap_config()" value="<?=gettext("Advanced");?>" class="btn btn-xs btn-default"/> - <?=gettext("Show LDAP configuration");?>
-                        </div>
-                        <div id="showldap" style="display:none">
-                          <input name="ldap" type="text" value="<?=$pconfig['ldap'];?>" />
-                          <?=gettext("Leave blank to disable. Enter a full URI for the LDAP server in the form ldap://ldap.example.com/dc=example,dc=com");?>
                         </div>
                       </td>
                     </tr>
@@ -659,13 +684,13 @@ include("head.inc");
                             foreach($numberoptions as $item):?>
                               <tr>
                                 <td>
-                                  <div style="cursor:pointer;" class="act-removerow btn btn-default btn-xs" alt="remove"><span class="glyphicon glyphicon-minus"></span></div>
+                                  <div style="cursor:pointer;" class="act-removerow btn btn-default btn-xs" alt="remove"><i class="fa fa-minus fa-fw"></i></div>
                                 </td>
                                 <td>
                                   <input name="numberoptions_number[]" type="text" value="<?=$item['number'];?>" />
                                 </td>
                                 <td>
-                                  <select name="numberoptions_type[]">
+                                  <select name="numberoptions_type[]" class="selectpicker">
                                     <option value="text" <?=$item['type'] == "text" ? "selected=\"selected\"" : "";?>>
                                       <?=gettext('Text');?>
                                     </option>
@@ -706,7 +731,7 @@ include("head.inc");
                             <tfoot>
                               <tr>
                                 <td colspan="4">
-                                  <div id="addNew" style="cursor:pointer;" class="btn btn-default btn-xs" alt="add"><span class="glyphicon glyphicon-plus"></span></div>
+                                  <div id="addNew" style="cursor:pointer;" class="btn btn-default btn-xs" alt="add"><i class="fa fa-plus fa-fw"></i></div>
                                 </td>
                               </tr>
                             </tfoot>
@@ -742,12 +767,12 @@ include("head.inc");
                       <td><?=gettext("IPv6 address");?></td>
                       <td><?=gettext("Hostname");?></td>
                       <td><?=gettext("Description");?></td>
-                      <td>
-                        <a href="services_dhcpv6_edit.php?if=<?=$if;?>" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-plus"></span></a>
+                      <td class="text-nowrap">
+                        <a href="services_dhcpv6_edit.php?if=<?=$if;?>" class="btn btn-default btn-xs"><i class="fa fa-plus fa-fw"></i></a>
                       </td>
                     </tr>
 <?php
-                    if(!empty($config['dhcpdv6'][$if]['staticmap'])):
+                    if (!empty($config['dhcpdv6'][$if]['staticmap'])):
                       $i = 0;
                       foreach ($config['dhcpdv6'][$if]['staticmap'] as $mapent): ?>
                     <tr>
@@ -755,9 +780,9 @@ include("head.inc");
                       <td><?=isset($mapent['ipaddrv6']) ? htmlspecialchars($mapent['ipaddrv6']) : "";?></td>
                       <td><?=htmlspecialchars($mapent['hostname']);?></td>
                       <td><?=htmlspecialchars($mapent['descr']);?></td>
-                      <td>
-                        <a href="services_dhcpv6_edit.php?if=<?=$if;?>&amp;id=<?=$i;?>" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-pencil"></span></a>
-                        <button type="button" data-if="<?=$if;?>" data-id="<?=$i;?>" class="act_delete_static btn btn-xs btn-default"><span class="fa fa-trash text-muted"></span></button>
+                      <td class="text-nowrap">
+                        <a href="services_dhcpv6_edit.php?if=<?=$if;?>&amp;id=<?=$i;?>" class="btn btn-default btn-xs"><i class="fa fa-pencil fa-fw"></i></a>
+                        <button type="button" data-if="<?=$if;?>" data-id="<?=$i;?>" class="act_delete_static btn btn-xs btn-default"><i class="fa fa-trash fa-fw"></i></button>
                       </td>
                     </tr>
 <?php

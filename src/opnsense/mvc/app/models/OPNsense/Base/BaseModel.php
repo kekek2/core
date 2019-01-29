@@ -111,15 +111,17 @@ abstract class BaseModel
     /**
      * fetch reflection class (cached by field type)
      * @param $classname classname to construct
-     * @return array
-     * @throws ModelException
+     * @return BaseField type class
+     * @throws ModelException when unable to parse field type
+     * @throws \ReflectionException when unable to create class
      */
     private function getNewField($classname)
     {
         if (self::$internalCacheReflectionClasses === null) {
             self::$internalCacheReflectionClasses = array();
         }
-        if (!isset(self::$internalCacheReflectionClasses[$classname])) {
+        $classname_idx = str_replace("\\", "_", $classname);
+        if (!isset(self::$internalCacheReflectionClasses[$classname_idx])) {
             $is_derived_from_basefield = false;
             if (class_exists($classname)) {
                 $field_rfcls = new \ReflectionClass($classname);
@@ -136,9 +138,9 @@ abstract class BaseModel
                 // class found, but of wrong type. raise an exception.
                 throw new ModelException("class ".$field_rfcls->name." of wrong type in model definition");
             }
-            self::$internalCacheReflectionClasses[$classname] = $field_rfcls;
+            self::$internalCacheReflectionClasses[$classname_idx] = $field_rfcls;
         }
-        return self::$internalCacheReflectionClasses[$classname];
+        return self::$internalCacheReflectionClasses[$classname_idx];
     }
 
     /**
@@ -165,7 +167,22 @@ abstract class BaseModel
             $xmlNodeType = $xmlNode->attributes()["type"];
             if (!empty($xmlNodeType)) {
                 // construct field type object
-                $field_rfcls = $this->getNewField("OPNsense\\Base\\FieldTypes\\".$xmlNodeType);
+                if (strpos($xmlNodeType, "\\") !== false) {
+                    // application specific field type contains path separator
+                    if (strpos($xmlNodeType, ".\\") === 0) {
+                        // use current namespace (.\Class)
+                        $namespace = explode("\\", get_class($this));
+                        array_pop($namespace);
+                        $namespace = implode("\\", $namespace);
+                        $classname = str_replace(".\\", $namespace."\\FieldTypes\\", (string)$xmlNodeType);
+                    } else {
+                        $classname = (string)$xmlNodeType;
+                    }
+                    $field_rfcls = $this->getNewField($classname);
+                } else {
+                    // standard field type
+                    $field_rfcls = $this->getNewField("OPNsense\\Base\\FieldTypes\\".$xmlNodeType);
+                }
             } else {
                 // no type defined, so this must be a standard container (without content)
                 $field_rfcls = $this->getNewField('OPNsense\Base\FieldTypes\ContainerField');
@@ -347,6 +364,15 @@ abstract class BaseModel
     public function setNodes($data)
     {
         return $this->internalData->setNodes($data);
+    }
+
+    /**
+     * iterate (non virtual) child nodes
+     * @return mixed
+     */
+    public function iterateItems()
+    {
+        return $this->internalData->iterateItems();
     }
 
     /**
@@ -561,11 +587,13 @@ abstract class BaseModel
      * The BaseModelMigration class should be named with the corresponding version
      * prefixed with an M and . replaced by _ for example : M1_0_1 equals version 1.0.1
      *
+     * @return bool status (true-->success, false-->failed)
      */
     public function runMigrations()
     {
         if (version_compare($this->internal_current_model_version, $this->internal_model_version, '<')) {
             $upgradePerfomed = false;
+            $migObjects = array();
             $logger = new Syslog("config", array('option' => LOG_PID, 'facility' => LOG_LOCAL4));
             $class_info = new \ReflectionClass($this);
             // fetch version migrations
@@ -597,6 +625,7 @@ abstract class BaseModel
                         $migobj = $mig_class->newInstance();
                         try {
                             $migobj->run($this);
+                            $migObjects[] = $migobj;
                             $upgradePerfomed = true;
                         } catch (\Exception $e) {
                             $logger->error("failed migrating from version " .
@@ -614,10 +643,16 @@ abstract class BaseModel
             if ($upgradePerfomed) {
                 try {
                     $this->serializeToConfig();
+                    foreach ($migObjects as $migobj) {
+                        $migobj->post($this);
+                    }
                 } catch (\Exception $e) {
                     $logger->error("Model ".$class_info->getName() ." can't be saved, skip ( " .$e . " )");
+                    return false;
                 }
             }
+
+            return true;
         }
     }
 
