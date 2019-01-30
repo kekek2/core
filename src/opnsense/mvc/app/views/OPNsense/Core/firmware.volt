@@ -832,14 +832,11 @@
                                         {{ lang._('Select an alternate firmware mirror.') }}
                                     </div>
                                 </td>
-                                <td></td>
-                            </tr>
-                            <tr>
-                                <td></td>
                                 <td>
-                                    <button class="btn btn-primary" id="change_mirror" type="button">{{ lang._('Save') }} <i id="change_mirror_progress"></i></button>
+                                    <form method="post" enctype="multipart/form-data" id="repoform">
+                                        <input name="repofile" type="file" id="repofile" /><br/>
+                                    </form>
                                 </td>
-                                <td></td>
                             </tr>
                             <tr>
                                 <td></td>
