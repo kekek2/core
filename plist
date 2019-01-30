@@ -1,6 +1,7 @@
 @sample /usr/local/etc/bogons.sample
 @sample /usr/local/etc/bogonsv6.sample
 @sample /usr/local/etc/config.xml.sample
+@sample /usr/local/etc/config.xml.sum.sample
 @sample /usr/local/etc/dh-parameters.1024.sample
 @sample /usr/local/etc/dh-parameters.2048.sample
 @sample /usr/local/etc/dh-parameters.4096.sample
@@ -10,6 +11,8 @@
 @shadow /usr/local/etc/pkg/repos/SmartSoft.conf.sample
 /boot/brand-ting.4th
 /boot/logo-ting.4th
+/usr/local/etc/checkflags.php
+/usr/local/etc/checksum.php
 /usr/local/etc/devd/carp.conf
 /usr/local/etc/devd/ifnet.conf
 /usr/local/etc/dh-parameters.2048.rfc7919
@@ -145,6 +148,7 @@
 /usr/local/etc/rc.subr.d/tmp
 /usr/local/etc/rc.subr.d/var
 /usr/local/etc/rc.syshook
+/usr/local/etc/rc.syshook.d/65-checksumms.start
 /usr/local/etc/rc.syshook.d/backup/20-captiveportal
 /usr/local/etc/rc.syshook.d/backup/20-dhcpleases
 /usr/local/etc/rc.syshook.d/backup/20-duid
@@ -379,6 +383,7 @@
 /usr/local/opnsense/mvc/app/controllers/OPNsense/CaptivePortal/VoucherController.php
 /usr/local/opnsense/mvc/app/controllers/OPNsense/Core/Api/FirmwareController.php
 /usr/local/opnsense/mvc/app/controllers/OPNsense/Core/Api/MenuController.php
+/usr/local/opnsense/mvc/app/controllers/OPNsense/Core/Api/NoticeController.php
 /usr/local/opnsense/mvc/app/controllers/OPNsense/Core/Api/repositories/opnsense.xml
 /usr/local/opnsense/mvc/app/controllers/OPNsense/Core/FirmwareController.php
 /usr/local/opnsense/mvc/app/controllers/OPNsense/Core/IndexController.php
