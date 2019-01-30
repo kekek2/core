@@ -184,13 +184,13 @@
                 <id>proxy.general.traffic.maxDownloadSize</id>
                 <label>Maximum download size (kB)</label>
                 <type>text</type>
-                <help><![CDATA[Enter the maxium size for downloads in kilobytes (leave empty to disable).]]></help>
+                <help><![CDATA[Enter the maximum size for downloads in kilobytes (leave empty to disable).]]></help>
             </field>
             <field>
                 <id>proxy.general.traffic.maxUploadSize</id>
                 <label>Maximum upload size (kB)</label>
                 <type>text</type>
-                <help><![CDATA[Enter the maxium size for uploads in kilobytes (leave empty to disable).]]></help>
+                <help><![CDATA[Enter the maximum size for uploads in kilobytes (leave empty to disable).]]></help>
             </field>
             <field>
                 <id>proxy.general.traffic.OverallBandwidthTrotteling</id>
@@ -461,7 +461,7 @@
             <field>
                 <id>proxy.forward.icap.RequestURL</id>
                 <label>Request Modify URL</label>
-                <type>text</type>
+                <type>select_multiple</type>
                 <style>tokenize</style>
                 <help><![CDATA[Enter the url where the REQMOD requests should be sent to.]]></help>
                 <hint>Enter the URL of the ICAP Server</hint>
@@ -471,7 +471,7 @@
             <field>
                 <id>proxy.forward.icap.ResponseURL</id>
                 <label>Response Modify URL</label>
-                <type>text</type>
+                <type>select_multiple</type>
                 <style>tokenize</style>
                 <help><![CDATA[Enter the url where the RESPMOD requests should be sent to.]]></help>
                 <hint>Enter the URL of the ICAP Server</hint>

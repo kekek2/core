@@ -42,6 +42,17 @@ while (!(feof($f))) {
         $fields = explode(' ', trim($line));
         $username = rawurldecode($fields[0]);
         $password = rawurldecode($fields[1]);
+        $username_arr = explode("@", $username);
+        $baseSearchDN = [];
+        if (count($username_arr) == 2) {
+            $username = $username_arr[0];
+            $domain = $username_arr[1];
+            foreach (explode(".", $domain) as $element) {
+                $baseSearchDN[] = "dc=" . $element;
+            }
+        } else {
+            $domain = "";
+        }
 
         $isAuthenticated = false;
         if (isset($config['OPNsense']['proxy']['forward']['authentication']['method'])) {
@@ -50,6 +61,9 @@ while (!(feof($f))) {
                 if ($authServer == null) {
                     // authenticator not found, use local
                     $authServer = $authFactory->get('Local Database');
+                }
+                if ($domain != "" && $authFactory->listServers()[$authServerName]["ldap_basedn"] != implode(",", $baseSearchDN)) {
+                    continue;
                 }
                 $isAuthenticated = $authServer->authenticate($username, $password);
                 if ($isAuthenticated) {
@@ -74,6 +88,9 @@ while (!(feof($f))) {
             }
         }
 
+        if ($domain != "") {
+            $username .= "@{$domain}";
+        }
         if ($isAuthenticated) {
             syslog(LOG_NOTICE, "user '{$username}' authenticated\n");
             fwrite(STDOUT, "OK\n");

@@ -3,7 +3,7 @@
 /*
     Copyright (C) 2014 Deciso B.V.
     Copyright (C) 2005 Scott Ullrich <sullrich@gmail.com>
-    Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
+    Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -756,7 +756,7 @@ include("head.inc");
                     <td>
 <?php
                     if (!empty($pconfig['floating'])): ?>
-                      <select name="interface[]" title="Select interfaces..." multiple="multiple" class="selectpicker" data-live-search="true" data-size="5" tabindex="2" <?=!empty($pconfig['associated-rule-id']) ? "disabled" : "";?>>
+                      <select name="interface[]" title="<?=gettext("Select interfaces...") ?>" multiple="multiple" class="selectpicker" data-live-search="true" data-size="5" tabindex="2" <?=!empty($pconfig['associated-rule-id']) ? "disabled" : "";?>>
 <?php
                     else: ?>
                       <select name="interface" class="selectpicker" data-live-search="true" data-size="5" <?=!empty($pconfig['associated-rule-id']) ? "disabled" : "";?>>

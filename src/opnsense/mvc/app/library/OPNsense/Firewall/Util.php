@@ -29,6 +29,7 @@
 namespace OPNsense\Firewall;
 
 use \OPNsense\Core\Config;
+use \OPNsense\Firewall\Alias;
 
 /**
  * Class Util, common static firewall support functions
@@ -36,6 +37,11 @@ use \OPNsense\Core\Config;
  */
 class Util
 {
+    /**
+     * @var null|Alias reference to alias object
+     */
+    private static $aliasObject = null;
+
     /**
      * is provided address an ip address.
      * @param string $network address
@@ -71,13 +77,25 @@ class Util
     /**
      * check if name exists in alias config section
      * @param string $name name
+     * @param boolean $valid check if the alias can safely be used
      * @return boolean
+     * @throws \OPNsense\Base\ModelException
      */
-    public static function isAlias($name)
+    public static function isAlias($name, $valid = false)
     {
-        if (!empty($name) && !empty(Config::getInstance()->object()->aliases)) {
-            foreach (Config::getInstance()->object()->aliases->children() as $node) {
-                if ($node->name == $name) {
+        if (self::$aliasObject == null) {
+            // Cache the alias object to avoid object creation overhead.
+            self::$aliasObject = new Alias();
+        }
+        if (!empty($name)) {
+            foreach (self::$aliasObject->aliasIterator() as $alias) {
+                if ($alias['name'] == $name) {
+                    if ($valid) {
+                        // check validity for port type aliases
+                        if (preg_match("/port/i", $alias['type']) && trim($alias['content']) == "") {
+                            return false;
+                        }
+                    }
                     return true;
                 }
             }
@@ -89,27 +107,30 @@ class Util
      * Fetch port alias contents, other alias types are handled using tables so there usually no need
      * to know the contents within any of the scripts.
      * @param string $name name
-     * @param $aliases aliases already parsed (prevent deadlock)
+     * @param array $aliases aliases already parsed (prevent deadlock)
      * @return array containing all ports or addresses
+     * @throws \OPNsense\Base\ModelException when unable to create alias model
      */
     public static function getPortAlias($name, $aliases = array())
     {
+        if (self::$aliasObject == null) {
+            // Cache the alias object to avoid object creation overhead.
+            self::$aliasObject = new Alias();
+        }
         $result = array();
-        if (!empty($name) && !empty(Config::getInstance()->object()->aliases)) {
-            foreach (Config::getInstance()->object()->aliases->children() as $node) {
-                if ($node->name == $name && $node->type == 'port') {
-                    foreach (explode(" ", $node->address) as $address) {
-                        if (Util::isAlias($address)) {
-                            if (!in_array($address, $aliases)) {
-                                foreach (Util::getPortAlias($address, $aliases) as $port) {
-                                    if (!in_array($port, $result)) {
-                                        $result[] = $port;
-                                    }
+        foreach (self::$aliasObject->aliasIterator() as $node) {
+            if (!empty($name) && (string)$node['name'] == $name && $node['type'] == 'port') {
+                foreach (explode("\n", $node['content']) as $address) {
+                    if (Util::isAlias($address)) {
+                        if (!in_array($address, $aliases)) {
+                            foreach (Util::getPortAlias($address, $aliases) as $port) {
+                                if (!in_array($port, $result)) {
+                                    $result[] = $port;
                                 }
                             }
-                        } elseif (!in_array($address, $result)) {
-                            $result[] = $address;
                         }
+                    } elseif (!in_array($address, $result)) {
+                        $result[] = $address;
                     }
                 }
             }
@@ -148,7 +169,7 @@ class Util
      */
     public static function isDomain($domain)
     {
-        $pattern = '/^(?:(?:[a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*(?:[a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$/i';
+        $pattern = '/^(?:(?:[a-z\pL0-9]|[a-z\pL0-9][a-z\pL0-9\-]*[a-z\pL0-9])\.)*(?:[a-z\pL0-9]|[a-z\pL0-9][a-z\pL0-9\-]*[a-z\pL0-9])$/iu';
         if (preg_match($pattern, $domain)) {
             return true;
         }

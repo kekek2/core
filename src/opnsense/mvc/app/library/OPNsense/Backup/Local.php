@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright (C) 2018 David Harrigan
+ * Copyright (C) 2018 Franco Fichtner <franco@opnsense.org>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,12 +28,13 @@
 
 namespace OPNsense\Backup;
 
-use OPNsense\Base\BaseModel;
+use OPNsense\Core\Config;
 
 /**
- * Class SCP Backup Settings
- * @package Backup
+ * Class local backup
+ * @package OPNsense\Backup
  */
-class ScpSettings extends BaseModel
+class Local extends Base
 {
+    /* we only need this class to access encrypt() and decrypt() */
 }

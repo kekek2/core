@@ -161,7 +161,7 @@ function core_services()
     );
 
     $services[] = array(
-        'description' => gettext('Local Syslog'),
+        'description' => gettext('Syslog'),
         'php' => array(
             "start" => array('system_syslogd_start'),
             "restart" => array('system_syslogd_start')
@@ -233,7 +233,7 @@ function core_cron()
         }
     }
 
-    $jobs[]['autocron'] = array('/usr/local/opnsense/scripts/remote_backup.php', 0, 1);
+    $jobs[]['autocron'] = array('configctl system remote backup', 0, 1);
 
     return $jobs;
 }

@@ -105,6 +105,24 @@ shell)
 	;;
 esac
 
+if [ `sysctl -n kern.vty` = "sc" ] && tty | grep -q ttyv; then
+    alias GETTEXT=echo
+    unset LC_CTYPE
+    unset LANG
+else
+    alias GETTEXT='gettext "OPNsense"'
+fi
+
+MENU_0_07=$(GETTEXT "  0) Logout                              7) Ping host")
+MENU_1_08=$(GETTEXT "  1) Assign interfaces                   8) Shell")
+MENU_2_09=$(GETTEXT "  2) Set interface IP address            9) pfTop")
+MENU_3_10=$(GETTEXT "  3) Reset the root password            10) Firewall log")
+MENU_4_11=$(GETTEXT "  4) Reset to factory defaults          11) Reload all services")
+MENU_5_12=$(GETTEXT "  5) Power off system                   12) Upgrade from console")
+MENU_6_13=$(GETTEXT "  6) Reboot system                      13) Restore a backup")
+ENTER_AN_OPTION=$(GETTEXT "Enter an option: ")
+${CMD_BANNER}
+
 # endless loop
 while : ; do
 
@@ -114,16 +132,6 @@ while : ; do
 # is closed and the `echo' commands in the while loop will silently fail.
 # Failure to exit at that moment would lead to an infinite loop.
 set -e
-
-alias GETTEXT='gettext "OPNsense"'
-MENU_0_07=$(GETTEXT "  0) Logout                              7) Ping host")
-MENU_1_08=$(GETTEXT "  1) Assign interfaces                   8) Shell")
-MENU_2_09=$(GETTEXT "  2) Set interface IP address            9) pfTop")
-MENU_3_10=$(GETTEXT "  3) Reset the root password            10) Firewall log")
-MENU_4_11=$(GETTEXT "  4) Reset to factory defaults          11) Reload all services")
-MENU_5_12=$(GETTEXT "  5) Power off system                   12) Upgrade from console")
-MENU_6_13=$(GETTEXT "  6) Reboot system                      13) Restore a backup")
-ENTER_AN_OPTION=$(GETTEXT "Enter an option: ")
 
 echo
 echo "$MENU_0_07"
@@ -187,7 +195,5 @@ case ${OPCODE} in
 *)
 	;;
 esac
-
-${CMD_BANNER}
 
 done

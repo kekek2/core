@@ -32,24 +32,20 @@
 require_once("config.inc");
 require_once("interfaces.inc");
 require_once("util.inc");
+require_once("plugins.inc.d/openssh.inc");
 
-$version = strtok(file_get_contents('/usr/local/opnsense/version/opnsense'), '-');
-$flavour = strtok(OPENSSL_VERSION_TEXT, ' ');
-$hostname = $config['system']['hostname'];
-$machine = trim(shell_exec('uname -p'));
-$domain = $config['system']['domain'];
-$product = $g['product_name'];
+$version = trim(shell_exec('opnsense-version'));
 
-print "\n*** {$hostname}.{$domain}: {$product} {$version} ({$machine}/${flavour}) ***\n";
+echo "\n*** {$config['system']['hostname']}.{$config['system']['domain']}: {$version} ***\n";
 
-$iflist = get_configured_interface_with_descr(false, true);
+$iflist = legacy_config_get_interfaces(array('virtual' => false));
 
-if (empty($iflist)) {
-    printf("\n\tNo network interfaces are assigned.\n");
+if (!count($iflist)) {
+    echo "\n\tNo network interfaces are assigned.\n";
     return;
 }
 
-foreach ($iflist as $ifname => $friendly) {
+foreach ($iflist as $ifname => $ifcfg) {
     /* point to this interface's config */
     $ifconf = $config['interfaces'][$ifname];
     /* look for 'special cases' */
@@ -95,7 +91,7 @@ foreach ($iflist as $ifname => $friendly) {
     $ipaddr6 = get_interface_ipv6($ifname);
     $subnet6 = get_interface_subnetv6($ifname);
     $realif = get_real_interface($ifname);
-    $tobanner = "{$friendly} ({$realif})";
+    $tobanner = "{$ifcfg['descr']} ({$realif})";
 
     printf("\n %-15s -> ", $tobanner);
 
@@ -123,4 +119,20 @@ foreach ($iflist as $ifname => $friendly) {
     }
 }
 
-printf("\n");
+echo PHP_EOL;
+
+if (openssh_enabled() || $config['system']['webgui']['protocol'] == 'https') {
+    echo PHP_EOL;
+}
+
+if ($config['system']['webgui']['protocol'] == 'https') {
+    echo ' HTTPS: ';
+    passthru('openssl x509 -in /var/etc/cert.pem -noout -fingerprint -sha256 | sed "s/Fingerprint=//" | tr ":" " " | sed -E "s/(^.{54})./\1,               /" | tr "," "\n"');
+}
+
+if (openssh_enabled()) {
+    foreach (glob('/conf/sshd/ssh_host_*_key.pub') as $ssh_host_pub_key_file_path) {
+        echo ' SSH:   ';
+        passthru("ssh-keygen -l -f " . escapeshellarg($ssh_host_pub_key_file_path) . " | awk '{ print $2 \" \" $4 }' | sed 's/SHA256:/SHA256 /'");
+    }
+}

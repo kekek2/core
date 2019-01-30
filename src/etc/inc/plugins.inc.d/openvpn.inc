@@ -422,14 +422,15 @@ function openvpn_validate_cidr_ipv4($value, $allow_hosts = false)
 {
     $value = trim($value);
     if (!empty($value)) {
-        list($ip, $mask) = explode('/', $value);
-        if (!is_ipaddrv4($ip) or !is_numeric($mask) or ($mask > 32) or ($mask < 0)) {
+        list($ip, $prefix) = explode('/', $value);
+        if (!is_ipaddrv4($ip) || !is_numeric($prefix) || $prefix > 32 || $prefix < 0) {
             return false;
         }
-        /* IPv4 case is very strict, cannot be a host address */
-        $mask = (0xffffffff << (32 - $mask)) & 0xffffffff;
-        if (!$allow_hosts && (ip2long($ip) & $mask) != ip2long($ip)) {
-            return false;
+        if (!$allow_hosts) {
+            $mask = (0xffffffff << (32 - $prefix)) & 0xffffffff;
+            if ((ip2long($ip) & $mask) != ip2long($ip)) {
+                return false;
+            }
         }
     }
     return true;
@@ -443,7 +444,7 @@ function openvpn_validate_cidr_ipv6($value)
         if (empty($prefix)) {
             $prefix = '128';
         }
-        if (!is_ipaddrv6($ipv6) or !is_numeric($prefix) or ($prefix > 128) or ($prefix < 0)) {
+        if (!is_ipaddrv6($ipv6) || !is_numeric($prefix) || $prefix > 128 || $prefix < 0) {
             return false;
         }
     }
@@ -619,21 +620,6 @@ function openvpn_reconfigure($mode, $settings, $device_only = false)
     $conf .= "up /usr/local/etc/inc/plugins.inc.d/openvpn/ovpn-linkup\n";
     $conf .= "down /usr/local/etc/inc/plugins.inc.d/openvpn/ovpn-linkdown\n";
 
-    switch ($settings['mode']) {
-        case 'server_user':
-        case 'server_tls_user':
-            $conf .= "client-disconnect \"/usr/local/etc/inc/plugins.inc.d/openvpn/attributes.sh {$mode_id} \"\n";
-            break;
-        case 'server_tls':
-        case 'p2p_tls':
-            // For non user auth types setup client specific overrides, user authenticated ones are commissioned
-            // using the auth script in option auth-user-pass-verify
-            $conf .= "client-connect \"/usr/local/etc/inc/plugins.inc.d/openvpn/ovpn_setup_cso.php {$mode_id}\"\n";
-            break;
-        default:
-            break;
-    }
-
     if (!empty($iface_ip)) {
         $conf .= "local {$iface_ip}\n";
     }
@@ -647,6 +633,30 @@ function openvpn_reconfigure($mode, $settings, $device_only = false)
         list($ip, $cidr) = explode('/', $settings['tunnel_network']);
         list($ipv6, $prefix) = explode('/', $settings['tunnel_networkv6']);
         $mask = gen_subnet_mask($cidr);
+
+        // client connect and disconnect handling
+        switch ($settings['mode']) {
+            case 'server_user':
+            case 'server_tls_user':
+                $conf .= "client-disconnect \"/usr/local/etc/inc/plugins.inc.d/openvpn/attributes.sh {$mode_id}\"\n";
+                break;
+            case 'server_tls':
+                // For non user auth types setup client specific overrides,
+                // user authenticated ones are commissioned using the auth
+                // script in option auth-user-pass-verify.
+                $conf .= "client-connect \"/usr/local/etc/inc/plugins.inc.d/openvpn/ovpn_setup_cso.php {$mode_id}\"\n";
+                break;
+            case 'p2p_tls':
+                // same as server_tls, but only valid if cidr < 30, without
+                // server directive client-connect is not valid.
+                // XXX: IPv6 is likely flawed, see "server" directive too.
+                if (!empty($ip) && !empty($mask) && ($cidr < 30)) {
+                    $conf .= "client-connect \"/usr/local/etc/inc/plugins.inc.d/openvpn/ovpn_setup_cso.php {$mode_id}\"\n";
+                }
+                break;
+            default:
+                break;
+        }
 
         // configure tls modes
         switch ($settings['mode']) {
@@ -995,6 +1005,8 @@ function openvpn_restart($mode, $settings)
             return;
         }
     }
+
+    @unlink("/var/etc/openvpn/{$mode_id}.sock");
 
     /* start the new process */
     $fpath = "/var/etc/openvpn/{$mode_id}.conf";
@@ -1488,9 +1500,18 @@ function openvpn_create_dirs()
 
 function openvpn_get_interface_ip($ip, $mask)
 {
-    $baselong = ip2long32($ip) & ip2long($mask);
-    $ip1 = long2ip32($baselong + 1);
-    $ip2 = long2ip32($baselong + 2);
+    $masklong = ip2long($mask);
+    $baselong = ip2long32($ip) & $masklong;
+
+    // Special case for /31 networks which lack network and broadcast addresses.
+    // As per RFC3021, both addresses should be treated as host addresses.
+    if ($masklong == 0xfffffffe) {
+        $ip1 = long2ip32($baselong);
+        $ip2 = long2ip32($baselong + 1);
+    } else {
+        $ip1 = long2ip32($baselong + 1);
+        $ip2 = long2ip32($baselong + 2);
+    }
     return array($ip1, $ip2);
 }
 

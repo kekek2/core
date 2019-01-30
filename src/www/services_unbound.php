@@ -1,31 +1,32 @@
 <?php
 
 /*
-    Copyright (C) 2014-2016 Deciso B.V.
-    Copyright (C) 2014 Warren Baker <warren@decoy.co.za>
-    All rights reserved.
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are met:
-
-    1. Redistributions of source code must retain the above copyright notice,
-       this list of conditions and the following disclaimer.
-
-    2. Redistributions in binary form must reproduce the above copyright
-       notice, this list of conditions and the following disclaimer in the
-       documentation and/or other materials provided with the distribution.
-
-    THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
-    INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-    AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-    AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-    OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-    POSSIBILITY OF SUCH DAMAGE.
-*/
+ * Copyright (C) 2018 Fabian Franz
+ * Copyright (C) 2014-2016 Deciso B.V.
+ * Copyright (C) 2014 Warren Baker <warren@decoy.co.za>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
 require_once("guiconfig.inc");
 require_once("services.inc");
@@ -38,6 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = array();
     // boolean values
     $pconfig['enable'] = isset($a_unboundcfg['enable']);
+    $pconfig['enable_wpad'] = isset($a_unboundcfg['enable_wpad']);
     $pconfig['dnssec'] = isset($a_unboundcfg['dnssec']);
     $pconfig['forwarding'] = isset($a_unboundcfg['forwarding']);
     $pconfig['reglladdr6'] = empty($a_unboundcfg['noreglladdr6']);
@@ -108,6 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
             // boolean values
             $a_unboundcfg['enable'] = !empty($pconfig['enable']);
+            $a_unboundcfg['enable_wpad'] = !empty($pconfig['enable_wpad']);
             $a_unboundcfg['dnssec'] = !empty($pconfig['dnssec']);
             $a_unboundcfg['forwarding'] = !empty($pconfig['forwarding']);
             $a_unboundcfg['noreglladdr6'] = empty($pconfig['reglladdr6']);
@@ -142,7 +145,7 @@ include_once("head.inc");
             $(window).trigger('resize');
         })
         // show advanced when option set
-        if ($("#outgoing_interface").val() != "" || $("#custom_options").val() != "") {
+        if ($("#outgoing_interface").val() != "" || $("#custom_options").val() != "" || $("#enable_wpad").prop('checked')) {
             $("#show_advanced_dns").click();
         }
     });
@@ -173,7 +176,7 @@ include_once("head.inc");
                         <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Enable");?></td>
                         <td>
                           <input name="enable" type="checkbox" value="yes" <?=!empty($pconfig['enable']) ? "checked=\"checked\"" : "";?> />
-                          <strong><?=gettext("Enable DNS Resolver");?></strong>
+                          <?= gettext('Enable DNS Resolver') ?>
                         </td>
                       </tr>
                       <tr>
@@ -191,7 +194,7 @@ include_once("head.inc");
                           <select name="active_interface[]" multiple="multiple" size="3" class="selectpicker" data-live-search="true">
                             <option value="" <?=empty($pconfig['active_interface'][0]) ? 'selected="selected"' : ""; ?>><?=gettext("All");?></option>
 <?php
-                            foreach (get_possible_listen_ips(false) as $laddr):?>
+                            foreach (get_possible_listen_ips() as $laddr):?>
                             <option value="<?=$laddr['value'];?>" <?=!empty($pconfig['active_interface'][0]) && in_array($laddr['value'], $pconfig['active_interface']) ? 'selected="selected"' : "";?>><?=htmlspecialchars($laddr['name']);?></option>
 <?php
                             endforeach; ?>
@@ -220,14 +223,14 @@ include_once("head.inc");
                         <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("DNSSEC");?></td>
                         <td>
                           <input name="dnssec" type="checkbox" value="yes" <?=!empty($pconfig['dnssec']) ? "checked=\"checked\"" : "";?> />
-                          <strong><?=gettext("Enable DNSSEC Support");?></strong>
+                          <?= gettext('Enable DNSSEC Support') ?>
                         </td>
                       </tr>
                       <tr>
                         <td><a id="help_for_forwarding" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("DNS Query Forwarding");?></td>
                         <td>
                           <input name="forwarding" type="checkbox" value="yes" <?=!empty($pconfig['forwarding']) ? "checked=\"checked\"" : "";?> />
-                          <strong><?=gettext("Enable Forwarding Mode");?></strong>
+                          <?= gettext('Enable Forwarding Mode') ?>
                           <div class="hidden" data-for="help_for_forwarding">
                             <?= gettext('The configured system nameservers will be used to forward queries to.') ?>
                           </div>
@@ -237,7 +240,7 @@ include_once("head.inc");
                         <td><a id="help_for_regdhcp" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("DHCP Registration");?></td>
                         <td>
                           <input name="regdhcp" type="checkbox" id="regdhcp" value="yes" <?=!empty($pconfig['regdhcp']) ? "checked=\"checked\"" : "";?> />
-                          <strong><?=gettext("Register DHCP leases in the DNS Resolver");?></strong>
+                          <?= gettext('Register DHCP leases in the DNS Resolver') ?>
                           <div class="hidden" data-for="help_for_regdhcp">
                             <?= gettext("If this option is set, then machines that specify " .
                             "their hostname when requesting a DHCP lease will be registered " .
@@ -261,7 +264,7 @@ include_once("head.inc");
                         <td><a id="help_for_regdhcpstatic" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('DHCP Static Mappings');?></td>
                         <td>
                           <input name="regdhcpstatic" type="checkbox" id="regdhcpstatic" value="yes" <?=!empty($pconfig['regdhcpstatic']) ? "checked=\"checked\"" : "";?> />
-                          <strong><?=gettext("Register DHCP static mappings in the DNS Resolver");?></strong>
+                          <?= gettext('Register DHCP static mappings in the DNS Resolver') ?>
                           <div class="hidden" data-for="help_for_regdhcpstatic">
                             <?= sprintf(gettext("If this option is set, then DHCP static mappings will ".
                                 "be registered in the DNS Resolver, so that their name can be ".
@@ -271,10 +274,10 @@ include_once("head.inc");
                         </td>
                       </tr>
                       <tr>
-                        <td><a id="help_for_reglladdr6" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('DHCP IPv6 Link-local') ?></td>
+                        <td><a id="help_for_reglladdr6" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('IPv6 Link-local') ?></td>
                         <td>
                           <input name="reglladdr6" type="checkbox" id="reglladdr6" value="yes" <?= !empty($pconfig['reglladdr6']) ? 'checked="checked"' : '' ?>/>
-                          <strong><?= gettext('Register IPv6 link-local addresses in the DNS Resolver') ?></strong>
+                          <?= gettext('Register IPv6 link-local addresses in the DNS Resolver') ?>
                           <div class="hidden" data-for="help_for_reglladdr6">
                             <?= gettext("If this option is unset, then IPv6 link-local " .
                             "addresses will not be registered in the DNS Resolver, preventing " .
@@ -323,6 +326,16 @@ include_once("head.inc");
                           </select>
                           <div class="hidden" data-for="help_for_outgoing_interface">
                             <?=gettext("Utilize different network interface(s) that the DNS Resolver will use to send queries to authoritative servers and receive their replies. By default all interfaces are used. Note that setting explicit outgoing interfaces only works when they are statically configured.");?>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr class="showadv" style="display:none">
+                        <td><a id="help_for_enable_wpad" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("WPAD Records");?></td>
+                        <td>
+                          <input id="enable_wpad" name="enable_wpad" type="checkbox" value="yes" <?=!empty($pconfig['enable_wpad']) ? "checked=\"checked\"" : "";?> />
+                          <div class="hidden" data-for="help_for_enable_wpad">
+                            <?=gettext("If this option is set, CNAME records for the WPAD host of all configured domains will be automatically added as well as overrides for TXT records for domains. " .
+                                       "This allows automatic proxy configuration in your network but you should not enable it if you are not using WPAD or if you want to configure it by yourself.");?><br />
                           </div>
                         </td>
                       </tr>

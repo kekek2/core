@@ -367,6 +367,15 @@ abstract class BaseModel
     }
 
     /**
+     * iterate (non virtual) child nodes
+     * @return mixed
+     */
+    public function iterateItems()
+    {
+        return $this->internalData->iterateItems();
+    }
+
+    /**
      * validate full model using all fields and data in a single (1 deep) array
      * @param bool $validateFullModel validate full model or only changed fields
      * @return \Phalcon\Validation\Message\Group
@@ -578,11 +587,13 @@ abstract class BaseModel
      * The BaseModelMigration class should be named with the corresponding version
      * prefixed with an M and . replaced by _ for example : M1_0_1 equals version 1.0.1
      *
+     * @return bool status (true-->success, false-->failed)
      */
     public function runMigrations()
     {
         if (version_compare($this->internal_current_model_version, $this->internal_model_version, '<')) {
             $upgradePerfomed = false;
+            $migObjects = array();
             $logger = new Syslog("config", array('option' => LOG_PID, 'facility' => LOG_LOCAL4));
             $class_info = new \ReflectionClass($this);
             // fetch version migrations
@@ -614,6 +625,7 @@ abstract class BaseModel
                         $migobj = $mig_class->newInstance();
                         try {
                             $migobj->run($this);
+                            $migObjects[] = $migobj;
                             $upgradePerfomed = true;
                         } catch (\Exception $e) {
                             $logger->error("failed migrating from version " .
@@ -631,10 +643,16 @@ abstract class BaseModel
             if ($upgradePerfomed) {
                 try {
                     $this->serializeToConfig();
+                    foreach ($migObjects as $migobj) {
+                        $migobj->post($this);
+                    }
                 } catch (\Exception $e) {
                     $logger->error("Model ".$class_info->getName() ." can't be saved, skip ( " .$e . " )");
+                    return false;
                 }
             }
+
+            return true;
         }
     }
 

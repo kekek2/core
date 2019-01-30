@@ -180,8 +180,7 @@ function filter_configure_sync($verbose = false, $flush_states = false)
     // initialize fw plugin object
     $fw = filter_core_get_initialized_plugin_system();
     filter_core_bootstrap($fw);
-    $cnfint = $fw->getInterfaceMapping();
-
+    $cnfint = iterator_to_array($fw->getInterfaceMapping());
     plugins_firewall($fw);
 
     if (isset($config['filter']['rule'])) {
@@ -316,9 +315,7 @@ function filter_configure_sync($verbose = false, $flush_states = false)
     }
 
     if (isset($config['system']['gw_switch_default'])) {
-        $gateways_status = return_gateways_status(true);
-        $gateways_arr = return_gateways_array();
-        fixup_default_gateway($gateways_status, $gateways_arr);
+        fixup_default_gateway();
     }
 
     $aliases = filter_generate_aliases();
@@ -387,6 +384,9 @@ function filter_configure_sync($verbose = false, $flush_states = false)
         $limitrules .= "set timeout { adaptive.start {$config['system']['adaptivestart']}, adaptive.end {$config['system']['adaptiveend']} }\n";
     } else {
         $limitrules .= "set timeout { adaptive.start 0, adaptive.end 0 }\n";
+    }
+    if (!empty($config['system']['state-policy'])) {
+        $limitrules .= "set state-policy if-bound\n";
     }
 
     if (!empty($config['system']['maximumstates'])) {
@@ -607,8 +607,6 @@ function filter_generate_scrubing(&$FilterIflist)
 
 function filter_generate_aliases()
 {
-    global $config;
-
     $aliases .= "\n# Lockout tables\n";
     $aliases .= "table <sshlockout> persist\n";
     $aliases .= "table <webConfiguratorlockout> persist\n";
@@ -620,25 +618,24 @@ function filter_generate_aliases()
         $aliases .= "table <bogonsv6> persist file \"/usr/local/etc/bogonsv6\"\n";
     }
 
-    if (isset($config['aliases']['alias'])) {
-        $aliases .= "\n# User Aliases\n";
-        foreach ($config['aliases']['alias'] as $aliased) {
-            switch ($aliased['type']) {
-
-                case "urltable_ports":
-                case "url_ports":
-                    $tmp_ports = filter_core_get_url_port_alias($aliased['name']);
-                    $aliases .= "{$aliased['name']} = \"{ {$tmp_ports} }\"\n";
-                    break;
-                case "port":
-                    $tmp_ports = implode(" ", filter_core_get_port_alias($aliased['name']));
-                    $aliases .= "{$aliased['name']} = \"{ {$tmp_ports} }\"\n";
-                    break;
-                default:
-                    $aliases .= "table <{$aliased['name']}> persist\n";
-                    $aliases .= "{$aliased['name']} = \"<{$aliased['name']}>\"\n";
-                    break;
-            }
+    $aliases .= "\n# User Aliases\n";
+    foreach ((new \OPNsense\Firewall\Alias())->aliasIterator() as $aliased) {
+        switch ($aliased['type']) {
+            case "urltable_ports":
+            case "url_ports":
+                # a bit of a hack, but prevents the ruleset from not being able to load if these types are in
+                # the configuration.
+                $aliases .= "{$aliased['name']} = \"{ 0 <> 65535 }\"\n";
+                file_notice('filter_load', sprintf(gettext('URL port aliases types not supported [%s]'), $aliased['name']), 'Filter Reload', '');
+                break;
+            case "port":
+                $tmp_ports = implode(" ", filter_core_get_port_alias($aliased['name']));
+                $aliases .= "{$aliased['name']} = \"{ {$tmp_ports} }\"\n";
+                break;
+            default:
+                $aliases .= "table <{$aliased['name']}> persist\n";
+                $aliases .= "{$aliased['name']} = \"<{$aliased['name']}>\"\n";
+                break;
         }
     }
 

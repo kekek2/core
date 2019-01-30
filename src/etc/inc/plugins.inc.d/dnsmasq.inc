@@ -117,18 +117,23 @@ function dnsmasq_configure_do($verbose = false)
         $args .= " --port={$config['dnsmasq']['port']} ";
     }
 
-    if (isset($config['dnsmasq']['interface'])) {
-        $addresses = array('127.0.0.1', '::1');
+    if (!empty($config['dnsmasq']['interface'])) {
+        $interfaces = explode(',', $config['dnsmasq']['interface']);
+        $interfaces[] = 'lo0';
+        $addresses = array();
 
-        foreach (explode(',', $config['dnsmasq']['interface']) as $interface) {
-            foreach (legacy_getall_interface_addresses(get_real_interface($interface)) as $tmpaddr) {
-                $tmpaddr = explode('/', $tmpaddr)[0];
-                /* no support for link-local address with scope specified */
-                $tmpaddr = explode('%', $tmpaddr)[0];
-                if (!empty($tmpaddr)) {
-                    $addresses[] = $tmpaddr;
-                }
+        foreach (interfaces_addresses($interfaces) as $tmpaddr => $info) {
+            if ($info['name'] == 'lo0' && $info['family'] == 'inet' && $tmpaddr != '127.0.0.1') {
+                /* allow other DNS services to bind to loopback aliases */
+                continue;
             }
+
+            if ($info['scope']) {
+                /* link-local does not seem to be supported */
+                continue;
+            }
+
+            $addresses[] = $tmpaddr;
         }
 
         foreach ($addresses as $address) {

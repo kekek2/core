@@ -191,6 +191,9 @@ class FirmwareController extends ApiControllerBase
             } elseif (array_key_exists('connection', $response) && $response['connection'] == 'unauthenticated') {
                 $response['status_msg'] = gettext('Could not authenticate the selected mirror.');
                 $response['status'] = 'error';
+            } elseif (array_key_exists('connection', $response) && $response['connection'] == 'refused') {
+                $response['status_msg'] = gettext('No valid license.');
+                $response['status'] = 'error';
             } elseif (array_key_exists('connection', $response) && $response['connection'] == 'misconfigured') {
                 $response['status_msg'] = gettext('The current package configuration is invalid.');
                 $response['status'] = 'error';
@@ -657,8 +660,8 @@ class FirmwareController extends ApiControllerBase
         $response = array();
 
         /* allows us to select UI features based on product state */
-        $response['product_version'] = trim(file_get_contents('/usr/local/opnsense/version/opnsense'));
-        $response['product_name'] = trim(file_get_contents('/usr/local/opnsense/version/opnsense.name'));
+        $response['product_version'] = trim(shell_exec('opnsense-version -v'));
+        $response['product_name'] = trim(shell_exec('opnsense-version -n'));
 
         $devel = explode('-', $response['product_name']);
         $devel = count($devel) == 2 ? $devel[1] == 'devel' : false;
@@ -735,7 +738,16 @@ class FirmwareController extends ApiControllerBase
         if ($changelogs == null) {
             $changelogs = array();
         } else {
-            foreach ($changelogs as &$changelog) {
+            $version = trim(shell_exec('opnsense-version -v'));
+            $devel = preg_match('/^\d+\.\d+\.[a-z]/i', $version) ? true : false;
+
+            foreach ($changelogs as $index => &$changelog) {
+                /* skip development items */
+                if (!$devel && preg_match('/^\d+\.\d+\.[a-z]/i', $changelog['version'])) {
+                    unset($changelogs[$index]);
+                    continue;
+                }
+
                 /* rewrite dates as ISO */
                 $date = date_parse($changelog['date']);
                 $changelog['date'] = sprintf('%04d-%02d-%02d', $date['year'], $date['month'], $date['day']);

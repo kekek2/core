@@ -44,10 +44,7 @@ function find_ip_interface($ip, $bits = null) {
 
 	$isv6ip = is_ipaddrv6($ip);
 
-	/* if list */
-	$ifdescrs = get_configured_interface_list();
-
-	foreach ($ifdescrs as $ifdescr => $ifname) {
+	foreach (get_configured_interface_with_descr() as $ifname => $unused) {
 		$ifip = ($isv6ip) ? get_interface_ipv6($ifname) : get_interface_ip($ifname);
 		if (is_null($ifip))
 			continue;
@@ -775,7 +772,7 @@ function showchange() {
 				}
 				if(!$field['dontcombinecells'])
 					echo "<td class=\"vtable\">";
-				echo "<select class='selectpicker' id='{$name}' name='{$name}' style='max-width:5em;'>\n";
+				echo "<select class='form-control' id='{$name}' name='{$name}' style='max-width:5em;'>\n";
 				$CHECKED = ' selected="selected"';
 				for ($x = 1; $x <= 32; $x++) {
 					if ($x == 31) {
@@ -941,14 +938,12 @@ function showchange() {
 	$aliases = "";
 	$addrisfirst = 0;
 	$aliasesaddr = "";
-	if (isset($config['aliases']['alias'])) {
-		foreach ($config['aliases']['alias'] as $alias_name) {
-				if ($isfirst == 1) {
-					$aliases .= ",";
-				}
-				$aliases .= "'" . $alias_name['name'] . "'";
-				$isfirst = 1;
-		}
+	foreach ((new \OPNsense\Firewall\Alias())->aliasIterator() as $alias_name) {
+			if ($isfirst == 1) {
+				$aliases .= ",";
+			}
+			$aliases .= "'" . $alias_name['name'] . "'";
+			$isfirst = 1;
 	}
 ?>
 
