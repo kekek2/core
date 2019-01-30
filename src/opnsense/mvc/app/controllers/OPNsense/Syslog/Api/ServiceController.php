@@ -30,7 +30,7 @@
 
 namespace OPNsense\Syslog\Api;
 
-use \OPNsense\Base\ApiControllerBase;
+use \OPNsense\Base\ApiMutableServiceControllerBase;
 use \OPNsense\Core\Backend;
 use \OPNsense\Syslog\Syslog;
 use \OPNsense\Core\Config;
@@ -40,9 +40,12 @@ use \Phalcon\Filter;
  * Class ServiceController
  * @package OPNsense\Syslog
  */
-class ServiceController extends ApiControllerBase
+class ServiceController extends ApiMutableServiceControllerBase
 {
-
+    static protected $internalServiceClass = 'OPNsense\Syslog\Syslog';
+    static protected $internalServiceTemplate = 'OPNSense/Syslog';
+    static protected $internalServiceEnabled = 'Enabled';
+    static protected $internalServiceName = 'syslog';
     /**
      * restart syslog service
      * @return array

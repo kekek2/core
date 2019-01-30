@@ -86,7 +86,7 @@ $cert_methods = array(
     "internal" => gettext("Create an internal Certificate"),
     "external" => gettext("Create a Certificate Signing Request"),
 );
-$cert_keylens = array( "512", "1024", "2048", "4096", "8192");
+$cert_keylens = array( "512", "1024", "2048", "3072", "4096", "8192");
 $openssl_digest_algs = array("sha1", "sha224", "sha256", "sha384", "sha512");
 
 
@@ -492,7 +492,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             if (count($input_errors) == 0) {
                 write_config();
                 if (isset($userid)) {
-                    header(url_safe('Location: /system_usermanager.php?act=edit&userid=%s', array($userid)));
+                    header(url_safe('Location: /system_usermanager.php?act=edit&userid=%d', array($userid)));
                 } else {
                     header(url_safe('Location: /system_certmanager.php'));
                 }
@@ -511,7 +511,7 @@ include("head.inc");
 
 if (empty($act)) {
     $main_buttons = array(
-        array('label'=>gettext("add or import certificate"), 'href'=>'system_certmanager.php?act=new'),
+        array('label' => gettext('Add'), 'href' => 'system_certmanager.php?act=new'),
     );
 }
 
@@ -716,7 +716,7 @@ $( document ).ready(function() {
               <tr>
                 <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Method");?></td>
                 <td>
-                  <select name="certmethod" id="certmethod">
+                  <select name="certmethod" id="certmethod" class="selectpicker">
 <?php
                   foreach ($cert_methods as $method => $desc) :?>
                     <option value="<?=$method;?>" <?=$pconfig['certmethod'] == $method ? "selected=\"selected\"":"";?>>
@@ -773,7 +773,7 @@ $( document ).ready(function() {
               <tr>
                 <td style="width:22%"><?=gettext("Certificate authority");?></td>
                 <td style="width:78%">
-                  <select name='caref' id='caref'>
+                  <select name='caref' id='caref' class="selectpicker">
 <?php
                   foreach ($a_ca as $ca) :
                       if (!$ca['prv']) {
@@ -791,7 +791,7 @@ $( document ).ready(function() {
               <tr>
                 <td><a id="help_for_digest_cert_type" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Type");?> </td>
                 <td>
-                    <select name="cert_type">
+                    <select name="cert_type" class="selectpicker">
                         <option value="usr_cert" <?=$pconfig['cert_type'] == 'usr_cert' ? "selected=\"selected\"" : "";?>> <?=gettext("Client Certificate");?> </option>
                         <option value="server_cert" <?=$pconfig['cert_type'] == 'server_cert' ? "selected=\"selected\"" : "";?>> <?=gettext("Server Certificate");?> </option>
                         <option value="v3_ca" <?=$pconfig['cert_type'] == 'v3_ca' ? "selected=\"selected\"" : "";?>> <?=gettext("Certificate Authority");?> </option>
@@ -804,7 +804,7 @@ $( document ).ready(function() {
               <tr>
                 <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Key length");?> (<?=gettext("bits");?>)</td>
                 <td>
-                  <select name='keylen'>
+                  <select name='keylen' class="selectpicker">
 <?php
                   foreach ($cert_keylens as $len) :?>
                     <option value="<?=$len;?>" <?=$pconfig['keylen'] == $len ? "selected=\"selected\"" : "";?>><?=$len;?></option>
@@ -816,7 +816,7 @@ $( document ).ready(function() {
               <tr>
                 <td><a id="help_for_digest_alg" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Digest Algorithm");?></td>
                 <td>
-                  <select name='digest_alg' id='digest_alg'>
+                  <select name='digest_alg' id='digest_alg' class="selectpicker">
 <?php
                   foreach ($openssl_digest_algs as $digest_alg) :?>
                     <option value="<?=$digest_alg;?>" <?=$pconfig['digest_alg'] == $digest_alg ? "selected=\"selected\"" : "";?>>
@@ -924,7 +924,7 @@ $( document ).ready(function() {
                       if (!isset($pconfig['altname_value']) || count($pconfig['altname_value']) ==0) :?>
                       <tr>
                         <td>
-                          <select name="altname_type[]" id="altname_type">
+                          <select name="altname_type[]" id="altname_type" class="selectpicker">
                             <option value="DNS"><?=gettext("DNS");?></option>
                             <option value="IP"><?=gettext("IP");?></option>
                             <option value="email"><?=gettext("email");?></option>
@@ -935,7 +935,7 @@ $( document ).ready(function() {
                           <input name="altname_value[]" type="text" size="20" value="" />
                         </td>
                         <td>
-                          <div style="cursor:pointer;" class="act-removerow-altnm btn btn-default btn-xs" alt="remove"><span class="glyphicon glyphicon-minus"></span></div>
+                          <div style="cursor:pointer;" class="act-removerow-altnm btn btn-default btn-xs" alt="remove"><i class="fa fa-minus fa-fw"></i></div>
                         </td>
                       </tr>
 <?php
@@ -944,7 +944,7 @@ $( document ).ready(function() {
                           $altname_type = isset($pconfig['altname_type'][$itemid]) ? $pconfig['altname_type'][$itemid] : null; ?>
                         <tr>
                           <td>
-                            <select name="altname_type[]" id="altname_type">
+                            <select name="altname_type[]" id="altname_type" class="selectpicker">
                               <option value="DNS" <?=$altname_type == "DNS" ? "selected=\"selected\"" : "";?>><?=gettext("DNS");?></option>
                               <option value="IP" <?=$altname_type == "IP" ? "selected=\"selected\"" : "";?>><?=gettext("IP");?></option>
                               <option value="email" <?=$altname_type == "email" ? "selected=\"selected\"" : "";?>><?=gettext("email");?></option>
@@ -955,7 +955,7 @@ $( document ).ready(function() {
                             <input name="altname_value[]" type="text" size="20" value="<?=$item;?>" />
                           </td>
                           <td>
-                            <div style="cursor:pointer;" class="act-removerow-altnm btn btn-default btn-xs" alt="remove"><span class="glyphicon glyphicon-minus"></span></div>
+                            <div style="cursor:pointer;" class="act-removerow-altnm btn btn-default btn-xs" alt="remove"><i class="fa fa-minus fa-fw"></i></div>
                           </td>
                         </tr>
 
@@ -967,7 +967,7 @@ $( document ).ready(function() {
                       <tr>
                         <td colspan="2"></td>
                         <td>
-                          <div id="addNewAltNm" style="cursor:pointer;" class="btn btn-default btn-xs" alt="add"><span class="glyphicon glyphicon-plus"></span></div>
+                          <div id="addNewAltNm" style="cursor:pointer;" class="btn btn-default btn-xs" alt="add"><i class="fa fa-plus fa-fw"></i></div>
                         </td>
                       </tr>
                     </tfoot>
@@ -1240,7 +1240,7 @@ $( document ).ready(function() {
                 }?>
               <tr>
                 <td>
-                  <span class="glyphicon glyphicon-certificate __iconspacer"></span>
+                  <i class="fa fa-certificate"></i>
                   <?=$name;?>
 <?php
                   if (is_array($purpose)) :?>
@@ -1265,7 +1265,7 @@ $( document ).ready(function() {
                       </tr>
                   </table>
                 </td>
-                <td>
+                <td class="text-nowrap">
 <?php
                 if (is_cert_revoked($cert)) :?>
                   <b><?=gettext('Revoked') ?></b><br />
@@ -1293,31 +1293,31 @@ $( document ).ready(function() {
                 endif; ?>
 
                   <a href="#" class="btn btn-default btn-xs act_info" data-id="<?=$i;?>" data-toggle="tooltip" title="<?=gettext("show certificate info");?>">
-                    <span class="glyphicon glyphicon-info-sign"></span>
+                    <i class="fa fa-info-circle fa-fw"></i>
                   </a>
 
                   <a href="system_certmanager.php?act=exp&amp;id=<?=$i;?>" class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("export user cert");?>">
-                      <span class="glyphicon glyphicon-download"></span>
+                      <i class="fa fa-download fa-fw"></i>
                   </a>
 
                   <a href="system_certmanager.php?act=key&amp;id=<?=$i;?>" class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("export user key");?>">
-                    <span class="glyphicon glyphicon-download"></span>
+                    <i class="fa fa-download fa-fw"></i>
                   </a>
 
                   <a href="system_certmanager.php?act=p12&amp;id=<?=$i;?>" class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("export ca+user cert+user key in .p12 format");?>">
-                      <span class="glyphicon glyphicon-download"></span>
+                      <i class="fa fa-download fa-fw"></i>
                   </a>
 <?php
                   if (!cert_in_use($cert['refid'])) :?>
 
                   <a id="del_<?=$i;?>" data-id="<?=$i;?>" title="<?=gettext("delete cert"); ?>" data-toggle="tooltip"  class="act_delete btn btn-default btn-xs">
-                    <span class="fa fa-trash text-muted"></span>
+                    <i class="fa fa-trash fa-fw"></i>
                   </a>
 <?php
                   endif;
                   if (isset($cert['csr'])) :?>
                   <a href="system_certmanager.php?act=csr&amp;id=<?=$i;?>" class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("update csr");?>">
-                    <span class="glyphicon glyphicon-edit"></span>
+                    <i class="fa fa-pencil fa-fw"></i>
                   </a>
 <?php
                   endif; ?>

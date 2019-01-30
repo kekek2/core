@@ -321,7 +321,7 @@ foreach ($config['ipsec']['phase1'] as $ph1ent) {
 function print_legacy_box($msg, $name, $value)
 {
   $savebutton = "<form action=\"".$_SERVER['REQUEST_URI']."\" method=\"post\">";
-  $savebutton .= "<input name=\"{$name}\" type=\"submit\" class=\"btn btn-default\" id=\"${name}\" value=\"{$value}\" />";
+  $savebutton .= "<input name=\"{$name}\" type=\"submit\" class=\"btn btn-default\" id=\"{$name}\" value=\"{$value}\" />";
   if (!empty($_POST['if'])) {
     $savebutton .= "<input type=\"hidden\" name=\"if\" value=\"" . htmlspecialchars($_POST['if']) . "\" />";
   }
@@ -373,7 +373,7 @@ if (isset($input_errors) && count($input_errors) > 0) {
                     <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("User Authentication"); ?></td>
                     <td>
                       <?=gettext("Source"); ?>:
-                      <select name="user_source[]" class="form-control" id="user_source" multiple="multiple" size="3">
+                      <select name="user_source[]" class="selectpicker" id="user_source" multiple="multiple" size="3">
 <?php
                         $authmodes = explode(",", $pconfig['user_source']);
                         $auth_servers = auth_get_authserver_list();
@@ -386,7 +386,7 @@ foreach ($auth_servers as $auth_key => $auth_server) : ?>
                   <tr>
                     <td><a id="help_for_local_group" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('Enforce local group') ?></td>
                     <td>
-                      <select name="local_group" class="form-control" id="local_group">
+                      <select name="local_group" class="selectpicker" id="local_group">
                         <option value="" <?= empty($pconfig['local_group']) ? 'selected="selected"' : '' ?>>(<?= gettext('none') ?>)</option>
 <?php
                       foreach (config_read_array('system', 'group') as $group):
@@ -412,7 +412,7 @@ foreach ($auth_servers as $auth_key => $auth_server) : ?>
                       <?=gettext("Network"); ?>:&nbsp;
                       <input name="pool_address" type="text" class="form-control unknown" id="pool_address" size="20" value="<?=$pconfig['pool_address'];?>" />
                       /
-                      <select name="pool_netbits" class="form-control" id="pool_netbits">
+                      <select name="pool_netbits" class="selectpicker" id="pool_netbits">
                               <?php for ($i = 32; $i >= 0; $i--) :
     ?>
                               <option value="<?=$i;
@@ -503,9 +503,26 @@ endfor; ?>
                     <td>
                         <input name="pfs_group_enable" type="checkbox" id="pfs_group_enable" value="yes" <?= !empty($pconfig['pfs_group']) ? "checked=\"checked\"" : "";?>  onclick="pfs_group_change()" />
 
-                        <select name="pfs_group" class="form-control" id="pfs_group">
-<?php                     foreach ($p2_pfskeygroups as $keygroup => $keygroupname) :
-?>
+                        <select name="pfs_group" class="selectpicker" id="pfs_group">
+<?php
+                        $p2_dhgroups = array(
+                          0  => gettext('off'),
+                          1  => '1 (768 bit)',
+                          2  => '2 (1024 bit)',
+                          5  => '5 (1536 bit)',
+                          14 => '14 (2048 bit)',
+                          15 => '15 (3072 bit)',
+                          16 => '16 (4096 bit)',
+                          17 => '17 (6144 bit)',
+                          18 => '18 (8192 bit)',
+                          19 => '19 (256 bit elliptic curve)',
+                          20 => '20 (384 bit elliptic curve)',
+                          21 => '21 (521 bit elliptic curve)',
+                          22 => '22 (1024(sub 160) bit)',
+                          23 => '23 (2048(sub 224) bit)',
+                          24 => '24 (2048(sub 256) bit)'
+                        );
+                        foreach ($p2_dhgroups as $keygroup => $keygroupname) :?>
                           <option value="<?=$keygroup;
 ?>" <?= $pconfig['pfs_group'] == $keygroup ? "selected=\"selected\"" : "" ; ?>>
                             <?=$keygroupname;?>

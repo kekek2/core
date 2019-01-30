@@ -117,8 +117,8 @@ include("head.inc");
 ?>
 
 <!-- JQuery Tokenize (http://zellerda.com/projects/tokenize) -->
-<script src="/ui/js/jquery.tokenize.js"></script>
-<link rel="stylesheet" type="text/css" href="<?=get_themed_filename("/css/jquery.tokenize.css");?>">
+<script src="/ui/js/tokenize2.min.js"></script>
+<link rel="stylesheet" type="text/css" href="<?=get_themed_filename("/css/tokenize2.css");?>">
 <script src="/ui/js/opnsense_ui.js"></script>
 
  <script>
@@ -205,8 +205,8 @@ if (isset($input_errors) && count($input_errors) > 0) {
                         <strong><?=gettext("Start IPsec in debug mode based on sections selected"); ?></strong> <br/>
 <?php                   foreach ($ipsec_loglevels as $lkey => $ldescr) :
 ?>
-                        <?=$ldescr?>
-                        <select name="ipsec_<?=$lkey?>" id="ipsec_<?=$lkey?>">
+                        <?=$ldescr?><br>
+                        <select name="ipsec_<?=$lkey?>" id="ipsec_<?=$lkey?>" class="selectpicker">
 <?php                   foreach (array("Silent", "Basic", "Audit", "Control", "Raw", "Highest") as $lidx => $lvalue) :
                           $lidx -= 1;
 ?>
@@ -215,7 +215,7 @@ if (isset($input_errors) && count($input_errors) > 0) {
                           </option>
 <?php
 endforeach; ?>
-                        </select>
+                        </select><br>
 <?php
 endforeach; ?>
                         <div class="hidden" data-for="help_for_ipsec_debug">

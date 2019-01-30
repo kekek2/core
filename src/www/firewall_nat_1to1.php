@@ -105,7 +105,7 @@ legacy_html_escape_form_data($a_1to1);
 include("head.inc");
 
 $main_buttons = array(
-    array('label'=>gettext("add rule"), 'href'=>'firewall_nat_1to1_edit.php'),
+    array('label' => gettext('Add'), 'href' => 'firewall_nat_1to1_edit.php'),
 );
 
 ?>
@@ -272,17 +272,17 @@ $main_buttons = array(
                       <?=$natent['descr'];?> &nbsp;
                     </td>
                     <td>
-                      <a type="submit" id="move_<?=$i;?>" name="move_<?=$i;?>_x" data-toggle="tooltip" title="<?=gettext("move selected rules before this rule");?>" class="act_move btn btn-default btn-xs">
-                        <span class="glyphicon glyphicon-arrow-left"></span>
+                      <a type="submit" id="move_<?=$i;?>" name="move_<?=$i;?>_x" data-toggle="tooltip" title="<?= html_safe(gettext("move selected rules before this rule")) ?>" class="act_move btn btn-default btn-xs">
+                        <span class="fa fa-arrow-left fa-fw"></span>
                       </a>
-                      <a href="firewall_nat_1to1_edit.php?id=<?=$i;?>" class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("edit rule");?>">
-                        <span class="glyphicon glyphicon-pencil"></span>
+                      <a href="firewall_nat_1to1_edit.php?id=<?=$i;?>" class="btn btn-default btn-xs" data-toggle="tooltip" title="<?= html_safe(gettext('Edit')) ?>">
+                        <span class="fa fa-pencil fa-fw"></span>
                       </a>
-                      <a id="del_<?=$i;?>" title="<?=gettext("delete rule"); ?>" data-toggle="tooltip"  class="act_delete btn btn-default btn-xs">
-                        <span class="fa fa-trash text-muted"></span>
+                      <a id="del_<?=$i;?>" title="<?= html_safe(gettext('Delete')) ?>" data-toggle="tooltip" class="act_delete btn btn-default btn-xs">
+                        <span class="fa fa-trash fa-fw"></span>
                       </a>
-                      <a href="firewall_nat_1to1_edit.php?dup=<?=$i;?>" data-toggle="tooltip" title="<?=gettext("clone rule");?>" class="btn btn-default btn-xs">
-                        <span class="fa fa-clone text-muted"></span>
+                      <a href="firewall_nat_1to1_edit.php?dup=<?=$i;?>" data-toggle="tooltip" title="<?= html_safe(gettext('Clone')) ?>" class="btn btn-default btn-xs">
+                        <span class="fa fa-clone fa-fw"></span>
                       </a>
                     </td>
                   </tr>
@@ -290,42 +290,21 @@ $main_buttons = array(
                   $i++;
                 endforeach;
 ?>
+<?php if ($i != 0): ?>
                   <tr>
                     <td colspan="7"></td>
                     <td>
-<?php               if ($i == 0):
-?>
-                      <span title="<?=gettext("move selected rules to end");?>" class="btn btn-default btn-xs">
-                        <span class="glyphicon glyphicon-arrow-left">
-                        </span>
-                      </span>
-<?php               else:
-?>
-                      <a type="submit" id="move_<?=$i;?>" name="move_<?=$i;?>_x" data-toggle="tooltip" title="<?=gettext("move selected rules to end");?>" class="act_move btn btn-default btn-xs">
-                        <span class="glyphicon glyphicon-arrow-left"></span>
+                      <a type="submit" id="move_<?=$i;?>" name="move_<?=$i;?>_x" data-toggle="tooltip" title="<?= html_safe(gettext('move selected rules to end')) ?>" class="act_move btn btn-default btn-xs">
+                        <i class="fa fa-arrow-left fa-fw"></i>
                       </a>
-<?php               endif;
-?>
-<?php               if ($i == 0):
-?>
-                      <span title="<?=gettext("delete selected rules"); ?>" data-toggle="tooltip" class="btn btn-default btn-xs">
-                        <span class="fa fa-trash text-muted"></span>
-                      </span>
-<?php               else:
-?>
-                      <a id="del_x" title="<?=gettext("delete selected rules"); ?>" data-toggle="tooltip"  class="act_delete btn btn-default btn-xs">
-                        <span class="fa fa-trash text-muted"></span>
+                      <a id="del_x" title="<?= html_safe(gettext('Delete selected')) ?>" data-toggle="tooltip" class="act_delete btn btn-default btn-xs">
+                        <i class="fa fa-trash fa-fw"></i>
                       </a>
-<?php               endif;
-?>
-                      <a href="firewall_nat_1to1_edit.php" data-toggle="tooltip" title="<?=gettext("add new rule");?>" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-plus"></span></a>
                     </td>
                   </tr>
+<?php endif ?>
                 </tbody>
                 <tfoot>
-                  <tr>
-                    <td colspan="9">&nbsp;</td>
-                  </tr>
                   <tr>
                     <td style="width:16px"><span class="fa fa-play text-success"></span></td>
                     <td colspan="8"><?=gettext("Enabled rule"); ?></td>

@@ -77,7 +77,7 @@ function dump_log($system_logfile, $syslogEntriesToFetch)
       <tr>
         <td><?=gettext("Number of Log lines to display");?>:</td>
         <td>
-          <select name="logfiltercount" id="logfiltercount">
+          <select name="logfiltercount" id="logfiltercount" class="selectpicker">
             <?php for ($i = 1; $i <= 50; $i++) {?>
             <option value="<?= html_safe($i) ?>" <?php if ($syslogEntriesToFetch == $i) { echo "selected=\"selected\"";}?>><?= html_safe($i) ?></option>
             <?php } ?>

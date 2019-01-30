@@ -123,6 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     if (count($input_errors) == 0) {
+        $oldlanguage = !empty($config['system']["language"]) ? $config['system']["language"] : "en_US" ;
         $config['system']['domain'] = $pconfig['domain'];
         $config['system']['hostname'] = $pconfig['hostname'];
         $config['system']['language'] = $pconfig['language'];
@@ -209,6 +210,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         plugins_configure('dns');
         services_dhcpd_configure();
         filter_configure();
+        if ($oldlanguage != $pconfig['language']) {
+            configd_run('template reload OPNsense/Lang');
+        }
 
         header(url_safe('Location: /system_general.php?savemsg=%s', array(get_std_save_message(true))));
         exit;
@@ -288,7 +292,7 @@ include("head.inc");
             <tr>
               <td><a id="help_for_language" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Language");?></td>
               <td>
-                <select name="language" class="selectpicker" data-size="10" data-style="btn-default" data-width="auto">
+                <select name="language" class="selectpicker" data-style="btn-default">
 <?php
                   foreach (get_locale_list() as $lcode => $ldesc):?>
                   <option value="<?=$lcode;?>" <?= $lcode == $pconfig['language'] ? 'selected="selected"' : '' ?>>

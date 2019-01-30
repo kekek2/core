@@ -32,7 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
     .ids-alert-info > tbody > tr > td {
         padding-top: 2px !important;
-        padding-bottom: : 2px !important;
+        padding-bottom: 2px !important;
     }
     .ids-alert-info > tbody > tr > td:first-child {
         width: 150px;
@@ -188,7 +188,7 @@ POSSIBILITY OF SUCH DAMAGE.
         function actionToggleSelected(gridId, url, state, combine) {
             var rows =$("#"+gridId).bootgrid('getSelectedRows');
             if (rows != undefined){
-                var deferreds = [];
+                var promise = $.when();
                 if (state != undefined) {
                     var url_suffix = state;
                 } else {
@@ -196,22 +196,31 @@ POSSIBILITY OF SUCH DAMAGE.
                 }
 
                 var keyset = [];
-                $.each(rows, function(key,uuid){
+                $.each(rows, function (key, uuid) {
                     keyset.push(uuid);
-                    if ( combine == undefined || keyset.length > combine) {
-                        deferreds.push(ajaxCall(url + keyset.join(',') +'/'+url_suffix, sendData={},null));
+                    if (combine == undefined || keyset.length > combine) {
+                        const localKeyset = keyset;
+                        promise = promise.then(function () {
+                            return ajaxCall(url + localKeyset.join(',') + '/' + url_suffix, sendData = {}, null);
+                        });
                         keyset = [];
                     }
                 });
 
                 // flush remaining items
                 if (keyset.length > 0) {
-                    deferreds.push(ajaxCall(url + keyset.join(',') +'/'+url_suffix, sendData={},null));
+                    const localKeyset = keyset;
+                    promise = promise.then(function () {
+                        return ajaxCall(url + localKeyset.join(',') + '/' + url_suffix, sendData = {}, null);
+                    });
                 }
 
                 // refresh when all toggles are executed
-                $.when.apply(null, deferreds).done(function(){
+                promise.then(function(){
                     $("#"+gridId).bootgrid("reload");
+                    $("#"+gridId).parent().find('[class*="command-toggle"]').each(function (index, entry) {
+                        $(entry).removeClass("fa-spinner pulse");
+                    });
                 });
             }
         }
@@ -575,6 +584,9 @@ POSSIBILITY OF SUCH DAMAGE.
         $("#disableSelectedRules").click(function(){
             var gridId = 'grid-installedrules';
             var url = '/api/ids/settings/toggleRule/';
+            $(this).find('[class*="command-toggle"]').each(function (index, entry) {
+                $(entry).addClass("fa-spinner pulse");
+            });
             actionToggleSelected(gridId, url, 0, 100);
         });
 
@@ -584,6 +596,9 @@ POSSIBILITY OF SUCH DAMAGE.
         $("#enableSelectedRules").click(function(){
             var gridId = 'grid-installedrules';
             var url = '/api/ids/settings/toggleRule/';
+            $(this).find('[class*="command-toggle"]').each(function (index, entry) {
+                $(entry).addClass("fa-spinner pulse");
+            });
             actionToggleSelected(gridId, url, 1, 100);
         });
 
@@ -673,7 +688,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <li><a data-toggle="tab" href="#alerts" id="alert_tab">{{ lang._('Alerts') }}</a></li>
     <li><a href="" id="scheduled_updates" style="display:none">{{ lang._('Schedule') }}</a></li>
 </ul>
-<div class="tab-content content-box tab-content">
+<div class="tab-content content-box">
     <div id="settings" class="tab-pane fade in">
         {{ partial("layout_partials/base_form",['fields':formGeneralSettings,'id':'frm_GeneralSettings'])}}
         <div class="col-md-12">
@@ -782,15 +797,10 @@ POSSIBILITY OF SUCH DAMAGE.
             <tbody>
             </tbody>
             <tfoot>
-            <tr>
-                <td>
-                    <button title="{{ lang._('Disable selected') }}" id="disableSelectedRules" type="button" class="btn btn-xs btn-default"><span class="fa fa-square-o command-toggle"></span></button>
-                    <button title="{{ lang._('Enable selected') }}" id="enableSelectedRules" type="button" class="btn btn-xs btn-default"><span class="fa fa-check-square-o command-toggle"></span></button>
-                </td>
-                <td></td>
-            </tr>
             </tfoot>
         </table>
+        <button title="{{ lang._('Disable selected') }}" id="disableSelectedRules" type="button" class="btn btn-xs btn-default"><span class="fa fa-square-o command-toggle"></span></button>
+        <button title="{{ lang._('Enable selected') }}" id="enableSelectedRules" type="button" class="btn btn-xs btn-default"><span class="fa fa-check-square-o command-toggle"></span></button>
         <div class="col-md-12">
             <hr/>
             <button class="btn btn-primary act_update" type="button"><b>{{ lang._('Apply') }}</b> <i class="act_update_progress"></i></button>
@@ -835,7 +845,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <div class="row">
                 <div class="col-sm-12 actionBar">
                     <select id="alert-logfile" class="selectpicker" data-width="200px"></select>
-                    <span id="actDeleteLog" class="btn btn-lg fa fa-trash" style="cursor: pointer;"></span>
+                    <span id="actDeleteLog" class="btn btn-lg fa fa-trash" style="cursor: pointer;" title="{{ lang._('Delete Alert Log') }}"></span>
                     <select id="alert-logfile-max" class="selectpicker" data-width="80px">
                         <option value="7">7</option>
                         <option value="50">50</option>

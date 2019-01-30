@@ -145,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // initialize form data
     $pconfig = array();
 
-    $phase2_fields = "ikeid,mode,descr,uniqid,proto,hash-algorithm-option,pfsgroup,pfsgroup,lifetime,pinghost,protocol,spd";
+    $phase2_fields = "ikeid,mode,descr,uniqid,proto,hash-algorithm-option,pfsgroup,lifetime,pinghost,protocol,spd";
     if ($p2index !== null) {
         // 1-on-1 copy
         foreach (explode(",", $phase2_fields) as $fieldname) {
@@ -496,7 +496,7 @@ if (isset($input_errors) && count($input_errors) > 0) {
                 <tr>
                   <td><i class="fa fa-info-circle text-muted"></i>  <?=gettext("Mode"); ?></td>
                   <td>
-                    <select name="mode" id="mode">
+                    <select name="mode" id="mode" class="selectpicker">
                         <?php
                         $p2_modes = array(
                         'tunnel' => 'Tunnel IPv4',
@@ -529,7 +529,7 @@ if (isset($input_errors) && count($input_errors) > 0) {
                 <tr class="opt_localid">
                   <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Type"); ?> </td>
                   <td>
-                    <select name="localid_type" id="localid_type">
+                    <select name="localid_type" id="localid_type" class="selectpicker">
                       <option value="address" <?=$pconfig['localid_type'] == "address" ? "selected=\"selected\"" : ""?> ><?=gettext("Address"); ?></option>
                       <option value="network" <?=$pconfig['localid_type'] == "network" ? "selected=\"selected\"" : ""?> ><?=gettext("Network"); ?></option>
 <?php
@@ -567,7 +567,7 @@ if (isset($input_errors) && count($input_errors) > 0) {
                 <tr class="opt_remoteid">
                   <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Type"); ?>:&nbsp;&nbsp;</td>
                   <td>
-                    <select name="remoteid_type" id="remoteid_type">
+                    <select name="remoteid_type" id="remoteid_type" class="selectpicker">
                       <option value="address" <?= $pconfig['remoteid_type'] == "address" ? "selected=\"selected\"" : "";?>>
                         <?=gettext("Address"); ?>
                       </option>
@@ -604,7 +604,7 @@ endif; ?>
                 <tr>
                   <td><a id="help_for_proto" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Protocol"); ?></td>
                   <td style="width:78%" class="vtable">
-                    <select name="protocol" id="proto">
+                    <select name="protocol" id="proto" class="selectpicker">
 <?php
                     foreach (array('esp' => 'ESP','ah' => 'AH') as $proto => $protoname) :?>
                       <option value="<?=$proto;?>" <?= $proto == $pconfig['protocol'] ? "selected=\"selected\"" : "";?>>
@@ -628,7 +628,7 @@ endif; ?>
                       <?=$algodata['name'];?>
 <?php
                       if (isset($algodata['keysel'])) :?>
-                      <select name="keylen_<?=$algo;?>">
+                      <select name="keylen_<?=$algo;?>" class="selectpicker">
                         <option value="auto"><?=gettext("auto"); ?></option>
 <?php
                         for ($keylen = $algodata['keysel']['hi']; $keylen >= $algodata['keysel']['lo']; $keylen -= $algodata['keysel']['step']) :?>
@@ -671,9 +671,27 @@ endif; ?>
                   <td>
 <?php
                   if (!isset($pconfig['mobile']) || !isset($config['ipsec']['client']['pfs_group'])) :?>
-                    <select name="pfsgroup">
+                    <select name="pfsgroup" class="selectpicker">
 <?php
-                    foreach ($p2_pfskeygroups as $keygroup => $keygroupname) :?>
+                    $p2_dhgroups = array(
+                      0  => gettext('off'),
+                      1  => '1 (768 bit)',
+                      2  => '2 (1024 bit)',
+                      5  => '5 (1536 bit)',
+                      14 => '14 (2048 bit)',
+                      15 => '15 (3072 bit)',
+                      16 => '16 (4096 bit)',
+                      17 => '17 (6144 bit)',
+                      18 => '18 (8192 bit)',
+                      19 => '19 (256 bit elliptic curve)',
+                      20 => '20 (384 bit elliptic curve)',
+                      21 => '21 (521 bit elliptic curve)',
+                      22 => '22 (1024(sub 160) bit)',
+                      23 => '23 (2048(sub 224) bit)',
+                      24 => '24 (2048(sub 256) bit)'
+                    );
+
+                    foreach ($p2_dhgroups as $keygroup => $keygroupname) :?>
                       <option value="<?=$keygroup;?>" <?= $keygroup == $pconfig['pfsgroup'] ? "selected=\"selected\"" : "";?>>
                         <?=$keygroupname;?>
                       </option>
@@ -682,7 +700,7 @@ endif; ?>
                     </select>
 <?php
                   else :?>
-                    <select disabled="disabled">
+                    <select disabled="disabled" class="selectpicker">
                       <option selected="selected"><?=$p2_pfskeygroups[$config['ipsec']['client']['pfs_group']];?></option>
                     </select>
                     <input name="pfsgroup" type="hidden" value="<?=$pconfig['pfsgroup'];?>" />

@@ -35,7 +35,6 @@
  # advanced    :   property "is advanced", only display in advanced mode
  # hint        :   input control hint
  # style       :   css class to add
- # maxheight   :   maximum height in rows if applicable
  # width       :   width in pixels if applicable
  # allownew    :   allow new items (for list) if applicable
  # readonly    :   if true, input fields will be readonly
@@ -58,10 +57,19 @@
         {% elseif type == "checkbox" %}
             <input type="checkbox" id="{{ id }}">
         {% elseif type == "select_multiple" %}
-            <select multiple="multiple" {% if size|default(false) %}size="{{size}}"{% endif %} id="{{ id }}" {% if style|default(false) %}class="{{style}}" {% endif %} {% if hint|default(false) %}data-hint="{{hint}}"{% endif %} {% if maxheight|default(false) %}data-maxheight="{{maxheight}}"{% endif %} data-width="{{width|default("334px")}}" data-allownew="{{allownew|default("false")}}" data-nbdropdownelements="{{nbDropdownElements|default("10")}}"></select>
-            <br/><a href="#" class="text-danger" id="clear-options_{{ id }}"><i class="fa fa-times-circle"></i></a> <small>{{ lang._('Clear All') }}</small>
+            <select multiple="multiple"
+                    {% if size|default(false) %}data-size="{{size}}"{% endif %}
+                    id="{{ id }}"
+                    class="{{style|default('selectpicker')}}"
+                    {% if hint|default(false) %}data-hint="{{hint}}"{% endif %}
+                    data-width="{{width|default("348px")}}"
+                    data-allownew="{{allownew|default("false")}}"
+                    data-live-search="true"
+                    {% if separator|default(false) %}data-separator="{{separator}}"{% endif %}
+            ></select>{% if style|default('selectpicker') != "tokenize" %}<br />{% endif %}
+            <a href="#" class="text-danger" id="clear-options_{{ id }}"><i class="fa fa-times-circle"></i> <small>{{ lang._('Clear All') }}</small></a>
         {% elseif type == "dropdown" %}
-            <select {% if size|default(false) %}size="{{size}}"{% endif %} id="{{ id }}" class="{{style|default('selectpicker')}}" data-width="{{width|default("334px")}}"></select>
+            <select {% if size|default(false) %}size="{{size}}"{% endif %} id="{{ id }}" class="{{style|default('selectpicker')}}" data-width="{{width|default("348px")}}"></select>
         {% elseif type == "password" %}
             <input type="password" class="form-control" size="{{size|default("50")}}" id="{{ id }}" {{ readonly ? 'readonly="readonly"' : '' }} >
         {% elseif type == "textbox" %}

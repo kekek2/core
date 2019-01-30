@@ -74,11 +74,13 @@ class Syslog extends BaseModel
     private $AllTargets = array();
     private $AllCategories = array();
 
+    public $Enabled = 1;
+
     private function getPredefinedTargets()
     {
         return array(
         array('program' => 'filterlog',                                           'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/filter.log',  'category' => 'filter'),
-        array('program' => 'apinger',                                             'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/gateways.log','category' => 'gateways'),
+        array('program' => 'apinger,dpinger',                                     'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/gateways.log','category' => 'gateways'),
         array('program' => 'captiveportal',                                       'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/portalauth.log','category' => 'portalauth'),
         array('program' => 'ppp',                                                 'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/ppps.log',    'category' => null),
         array('program' => 'relayd',                                              'filter' => '*.*',  'type' => 'file', 'target' => self::$LOGS_DIRECTORY.'/relayd.log',  'category' => 'relayd'),

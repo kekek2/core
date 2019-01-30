@@ -349,17 +349,12 @@ $( document ).ready(function() {
                 <tr>
                   <td><a id="help_for_interfaces" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Interfaces"); ?></td>
                   <td>
-                    <select id="interface" name="interface[]" multiple="multiple" class="selectpicker">
-                      <option value="" <?=empty($pconfig['interface'][0]) ? 'selected="selected"' : ""; ?>>
-                        <?=gettext("All");?>
+                    <select id="interface" name="interface[]" multiple="multiple" class="selectpicker" title="<?= html_safe(gettext('All')) ?>">
+<?php foreach (get_configured_interface_with_descr() as  $iface => $ifacename): ?>
+                      <option value="<?= html_safe($iface) ?>" <?=in_array($iface, $pconfig['interface']) ? 'selected="selected"' : "" ?>>
+                        <?= html_safe($ifacename) ?>
                       </option>
-<?php
-                      foreach (get_possible_listen_ips(true) as $laddr):?>
-                      <option value="<?=$laddr['value'];?>" <?=in_array($laddr['value'], $pconfig['interface']) ? 'selected="selected"' : "";?>>
-                        <?=htmlspecialchars($laddr['name']);?>
-                      </option>
-<?php
-                      endforeach; ?>
+<?php endforeach ?>
                     </select>
                     <div class="hidden" data-for="help_for_interfaces">
                       <?=gettext("Interface IPs used by the DNS Forwarder for responding to queries from clients. If an interface has both IPv4 and IPv6 IPs, both are used. Queries to other interface IPs not selected below are discarded. The default behavior is to respond to queries on every available IPv4 and IPv6 address.");?>
@@ -426,8 +421,8 @@ $( document ).ready(function() {
                   <th><?=gettext("Domain");?></th>
                   <th><?=gettext("IP");?></th>
                   <th><?=gettext("Description");?></th>
-                  <th>
-                    <a href="services_dnsmasq_edit.php" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-plus"></span></a>
+                  <th class="text-nowrap">
+                    <a href="services_dnsmasq_edit.php" class="btn btn-default btn-xs"><i class="fa fa-plus fa-fw"></i></a>
                   </th>
                 </tr>
               </thead>
@@ -440,9 +435,9 @@ $( document ).ready(function() {
                   <td><?=htmlspecialchars(strtolower($hostent['domain']));?></td>
                   <td><?=htmlspecialchars($hostent['ip']);?></td>
                   <td><?=htmlspecialchars($hostent['descr']);?></td>
-                  <td>
-                    <a href="services_dnsmasq_edit.php?id=<?=$i;?>" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-pencil"></span></a>
-                    <a href="#" data-id="<?=$i;?>" class="act_delete_host btn btn-xs btn-default"><i class="fa fa-trash text-muted"></i></a>
+                  <td class="text-nowrap">
+                    <a href="services_dnsmasq_edit.php?id=<?=$i;?>" class="btn btn-default btn-xs"><i class="fa fa-pencil fa-fw"></i></a>
+                    <a href="#" data-id="<?=$i;?>" class="act_delete_host btn btn-xs btn-default"><i class="fa fa-trash fa-fw"></i></a>
                   </td>
                 </tr>
 <?php
@@ -453,8 +448,8 @@ $( document ).ready(function() {
                   <td><?=htmlspecialchars(strtolower($alias['domain']));?></td>
                   <td><?=gettext("Alias for");?> <?=$hostent['host'] ? htmlspecialchars($hostent['host'] . '.' . $hostent['domain']) : htmlspecialchars($hostent['domain']);?></td>
                   <td><?=htmlspecialchars($alias['description']);?></td>
-                  <td>
-                    <a href="services_dnsmasq_edit.php?id=<?=$i;?>" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-pencil"></span></a>
+                  <td class="text-nowrap">
+                    <a href="services_dnsmasq_edit.php?id=<?=$i;?>" class="btn btn-default btn-xs"><i class="fa fa-pencil fa-fw"></i></a>
                   </td>
                 </tr>
 <?php
@@ -489,9 +484,9 @@ $( document ).ready(function() {
                   <th><?=gettext("Domain");?></th>
                   <th><?=gettext("IP");?></th>
                   <th><?=gettext("Description");?></th>
-                  <th>
+                  <th class="text-nowrap">
                     <a href="services_dnsmasq_domainoverride_edit.php" class="btn btn-default btn-xs">
-                      <span class="glyphicon glyphicon-plus"></span>
+                      <i class="fa fa-plus fa-fw"></i>
                     </a>
                   </th>
                 </tr>
@@ -504,11 +499,11 @@ $( document ).ready(function() {
                   <td><?=htmlspecialchars(strtolower($doment['domain']));?></td>
                   <td><?=htmlspecialchars($doment['ip']);?></td>
                   <td><?=htmlspecialchars($doment['descr']);?></td>
-                  <td>
+                  <td class="text-nowrap">
                     <a href="services_dnsmasq_domainoverride_edit.php?id=<?=$i;?>" class="btn btn-default btn-xs">
-                      <span class="glyphicon glyphicon-pencil"></span>
+                      <i class="fa fa-pencil fa-fw"></i>
                     </a>
-                    <a href="#" data-id="<?=$i;?>" class="act_delete_override btn btn-xs btn-default"><i class="fa fa-trash text-muted"></i></a>
+                    <a href="#" data-id="<?=$i;?>" class="act_delete_override btn btn-xs btn-default"><i class="fa fa-trash fa-fw"></i></a>
                   </td>
                 </tr>
 <?php

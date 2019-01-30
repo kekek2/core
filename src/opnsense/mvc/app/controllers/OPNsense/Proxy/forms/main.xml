@@ -212,7 +212,6 @@
                 <id>proxy.forward.interfaces</id>
                 <label>Proxy interfaces</label>
                 <type>select_multiple</type>
-                <style>tokenize</style>
                 <help><![CDATA[Select interface(s) the proxy will bind to.]]></help>
                 <hint>Type or select interface.</hint>
             </field>
@@ -304,13 +303,6 @@
                 <help><![CDATA[When enabled the subnets of the selected interfaces will be added to the allow access list.]]></help>
                 <advanced>true</advanced>
             </field>
-            <field>
-                <id>proxy.forward.snmp_port</id>
-                <label>SNMP port</label>
-                <type>text</type>
-                <help>The port number where Squid listens for SNMP requests. To enable SNMP support set this to a suitable port number. Port number 3401 is often used for the Squid SNMP agent. By default it's set to "0" (disabled)</help>
-                <advanced>true</advanced>
-            </field>
         </subtab>
         <subtab id="proxy-forward-ftp" description="FTP Proxy Settings">
             <field>
@@ -318,8 +310,8 @@
                 <label>FTP proxy interfaces</label>
                 <type>select_multiple</type>
                 <style>tokenize</style>
-                <help><![CDATA[Select interface(s) the ftp proxy will bind to.]]></help>
-                <hint>Type or select interface (Leave blank to disable ftp proxy).</hint>
+                <help><![CDATA[Select interface(s) the ftp proxy will bind to (Leave blank to disable ftp proxy).]]></help>
+                <hint>Type or select interface.</hint>
             </field>
             <field>
                 <id>proxy.forward.ftpPort</id>
@@ -349,7 +341,7 @@
                 <label>Unrestricted IP addresses</label>
                 <type>select_multiple</type>
                 <style>tokenize</style>
-                <help><![CDATA[Type IP addresses you want to allow access to the proxy server, use a comma or press Enter for new item. <div class="text-info"><b>TIP: </b>You can also paste a comma separated list into this field.</div>]]></help>
+                <help><![CDATA[Enter the IP addresses you want to allow all traffic, use a comma or press Enter for new item. <div class="text-info"><b>TIP: </b>You can also paste a comma separated list into this field.</div>]]></help>
                 <hint>Type IP addresses (ex. 192.168.1.100)</hint>
                 <allownew>true</allownew>
             </field>
@@ -580,7 +572,6 @@
                 <id>proxy.forward.authentication.method</id>
                 <label>Authentication method</label>
                 <type>select_multiple</type>
-                <style>tokenize</style>
                 <help><![CDATA[Select Authentication method]]></help>
             </field>
             <field>
@@ -601,6 +592,26 @@
                 <label>Authentication processes</label>
                 <type>text</type>
                 <help><![CDATA[The total number of authenticator processes to spawn.]]></help>
+            </field>
+        </subtab>
+        <subtab id="proxy-forward-snmp" description="SNMP Agent Settings">
+            <field>
+                <id>proxy.forward.snmp_enable</id>
+                <label>Enable SNMP Agent</label>
+                <type>checkbox</type>
+                <help>Enable or disable the squid SNMP Agent.</help>
+            </field>
+            <field>
+                <id>proxy.forward.snmp_port</id>
+                <label>SNMP port</label>
+                <type>text</type>
+                <help>The port number where Squid listens for SNMP requests. To enable SNMP support set this to a suitable port number. Port number 3401 is often used for the Squid SNMP agent.</help>
+            </field>
+            <field>
+                <id>proxy.forward.snmp_password</id>
+                <label>SNMP password</label>
+                <type>text</type>
+                <help>The password for access to SNMP agent</help>
             </field>
         </subtab>
     </tab>
