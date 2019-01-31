@@ -84,7 +84,6 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			apinger \
 			apuledctld \
 			ca_root_nss \
-			cfv \
 			choparp \
 			cpustats \
 			dhcp6c \
