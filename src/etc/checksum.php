@@ -131,7 +131,7 @@ foreach ($commands as $what => $command) {
         }
     }
     proc_close($process);
-    echo "done\n";
+    echo "\ndone\n";
 }
 unlink($tmpfile);
 if (!$error) {
