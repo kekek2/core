@@ -42,6 +42,7 @@ import jinja2
 import addons.template_helpers
 import netaddr
 import ujson
+import base64
 
 __author__ = 'Ad Schellevis'
 
@@ -69,6 +70,7 @@ class Template(object):
         self._j2_env.filters['openvpn_get_interface_ip'] = self._openvpn_get_interface_ip
         self._j2_env.filters['openvpn_get_interface_ipv6'] = self._openvpn_get_interface_ipv6
         self._j2_env.filters['openvpn_get_routes'] = self._openvpn_get_routes
+        self._j2_env.filters['base64_decode'] = lambda x: base64.b64decode(x.replace("\r", "").replace("\n\n", "\n"))
 
     @staticmethod
     def _encode_idna(x):
@@ -94,7 +96,7 @@ class Template(object):
     @staticmethod
     def _openvpn_get_interface_ip(ipnetwork):
         first = netaddr.IPAddress(netaddr.IPNetwork(ipnetwork).first)
-        if ipnetwork.netmask.__long__() == 0xfffffffe:
+        if netaddr.IPNetwork(ipnetwork).netmask.__long__() == 0xfffffffe:
             return [first.__str__(), first.__add__(1).__str__()]
         return [first.__add__(1).__str__(), first.__add__(2).__str__()]
 
