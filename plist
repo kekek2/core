@@ -148,7 +148,6 @@
 /usr/local/etc/rc.subr.d/tmp
 /usr/local/etc/rc.subr.d/var
 /usr/local/etc/rc.syshook
-/usr/local/etc/rc.syshook.d/65-checksumms.start
 /usr/local/etc/rc.syshook.d/backup/20-captiveportal
 /usr/local/etc/rc.syshook.d/backup/20-dhcpleases
 /usr/local/etc/rc.syshook.d/backup/20-duid
@@ -165,6 +164,7 @@
 /usr/local/etc/rc.syshook.d/start/10-newwanip
 /usr/local/etc/rc.syshook.d/start/20-freebsd
 /usr/local/etc/rc.syshook.d/start/25-flowd
+/usr/local/etc/rc.syshook.d/start/65-checksumms
 /usr/local/etc/rc.syshook.d/start/90-carp
 /usr/local/etc/rc.syshook.d/start/90-cron
 /usr/local/etc/rc.syshook.d/start/95-beep
