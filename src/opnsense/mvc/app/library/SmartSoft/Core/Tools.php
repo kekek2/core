@@ -57,4 +57,54 @@ class Tools
         }
         return false;
     }
+
+    public static function check_certificate($Module)
+    {
+        $cert_path = sprintf("/usr/local/etc/ssl/ting-client.module.%s.crt", strtolower($Module));
+
+        if (!is_file($cert_path)) {
+            throw new \Exception(sprintf(gettext('License not found for %s plugin'), $Module));
+        }
+
+        $cert = openssl_x509_parse(file_get_contents($cert_path));
+        if (isset($cert['subject']['UNDEF'][2])) {
+            if ($cert['subject']['UNDEF'][2] != strtoupper($Module)) {
+                throw new \Exception(sprintf(gettext("License not found for %s plugin"), $Module));
+            }
+
+            if (strftime("%s", $cert["validTo_time_t"]) < time()) {
+                throw new \Exception(sprintf(gettext("Certificate for %s plugin expired"), $Module));
+            }
+
+            if (!isset($cert['subject']['UNDEF'][0])) {
+                throw new \Exception(gettext("Can not validate certificate"));
+            }
+
+            $mac = self::getCurrentMacAddress();
+            if ($cert['subject']['UNDEF'][0] != $mac) {
+                throw new \Exception(gettext("License is not valid for this device"));
+            }
+        } elseif (isset($cert['subject']['tingModule'])) {
+            if ($cert['subject']['tingModule'] != strtoupper($Module)) {
+                throw new \Exception(sprintf(gettext("License not found for %s plugin"), $Module));
+            }
+
+            if (strftime("%s", $cert["validTo_time_t"]) < time()) {
+                throw new \Exception(sprintf(gettext("Certificate for %s plugin expired"), $Module));
+            }
+
+            if (!isset($cert['subject']['tingAddress'])) {
+                throw new \Exception(gettext("Can not validate certificate"));
+            }
+
+            $mac = self::getCurrentMacAddress();
+            if ($cert['subject']['tingAddress'] != $mac) {
+                throw new \Exception(gettext("License is not valid for this device"));
+            }
+        } else {
+            throw new \Exception(sprintf(gettext("License not found for %s plugin"), $Module));
+        }
+
+        return;
+    }
 }
