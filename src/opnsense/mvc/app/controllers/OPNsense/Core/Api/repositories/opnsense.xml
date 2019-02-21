@@ -13,8 +13,8 @@
             <description>Mirror #2 (EU)</description>
         </mirror>
         <mirror>
-            <url>file:///var/tmp/sets/</url>
-            <description>Local repo</description>
+            <url>file:///var/pkg/sets/</url>
+            <description>Local repository</description>
         </mirror>
    </mirrors>
     <flavours>

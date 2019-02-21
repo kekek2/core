@@ -242,15 +242,13 @@
       <enabled>enabled</enabled>
       <passwordauth>1</passwordauth>
       <permitrootlogin>1</permitrootlogin>
+      <group>admins</group>
     </ssh>
     <disablebeep>1</disablebeep>
     <crypto_hardware>aesni</crypto_hardware>
     <language>ru_RU</language>
     <pf_share_forward>1</pf_share_forward>
     <lb_use_sticky>1</lb_use_sticky>
-    <ssh>
-      <group>admins</group>
-    </ssh>
   </system>
   <interfaces>
     <wan>
