@@ -301,8 +301,8 @@ package: plist-check package-check clean-work
 	else \
 	    exit 1; \
 	fi
-	@sed -i '' 's/url:.*/url: "file:\/\/\/var\/tmp\/sets"/' ${WRKDIR}/src-enc/usr/local/etc/pkg/repos/SmartSoft.conf.sample
-	@echo '{"file:///var/tmp/sets/":"Local repo"}' > ${WRKDIR}/src-enc/usr/local/opnsense/firmware-mirrors
+	@sed -i '' 's/url:.*/url: "file:\/\/\/var\/pkg\/sets"/' ${WRKDIR}/src-enc/usr/local/etc/pkg/repos/SmartSoft.conf.sample
+	@echo '<firmware><mirrors allow_custom="true"><mirror><url/><description>(default)</description></mirror><mirror><url>file:///var/pkg/sets/</url><description>Local repository</description></mirror></mirrors><flavours><flavour><name/><description>(default)</description></flavour><flavour><name>latest</name><description>OpenSSL</description></flavour></flavours><families><family><name/><description>Production</description></family></families></firmware>' > ${WRKDIR}/src-enc/usr/local/opnsense/mvc/app/controllers/OPNsense/Core/Api/repositories/opnsense.xml
 	@echo " done"
 	@echo ">>> Packaging files for ${CORE_NAME}-${CORE_VERSION}:"
 	@PORTSDIR=${.CURDIR} ${PKG} create -v -m ${WRKSRC} -r ${WRKDIR}/src-enc \
