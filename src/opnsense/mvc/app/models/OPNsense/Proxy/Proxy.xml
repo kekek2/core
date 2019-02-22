@@ -384,6 +384,9 @@
                     <default>0</default>
                     <Required>Y</Required>
                 </enable>
+                <Bypass type="BooleanField">
+                    <Required>N</Required>
+                </Bypass>
                 <RequestURL type="CSVListField">
                     <Required>N</Required>
                     <default>icap://127.0.0.1:1344/avscan</default>
