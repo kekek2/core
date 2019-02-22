@@ -305,7 +305,7 @@ package: plist-check package-check clean-work
 	else \
 	    exit 1; \
 	fi
-	@sed -i '' 's/url:.*/url: "file:\/\/\/var\/pkg\/sets\/$$\{ABI\}\/${TING_ABI}\/latest"/' ${WRKDIR}/src-enc/usr/local/etc/pkg/repos/SmartSoft.conf.sample
+	@sed -i '' 's/url:.*/url: "file:\/\/\/var\/pkg\/sets\/$$\{ABI\}\/${TING_ABI}-fstec\/latest"/' ${WRKDIR}/src-enc/usr/local/etc/pkg/repos/SmartSoft.conf.sample
 	@echo " done"
 	@echo ">>> Packaging files for ${CORE_NAME}-${CORE_VERSION}:"
 	@PORTSDIR=${.CURDIR} ${PKG} create -v -m ${WRKSRC} -r ${WRKDIR}/src-enc \
