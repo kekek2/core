@@ -69,7 +69,6 @@ class Template(object):
         self._j2_env.filters['get_interface_ip'] = self._get_interface_ip
         self._j2_env.filters['get_subnet_mask'] = self._get_subnet_mask
         self._j2_env.filters['openvpn_get_interface_ip'] = self._openvpn_get_interface_ip
-        self._j2_env.filters['openvpn_get_interface_ipv6'] = self._openvpn_get_interface_ipv6
         self._j2_env.filters['openvpn_get_routes'] = self._openvpn_get_routes
         self._j2_env.filters['base64_decode'] = lambda x: base64.b64decode(x.replace("\r", "").replace("\n\n", "\n"))
 
@@ -79,11 +78,10 @@ class Template(object):
         """
         return ''.join(map(lambda x:'.', range(len(x) - len(x.lstrip('.'))))) + x.lstrip('.').encode('idna')
 
-    def _get_interface_ip(self, interface, protocol, mask=False):
+    def _get_interface_ip(self, interface, mask=False):
         if type(interface) is jinja2.runtime.Undefined:
             return ""
-        ip_ver = 'ipv6' if protocol[-1:] == '6' else 'ipv4'
-        ip = ujson.load(os.popen("/usr/local/opnsense/scripts/interfaces/list_interfaces.php json", "r"))[self._config['interfaces'][interface]['if']][ip_ver]
+        ip = ujson.load(os.popen("/usr/local/opnsense/scripts/interfaces/list_interfaces.php json", "r"))[self._config['interfaces'][interface]['if']]['ipv4']
         if len(ip) < 1:
             return; ""
         ipaddr = ip[0]['ipaddr']
@@ -99,11 +97,6 @@ class Template(object):
         first = netaddr.IPAddress(netaddr.IPNetwork(ipnetwork).first)
         if netaddr.IPNetwork(ipnetwork).netmask.__long__() == 0xfffffffe:
             return [first.__str__(), first.__add__(1).__str__()]
-        return [first.__add__(1).__str__(), first.__add__(2).__str__()]
-
-    @staticmethod
-    def _openvpn_get_interface_ipv6(ipnetwork):
-        first = netaddr.IPAddress(netaddr.IPNetwork(ipnetwork).first)
         return [first.__add__(1).__str__(), first.__add__(2).__str__()]
 
     @staticmethod
