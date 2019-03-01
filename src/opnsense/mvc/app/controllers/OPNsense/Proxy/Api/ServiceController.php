@@ -80,6 +80,7 @@ class ServiceController extends ApiMutableServiceControllerBase
         if ($http_delete || $https_delete)
         {
             Config::getInstance()->save();
+            $backend = new Backend();
             $backend->configdRun("filter reload");
         }
 
