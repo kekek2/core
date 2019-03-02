@@ -986,7 +986,7 @@ function interface_bring_down($interface = "wan", $ifacecfg = false)
 
     $ifcfg['ipaddrv6'] = empty($ifcfg['ipaddrv6']) ? null : $ifcfg['ipaddrv6'];
 
-    if (!in_array($interface, array('openvpn', 'ppp', 'ipsec', 'enc0'))) {
+    if (!in_array($interface, array('openvpn', 'gostvpn', 'ppp', 'ipsec', 'enc0'))) {
         /**
          * NOTE: The $realifv6 is needed when WANv4 is type PPP and v6 is DHCP and the option v6 from v4 is used.
          * XXX: we kept this in place due to dropping the $realv6iface parameter from get_real_interface(),
@@ -3544,6 +3544,10 @@ function convert_friendly_interface_to_friendly_descr($interface)
             /*XXX practically unneeded as we are rendering virtual interfaces to the config */
             $ifdesc = "OpenVPN";
             break;
+        case "gostvpn":
+            /*XXX practically unneeded as we are rendering virtual interfaces to the config */
+            $ifdesc = "GostVPN";
+            break;
         case "enc0":
         case "ipsec":
         case "IPsec":
@@ -3677,6 +3681,7 @@ function get_real_interface($interface = 'wan', $family = 'all')
 
     switch ($interface) {
         case "openvpn":
+        case "gostvpn":
         case "ppp":
             $wanif = $interface;
             break;

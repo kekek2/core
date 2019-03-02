@@ -157,6 +157,17 @@ function filter_core_get_default_nat_outbound_networks()
             }
         }
     }
+
+    foreach (['Server' => 'Servers', 'Client' => 'Clients'] as $Item => $Group) {
+        if (!empty(Config::getInstance()->object()->SmartSoft->GostVPN) && !empty(Config::getInstance()->object()->SmartSoft->GostVPN->{$Group}->{$Item})) {
+            foreach (Config::getInstance()->object()->SmartSoft->GostVPN->{$Group}->{$Item} as $Element) {
+                if ($Element->enabled->__toString() == '1' && ($TunnelNetwork = $Element->TunnelNetwork) != null && ($TunnelNetworkStr = $TunnelNetwork->__toString()) != "") {
+                    $result[] = $TunnelNetworkStr;
+                }
+            }
+        }
+    }
+
     // Add ipsec network pool if specified
     if (!empty($config['ipsec']['client']['pool_address']) && !empty($config['ipsec']['client']['pool_netbits'])) {
         $tonathosts[] = "{$config['ipsec']['client']['pool_address']}/{$config['ipsec']['client']['pool_netbits']}";
