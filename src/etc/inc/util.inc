@@ -600,7 +600,7 @@ function is_macaddr($macaddr, $partial=false)
 
 function is_validaliasname($name)
 {
-    $reserved = array('all', 'pass', 'block', 'out', 'queue', 'max', 'min', 'pptp', 'pppoe', 'L2TP', 'OpenVPN', 'IPsec');
+    $reserved = array('all', 'pass', 'block', 'out', 'queue', 'max', 'min', 'pptp', 'pppoe', 'L2TP', 'OpenVPN', 'GostVPN', 'IPsec');
 
     if (!is_string($name) || strlen($name) >= 32 || preg_match('/(^_*$|^\d*$|[^a-z0-9_])/i', $name)) {
         return false;

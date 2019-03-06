@@ -202,7 +202,7 @@ function filter_configure_sync($verbose = false, $flush_states = false)
             $rule['label'] = fix_rule_label("USER_RULE{$sched}{$descr}") ;
             if (isset($rule['floating'])) {
                 $prio = 200000;
-            } elseif (is_interface_group($rule['interface']) || in_array($rule['interface'], array("l2tp", "pptp", "pppoe", "enc0", "openvpn"))) {
+            } elseif (is_interface_group($rule['interface']) || in_array($rule['interface'], array("l2tp", "pptp", "pppoe", "enc0", "openvpn", "gostvpn"))) {
                 $prio = 300000;
             } else {
                 $prio = 400000;
