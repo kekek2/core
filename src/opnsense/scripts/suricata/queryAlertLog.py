@@ -119,9 +119,6 @@ if __name__ == '__main__':
                     result['total_rows'] += 1
                     if (len(result['rows']) < limit or limit == 0) and result['total_rows'] >= offset:
                         result['rows'].append(record)
-                    elif result['total_rows'] > offset + limit:
-                        # do not fetch data until end of file...
-                        break
 
             # only try to fetch one line when filepos is given
             if log_start_pos is not None:
