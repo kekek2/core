@@ -391,10 +391,9 @@ POSSIBILITY OF SUCH DAMAGE.
                                 label: '{{ lang._('Yes') }}',
                                 cssClass: 'btn-primary',
                                 action: function(dlg){
-                                    ajaxCall(url="/api/ids/service/dropAlertLog/",sendData={filename: selected_log.data('filename')},
-                                            callback=function(data,status){
-                                                updateAlertLogs();
-                                            });
+                                    ajaxCall("/api/ids/service/dropAlertLog/", {filename: selected_log.data('filename')}, function(data,status){
+                                        updateAlertLogs();
+                                    });
                                     dlg.close();
                                 }
                             }, {
