@@ -47,7 +47,7 @@ if (isset($config['OPNsense']['Syslog']['NumEntries'])) {
 
 if (!empty($_POST['clear'])) {
     system_clear_log($logfile);
-    if (function_exists(clear_hook)) {
+    if (function_exists('clear_hook')) {
         clear_hook();
     }
 }

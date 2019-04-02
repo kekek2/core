@@ -188,8 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         if (count($input_errors) == 0) {
             /* make sure the range lies within the current subnet */
-            $ifcfgip = get_interface_ipv6($if);
-            $ifcfgsn = get_interface_subnetv6($if);
+            list ($ifcfgip, $ifcfgsn) = explode('/', find_interface_networkv6(get_real_interface($if, 'inet6'), false));
             $subnet_start = gen_subnetv6($ifcfgip, $ifcfgsn);
             $subnet_end = gen_subnetv6_max($ifcfgip, $ifcfgsn);
 
@@ -329,8 +328,7 @@ legacy_html_escape_form_data($pconfig);
 
 include("head.inc");
 
-$wifcfgip = get_interface_ipv6($if);
-$wifcfgsn = get_interface_subnetv6($if);
+list ($wifcfgip, $wifcfgsn) = explode('/', find_interface_networkv6(get_real_interface($if, 'inet6'), false));
 
 if (isset($config['interfaces'][$if]['dhcpd6track6allowoverride'])) {
     $prefix_array = array();
@@ -557,7 +555,7 @@ if (isset($config['interfaces'][$if]['dhcpd6track6allowoverride'])) {
                         <input name="dns1" type="text" id="dns1" value="<?=$pconfig['dns1'];?>" /><br />
                         <input name="dns2" type="text" id="dns2" value="<?=$pconfig['dns2'];?>" />
                         <div class="hidden" data-for="help_for_dns">
-                          <?=gettext("Leave blank to use the system default DNS servers - this interface's IP if DNS forwarder is enabled, otherwise the servers configured on the General page.");?>
+                          <?= gettext('Leave blank to use the system default DNS servers: This interface IP address if a DNS service is enabled or the configured global DNS servers.') ?>
                         </div>
                       </td>
                     </tr>
@@ -686,7 +684,7 @@ if (isset($config['interfaces'][$if]['dhcpd6track6allowoverride'])) {
                             foreach($numberoptions as $item):?>
                               <tr>
                                 <td>
-                                  <div style="cursor:pointer;" class="act-removerow btn btn-default btn-xs" alt="remove"><i class="fa fa-minus fa-fw"></i></div>
+                                  <div style="cursor:pointer;" class="act-removerow btn btn-default btn-xs"><i class="fa fa-minus fa-fw"></i></div>
                                 </td>
                                 <td>
                                   <input name="numberoptions_number[]" type="text" value="<?=$item['number'];?>" />
@@ -733,7 +731,7 @@ if (isset($config['interfaces'][$if]['dhcpd6track6allowoverride'])) {
                             <tfoot>
                               <tr>
                                 <td colspan="4">
-                                  <div id="addNew" style="cursor:pointer;" class="btn btn-default btn-xs" alt="add"><i class="fa fa-plus fa-fw"></i></div>
+                                  <div id="addNew" style="cursor:pointer;" class="btn btn-default btn-xs"><i class="fa fa-plus fa-fw"></i></div>
                                 </td>
                               </tr>
                             </tfoot>

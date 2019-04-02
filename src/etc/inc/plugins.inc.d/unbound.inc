@@ -40,6 +40,7 @@ function unbound_enabled()
 function unbound_configure()
 {
     return array(
+        'bootup' => array('unbound_configure_do'),
         'dns' => array('unbound_configure_do'),
         'hosts' => array('unbound_hosts_generate:0'),
         'local' => array('unbound_configure_do'),
@@ -81,7 +82,7 @@ function unbound_xmlrpc_sync()
 
 function unbound_optimization()
 {
-    $optimization_settings = array();
+    $optimization = array();
 
     /*
      * Set the number of threads equal to the nearest power of 2 when counting the number of CPUs.
@@ -159,8 +160,7 @@ private-address: fe80::/10       # Link-local address (LLA)
 EOF;
     }
 
-    // Determine interfaces to run on
-    $bindints = "";
+    $bindints = '';
     if (!empty($config['unbound']['active_interface'])) {
         $active_interfaces = explode(",", $config['unbound']['active_interface']);
         foreach ($active_interfaces as $ubif) {
@@ -238,23 +238,28 @@ EOF;
     $dnssecstripped = !empty($config['unbound']['dnssecstripped']) ? 'yes' : 'no';
     $serveexpired = !empty($config['unbound']['serveexpired']) ? 'yes' : 'no';
 
+    /* do not touch prefer-ip6 as it is defaulting to 'no' anyway */
+    $do_ip6 = isset($config['system']['ipv6allow']) ? 'yes' : 'no';
+
     if (isset($config['unbound']['regdhcp'])) {
-        // include dynamic leases
-        @touch('/var/unbound/dhcpleases.conf');
         $include_dhcpleases = 'include: /var/unbound/dhcpleases.conf';
+        @touch('/var/unbound/dhcpleases.conf');
     } else {
         $include_dhcpleases = '';
     }
 
-    // Set up forwarding if it configured
+    $forward_conf = '';
     if (isset($config['unbound']['forwarding'])) {
         $dnsservers = array();
+
         if (isset($config['system']['dnsallowoverride'])) {
             foreach (get_nameservers() as $nameserver) {
                 $dnsservers[] = $nameserver;
             }
-        } else {
-            foreach (get_dns_servers() as $nameserver) {
+        }
+
+        if (!empty($config['system']['dnsserver'][0])) {
+            foreach ($config['system']['dnsserver'] as $nameserver) {
                 $dnsservers[] = $nameserver;
             }
         }
@@ -270,8 +275,6 @@ EOD;
                 $forward_conf .= "\tforward-addr: $dnsserver\n";
             }
         }
-    } else {
-        $forward_conf = "";
     }
 
     $unboundconf = <<<EOD
@@ -295,7 +298,7 @@ hide-identity: {$hide_id}
 hide-version: {$hide_version}
 harden-referral-path: no
 do-ip4: yes
-do-ip6: yes
+do-ip6: {$do_ip6}
 do-udp: yes
 do-tcp: yes
 do-daemonize: yes
@@ -400,7 +403,7 @@ function unbound_configure_do($verbose = false, $interface = '')
 {
     global $config;
 
-    if (!unbound_interface($interface)) {
+    if (!unbound_interface($interface) && isvalidpid('/var/run/unbound.pid')) {
         return;
     }
 
@@ -476,7 +479,7 @@ function unbound_add_domain_overrides($pvt = false)
         $result[$domain_key][] = $domain['ip'];
     }
 
-    $domain_entries = "";
+    $domain_entries = '';
     foreach ($result as $domain => $ips) {
         if ($pvt == true) {
             $domain_entries .= "private-domain: \"$domain\"\n";
@@ -590,13 +593,9 @@ function unbound_add_host_entries()
         unset($tmp_known_domains); // remove temporary variable
     }
 
-    /* Static Host entries */
-
     if (isset($config['unbound']['hosts'])) {
-        $added_item = array();
-
         foreach ($config['unbound']['hosts'] as $host) {
-            if ($host['host'] != "") {
+            if ($host['host'] != '') {
                 $host['host'] = $host['host'].".";
             }
 
@@ -627,8 +626,6 @@ function unbound_add_host_entries()
             }
         }
     }
-
-    /* Static DHCP entries */
 
     if (isset($config['unbound']['regdhcpstatic']) && is_array($config['dhcpd'])) {
         foreach ($config['dhcpd'] as $dhcpif => $dhcpifconf) {

@@ -15,6 +15,8 @@
 /usr/local/etc/dh-parameters.2048.rfc7919
 /usr/local/etc/dh-parameters.3072.rfc7919
 /usr/local/etc/dh-parameters.4096.rfc7919
+/usr/local/etc/inc/IPv6.inc
+/usr/local/etc/inc/XMLRPC_Client.inc
 /usr/local/etc/inc/auth.inc
 /usr/local/etc/inc/authgui.inc
 /usr/local/etc/inc/certs.inc
@@ -454,6 +456,7 @@
 /usr/local/opnsense/mvc/app/library/OPNsense/Auth/Base.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Auth/IAuthConnector.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Auth/LDAP.php
+/usr/local/opnsense/mvc/app/library/OPNsense/Auth/LDAPTOTP.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Auth/Local.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Auth/LocalTOTP.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Auth/Radius.php
@@ -490,6 +493,7 @@
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/Constraints/AllOrNoneConstraint.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/Constraints/BaseConstraint.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/Constraints/DependConstraint.php
+/usr/local/opnsense/mvc/app/models/OPNsense/Base/Constraints/SetIfConstraint.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/Constraints/SingleSelectConstraint.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/Constraints/UniqueConstraint.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/ArrayField.php
@@ -911,7 +915,7 @@
 /usr/local/opnsense/site-python/sqlite3_helper.py
 /usr/local/opnsense/site-python/watchers/__init__.py
 /usr/local/opnsense/site-python/watchers/dhcpd.py
-/usr/local/opnsense/version/opnsense
+/usr/local/opnsense/version/core
 /usr/local/opnsense/www/api.php
 /usr/local/opnsense/www/css/bootstrap-datepicker3.min.css
 /usr/local/opnsense/www/css/bootstrap-datetimepicker.css

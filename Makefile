@@ -72,7 +72,7 @@ CORE_WWW?=		https://opnsense.org/
 
 CORE_COPYRIGHT_HOLDER?=	Deciso B.V.
 CORE_COPYRIGHT_WWW?=	https://www.deciso.com/
-CORE_COPYRIGHT_YEARS?=	2014-2018
+CORE_COPYRIGHT_YEARS?=	2014-2019
 
 CORE_DEPENDS_amd64?=	beep bsdinstaller
 CORE_DEPENDS_i386?=	${CORE_DEPENDS_amd64}
@@ -173,8 +173,8 @@ want-${WANT}:
 mount:
 	@if [ ! -f ${WRKDIR}/.mount_done ]; then \
 	    echo -n "Enabling core.git live mount..."; \
-	    sed ${SED_REPLACE} ${.CURDIR}/src/opnsense/version/opnsense.in > \
-	        ${.CURDIR}/src/opnsense/version/opnsense; \
+	    sed ${SED_REPLACE} ${.CURDIR}/src/opnsense/version/core.in > \
+	        ${.CURDIR}/src/opnsense/version/core; \
 	    mount_unionfs ${.CURDIR}/src ${LOCALBASE}; \
 	    touch ${WRKDIR}/.mount_done; \
 	    echo "done"; \
@@ -288,7 +288,7 @@ package: plist-check package-check clean-work
 	@echo -n ">>> Generating metadata for ${CORE_NAME}-${CORE_VERSION}..."
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} metadata
 	@echo " done"
-	@echo -n ">>> Installing files for ${CORE_NAME}-${CORE_VERSION}..."
+	@echo -n ">>> Staging files for ${CORE_NAME}-${CORE_VERSION}..."
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} install
 .if defined(DEMO)
 	@echo ">>> Encoding all files for DEMO..."
@@ -346,7 +346,7 @@ lint: plist-check
 	    ! -name "*.svg" ! -name "*.woff" ! -name "*.woff2" \
 	    ! -name "*.otf" ! -name "*.png" ! -name "*.js" \
 	    ! -name "*.scss" ! -name "*.py" ! -name "*.ttf" \
-	    ! -name "*.tgz" ! -name "*.xml.dist" \
+	    ! -name "*.tgz" ! -name "*.xml.dist" ! -name "*.tgb" \
 	    -type f -print0 | xargs -0 -n1 php -l
 
 sweep:

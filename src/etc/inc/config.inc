@@ -30,7 +30,7 @@
  */
 
 /* XXX make this a getter function for traceability */
-$g = json_decode(file_get_contents('/usr/local/opnsense/version/opnsense'), true);
+$g = json_decode(file_get_contents('/usr/local/opnsense/version/core'), true);
 
 openlog($g['product_id'], LOG_ODELAY, LOG_USER);
 register_shutdown_function('closelog');
@@ -46,19 +46,6 @@ require_once("certs.inc");
  * they exist.
  */
 require_once('plugins.inc');
-
-function alias_make_table($config)
-{
-    global $aliastable;
-    $aliastable = array();
-    foreach ((new \OPNsense\Firewall\Alias())->aliasIterator() as $alias) {
-        if (strncmp($alias['type'], 'url', 3) !== 0) {
-            $aliastable[$alias['name']] = implode(" ", explode("\n", $alias['content']));
-        } else {
-            $aliastable[$alias['name']] = "";
-        }
-    }
-}
 
 /**
  * parse config into array and return
@@ -76,12 +63,22 @@ function load_config_from_file($filename)
  ******/
 function parse_config()
 {
+    global $aliastable;
+
     $cnf = OPNsense\Core\Config::getInstance();
 
     // return config data as array, use old "listags" construction to mark certain elements as array (even if they're not recurring)
     $config = $cnf->toArray(listtags());
 
-    alias_make_table($config);
+    $aliastable = array();
+
+    foreach ((new \OPNsense\Firewall\Alias())->aliasIterator() as $alias) {
+        if (strncmp($alias['type'], 'url', 3) !== 0) {
+            $aliastable[$alias['name']] = implode(" ", explode("\n", $alias['content']));
+        } else {
+            $aliastable[$alias['name']] = "";
+        }
+    }
 
     return $config;
 }
@@ -273,6 +270,7 @@ function legacy_config_get_interfaces($filters = array())
         if (isset($iface[0])) {
             $iface = $iface[0];
         }
+
         // apply filters
         $iface_match = true;
         foreach ($filters as $filter_key => $filter_value) {
@@ -286,8 +284,11 @@ function legacy_config_get_interfaces($filters = array())
                 break;
             }
         }
+
         if ($iface_match) {
             $iface['descr'] = !empty($iface['descr']) ? $iface['descr'] : strtoupper($ifname);
+            $iface['ipaddrv6'] = !empty($iface['ipaddrv6']) ? $iface['ipaddrv6'] : null;
+            $iface['ipaddr'] = !empty($iface['ipaddr']) ? $iface['ipaddr'] : null;
             $interfaces[$ifname] = $iface;
         }
     }

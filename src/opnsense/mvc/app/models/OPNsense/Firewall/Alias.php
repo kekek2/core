@@ -31,6 +31,7 @@ namespace OPNsense\Firewall;
 
 use OPNsense\Base\BaseModel;
 use OPNsense\Core\Config;
+use OPNsense\Firewall\Util;
 
 /**
  * Class Alias
@@ -79,7 +80,9 @@ class Alias extends BaseModel
         foreach ($this->getAliasSource() as $aliasref) {
             $cfgsection = $cfgObj;
             foreach ($aliasref[0] as $cfgName) {
-                $cfgsection = $cfgsection->$cfgName;
+                if ($cfgsection != null) {
+                    $cfgsection = $cfgsection->$cfgName;
+                }
             }
             if ($cfgsection != null) {
                 $nodeidx = 0;
@@ -100,7 +103,7 @@ class Alias extends BaseModel
 
     /**
      * Return all places an alias seems to be used
-     * @param $name alias name
+     * @param string $name alias name
      * @return array hashmap with references where this alias is used
      */
     public function whereUsed($name)
@@ -133,6 +136,7 @@ class Alias extends BaseModel
      */
     public function refactor($oldname, $newname)
     {
+        Util::attachAliasObject($this);
         // replace in legacy config
         foreach ($this->searchConfig($oldname) as $item) {
             $item[2][0] = $newname;
