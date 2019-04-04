@@ -26,6 +26,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+use \OPNsense\Core\Config;
+
 function filter_core_bootstrap($fw)
 {
     global $config;
