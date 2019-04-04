@@ -24,11 +24,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 VERSIONDIR="/usr/local/opnsense/version"
+VERSION="${VERSION}/opnsense"
 OPENSSL="/usr/local/bin/openssl"
 TARGET="core"
 OUTPUT=
 
-<<<<<<< HEAD
 if [ ! -f ${VERSION} ]; then
 	echo "Missing ${VERSION}" >&2
 	exit 1
