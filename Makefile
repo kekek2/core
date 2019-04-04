@@ -290,6 +290,7 @@ package: plist-check package-check clean-work
 	@echo " done"
 	@echo -n ">>> Installing files for ${CORE_NAME}-${CORE_VERSION}..."
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} install
+	@echo " done"
 .if defined(DEMO)
 	@echo ">>> Encoding all files for DEMO..."
 	@if [ -f /root/.ssh/encoder_rsa ]; then \
