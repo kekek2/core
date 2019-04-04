@@ -24,17 +24,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 VERSIONDIR="/usr/local/opnsense/version"
-VERSION="${VERSION}/opnsense"
 OPENSSL="/usr/local/bin/openssl"
 TARGET="core"
 OUTPUT=
-
-if [ ! -f ${VERSION} ]; then
-	echo "Missing ${VERSION}" >&2
-	exit 1
-fi
-
-eval "$(grep -v '[{}]' ${VERSION} | sed 's/[^"]*"\([^"]*\)"[^"]*"\([^"]*\)".*/\1="\2"/')"
 
 while getopts AaefHNnsvwT OPT; do
 	case ${OPT} in
