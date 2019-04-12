@@ -11,14 +11,14 @@ fi
 
 if [ "${1}" = "restore" ]; then
 	if [ -f "${BACKUPFILE}" ]; then
-		${RCSCRIPT} stop
+		${RCSCRIPT} onestop
 		tar -C / -xzpf "${BACKUPFILE}"
-		${RCSCRIPT} start
+		${RCSCRIPT} onestart
 	fi
 else
 	if [ -d "${BACKUPDIR}" ]; then
-		${RCSCRIPT} stop
+		${RCSCRIPT} onestop
 		tar -C / -czf "${BACKUPFILE}" ."${BACKUPDIR}"
-		${RCSCRIPT} start
+		${RCSCRIPT} onestart
 	fi
 fi
