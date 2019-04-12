@@ -156,7 +156,6 @@
 /usr/local/etc/rc.syshook.d/early/15-php
 /usr/local/etc/rc.syshook.d/early/20-backup
 /usr/local/etc/rc.syshook.d/early/30-certs
-/usr/local/etc/rc.syshook.d/early/35-check-pkg-cache
 /usr/local/etc/rc.syshook.d/start/10-newwanip
 /usr/local/etc/rc.syshook.d/start/20-freebsd
 /usr/local/etc/rc.syshook.d/start/25-flowd
