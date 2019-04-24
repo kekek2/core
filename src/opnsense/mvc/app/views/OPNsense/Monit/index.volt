@@ -32,7 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
        * get the isSubsystemDirty value and print a notice
        */
       function isSubsystemDirty() {
-         ajaxGet(url="/api/monit/settings/dirty", sendData={}, callback=function(data,status) {
+         ajaxGet("/api/monit/settings/dirty", {}, function(data,status) {
             if (status == "success") {
                if (data.monit.dirty === true) {
                   $("#configChangedMsg").removeClass("hidden");
@@ -58,7 +58,7 @@ POSSIBILITY OF SUCH DAMAGE.
        */
       $('#btnApplyConfig').unbind('click').click(function(){
          $('#btnApplyConfigProgress').addClass("fa fa-spinner fa-pulse");
-         ajaxCall(url="/api/monit/service/reconfigure", sendData={}, callback=function(data,status) {
+         ajaxCall("/api/monit/service/reconfigure", {}, function(data,status) {
             $("#responseMsg").addClass("hidden");
             isSubsystemDirty();
             updateServiceControlUI('monit');
@@ -82,7 +82,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
       $('#btnImportSystemNotification').unbind('click').click(function(){
           $('#btnImportSystemNotificationProgress').addClass("fa fa-spinner fa-pulse");
-          ajaxCall(url="/api/monit/settings/notification", sendData={}, callback=function(data,status) {
+          ajaxCall("/api/monit/settings/notification", {}, function(data,status) {
              $("#responseMsg").addClass("hidden");
              isSubsystemDirty();
              updateServiceControlUI('monit');
@@ -92,7 +92,7 @@ POSSIBILITY OF SUCH DAMAGE.
             }
              $('#btnImportSystemNotificationProgress').removeClass("fa fa-spinner fa-pulse");
              $('#btnImportSystemNotification').blur();
-             ajaxCall(url="/api/monit/service/status", sendData={}, callback=function(data,status) {
+             ajaxCall("/api/monit/service/status", {}, function(data,status) {
                 mapDataToFormUI({'frm_GeneralSettings':"/api/monit/settings/get/general/"}).done(function(){
                     formatTokenizersUI();
                     $('.selectpicker').selectpicker('refresh');
@@ -111,6 +111,7 @@ POSSIBILITY OF SUCH DAMAGE.
          $('.selectpicker').selectpicker('refresh');
          isSubsystemDirty();
          updateServiceControlUI('monit');
+         ShowHideGeneralFields();
       });
 
       // show/hide httpd/mmonit options
@@ -128,8 +129,18 @@ POSSIBILITY OF SUCH DAMAGE.
             $('tr[id="row_monit.general.mmonitTimeout"]').addClass('hidden');
             $('tr[id="row_monit.general.mmonitRegisterCredentials"]').addClass('hidden');
          }
+         if ($('#monit\\.general\\.ssl')[0].checked) {
+            $('tr[id="row_monit.general.sslversion"]').removeClass('hidden');
+            $('tr[id="row_monit.general.sslverify"]').removeClass('hidden');
+         } else {
+            $('tr[id="row_monit.general.sslversion"]').addClass('hidden');
+            $('tr[id="row_monit.general.sslverify"]').addClass('hidden');
+         }
       };
       $('#monit\\.general\\.httpdEnabled').unbind('click').click(function(){
+         ShowHideGeneralFields();
+      });
+      $('#monit\\.general\\.ssl').unbind('click').click(function(){
          ShowHideGeneralFields();
       });
       $('#show_advanced_frm_GeneralSettings').click(function(){
@@ -137,9 +148,9 @@ POSSIBILITY OF SUCH DAMAGE.
       });
 
       $('#btnSaveGeneral').unbind('click').click(function(){
-	   $("#btnSaveGeneralProgress").addClass("fa fa-spinner fa-pulse");
+         $("#btnSaveGeneralProgress").addClass("fa fa-spinner fa-pulse");
          var frm_id = 'frm_GeneralSettings';
-         saveFormToEndpoint(url = "/api/monit/settings/set/general/",formid=frm_id,callback_ok=function(){
+         saveFormToEndpoint("/api/monit/settings/set/general/", frm_id, function(){
             isSubsystemDirty();
             updateServiceControlUI('monit');
          });
@@ -185,6 +196,7 @@ POSSIBILITY OF SUCH DAMAGE.
          $('tr[id="row_monit.service.pidfile"]').addClass('hidden');
          $('tr[id="row_monit.service.match"]').addClass('hidden');
          $('tr[id="row_monit.service.path"]').addClass('hidden');
+         $('tr[id="row_monit.service.timeout"]').addClass('hidden');
          $('tr[id="row_monit.service.address"]').addClass('hidden');
          $('tr[id="row_monit.service.interface"]').addClass('hidden');
          $('tr[id="row_monit.service.start"]').removeClass('hidden');
@@ -227,6 +239,7 @@ POSSIBILITY OF SUCH DAMAGE.
                break;
             default:
                $('tr[id="row_monit.service.path"]').removeClass('hidden');
+               $('tr[id="row_monit.service.timeout"]').removeClass('hidden');
          }
       };
       $('#DialogEditService').on('shown.bs.modal', function() {ShowHideFields();});
@@ -234,6 +247,7 @@ POSSIBILITY OF SUCH DAMAGE.
       $('#monit\\.service\\.pidfile').on('input', function() {ShowHideFields();});
       $('#monit\\.service\\.match').on('input', function() {ShowHideFields();});
       $('#monit\\.service\\.path').on('input', function() {ShowHideFields();});
+      $('#monit\\.service\\.timeout').on('input', function() {ShowHideFields();});
       $('#monit\\.service\\.address').on('input', function() {ShowHideFields();});
       $('#monit\\.service\\.interface').on('changed.bs.select', function(e) {ShowHideFields();});
 

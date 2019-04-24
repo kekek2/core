@@ -161,7 +161,6 @@ include("head.inc");
                       $("#id").val(id);
                       $("#action").val("del");
                       $("#iform").submit()
-                      event.preventDefault();
                   }
                 }]
         });
@@ -181,7 +180,6 @@ include("head.inc");
                       $("#id").val("");
                       $("#action").val("del_x");
                       $("#iform").submit()
-                      event.preventDefault();
                   }
                 }]
         });

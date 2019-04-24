@@ -45,6 +45,12 @@ class Config extends Singleton
     private $config_file = "";
 
     /**
+     * config file handle
+     * @var null|file
+     */
+    private $config_file_handle = null;
+
+    /**
      * SimpleXML type reference to config
      * @var SimpleXML
      */
@@ -73,16 +79,7 @@ class Config extends Singleton
      */
     private function isArraySequential(&$arrayData)
     {
-        $all_keys = array_keys($arrayData);
-        $last_key = count($all_keys);
-        if (empty($arrayData)) {
-            return true;
-        } elseif ($all_keys[0] == "0" && $all_keys[$last_key-1] == ($last_key-1)) {
-            // probably a safe bet, first key equals 0, last equals the number of keys minus 1.
-            return true;
-        }
-
-        return false;
+        return ctype_digit(implode('', array_keys($arrayData)));
     }
 
     /**
@@ -166,18 +163,20 @@ class Config extends Singleton
      */
     public function toArrayFromFile($filename, $forceList = null)
     {
-        $xml = $this->loadFromFile($filename);
+        $fp = fopen($filename, "r");
+        $xml = $this->loadFromStream($fp);
+        fclose($fp);
         return $this->toArray($forceList, $xml);
     }
 
     /**
      * update (reset) config with array structure (backwards compatibility mode)
-     * @param $source source array structure
+     * @param array $source source array structure
      * @param null $node simplexml node
      * @param null|string $parentTagName
      * @throws ConfigException when config could not be parsed
      */
-    public function fromArray($source, $node = null, $parentTagName = null)
+    public function fromArray(array $source, $node = null, $parentTagName = null)
     {
         $this->checkvalid();
 
@@ -244,7 +243,7 @@ class Config extends Singleton
 
     /**
      * Execute a xpath expression on config.xml (full DOM implementation)
-     * @param $query xpath expression
+     * @param string $query xpath expression
      * @return \DOMNodeList nodes
      * @throws ConfigException when config could not be parsed
      */
@@ -307,18 +306,15 @@ class Config extends Singleton
     }
 
     /**
-     * load xml config from file
-     * @param $filename config xml source
+     * load xml config from file handle
+     * @param file $fp config xml source
      * @return \SimpleXMLElement root node
      * @throws ConfigException when config could not be parsed
      */
-    private function loadFromFile($filename)
+    private function loadFromStream($fp)
     {
-        // exception handling
-        if (!file_exists($filename)) {
-            throw new ConfigException('file not found');
-        }
-        $xml = file_get_contents($filename);
+        fseek($fp, 0);
+        $xml = stream_get_contents($fp);
         if (trim($xml) == '') {
             throw new ConfigException('empty file');
         }
@@ -348,7 +344,17 @@ class Config extends Singleton
     {
         $this->simplexml = null;
         $this->statusIsValid = false;
-        $this->simplexml = $this->loadFromFile($this->config_file);
+
+        // exception handling
+        if (!file_exists($this->config_file)) {
+            throw new ConfigException('file not found');
+        }
+
+        if (!is_resource($this->config_file_handle)) {
+            $this->config_file_handle = fopen($this->config_file, "r+");
+        }
+
+        $this->simplexml = $this->loadFromStream($this->config_file_handle);
         $this->statusIsValid = true;
     }
 
@@ -497,6 +503,7 @@ class Config extends Singleton
         if ($this->isValid()) {
             // if current config is valid,
             $simplexml = $this->simplexml;
+            $config_file_handle = $this->config_file_handle;
             try {
                 // try to restore config
                 copy($filename, $this->config_file);
@@ -505,6 +512,7 @@ class Config extends Singleton
             } catch (ConfigException $e) {
                 // copy / load failed, restore previous version
                 $this->simplexml = $simplexml;
+                $this->config_file_handle = $config_file_handle;
                 $this->statusIsValid = true;
                 $this->save(null, true);
                 return false;
@@ -514,40 +522,6 @@ class Config extends Singleton
             copy($filename, $this->config_file);
             $this->load();
             return true;
-        }
-    }
-
-    /**
-     * remove old backups
-     */
-    public function cleanupBackups()
-    {
-        /* XXX this value used to be left out of the config */
-        $revisions = 60;
-
-        try {
-            $obj = $this->object();
-
-            if (isset($obj->system->backupcount)) {
-                $backupcount = $obj->system->backupcount;
-
-                if (is_numeric($backupcount)) {
-                    $backupcount = intval($backupcount);
-
-                    if ($backupcount >= 0) {
-                        $revisions = $backupcount;
-                    }
-                }
-            }
-        } catch (\Exception $e) {
-        }
-
-        $cnt = 1;
-        foreach ($this->getBackups() as $filename) {
-            if ($cnt > $revisions ) {
-                @unlink($filename);
-            }
-            ++$cnt ;
         }
     }
 
@@ -571,28 +545,54 @@ class Config extends Singleton
         // serialize to text
         $xml_text = $this->__toString();
 
-        // save configuration, try to obtain a lock before doing so.
-        $target_filename = $this->config_file;
-        if (file_exists($target_filename)) {
-            $fp = fopen($target_filename, "r+");
-        } else {
-            // apparently we are missing the config, not expected but open a new one.
-            $fp = fopen($target_filename, "w+");
+        if ($this->config_file_handle !== null) {
+            if (flock($this->config_file_handle, LOCK_EX)) {
+                fseek($this->config_file_handle, 0);
+                ftruncate($this->config_file_handle, 0);
+                fwrite($this->config_file_handle, $xml_text);
+                // flush, unlock, but keep the handle open
+                fflush($this->config_file_handle);
+                flock($this->config_file_handle, LOCK_UN);
+            } else {
+                throw new ConfigException("Unable to lock config");
+            }
         }
+    }
 
-        if (flock($fp, LOCK_EX)) {
-            // lock aquired, truncate and write new data
-            ftruncate($fp, 0);
-            fwrite($fp, $xml_text);
-            // flush, unlock and close file handler
-            fflush($fp);
-            flock($fp, LOCK_UN);
-            fclose($fp);
-        } else {
-            throw new ConfigException("Unable to lock config");
+    /**
+     * cleanup, close file handle
+     */
+    public function __destruct ()
+    {
+        if ($this->config_file_handle !== null) {
+            fclose($this->config_file_handle);
         }
+    }
 
-        /* cleanup backups */
-        $this->cleanupBackups();
+
+    /**
+     * lock configuration
+     * @param boolean $reload reload config from open file handle to enforce synchronicity
+     */
+    public function lock($reload=true)
+    {
+        if ($this->config_file_handle !== null) {
+            flock($this->config_file_handle, LOCK_EX);
+            if ($reload) {
+                $this->load();
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * unlock configuration
+     */
+    public function unlock()
+    {
+        if (is_resource($this->config_file_handle)) {
+            flock($this->config_file_handle, LOCK_UN);
+        }
+        return $this;
     }
 }

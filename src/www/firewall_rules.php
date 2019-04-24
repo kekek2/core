@@ -272,7 +272,7 @@ $( document ).ready(function() {
               selected_values = [];
               return false;
           }
-      })
+      });
       $(".rule").each(function(){
           // save zebra color
           if ( $(this).children(0).css("background-color") != 'transparent') {
@@ -749,7 +749,7 @@ $( document ).ready(function() {
                 <tfoot>
                   <tr class="hidden-xs hidden-sm">
                     <td colspan="11">
-                      <table style="width:100%; border:0; cellspacing:0; cellpadding:0">
+                      <table style="width:100%; border:0;">
                         <tr>
                           <td style="width:16px"><span class="fa fa-play text-success"></span></td>
                           <td style="width:100px"><?=gettext("pass");?></td>
@@ -792,11 +792,11 @@ $( document ).ready(function() {
                     </td>
                   </tr>
                   <tr class="hidden-xs hidden-sm">
-                    <td><a><i class="fa fa-list"></i></a></td>
+                    <td><i class="fa fa-list fa-fw text-primary"></i></td>
                     <td colspan="10"><?=gettext("Alias (click to view/edit)");?></td>
                   </tr>
                   <tr class="hidden-xs hidden-sm">
-                    <td><i><span class="fa fa-calendar text-success"></i> / <i><span class="fa fa-calendar text-muted"></i></td>
+                    <td><i class="fa fa-calendar fa-fw text-success"></i><i class="fa fa-calendar fa-fw text-muted"></i></td>
                     <td colspan="10"><?=gettext("Active/Inactive Schedule (click to view/edit)");?></td>
                   </tr>
                   <tr class="hidden-xs hidden-sm">

@@ -144,7 +144,7 @@ function endElement_attr($parser, $name) {
 }
 
 function cData_attr($parser, $data) {
-    global $depth, $curpath, $parsedcfg, $havedata;
+    global $curpath, $parsedcfg, $havedata;
 
     $data = trim($data, "\t\n\r");
 
@@ -212,7 +212,7 @@ function parse_xml_regdomain(&$rdattributes, $rdfile = '', $rootobj = 'regulator
 }
 
 function parse_xml_config_raw_attr($cffile, $rootobj, &$parsed_attributes, $isstring = "false") {
-    global $depth, $curpath, $parsedcfg, $havedata, $listtags, $parsedattrs;
+    global $depth, $curpath, $parsedcfg, $havedata, $parsedattrs;
     $parsedcfg = array();
     $curpath = array();
     $depth = 0;
@@ -760,9 +760,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 if (!is_numeric($pconfig['prefix-6rd-v4plen'])) {
                     $input_errors[] = gettext('6RD IPv4 prefix length must be a number.');
                 }
-                foreach ($ifdescrs as $ifent => $unused) {
-                    if ($if != $ifent && ($config[interfaces][$ifent]['ipaddrv6'] == $pconfig['type6'])) {
-                        if ($config[interfaces][$ifent]['prefix-6rd'] == $pconfig['prefix-6rd']) {
+                foreach (array_keys($ifdescrs) as $ifent) {
+                    if ($if != $ifent && ($config['interfaces'][$ifent]['ipaddrv6'] == $pconfig['type6'])) {
+                        if ($config['interfaces'][$ifent]['prefix-6rd'] == $pconfig['prefix-6rd']) {
                             $input_errors[] = gettext("You can only have one interface configured in 6rd with same prefix.");
                             break;
                         }
@@ -770,8 +770,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 }
                 break;
             case "6to4":
-                foreach ($ifdescrs as $ifent => $unused) {
-                    if ($if != $ifent && ($config[interfaces][$ifent]['ipaddrv6'] == $pconfig['type6'])) {
+                foreach (array_keys($ifdescrs) as $ifent) {
+                    if ($if != $ifent && ($config['interfaces'][$ifent]['ipaddrv6'] == $pconfig['type6'])) {
                         $input_errors[] = sprintf(gettext("You can only have one interface configured as 6to4."), $pconfig['type6']);
                         break;
                     }
@@ -1351,9 +1351,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                         $send_options = array();
                         $send_options = create_OR_FR_Credentials($pconfig['rfc3118_username'], $pconfig['rfc3118_password'], $pconfig['rfc3118_or_fr_lbid']);
                         log_error("send options dhcp4 = {$send_options[1]}");
-                        $new_config[adv_dhcp_send_options] = $pconfig[adv_dhcp_send_options] = $send_options['dhcp4_send_options'];
-                        $new_config[adv_dhcp_request_options] = $pconfig[adv_dhcp_request_options] = $send_options['dhcp4_request_options'];
-                        $new_config[adv_dhcp6_interface_statement_send_options] = $pconfig[adv_dhcp6_interface_statement_send_options] = $send_options['dhcp6_send_options'];
+                        $new_config['adv_dhcp_send_options'] = $pconfig['adv_dhcp_send_options'] = $send_options['dhcp4_send_options'];
+                        $new_config['adv_dhcp_request_options'] = $pconfig['adv_dhcp_request_options'] = $send_options['dhcp4_request_options'];
+                        $new_config['adv_dhcp6_interface_statement_send_options'] = $pconfig['adv_dhcp6_interface_statement_send_options'] = $send_options['dhcp6_send_options'];
                     }
                 }
             }
@@ -1440,7 +1440,7 @@ include("head.inc");
 
       //
       $("#type").change(function(){
-          $('#staticv4, #dhcp, #pppoe, #pptp, #ppp').hide()
+          $('#staticv4, #dhcp, #pppoe, #pptp, #ppp').hide();
           $("#rfc3118").hide();
           if ($("#type").val() == "dhcp" || $("#type6").val() == "dhcp6") {
              $("#rfc3118").show();
@@ -1460,7 +1460,7 @@ include("head.inc");
                   var responseTextArr = response.split("\n");
                   responseTextArr.sort();
                   $.each(responseTextArr, function(index, value) {
-                    country = value.split(':');
+                    let country = value.split(':');
                     $('#country').append(new Option(country[0], country[1]));
                   });
                 }
@@ -1471,7 +1471,6 @@ include("head.inc");
             }
             case "pppoe":
             case "pptp":
-            case "ppp":
               $("#mtu_calc").show();
               break;
             default:
@@ -1695,7 +1694,7 @@ include("head.inc");
               responseTextArr.sort();
               jQuery.each(responseTextArr, function(index, value) {
                 if (value != '') {
-                  providerplan = value.split(':');
+                  let providerplan = value.split(':');
                   $('#providerplan').append(new Option(
                     providerplan[0] + ' - ' + providerplan[1],
                     providerplan[1]
@@ -1838,8 +1837,8 @@ include("head.inc");
                             <div class="hidden" data-for="help_for_blockpriv">
                               <?=gettext("When set, this option blocks traffic from IP addresses that are reserved " .
                                 "for private networks as per RFC 1918 (10/8, 172.16/12, 192.168/16) as well as loopback " .
-                                "addresses (127/8). This option should only be set for WAN type interfaces that use " .
-                                "public IP address space.");?>
+                                "addresses (127/8) and Carrier-grade NAT addresses (100.64/10). This option should only " .
+                                "be set for WAN interfaces that use the public IP address space.") ?>
                             </div>
                           </td>
                         </tr>
@@ -2058,15 +2057,15 @@ include("head.inc");
                 </div>
                 <div class="tab-content content-box col-xs-12 __mb" id="rfc3118" style="display:none">
                 <div class="table-responsive">
-                  <table class="table table-striped opnsense_standard_table_form">
+                  <table class="table table-clean-form opnsense_standard_table_form">
                     <thead>
                       <tr>
                         <td colspan="2"><strong><?= gettext('RFC 3118 ISP Authentication Algorithm') ?></strong></td>
                       </tr>
                     </thead>
-                       <body>
+                       <tbody>
                           <tr>
-                          <td width="22%"><i class="fa fa-info-circle text-muted"></i> <?=gettext('Service Provider') ?></td>
+                          <td style="width: 22%;"><i class="fa fa-info-circle text-muted"></i> <?=gettext('Service Provider') ?></td>
                           <td>
                             <select name="rfc3118_isp" class="selectpicker" data-style="btn-default" id="rfc3118_isp">
 <?php
@@ -2096,7 +2095,7 @@ include("head.inc");
                             <input name="rfc3118_or_fr_lbid" type="text" id="rfc3118_or_fr_lbid" value="<?=$pconfig['rfc3118_or_fr_lbid'];?>" />
                           </td>
                         </tr>
-                      </body>
+                      </tbody>
                   </table>
                 </div>
               </div>
@@ -2129,7 +2128,7 @@ include("head.inc");
                             </div>
                             <div class="hidden" data-for="help_for_dhcp_mode">
                               <?= gettext('The basic mode auto-configures DHCP using default values and optional user input.') ?><br/>
-                              <?= gettext('The advanced mode does not provide any default values, you will need to fill out any values you would like to use.') ?></br>
+                              <?= gettext('The advanced mode does not provide any default values, you will need to fill out any values you would like to use.') ?><br>
                               <?= gettext('The configuration file override mode may point to a fully customised file on the system instead.') ?>
                             </div>
                           </td>
@@ -2655,7 +2654,7 @@ include("head.inc");
                             </div>
                             <div class="hidden" data-for="help_for_dhcpv6_mode">
                               <?= gettext('The basic mode auto-configures DHCP using default values and optional user input.') ?><br/>
-                              <?= gettext('The advanced mode does not provide any default values, you will need to fill out any values you would like to use.') ?></br>
+                              <?= gettext('The advanced mode does not provide any default values, you will need to fill out any values you would like to use.') ?><br>
                               <?= gettext('The configuration file override mode may point to a fully customised file on the system instead.') ?>
                             </div>
                           </td>
@@ -2893,7 +2892,7 @@ include("head.inc");
                 <!-- Section : SLAAC -->
                 <div class="tab-content content-box col-xs-12 __mb" id="slaac" style="display:none">
                   <div class="table-responsive">
-                    <table class="table table-striped opnsense_standard_table_form">
+                    <table class="table table-clean-form opnsense_standard_table_form">
                       <thead>
                         <tr>
                           <th colspan="2"><?=gettext("SLAAC configuration"); ?></th>
@@ -2979,6 +2978,8 @@ include("head.inc");
                         <tr>
                           <th colspan="2"><?=gettext("Track IPv6 Interface"); ?></th>
                         </tr>
+                      </thead>
+                      <tbody>
                         <tr>
                           <td style="width:22%"><a id="help_for_track6-interface" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("IPv6 Interface"); ?></td>
                           <td style="width:78%">
@@ -3500,7 +3501,7 @@ include("head.inc");
                           <td>
                             <input name="auth_server_addr2" id="auth_server_addr2" type="text" value="<?=$pconfig['auth_server_addr2'];?>" />
                             <div class="hidden" data-for="help_for_auth_server_addr2">
-                              <?=gettext("Secondary 802.1X Authentication Server IP Address"); ?></br>
+                              <?=gettext("Secondary 802.1X Authentication Server IP Address"); ?><br>
                               <?=gettext("Enter the IP address of the 802.1X Authentication Server. This is commonly a Radius server (FreeRadius, Internet Authentication Services, etc.)"); ?>
                             </div>
                           </td>

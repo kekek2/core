@@ -178,7 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if ($pconfig['source'] == "any" && !empty($pconfig['source_not'])) {
         $input_errors[] = gettext("Negating source address of \"any\" is invalid.");
     }
-    if (!is_specialnet($pconfig['destination']) && is_ipaddroralias($pconfig['destination'])) {
+    if (!is_specialnet($pconfig['destination']) && !is_ipaddroralias($pconfig['destination'])) {
         $input_errors[] = gettext("A valid destination must be specified.");
     }
     if (!empty($pconfig['destination_subnet']) && !is_numericint($pconfig['destination_subnet'])) {
@@ -609,7 +609,7 @@ include("head.inc");
                       </tr>
                     </table>
                     <div class="hidden" data-for="help_for_destination">
-                      <?=gettext("Enter the source network for the outbound NAT mapping.");?>
+                      <?=gettext("Enter the destination network for the outbound NAT mapping.");?>
                     </div>
                   </td>
                 </tr>
@@ -800,7 +800,7 @@ include("head.inc");
                 <tr>
                   <td><?=gettext("Created");?></td>
                   <td>
-                    <?= date(gettext("n/j/y H:i:s"), $a_out[$id]['created']['time']) ?> <?= gettext("by") ?> <strong><?= $a_out[$id]['created']['username'] ?></strong>
+                    <?= date(gettext('n/j/y H:i:s'), $a_out[$id]['created']['time']) ?> (<?= $a_out[$id]['created']['username'] ?>)
                   </td>
                 </tr>
 <?php
@@ -810,7 +810,7 @@ include("head.inc");
                 <tr>
                   <td><?=gettext("Updated");?></td>
                   <td>
-                    <?= date(gettext("n/j/y H:i:s"), $a_out[$id]['updated']['time']) ?> <?= gettext("by") ?> <strong><?= $a_out[$id]['updated']['username'] ?></strong>
+                    <?= date(gettext('n/j/y H:i:s'), $a_out[$id]['updated']['time']) ?> (<?= $a_out[$id]['updated']['username'] ?>)
                   </td>
                 </tr>
 <?php

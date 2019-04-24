@@ -1,6 +1,6 @@
 #!/usr/local/bin/python2.7
 """
-    Copyright (c) 2016 Ad Schellevis <ad@opnsense.org>
+    Copyright (c) 2016-2018 Ad Schellevis <ad@opnsense.org>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -36,31 +36,31 @@ import copy
 import syslog
 import traceback
 import socket
-sys.path.insert(0, "/usr/local/opnsense/site-python")
-from sqlite3_helper import check_and_repair
+import argparse
+from lib import load_config
 from lib.parse import parse_flow
 from lib.aggregate import AggMetadata
 import lib.aggregates
-from daemonize import Daemonize
-
-MAX_FILE_SIZE_MB=10
-MAX_LOGS=10
-SOCKET_PATH="/var/run/flowd.socket"
 
 
-def aggregate_flowd(server, do_vacuum=False):
+MAX_FILE_SIZE_MB = 10
+MAX_LOGS = 10
+SOCKET_PATH = "/var/run/flowd.socket"
+
+def aggregate_flowd(config, server, do_vacuum=False):
     """ aggregate collected flowd data
+    :param config: script configuration
     :param do_vacuum: vacuum database after cleanup
     :return: None
     """
     # init metadata (progress maintenance)
-    metadata = AggMetadata()
+    metadata = AggMetadata(config.database_dir)
 
     # register aggregate classes to stream data to
     stream_agg_objects = list()
     for agg_class in lib.aggregates.get_aggregators():
         for resolution in agg_class.resolutions():
-            stream_agg_objects.append(agg_class(resolution))
+            stream_agg_objects.append(agg_class(resolution, config.database_dir))
 
     # parse flow data and stream to registered consumers
     commit_record_count = 0
@@ -86,6 +86,12 @@ def aggregate_flowd(server, do_vacuum=False):
 
 
 class Main(object):
+    config = None
+
+    @classmethod
+    def set_config(cls, config):
+        cls.config = config
+
     def __init__(self):
         """ construct, hook signal handler and run aggregators
         :return: None
@@ -100,7 +106,7 @@ class Main(object):
         """
         # check database consistency / repair
         syslog.syslog(syslog.LOG_NOTICE, 'startup, check database.')
-        check_and_repair('/var/netflow/*.sqlite')
+        check_and_repair('%s/*.sqlite' % self.config.database_dir)
 
         vacuum_interval = (60*60*8) # 8 hour vacuum cycle
         vacuum_countdown = None
@@ -119,18 +125,21 @@ class Main(object):
 
             # run aggregate
             try:
-                aggregate_flowd(server, do_vacuum)
+                aggregate_flowd(self.config, server, do_vacuum)
                 if do_vacuum:
                     syslog.syslog(syslog.LOG_NOTICE, 'vacuum done')
             except:
                 syslog.syslog(syslog.LOG_ERR, 'flowd aggregate died with message %s' % (traceback.format_exc()))
                 return
             # wait for next pass, exit on sigterm
-            for i in range(30):
-                if self.running:
-                    time.sleep(0.5)
-                else:
-                    break
+            if Main.config.single_pass:
+                break
+            else:
+                for i in range(30):
+                    if self.running:
+                        time.sleep(0.5)
+                    else:
+                        break
 
         server.close()
         os.remove(SOCKET_PATH)
@@ -144,37 +153,52 @@ class Main(object):
         self.running = False
 
 
-if len(sys.argv) > 1 and 'console' in sys.argv[1:]:
-    # command line start
-    if 'profile' in sys.argv[1:]:
-        # start with profiling
-        import cProfile
-        import StringIO
-        import pstats
+if __name__ == '__main__':
+    # parse arguments and load config
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', help='configuration yaml', default=None)
+    parser.add_argument('--console', dest='console', help='run in console', action='store_true')
+    parser.add_argument('--profile', dest='profile', help='enable profiler', action='store_true')
+    parser.add_argument('--repair', dest='repair', help='init repair', action='store_true')
+    cmd_args = parser.parse_args()
 
-        pr = cProfile.Profile(builtins=False)
-        pr.enable()
-        Main()
-        pr.disable()
-        s = StringIO.StringIO()
-        sortby = 'cumulative'
-        ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-        ps.print_stats()
-        print s.getvalue()
+    Main.set_config(
+        load_config(cmd_args.config)
+    )
+    from sqlite3_helper import check_and_repair
+
+    if cmd_args.console:
+        # command line start
+        if cmd_args.profile:
+            # start with profiling
+            import cProfile
+            import io
+            import pstats
+
+            pr = cProfile.Profile(builtins=False)
+            pr.enable()
+            Main()
+            pr.disable()
+            s = io.StringIO()
+            sortby = 'cumulative'
+            ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+            ps.print_stats()
+            print s.getvalue()
+        else:
+            Main()
+    elif cmd_args.repair:
+        # force a database repair, when
+        try:
+            lck = open(Main.config.pid_filename, 'a+')
+            fcntl.flock(lck, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            check_and_repair(filename_mask='%s/*.sqlite' % Main.config.database_dir, force_repair=True)
+            lck.close()
+            os.remove(Main.config.pid_filename)
+        except IOError:
+            # already running, exit status 99
+            sys.exit(99)
     else:
-        Main()
-elif len(sys.argv) > 1 and 'repair' in sys.argv[1:]:
-    # force a database repair, when
-    try:
-        lck = open('/var/run/flowd_aggregate.pid', 'a+')
-        fcntl.flock(lck, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        check_and_repair(filename_mask='/var/netflow/*.sqlite', force_repair=True)
-        lck.close()
-        os.remove('/var/run/flowd_aggregate.pid')
-    except IOError:
-        # already running, exit status 99
-        sys.exit(99)
-else:
-    # Daemonize flowd aggregator
-    daemon = Daemonize(app="flowd_aggregate", pid='/var/run/flowd_aggregate.pid', action=Main)
-    daemon.start()
+        # Daemonize flowd aggregator
+        from daemonize import Daemonize
+        daemon = Daemonize(app="flowd_aggregate", pid=Main.config.pid_filename, action=Main)
+        daemon.start()

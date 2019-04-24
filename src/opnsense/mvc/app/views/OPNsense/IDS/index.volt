@@ -63,7 +63,7 @@ POSSIBILITY OF SUCH DAMAGE.
          * list all known classtypes and add to selection box
          */
         function updateRuleClassTypes() {
-            ajaxGet(url="/api/ids/settings/listRuleClasstypes",sendData={}, callback=function(data, status) {
+            ajaxGet("/api/ids/settings/listRuleClasstypes", {}, function(data, status) {
                 if (status == "success") {
                     $('#ruleclass').html('<option value="">ALL</option>');
                     $.each(data['items'], function(key, value) {
@@ -88,7 +88,7 @@ POSSIBILITY OF SUCH DAMAGE.
          * update list of available alert logs
          */
         function updateAlertLogs() {
-            ajaxGet(url="/api/ids/service/getAlertLogs",sendData={}, callback=function(data, status) {
+            ajaxGet("/api/ids/service/getAlertLogs", {}, function(data, status) {
                 if (status == "success") {
                     $('#alert-logfile').html("");
                     $.each(data, function(key, value) {
@@ -164,8 +164,8 @@ POSSIBILITY OF SUCH DAMAGE.
          */
         function actionReconfigure(callback_funct) {
             var result_status = false;
-            saveFormToEndpoint(url="/api/ids/settings/set",formid='frm_GeneralSettings',callback_ok=function(){
-                ajaxCall(url="/api/ids/service/reconfigure", sendData={}, callback=function(data,status) {
+            saveFormToEndpoint("/api/ids/settings/set", 'frm_GeneralSettings', function(){
+                ajaxCall("/api/ids/service/reconfigure", {}, function(data,status) {
                     if (status == "success" || data['status'].toLowerCase().trim() == "ok") {
                         result_status = true;
                     }
@@ -180,7 +180,7 @@ POSSIBILITY OF SUCH DAMAGE.
          * @param gridId: grid id to to use
          * @param url: ajax action to call
          * @param state: 0/1/undefined
-         * @param combine: number of keys to combine (seperate with ,)
+         * @param combine: number of keys to combine (separate with ,)
          *                 try to avoid too much items per call (results in too long url's)
          */
         function actionToggleSelected(gridId, url, state, combine) {
@@ -201,7 +201,7 @@ POSSIBILITY OF SUCH DAMAGE.
                         var call_url = url + keyset.join(',') +'/'+url_suffix;
                         base = base.then(function() {
                             var defer = $.Deferred();
-                            ajaxCall(call_url, sendData={}, function(){
+                            ajaxCall(call_url, {}, function(){
                                 defer.resolve();
                             });
                             return defer.promise();
@@ -271,7 +271,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     }
                 });
                 // display file settings (if available)
-                ajaxGet(url="/api/ids/settings/getRulesetproperties", sendData={}, callback=function(data, status) {
+                ajaxGet("/api/ids/settings/getRulesetproperties", {}, function(data, status) {
                     if (status == "success") {
                         var rows = [];
                         // generate rows with field references
@@ -418,10 +418,9 @@ POSSIBILITY OF SUCH DAMAGE.
                 grid_alerts.on("loaded.rs.jquery.bootgrid", function(){
                     grid_alerts.find(".command-alertinfo").on("click", function(e) {
                         var uuid=$(this).data("row-id");
-                        ajaxGet(url='/api/ids/service/getAlertInfo/' + uuid,
-                            sendData={}, callback=function(data, status) {
+                        ajaxGet('/api/ids/service/getAlertInfo/' + uuid, {}, function(data, status) {
                                 if (status == 'success') {
-                                    ajaxGet(url="/api/ids/settings/getRuleInfo/"+data['alert_sid'],sendData={}, callback=function(rule_data, rule_status) {
+                                    ajaxGet("/api/ids/settings/getRuleInfo/"+data['alert_sid'], {}, function(rule_data, rule_status) {
                                         var tbl = $('<table class="table table-condensed table-hover ids-alert-info"/>');
                                         var tbl_tbody = $("<tbody/>");
                                         var alert_fields = {};
@@ -474,7 +473,7 @@ POSSIBILITY OF SUCH DAMAGE.
                                                 alert_enabled.prop('checked', true);
                                             }
                                             $.each(rule_data.action, function(key, value){
-                                                var opt = $('<option/>').attr("value", key).text(value.value)
+                                                var opt = $('<option/>').attr("value", key).text(value.value);
                                                 if (value.selected == 1) {
                                                     opt.attr('selected', 'selected');
                                                 }
@@ -495,7 +494,7 @@ POSSIBILITY OF SUCH DAMAGE.
                                                 } else {
                                                     rule_params['enabled'] = 0;
                                                 }
-                                                ajaxCall(url="/api/ids/settings/setRule/"+data['alert_sid'], sendData=rule_params, callback=function() {
+                                                ajaxCall("/api/ids/settings/setRule/"+data['alert_sid'], rule_params, function() {
                                                     $("#alert_sid_action > small").remove();
                                                     $("#alert_sid_action").append($('<small/>').html("{{ lang._('Changes will be active after apply (rules tab)') }}"));
                                                 });
@@ -537,7 +536,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     }
                 );
             }
-        })
+        });
 
 
 
@@ -571,7 +570,7 @@ POSSIBILITY OF SUCH DAMAGE.
             $(".rulesetprop").each(function(){
                 settings[$(this).data('id')] = $(this).val();
             });
-            ajaxCall(url="/api/ids/settings/setRulesetproperties", sendData={'properties': settings}, callback=function(data,status) {
+            ajaxCall("/api/ids/settings/setRulesetproperties", {'properties': settings}, function(data,status) {
                 $("#updateSettings_progress").removeClass("fa fa-spinner fa-pulse");
             });
         });
@@ -581,7 +580,7 @@ POSSIBILITY OF SUCH DAMAGE.
          */
         $(".act_update").click(function(){
             $(".act_update_progress").addClass("fa fa-spinner fa-pulse");
-            ajaxCall(url="/api/ids/service/reloadRules", sendData={}, callback=function(data,status) {
+            ajaxCall("/api/ids/service/reloadRules", {}, function(data,status) {
                 // when done, disable progress animation.
                 $(".act_update_progress").removeClass("fa fa-spinner fa-pulse");
             });
@@ -592,7 +591,7 @@ POSSIBILITY OF SUCH DAMAGE.
          */
         $("#updateRulesAct").click(function(){
             $("#updateRulesAct_progress").addClass("fa fa-spinner fa-pulse");
-            ajaxCall(url="/api/ids/service/updateRules", sendData={}, callback=function(data,status) {
+            ajaxCall("/api/ids/service/updateRules", {}, function(data,status) {
                 // when done, disable progress animation and reload grid.
                 $('#grid-rule-files').bootgrid('reload');
                 updateStatus();
@@ -663,7 +662,7 @@ POSSIBILITY OF SUCH DAMAGE.
          * Initialize
          */
         // fetch interface mappings on load
-        ajaxGet(url='/api/diagnostics/interface/getInterfaceNames', {}, callback=function(data, status) {
+        ajaxGet('/api/diagnostics/interface/getInterfaceNames', {}, function(data, status) {
             interface_descriptions = data;
         });
 
@@ -771,22 +770,6 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
     </div>
     <div id="rules" class="tab-pane fade in">
-        <div class="bootgrid-header container-fluid">
-            <div class="row">
-                <div class="col-sm-12 actionBar">
-                    <b>{{ lang._('Classtype') }} &nbsp;</b>
-                    <select id="ruleclass" class="selectpicker" data-width="200px"></select>
-                    &nbsp;
-                    <b>{{ lang._('Action') }} &nbsp;</b>
-                    <select id="ruleaction" class="selectpicker" data-width="100px">
-                        <option value="">{{ lang._('All') }}</option>
-                        <option value="drop">{{ lang._('Drop') }}</option>
-                        <option value="alert">{{ lang._('Alert') }}</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-
         <!-- tab page "installed rules" -->
         <table id="grid-installedrules" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogRule">
             <thead>
@@ -851,6 +834,29 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div id="alerts" class="tab-pane fade in">
         <!-- tab page "alerts" -->
+        <div class="bootgrid-header container-fluid">
+            <div class="row">
+                <div class="col-sm-12 actionBar">
+                    <select id="alert-logfile" class="selectpicker" data-width="200px"></select>
+                    <span id="actDeleteLog" class="btn btn-lg fa fa-trash" style="cursor: pointer;" title="{{ lang._('Delete Alert Log') }}"></span>
+                    <select id="alert-logfile-max" class="selectpicker" data-width="80px">
+                        <option value="7">7</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                        <option value="250">250</option>
+                        <option value="500">500</option>
+                        <option value="1000">1000</option>
+                        <option value="-1">{{ lang._('All') }}</option>
+                    </select>
+                    <div class="search form-group">
+                        <div class="input-group">
+                            <input class="search-field form-control" placeholder="{{ lang._('Search') }}" type="text" id="inputSearchAlerts">
+                            <span id="actQueryAlerts" class="icon input-group-addon fa fa-refresh" title="{{ lang._('Query') }}" style="cursor: pointer;"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <table id="grid-alerts" class="table table-condensed table-hover table-striped table-responsive">
             <thead>
               <tr>

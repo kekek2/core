@@ -44,11 +44,8 @@ $widgetCollection = array();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = $config['widgets'];
-    if (empty($pconfig['sequence'])) {
-        // set default dashboard view
-        $pconfig['sequence'] = 'system_information-container:00000000-col1:show,gateways-container:00000001-col2:show,interface_list-container:00000002-col2:show,services_status-container:00000003-col2:show';
-    }
-    // default 2 column grid layout
+    // set default dashboard view
+    $pconfig['sequence'] = !empty($pconfig['sequence']) ? $pconfig['sequence'] : '';
     $pconfig['column_count'] = !empty($pconfig['column_count']) ? $pconfig['column_count'] : 2;
     // build list of widgets
     $widgetSeqParts = explode(",", $pconfig['sequence']);
@@ -127,7 +124,9 @@ include("fbegin.inc");?>
         <section class="col-xs-12">
           <div class="content-box" style="padding: 20px;">
             <div class="table-responsive">
-              <div class="content-box-main">
+              <img src="/ui/themes/opnsense/build/images/ting-green.png" border="0" alt="logo" style="max-width:380px;" />
+              <br />
+              <div class="content-box-main" style="padding-bottom:0px;">
                 <?php
                     if (isset($config['trigger_initial_wizard'])) {
                         echo '<p>' . sprintf(gettext('Welcome to %s!'), $g['product_name']) . "</p>\n";
@@ -135,7 +134,8 @@ include("fbegin.inc");?>
                         echo '<p class="__nomb">' . gettext('To bypass the wizard, click on the logo in the upper left corner.') . "</p>\n";
                     } else {
                         echo '<p>' . sprintf(gettext('Congratulations! %s is now configured.'), $g['product_name']) . "</p>\n";
-                        echo '<p class="__nomb">' . sprintf(gettext('Click to %scontinue to the dashboard%s.'), '<a href="/">', '</a>') . "</p>\n";
+                        echo '<p class="__nomb">' . sprintf(gettext('Click to %scontinue to the dashboard%s.'), '<a href="/">', '</a>') . ' ';
+                        echo sprintf(gettext('Or click to %scheck for updates%s.'), '<a href="/ui/core/firmware#checkupdate">', '</a>'). "</p>\n";
                     }
                 ?>
               </div>
@@ -164,7 +164,7 @@ include("fbegin.inc");?>
   }
 
   function configureWidget(selectedDiv) {
-      selectIntLink = '#' + selectedDiv + "-settings";
+      let selectIntLink = '#' + selectedDiv + "-settings";
       if ($(selectIntLink).css('display') == "none") {
           $(selectIntLink).show();
       } else {
@@ -191,8 +191,7 @@ include("fbegin.inc");?>
   function closeWidget(selectedDiv) {
       $('#'+selectedDiv).hide();
       $('#'+selectedDiv+'-config').val('close');
-      // showSave();
-      updatePref();
+      showSave();
   }
 
   function showSave() {
@@ -207,7 +206,7 @@ include("fbegin.inc");?>
               // only capture visible widgets
               var index_str = "0000000" + index;
               index_str = index_str.substr(index_str.length-8);
-              col_index = $(this).parent().attr("id").split('_')[1];
+              let col_index = $(this).parent().attr("id").split('_')[1];
               widgetInfo.push($(this).attr('id')+'-container:'+index_str+'-'+col_index+':'+$('input[name='+$(this).attr('id')+'-config]').val());
               index++;
           }
@@ -232,7 +231,7 @@ include("fbegin.inc");?>
           if ($(this).data('callback') != undefined) {
               callbacks.push({'function' : $(this).data('callback'), 'plugin': $(this).data('plugin'), 'sender': $(this)});
           }
-      })
+      });
       // collect data for provided plugins
       $.ajax("/widgets/api/get.php",{type: 'get', cache: false, dataType: "json", data: {'load': plugins.join(',')}})
         .done(function(response) {

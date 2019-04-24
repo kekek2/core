@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2018 Franco Fichtner <franco@opnsense.org>
+# Copyright (c) 2014-2019 Franco Fichtner <franco@opnsense.org>
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -33,8 +33,16 @@ all:
 
 
 CORE_COMMIT!=	${.CURDIR}/Scripts/version.sh
-CORE_VERSION=	${CORE_COMMIT:C/-.*$//1}
-CORE_HASH=	${CORE_COMMIT:C/^.*-//1}
+
+CORE_VERSION?=	${CORE_COMMIT:[1]}
+CORE_REVISION?=	${CORE_COMMIT:[2]}
+CORE_HASH?=	${CORE_COMMIT:[3]}
+
+.if "${CORE_REVISION}" != "" && "${CORE_REVISION}" != "0"
+CORE_PKGVERSION=	${CORE_VERSION}_${CORE_REVISION}
+.else
+CORE_PKGVERSION=	${CORE_VERSION}
+.endif
 
 TING_ABI?=	1.4
 CORE_ABI?=	18.7
@@ -45,7 +53,7 @@ CORE_PHP?=	71
 CORE_PYTHON2?=	27
 CORE_PYTHON3?=	36
 CORE_RADVD?=	1
-CORE_SQUID?=	
+CORE_SQUID?=
 CORE_SURICATA?=	-devel
 
 _FLAVOUR!=	if [ -f ${OPENSSL} ]; then ${OPENSSL} version; fi
@@ -72,7 +80,7 @@ CORE_WWW?=		https://opnsense.org/
 
 CORE_COPYRIGHT_HOLDER?=	Deciso B.V.
 CORE_COPYRIGHT_WWW?=	https://www.deciso.com/
-CORE_COPYRIGHT_YEARS?=	2014-2018
+CORE_COPYRIGHT_YEARS?=	2014-2019
 
 CORE_DEPENDS_amd64?=	beep bsdinstaller
 CORE_DEPENDS_i386?=	${CORE_DEPENDS_amd64}
@@ -152,6 +160,7 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 WRKDIR?=${.CURDIR}/work
 WRKSRC?=${WRKDIR}/src
 PKGDIR?=${WRKDIR}/pkg
+MFCDIR?=${WRKDIR}/mfc
 
 .if defined(DEMO)
 FILES_TO_ENCODE=${WRKSRC}
@@ -163,7 +172,7 @@ FILES_TO_ENCODE=${WRKSRC}${LOCALBASE}/etc/inc/authgui.inc \
 .endif
 
 WANTS=		p5-File-Slurp php${CORE_PHP}-pear-PHP_CodeSniffer \
-		phpunit6-php${CORE_PHP} py${CORE_PYTHON2}-pycodestyle
+		phpunit7-php${CORE_PHP} py${CORE_PYTHON2}-pycodestyle
 
 .for WANT in ${WANTS}
 want-${WANT}:
@@ -173,8 +182,8 @@ want-${WANT}:
 mount:
 	@if [ ! -f ${WRKDIR}/.mount_done ]; then \
 	    echo -n "Enabling core.git live mount..."; \
-	    sed ${SED_REPLACE} ${.CURDIR}/src/opnsense/version/opnsense.in > \
-	        ${.CURDIR}/src/opnsense/version/opnsense; \
+	    sed ${SED_REPLACE} ${.CURDIR}/src/opnsense/version/core.in > \
+	        ${.CURDIR}/src/opnsense/version/core; \
 	    mount_unionfs ${.CURDIR}/src ${LOCALBASE}; \
 	    touch ${WRKDIR}/.mount_done; \
 	    echo "done"; \
@@ -192,12 +201,13 @@ umount:
 
 manifest:
 	@echo "name: \"${CORE_NAME}\""
-	@echo "version: \"${CORE_VERSION}\""
+	@echo "version: \"${CORE_PKGVERSION}\""
 	@echo "origin: \"${CORE_ORIGIN}\""
 	@echo "comment: \"${CORE_COMMENT}\""
 	@echo "desc: \"${CORE_HASH}\""
 	@echo "maintainer: \"${CORE_MAINTAINER}\""
 	@echo "www: \"${CORE_WWW}\""
+	@echo "message: \"${CORE_MESSAGE}\""
 	@echo "categories: [ \"sysutils\", \"www\" ]"
 	@echo "licenselogic: \"single\""
 	@echo "licenses: [ \"BSD2CLAUSE\" ]"
@@ -281,14 +291,14 @@ REMOTESHELL?=ssh -q encoder
 RCP?=scp -q
 RCPHOST?=encoder
 
-package: plist-check package-check clean-work
+package: plist-check package-check clean-wrksrc
 .for CORE_DEPEND in ${CORE_DEPENDS}
 	@if ! ${PKG} info ${CORE_DEPEND} > /dev/null; then ${PKG} install -yfA ${CORE_DEPEND}; fi
 .endfor
-	@echo -n ">>> Generating metadata for ${CORE_NAME}-${CORE_VERSION}..."
+	@echo -n ">>> Generating metadata for ${CORE_NAME}-${CORE_PKGVERSION}..."
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} metadata
 	@echo " done"
-	@echo -n ">>> Installing files for ${CORE_NAME}-${CORE_VERSION}..."
+	@echo -n ">>> Staging files for ${CORE_NAME}-${CORE_PKGVERSION}..."
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} install
 	@echo " done"
 .if defined(DEMO)
@@ -304,7 +314,7 @@ package: plist-check package-check clean-work
 	fi
 	@sed -i '' 's/url:.*/url: "file:\/\/\/var\/pkg\/sets\/$$\{ABI\}\/${TING_ABI}\/latest"/' ${WRKDIR}/src-enc/usr/local/etc/pkg/repos/SmartSoft.conf.sample
 	@echo " done"
-	@echo ">>> Packaging files for ${CORE_NAME}-${CORE_VERSION}:"
+	@echo ">>> Packaging files for ${CORE_NAME}-${CORE_PKGVERSION}:"
 	@PORTSDIR=${.CURDIR} ${PKG} create -v -m ${WRKSRC} -r ${WRKDIR}/src-enc \
 	    -p ${WRKSRC}/plist -o ${PKGDIR}
 .else
@@ -321,7 +331,7 @@ package: plist-check package-check clean-work
 	    ${REMOTESHELL} "rm -rf $${ENC_TEMP}"; \
 	fi
 	@echo " done"
-	@echo ">>> Packaging files for ${CORE_NAME}-${CORE_VERSION}:"
+	@echo ">>> Packaging files for ${CORE_NAME}-${CORE_PKGVERSION}:"
 	@PORTSDIR=${.CURDIR} ${PKG} create -v -m ${WRKSRC} -r ${WRKSRC} \
 	    -p ${WRKSRC}/plist -o ${PKGDIR}
 .endif
@@ -332,23 +342,38 @@ upgrade-check:
 		exit 1; \
 	fi
 
-upgrade: upgrade-check clean-package package
+upgrade: upgrade-check clean-pkgdir package
 	@${PKG} delete -fy ${CORE_NAME} || true
 	@${PKG} add ${PKGDIR}/*.txz
 	@${LOCALBASE}/etc/rc.restart_webgui
 
-lint: plist-check
-	find ${.CURDIR}/src ${.CURDIR}/Scripts \
+lint-shell:
+	@find ${.CURDIR}/src ${.CURDIR}/Scripts \
 	    -name "*.sh" -type f -print0 | xargs -0 -n1 sh -n
-	find ${.CURDIR}/src ${.CURDIR}/Scripts \
+
+lint-xml:
+	@find ${.CURDIR}/src ${.CURDIR}/Scripts \
 	    -name "*.xml*" -type f -print0 | xargs -0 -n1 xmllint --noout
-	find ${.CURDIR}/src \
+
+lint-exec:
+.for DIR in ${.CURDIR}/src/etc/rc.d # XXX e.g. src/opnsense/scripts
+.if exists(${DIR})
+	@find ${DIR} -type f ! -name "*.xml" -print0 | \
+	    xargs -0 -t -n1 test -x || \
+	    (echo "Missing executable permission in ${DIR}"; exit 1)
+.endif
+.endfor
+
+lint-php:
+	@find ${.CURDIR}/src \
 	    ! -name "*.xml" ! -name "*.xml.sample" ! -name "*.eot" \
 	    ! -name "*.svg" ! -name "*.woff" ! -name "*.woff2" \
 	    ! -name "*.otf" ! -name "*.png" ! -name "*.js" \
 	    ! -name "*.scss" ! -name "*.py" ! -name "*.ttf" \
-	    ! -name "*.tgz" ! -name "*.xml.dist" \
+	    ! -name "*.tgz" ! -name "*.xml.dist" ! -name "*.tgb" \
 	    -type f -print0 | xargs -0 -n1 php -l
+
+lint: plist-check lint-shell lint-xml lint-exec lint-php
 
 sweep:
 	find ${.CURDIR}/src -type f -name "*.map" -print0 | \
@@ -418,32 +443,49 @@ ${_TARGET}_ARG=		${${_TARGET}_ARGS:[0]}
 diff:
 	@git diff --stat -p stable/${CORE_ABI} ${.CURDIR}/${diff_ARGS:[1]}
 
-mfc:
-	@git checkout stable/${CORE_ABI}
+mfc: clean-mfcdir
 .for MFC in ${mfc_ARGS}
+.if exists(${MFC})
+	@cp -r ${MFC} ${MFCDIR}
+	@git checkout stable/${CORE_ABI}
+	@rm -r ${MFC}
+	@mv ${MFCDIR}/$$(basename ${MFC}) ${MFC}
+	@git add .
+	@if ! git diff --quiet HEAD; then \
+		git commit -m "${MFC}: sync with master"; \
+	fi
+.else
+	@git checkout stable/${CORE_ABI}
 	@git cherry-pick -x ${MFC}
-.endfor
+.endif
 	@git checkout master
+.endfor
 
-test: want-phpunit6-php${CORE_PHP}
-	@if [ "$$(${PKG} query %n-%v ${CORE_NAME})" != "${CORE_NAME}-${CORE_VERSION}" ]; then \
-		echo "Installed version does not match, expected ${CORE_NAME}-${CORE_VERSION}"; \
+test: want-phpunit7-php${CORE_PHP}
+	@if [ "$$(${PKG} query %n-%v ${CORE_NAME})" != "${CORE_NAME}-${CORE_PKGVERSION}" ]; then \
+		echo "Installed version does not match, expected ${CORE_NAME}-${CORE_PKGVERSION}"; \
 		exit 1; \
 	fi
 	@cd ${.CURDIR}/src/opnsense/mvc/tests && \
 	    phpunit --configuration PHPunit.xml
 
-clean-package:
-	@rm -rf ${PKGDIR}
-
-clean-src:
+checkout:
 	@${GIT} reset -q ${.CURDIR}/src && \
 	    ${GIT} checkout -f ${.CURDIR}/src && \
 	    ${GIT} clean -xdqf ${.CURDIR}/src
 
-clean-work:
-	@rm -rf ${WRKSRC}
+clean-pkgdir:
+	@rm -rf ${PKGDIR}
+	@mkdir -p ${PKGDIR}
 
-clean: clean-package clean-src clean-work
+clean-mfcdir:
+	@rm -rf ${MFCDIR}
+	@mkdir -p ${MFCDIR}
+
+clean-wrksrc:
+	@rm -rf ${WRKSRC}
+	@mkdir -p ${WRKSRC}
+
+clean: clean-pkgdir clean-wrksrc clean-mfcdir
 
 .PHONY: license plist

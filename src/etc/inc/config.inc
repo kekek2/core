@@ -30,7 +30,7 @@
  */
 
 /* XXX make this a getter function for traceability */
-$g = json_decode(file_get_contents('/usr/local/opnsense/version/opnsense'), true);
+$g = json_decode(file_get_contents('/usr/local/opnsense/version/core'), true);
 
 openlog($g['product_id'], LOG_ODELAY, LOG_USER);
 register_shutdown_function('closelog');
@@ -270,6 +270,7 @@ function legacy_config_get_interfaces($filters = array())
         if (isset($iface[0])) {
             $iface = $iface[0];
         }
+
         // apply filters
         $iface_match = true;
         foreach ($filters as $filter_key => $filter_value) {
@@ -283,8 +284,11 @@ function legacy_config_get_interfaces($filters = array())
                 break;
             }
         }
+
         if ($iface_match) {
             $iface['descr'] = !empty($iface['descr']) ? $iface['descr'] : strtoupper($ifname);
+            $iface['ipaddrv6'] = !empty($iface['ipaddrv6']) ? $iface['ipaddrv6'] : null;
+            $iface['ipaddr'] = !empty($iface['ipaddr']) ? $iface['ipaddr'] : null;
             $interfaces[$ifname] = $iface;
         }
     }

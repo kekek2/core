@@ -641,7 +641,7 @@ $(document).ready(function() {
             </table>
           </div>
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-striped opnsense_standard_table_form">
+            <table class="table table-clean-form opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"><strong><?= gettext('Secure Shell') ?></strong></td>
                 <td style="width:78%"></td>
@@ -720,13 +720,13 @@ $(document).ready(function() {
             </table>
           </div>
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-striped opnsense_standard_table_form">
+            <table class="table table-clean-form opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"><strong><?= gettext('Console') ?></strong></td>
                 <td style="width:78%"></td>
               </tr>
               <tr>
-                <td><i class="fa fa-info-circle text-muted"></i></a> <?= gettext('Console driver') ?></td>
+                <td><i class="fa fa-info-circle text-muted"></i> <?= gettext('Console driver') ?></td>
                 <td>
                   <input name="usevirtualterminal" type="checkbox" value="yes" <?= empty($pconfig['usevirtualterminal']) ? '' : 'checked="checked"' ?>  />
                   <?= gettext('Use the virtual terminal driver (vt)') ?>
@@ -778,14 +778,14 @@ $(document).ready(function() {
                 </td>
               </tr>
               <tr>
-                <td><i class="fa fa-info-circle text-muted"></i></a> <?= gettext('USB-based serial') ?></td>
+                <td><i class="fa fa-info-circle text-muted"></i> <?= gettext('USB-based serial') ?></td>
                 <td>
                   <input name="serialusb" type="checkbox" value="yes" <?= empty($pconfig['serialusb']) ? '' : 'checked="checked"' ?>  />
                   <?= gettext('Use USB-based serial ports') ?>
                 </td>
               </tr>
               <tr>
-                <td><i class="fa fa-info-circle text-muted"></i></a> <?= gettext("Console menu") ?></td>
+                <td><i class="fa fa-info-circle text-muted"></i> <?= gettext("Console menu") ?></td>
                 <td>
                   <input name="disableconsolemenu" type="checkbox" value="yes" <?= empty($pconfig['disableconsolemenu']) ? '' : 'checked="checked"' ?>  />
                   <?=gettext("Password protect the console menu"); ?>
@@ -794,7 +794,7 @@ $(document).ready(function() {
             </table>
           </div>
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-striped opnsense_standard_table_form">
+            <table class="table table-clean-form opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"><strong><?= gettext('Authentication') ?></strong></td>
                 <td style="width:78%"></td>
@@ -844,7 +844,7 @@ $(document).ready(function() {
             </table>
           </div>
           <div class="content-box tab-content table-responsive">
-            <table class="table table-striped opnsense_standard_table_form">
+            <table class="table table-clean-form opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"></td>
                 <td style="width:78%"><input name="Submit" type="submit" class="btn btn-primary" value="<?= gettext("Save") ?>" /></td>

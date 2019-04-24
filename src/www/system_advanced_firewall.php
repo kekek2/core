@@ -56,7 +56,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['schedule_states'] = isset($config['system']['schedule_states']);
     $pconfig['kill_states'] = isset($config['system']['kill_states']);
     $pconfig['skip_rules_gw_down'] = isset($config['system']['skip_rules_gw_down']);
-    $pconfig['gw_switch_default'] = isset($config['system']['gw_switch_default']);
     $pconfig['lb_use_sticky'] = isset($config['system']['lb_use_sticky']);
     $pconfig['pf_share_forward'] = isset($config['system']['pf_share_forward']);
     $pconfig['pf_disable_force_gw'] = isset($config['system']['pf_disable_force_gw']);
@@ -218,12 +217,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             unset($config['system']['skip_rules_gw_down']);
         }
 
-        if (!empty($pconfig['gw_switch_default'])) {
-            $config['system']['gw_switch_default'] = true;
-        } elseif (isset($config['system']['gw_switch_default'])) {
-            unset($config['system']['gw_switch_default']);
-        }
-
         if (!empty($pconfig['ip_change_kill_states'])) {
             $config['system']['ip_change_kill_states'] = true;
         } elseif (isset($config['system']['ip_change_kill_states'])) {
@@ -285,7 +278,7 @@ include("head.inc");
             </table>
           </div>
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-striped opnsense_standard_table_form">
+            <table class="table table-clean-form opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"><strong><?= gettext('Network Address Translation') ?></strong></td>
                 <td style="width:78%"></td>
@@ -323,7 +316,7 @@ include("head.inc");
             </table>
           </div>
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-striped opnsense_standard_table_form">
+            <table class="table table-clean-form opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"><strong><?= gettext('Bogon Networks') ?></strong></td>
                 <td style="width:78%"></td>
@@ -350,7 +343,7 @@ include("head.inc");
             </table>
           </div>
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-striped opnsense_standard_table_form">
+            <table class="table table-clean-form opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"><strong><?= gettext('Gateway Monitoring') ?></strong></td>
                 <td style="width:78%"></td>
@@ -377,20 +370,10 @@ include("head.inc");
                   </div>
                 </td>
               </tr>
-              <tr>
-                <td><a id="help_for_gw_switch_default" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Gateway switching') ?></td>
-                <td>
-                  <input name="gw_switch_default" type="checkbox" id="gw_switch_default" value="yes" <?= !empty($pconfig['gw_switch_default']) ? 'checked="checked"' : '' ?> />
-                  <?=gettext("Allow default gateway switching"); ?>
-                  <div class="hidden" data-for="help_for_gw_switch_default">
-                    <?= gettext('If the link where the default gateway resides fails switch the default gateway to another available one.') ?>
-                  </div>
-                </td>
-              </tr>
             </table>
           </div>
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-striped opnsense_standard_table_form">
+            <table class="table table-clean-form opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"><strong><?= gettext('Multi-WAN') ?></strong></td>
                 <td style="width:78%"></td>
@@ -408,7 +391,12 @@ include("head.inc");
                                         "refer to this connection. Once the states expire, so will " .
                                         "the sticky connection. Further connections from that host " .
                                         "will be redirected to the next gateway in the round-robin."); ?>
-                  </div><br/>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td></td>
+                <td>
                   <input placeholder="<?=gettext("Source tracking timeout");?>" title="<?=gettext("Source tracking timeout");?>" name="srctrack" id="srctrack" type="text" value="<?= !empty($pconfig['srctrack']) ? $pconfig['srctrack'] : "";?>"/>
                   <div class="hidden" data-for="help_for_lb_use_sticky">
                     <?=gettext("Set the source tracking timeout for sticky connections in seconds. " .
@@ -445,7 +433,7 @@ include("head.inc");
             </table>
           </div>
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-striped opnsense_standard_table_form">
+            <table class="table table-clean-form opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"><strong><?= gettext('Schedules') ?></strong></td>
                 <td style="width:78%"></td>
@@ -463,7 +451,7 @@ include("head.inc");
             </table>
           </div>
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-striped opnsense_standard_table_form">
+            <table class="table table-clean-form opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"><strong><?= gettext('Miscellaneous') ?></strong></td>
                 <td style="width:78%"></td>
@@ -705,7 +693,7 @@ include("head.inc");
             </table>
           </div>
           <div class="content-box tab-content table-responsive">
-            <table class="table table-striped opnsense_standard_table_form">
+            <table class="table table-clean-form opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"></td>
                 <td style="width:78%"><input name="Submit" type="submit" class="btn btn-primary" value="<?=gettext("Save");?>" /></td>

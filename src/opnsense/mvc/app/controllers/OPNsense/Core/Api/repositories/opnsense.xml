@@ -16,7 +16,7 @@
             <url>file:///var/pkg/sets/</url>
             <description>Local repository</description>
         </mirror>
-   </mirrors>
+    </mirrors>
     <flavours>
         <flavour>
             <name/>

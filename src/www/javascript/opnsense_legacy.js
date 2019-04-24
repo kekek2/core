@@ -84,7 +84,7 @@ function hook_stacked_form_tables(match)
   $(match).each(function(){
       var root_node = $(this);
       if (root_node.is('table')) {
-          row_number = 0;
+          let row_number = 0;
           // traverse all <tr> tags
           root_node.find('tr').each(function(){
               // only evaluate children under this table or in <thead|tbody|..> element
@@ -97,7 +97,7 @@ function hook_stacked_form_tables(match)
                       }
                   }
                   if (children.length == 1) {
-                      // simple seperator line, colspan = 2
+                      // simple separator line, colspan = 2
                       $(this).before($(this).clone().removeAttr("id").attr('colspan', 1).addClass('hidden-sm hidden-md hidden-lg'));
                       $(this).addClass('hidden-xs');
                   } else if (children.length == 2) {
@@ -137,7 +137,7 @@ function hook_stacked_form_tables(match)
                           ++index;
                       }
                   });
-              }
+              };
               $( window ).resize(root_node.do_resize);
               root_node.do_resize();
           }
