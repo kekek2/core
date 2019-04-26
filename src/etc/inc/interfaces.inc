@@ -1172,9 +1172,7 @@ function interface_ppps_configure($interface)
     }
 
     // mpd5 modem chat script expected in the same directory as the mpd_xxx.conf files
-    if (!file_exists('/var/etc/mpd.script')) {
-        symlink('/usr/local/sbin/mpd.script', '/var/etc/mpd.script');
-    }
+    @copy('/usr/local/opnsense/scripts/interfaces/mpd.script', '/var/etc/mpd.script');
 
     if (isset($config['ppps']['ppp'])) {
         foreach ($config['ppps']['ppp'] as $pppid => $ppp) {
@@ -1304,8 +1302,8 @@ EOD;
         $mpdconf .= "  set iface enable tcpmssfix\n";
     }
 
-    $mpdconf .= "  set iface up-script /usr/local/sbin/ppp-linkup\n";
-    $mpdconf .= "  set iface down-script /usr/local/sbin/ppp-linkdown\n";
+    $mpdconf .= "  set iface up-script /usr/local/opnsense/scripts/interfaces/ppp-linkup.sh\n";
+    $mpdconf .= "  set iface down-script /usr/local/opnsense/scripts/interfaces/ppp-linkdown.sh\n";
     if ($ppp['type'] == "ppp") {
         if (is_ipaddr($ppp['localip'])) {
             $localip = $ppp['localip'];
@@ -1478,31 +1476,22 @@ EOD;
         $mpdconf .= "\topen\n";
     }
 
-
-    /* Generate mpd.conf. If mpd_[interface].conf exists in the conf path, then link to it instead of generating a fresh conf file. */
-    if (file_exists("/conf/mpd_{$interface}.conf")) {
-        @symlink("/conf/mpd_{$interface}.conf", "/var/etc/mpd_{$interface}.conf");
-    } else {
-        $fd = fopen("/var/etc/mpd_{$interface}.conf", "w");
-        if (!$fd) {
-            log_error("Error: cannot open mpd_{$interface}.conf in interface_ppps_configure().");
-            return 0;
-        }
-        // Write out mpd_ppp.conf
-        fwrite($fd, $mpdconf);
-        fclose($fd);
-        unset($mpdconf);
+    $fd = fopen("/var/etc/mpd_{$interface}.conf", "w");
+    if (!$fd) {
+        log_error("Error: cannot open mpd_{$interface}.conf in interface_ppps_configure().");
+        return 0;
     }
+
+    // Write out mpd_ppp.conf
+    fwrite($fd, $mpdconf);
+    fclose($fd);
+    unset($mpdconf);
 
     // Create the uptime log if requested and if it doesn't exist already, or delete it if it is no longer requested.
     if (isset($ppp['uptime'])) {
-        if (!file_exists("/conf/{$ifcfg['if']}.log")) {
-            file_put_contents("/conf/{$ifcfg['if']}.log", '');
-        }
+        @touch("/conf/{$ifcfg['if']}.log");
     } else {
-        if (file_exists("/conf/{$ifcfg['if']}.log")) {
-            @unlink("/conf/{$ifcfg['if']}.log");
-        }
+        @unlink("/conf/{$ifcfg['if']}.log");
     }
 
     /* clean up old lock files */
@@ -2421,38 +2410,42 @@ function interface_configure($verbose = false, $interface = 'wan', $reload = fal
         interface_wireless_configure($realif, $wancfg, $wancfg['wireless']);
     }
 
-    $mac = get_interface_mac($realhwif);
     /*
      * Don't try to reapply the spoofed MAC if it's already applied.
-     * When ifconfig link is used, it cycles the interface down/up, which triggers
-     * the interface config again, which attempts to spoof the MAC again,
-     * which cycles the link again...
+     * When ifconfig link is used, it cycles the interface down/up,
+     * which triggers the interface config again, which attempts to
+     * spoof the MAC again which cycles the link again...
      */
-    if (!empty($wancfg['spoofmac']) && ($wancfg['spoofmac'] != $mac)) {
-        mwexec("/sbin/ifconfig " . escapeshellarg($realhwif) .
-            " link " . escapeshellarg($wancfg['spoofmac']));
+    if (!empty($wancfg['spoofmac']) && strcasecmp($wancfg['spoofmac'], get_interface_mac($realhwif))) {
+        mwexecf('/sbin/ifconfig %s link %s', array($realhwif, $wancfg['spoofmac']));
 
         /* All vlans need to spoof their parent mac address, too. */
         if (isset($config['vlans']['vlan'])) {
             foreach ($config['vlans']['vlan'] as $vlan) {
                 if ($vlan['if'] == $realhwif) {
-                    mwexec("/sbin/ifconfig " . escapeshellarg($vlan['vlanif']) .
-                        " link " . escapeshellarg($wancfg['spoofmac']));
+                    mwexecf('/sbin/ifconfig %s link %s', array($vlan['vlanif'], $wancfg['spoofmac']));
                 }
             }
         }
     }
 
-    /* media */
-    if (!empty($wancfg['media']) || !empty($wancfg['mediaopt'])) {
-        $cmd = "/sbin/ifconfig " . escapeshellarg($realhwif);
-        if (!empty($wancfg['media'])) {
-            $cmd .= " media " . escapeshellarg($wancfg['media']);
-        }
+    /* skip vlans for media setup and only apply when changed */
+    if (!stristr($realhwif, "_vlan") && (!empty($wancfg['media']) || !empty($wancfg['mediaopt']))) {
+        $intf_details = legacy_interface_details($realhwif);
+        $media_changed = stripos($intf_details['media_raw'], $wancfg['media']) == false;
         if (!empty($wancfg['mediaopt'])) {
-            $cmd .= " mediaopt " . escapeshellarg($wancfg['mediaopt']);
+            $media_changed |= stripos($intf_details['media_raw'], $wancfg['mediaopt']) == false;
         }
-        mwexec($cmd);
+        if ($media_changed) {
+            $cmd = "/sbin/ifconfig " . escapeshellarg($realhwif);
+            if (!empty($wancfg['media'])) {
+                $cmd .= " media " . escapeshellarg($wancfg['media']);
+            }
+            if (!empty($wancfg['mediaopt'])) {
+                $cmd .= " mediaopt " . escapeshellarg($wancfg['mediaopt']);
+            }
+            mwexec($cmd);
+        }
     }
     // apply interface hardware settings (tso, lro, ..)
     configure_interface_hardware($realhwif);
@@ -2759,7 +2752,7 @@ function interface_6rd_configure($interface = 'wan', $wancfg)
 
     $rd6brgw = "{$rd6prefix}{$wancfg['gateway-6rd']}";
 
-    $stfiface = "{$wanif}_stf";
+    $stfiface = "{$interface}_stf";
     if (does_interface_exist($stfiface)) {
         legacy_interface_destroy($stfiface);
     }
@@ -2855,7 +2848,7 @@ function interface_6to4_configure($interface = 'wan', $wancfg)
     }
     $stflan = Net_IPv6::compress(implode(":", $stflanarr));
 
-    $stfiface = "{$wanif}_stf";
+    $stfiface = "{$interface}_stf";
     if (does_interface_exist($stfiface)) {
         legacy_interface_destroy($stfiface);
     }
@@ -3042,10 +3035,10 @@ function interface_dhcpv6_prepare($interface = 'wan', $wancfg)
     $rtsoldscript .= "\techo \${2} > /tmp/{$wanif}_defaultgwv6\n";
     $rtsoldscript .= "fi\n";
     $rtsoldscript .= "if [ -f /var/run/dhcp6c_{$wanif}.pid ]; then\n";
-    $rtsoldscript .= "\t/usr/bin/logger -t dhcpd \"RTSOLD script - Sending SIGHUP to dhcp6c for interface {$interface}({$wanif})\"\n";
+    $rtsoldscript .= "\t/usr/bin/logger -t dhcp6c \"RTSOLD script - Sending SIGHUP to dhcp6c for interface {$interface}({$wanif})\"\n";
     $rtsoldscript .= "\t/bin/pkill -HUP -F /var/run/dhcp6c_{$wanif}.pid\n";
     $rtsoldscript .= "else\n";
-    $rtsoldscript .= "\t/usr/bin/logger -t dhcpd \"RTSOLD script - Starting dhcp6 client for interface {$interface}({$wanif})\"\n";
+    $rtsoldscript .= "\t/usr/bin/logger -t dhcp6c \"RTSOLD script - Starting dhcp6 client for interface {$interface}({$wanif})\"\n";
     $rtsoldscript .= "\t$dhcp6ccommand\n";
     $rtsoldscript .= "fi\n";
 
@@ -3232,8 +3225,7 @@ function interface_dhcp_configure($interface = 'wan')
         $dhclientconf_hostname = "";
     }
 
-    $dhclientconf = "";
-    $dhclientconf .= <<<EOD
+    $dhclientconf = <<<EOD
 interface "{$wanif}" {
   timeout 60;
   retry 15;
@@ -3241,19 +3233,18 @@ interface "{$wanif}" {
   initial-interval 1;
   {$dhclientconf_hostname}
   script "/usr/local/opnsense/scripts/interfaces/dhclient-script";
+
 EOD;
+
+    if (empty($wancfg['dhcphonourmtu'])) {
+        $dhclientconf .= "  supersede interface-mtu 0;\n";
+    }
 
     if (is_ipaddrv4($wancfg['dhcprejectfrom'])) {
-        $dhclientconf .= <<<EOD
-
-  reject {$wancfg['dhcprejectfrom']};
-EOD;
+        $dhclientconf .= "  reject {$wancfg['dhcprejectfrom']};\n";
     }
-    $dhclientconf .= <<<EOD
 
-}
-
-EOD;
+    $dhclientconf .= "}\n";
 
     // DHCP Config File Advanced
     if ($wancfg['adv_dhcp_config_advanced']) {
@@ -3338,24 +3329,24 @@ function DHCP_Config_File_Advanced($interface, $wancfg, $wanif)
         }
     }
 
-    $dhclientconf  = "interface \"{$wanif}\" {\n";
-    $dhclientconf .= "\n";
-    $dhclientconf .= "# DHCP Protocol Timing Values\n";
+    $dhclientconf = "interface \"{$wanif}\" {\n";
+    $dhclientconf .= "\t# DHCP Protocol Timing Values\n";
     $dhclientconf .= "{$adv_dhcp_pt_timeout}";
     $dhclientconf .= "{$adv_dhcp_pt_retry}";
     $dhclientconf .= "{$adv_dhcp_pt_select_timeout}";
     $dhclientconf .= "{$adv_dhcp_pt_reboot}";
     $dhclientconf .= "{$adv_dhcp_pt_backoff_cutoff}";
     $dhclientconf .= "{$adv_dhcp_pt_initial_interval}";
-    $dhclientconf .= "\n";
-    $dhclientconf .= "# DHCP Protocol Options\n";
+    $dhclientconf .= "\n\t# DHCP Protocol Options\n";
     $dhclientconf .= "{$hostname}";
     $dhclientconf .= "{$send_options}";
     $dhclientconf .= "{$request_options}";
     $dhclientconf .= "{$required_options}";
     $dhclientconf .= "{$option_modifiers}";
-    $dhclientconf .= "\n";
-    $dhclientconf .= "\tscript \"/usr/local/opnsense/scripts/interfaces/dhclient-script\";\n";
+    $dhclientconf .= "\n\tscript \"/usr/local/opnsense/scripts/interfaces/dhclient-script\";\n";
+    if (empty($wancfg['dhcphonourmtu'])) {
+        $dhclientconf .= "\tsupersede interface-mtu 0;\n";
+    }
     if (is_ipaddrv4($wancfg['dhcprejectfrom'])) {
         $dhclientconf .= "\treject {$wancfg['dhcprejectfrom']};\n";
     }
@@ -3480,14 +3471,15 @@ function convert_real_interface_to_friendly_interface_name($interface = 'wan')
     }
 
     // search direct
-    foreach ($config['interfaces'] as $if => $ifname) {
+    $all_interfaces = legacy_config_get_interfaces();
+    foreach ($all_interfaces as $if => $ifname) {
         if ($if == $interface || $ifname['if'] == $interface) {
             return $if;
         }
     }
 
     // search related
-    foreach ($config['interfaces'] as $if => $ifname) {
+    foreach ($all_interfaces as $if => $ifname) {
         if (get_real_interface($if) == $interface) {
             return $if;
         }
@@ -3693,7 +3685,7 @@ function get_real_interface($interface = 'wan', $family = 'all')
                 switch (isset($cfg['ipaddrv6']) ? $cfg['ipaddrv6'] : '') {
                     case '6rd':
                     case '6to4':
-                        $wanif = "{$cfg['if']}_stf";
+                        $wanif = "{$interface}_stf";
                         break;
                     case 'pppoe':
                     case 'ppp':
@@ -4345,7 +4337,7 @@ function get_interfaces_info()
         }
 
         if (file_exists("/var/run/{$link_type}_{$ifdescr}.pid")) {
-            $sec = trim(`/usr/local/sbin/ppp-uptime.sh {$ifinfo['if']}`);
+            $sec = trim(`/usr/local/opnsense/scripts/interfaces/ppp-uptime.sh {$ifinfo['if']}`);
             $ifinfo['ppp_uptime'] = convert_seconds_to_hms($sec);
         }
 

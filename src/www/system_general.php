@@ -282,8 +282,6 @@ include("head.inc");
                 <input name="hostname" type="text" size="40" value="<?=$pconfig['hostname'];?>" />
                 <div class="hidden" data-for="help_for_hostname">
                   <?=gettext("Name of the firewall host, without domain part"); ?>
-                  <br />
-                  <?=gettext("e.g."); ?> <em><?=gettext("firewall");?></em>
                 </div>
               </td>
             </tr>
@@ -474,7 +472,7 @@ include("head.inc");
             <tr>
               <td style="width:22%"></td>
               <td>
-                <input name="Submit" type="submit" class="btn btn-primary" value="<?=gettext("Save");?>" />
+                <input name="Submit" type="submit" class="btn btn-primary" value="<?=html_safe(gettext('Save'));?>" />
               </td>
             </tr>
           </table>

@@ -41,8 +41,8 @@ use \OPNsense\Base\UIModelGrid;
  */
 class SettingsController extends ApiMutableModelControllerBase
 {
-    static protected $internalModelName = 'ids';
-    static protected $internalModelClass = '\OPNsense\IDS\IDS';
+    protected static $internalModelName = 'ids';
+    protected static $internalModelClass = '\OPNsense\IDS\IDS';
 
     /**
      * Query non layered model items
@@ -344,9 +344,7 @@ class SettingsController extends ApiMutableModelControllerBase
                 if (count($validations)) {
                     $result['validations'] = $validations;
                 } else {
-                    $this->getModel()->serializeToConfig();
-                    Config::getInstance()->save();
-                    $result["result"] = "saved";
+                    $result = $this->save();
                 }
             }
         }
@@ -421,10 +419,7 @@ class SettingsController extends ApiMutableModelControllerBase
                 if (count($validations)) {
                     $result['validations'] = $validations;
                 } else {
-                    // serialize model to config and save
-                    $mdlIDS->serializeToConfig();
-                    Config::getInstance()->save();
-                    $result["result"] = "saved";
+                    $result = $this->save();
                 }
             }
         }
@@ -468,8 +463,7 @@ class SettingsController extends ApiMutableModelControllerBase
                 }
             }
             if ($update_count > 0) {
-                $this->getModel()->serializeToConfig();
-                Config::getInstance()->save();
+                $this->save();
             }
         }
         return $result;
@@ -520,8 +514,7 @@ class SettingsController extends ApiMutableModelControllerBase
                 }
             }
             if ($update_count > 0) {
-                $this->getModel()->serializeToConfig();
-                Config::getInstance()->save();
+                return $this->save();
             }
         }
         return array();
@@ -560,9 +553,7 @@ class SettingsController extends ApiMutableModelControllerBase
                 if (count($validations)) {
                     $result['validations'] = $validations;
                 } else {
-                    $mdlIDS->serializeToConfig();
-                    Config::getInstance()->save();
-                    $result["result"] = "saved";
+                    return $this->save();
                 }
             }
         }

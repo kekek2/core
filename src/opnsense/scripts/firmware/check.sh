@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (C) 2015-2018 Franco Fichtner <franco@opnsense.org>
+# Copyright (C) 2015-2019 Franco Fichtner <franco@opnsense.org>
 # Copyright (C) 2014 Deciso B.V.
 # All rights reserved.
 #
@@ -26,8 +26,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 # This script generates a json structured file with the following content:
-# connection: error|timeout|unauthenticated|refused|misconfigured|unresolved|busy|ok
-# repository: error|ok
+# connection: error|timeout|unauthenticated|misconfigured|unresolved|busy|ok
+# repository: error|untrusted|revoked|ok
 # last_ckeck: <date_time_stamp>
 # updates: <num_of_updates>
 # download_size: <size_of_total_downloads>
@@ -98,6 +98,17 @@ if [ "$pkg_running" == "" ]; then
           # TLS or authentication error
           connection="unauthenticated"
           timer=0
+        elif grep -q 'No trusted public keys found' $tmp_pkg_update_file; then
+          # fingerprint mismatch
+          repository="untrusted"
+          connection="ok"
+          timer=0
+        # XXX two space typo here in pkg:
+        elif grep -q 'At least one of the  certificates has been revoked' $tmp_pkg_update_file; then
+          # fingerprint mismatch
+          repository="revoked"
+          connection="ok"
+          timer=0
         elif grep -q 'Connection refused' $tmp_pkg_update_file; then
           # SSL error (no valid license)
           connection="refused"
@@ -150,7 +161,7 @@ if [ "$pkg_running" == "" ]; then
 
               MODE=
 
-              for i in $(cat $tmp_pkg_output_file | cut -d '(' -f1); do
+              for i in $(cat $tmp_pkg_output_file | tr '[' '(' | cut -d '(' -f1); do
                 case ${MODE} in
                 DOWNGRADED:)
                   if [ "$(expr $linecount + 4)" -eq "$itemcount" ]; then
@@ -277,8 +288,6 @@ if [ "$pkg_running" == "" ]; then
             elif [ -z "$base_to_reboot" ]; then
               if opnsense-update -cbf; then
                   base_to_reboot="$(opnsense-update -v)"
-                  # XXX arch return is obsolete
-                  base_to_reboot="${base_to_reboot%-*}"
               fi
             fi
 
@@ -305,8 +314,6 @@ if [ "$pkg_running" == "" ]; then
             elif [ -z "$kernel_to_reboot" ]; then
               if opnsense-update -cfk; then
                   kernel_to_reboot="$(opnsense-update -v)"
-                  # XXX arch return is obsolete
-                  kernel_to_reboot="${kernel_to_reboot%-*}"
               fi
             fi
 

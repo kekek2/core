@@ -44,8 +44,8 @@ CORE_PKGVERSION=	${CORE_VERSION}_${CORE_REVISION}
 CORE_PKGVERSION=	${CORE_VERSION}
 .endif
 
-TING_ABI?=	1.4
-CORE_ABI?=	18.7
+TING_ABI?=	1.5
+CORE_ABI?=	19.1
 CORE_ARCH?=	${ARCH}
 CORE_FLAVOUR=	${FLAVOUR}
 CORE_OPENVPN?=	# empty
@@ -67,7 +67,7 @@ CORE_REPOSITORY?=	${TING_ABI}/libressl
 CORE_REPOSITORY?=	${FLAVOUR}
 .endif
 
-CORE_MESSAGE?=		Insert Name Here
+CORE_MESSAGE?=		Carry on my wayward son
 CORE_NAME?=		opnsense-devel
 CORE_TYPE?=		development
 
@@ -121,12 +121,12 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			php${CORE_PHP}-intl \
 			php${CORE_PHP}-json \
 			php${CORE_PHP}-ldap \
-			php${CORE_PHP}-mcrypt \
 			php${CORE_PHP}-openssl \
 			php${CORE_PHP}-pdo \
 			php${CORE_PHP}-pecl-http \
 			php${CORE_PHP}-pecl-radius \
 			php${CORE_PHP}-phalcon \
+			php${CORE_PHP}-phpseclib \
 			php${CORE_PHP}-session \
 			php${CORE_PHP}-simplexml \
 			php${CORE_PHP}-sockets \
@@ -140,6 +140,12 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			py${CORE_PYTHON2}-requests \
 			py${CORE_PYTHON2}-sqlite3 \
 			py${CORE_PYTHON2}-ujson \
+			py${CORE_PYTHON3}-Jinja2 \
+			py${CORE_PYTHON3}-dnspython \
+			py${CORE_PYTHON3}-netaddr \
+			py${CORE_PYTHON3}-requests \
+			py${CORE_PYTHON3}-sqlite3 \
+			py${CORE_PYTHON3}-ujson \
 			radvd${CORE_RADVD} \
 			rate \
 			rrdtool \
@@ -355,10 +361,13 @@ lint-xml:
 	@find ${.CURDIR}/src ${.CURDIR}/Scripts \
 	    -name "*.xml*" -type f -print0 | xargs -0 -n1 xmllint --noout
 
+SCRIPTDIRS!=	find ${.CURDIR}/src/opnsense/scripts -type d -depth 1
+
 lint-exec:
-.for DIR in ${.CURDIR}/src/etc/rc.d # XXX e.g. src/opnsense/scripts
+.for DIR in ${.CURDIR}/src/etc/rc.d ${SCRIPTDIRS}
 .if exists(${DIR})
-	@find ${DIR} -type f ! -name "*.xml" -print0 | \
+	@find ${DIR} -path '**/htdocs_default' -prune -o -type f \
+	    ! -name "*.xml" ! -name "*.csv" ! -name "*.sql" -print0 | \
 	    xargs -0 -t -n1 test -x || \
 	    (echo "Missing executable permission in ${DIR}"; exit 1)
 .endif
@@ -385,7 +394,7 @@ sweep:
 	find ${.CURDIR}/src ! -name "*.min.*" ! -name "*.svg" \
 	    ! -name "*.ser" -type f -print0 | \
 	    xargs -0 -n1 ${.CURDIR}/Scripts/cleanfile
-	find ${.CURDIR}/Scripts -type f -print0 | \
+	find ${.CURDIR}/Scripts ${.CURDIR}/.github -type f -print0 | \
 	    xargs -0 -n1 ${.CURDIR}/Scripts/cleanfile
 	find ${.CURDIR} -type f -depth 1 -print0 | \
 	    xargs -0 -n1 ${.CURDIR}/Scripts/cleanfile

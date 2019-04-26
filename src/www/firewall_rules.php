@@ -147,7 +147,8 @@ $main_buttons = array(
 );
 
 $lockout_spec = filter_core_get_antilockout();
-
+legacy_html_escape_form_data($a_filter);
+$all_rule_stats = json_decode(configd_run("filter rule stats"), true);
 ?>
 <body>
 <script>
@@ -323,8 +324,31 @@ $( document ).ready(function() {
   $("#category_block").detach().appendTo($(".page-content-head > .container-fluid > .list-inline"));
   $("#category_block").addClass("pull-right");
 
+  $("#btn_inspect").click(function(){
+      let mode = $(this).data('mode');
+      if (mode === 'stats') {
+            $(".view-stats").hide();
+            $(".view-info").show();
+            $(this).removeClass('active');
+            $(this).data('mode', 'info');
+      } else {
+            $(".view-stats").show();
+            $(".view-info").hide();
+            $(this).addClass('active');
+            $(this).data('mode', 'stats');
+      }
+  });
+
 });
 </script>
+<style>
+    .view-stats {
+        display: none;
+    }
+    .button-th {
+        width: 150px;
+    }
+</style>
 
 <?php include("fbegin.inc"); ?>
   <div class="hidden">
@@ -344,6 +368,10 @@ $( document ).ready(function() {
 <?php
             endforeach;?>
         </select>
+        <button id="btn_inspect" class="btn btn-default">
+          <i class="fa fa-eye" aria-hidden="true"></i>
+          <?=gettext("Inspect");?>
+        </button>
     </div>
   </div>
   <section class="page-content-main">
@@ -365,17 +393,21 @@ $( document ).ready(function() {
                     <tr>
                       <th><input type="checkbox" id="selectAll"></th>
                       <th>&nbsp;</th>
-                      <th><?=gettext("Proto");?></th>
-                      <th><?=gettext("Source");?></th>
-                      <th class="hidden-xs hidden-sm"><?=gettext("Port");?></th>
-                      <th class="hidden-xs hidden-sm"><?=gettext("Destination");?></th>
-                      <th class="hidden-xs hidden-sm"><?=gettext("Port");?></th>
-                      <th class="hidden-xs hidden-sm"><?=gettext("Gateway");?></th>
-                      <th class="hidden-xs hidden-sm"><?=gettext("Schedule");?></th>
+                      <th class="view-info"><?=gettext("Proto");?></th>
+                      <th class="view-info"><?=gettext("Source");?></th>
+                      <th class="view-info hidden-xs hidden-sm"><?=gettext("Port");?></th>
+                      <th class="view-info hidden-xs hidden-sm"><?=gettext("Destination");?></th>
+                      <th class="view-info hidden-xs hidden-sm"><?=gettext("Port");?></th>
+                      <th class="view-info hidden-xs hidden-sm"><?=gettext("Gateway");?></th>
+                      <th class="view-info hidden-xs hidden-sm"><?=gettext("Schedule");?></th>
+                      <th class="view-stats"><?=gettext("Evaluations");?></th>
+                      <th class="view-stats"><?=gettext("Packets");?></th>
+                      <th class="view-stats"><?=gettext("Bytes");?></th>
+                      <th class="view-stats"><?=gettext("States");?></th>
                       <th><?=gettext("Description");?>
                           <i class="fa fa-question-circle" data-toggle="collapse" data-target=".rule_md5_hash" ></i>
                       </th>
-                      <th></th>
+                      <th class="button-th"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -387,13 +419,17 @@ $( document ).ready(function() {
                   <tr>
                     <td>&nbsp;</td>
                     <td><span class="fa fa-times text-danger"></span></td>
-                    <td>IPv6 *</td>
-                    <td>*</td>
-                    <td class="hidden-xs hidden-sm">*</td>
-                    <td class="hidden-xs hidden-sm">*</td>
-                    <td class="hidden-xs hidden-sm">*</td>
-                    <td class="hidden-xs hidden-sm">*</td>
-                    <td class="hidden-xs hidden-sm">&nbsp;</td>
+                    <td class="view-info">IPv6 *</td>
+                    <td class="view-info">*</td>
+                    <td class="view-info hidden-xs hidden-sm">*</td>
+                    <td class="view-info hidden-xs hidden-sm">*</td>
+                    <td class="view-info hidden-xs hidden-sm">*</td>
+                    <td class="view-info hidden-xs hidden-sm">*</td>
+                    <td class="view-info hidden-xs hidden-sm">&nbsp;</td>
+                    <td class="view-stats"></td>
+                    <td class="view-stats"></td>
+                    <td class="view-stats"></td>
+                    <td class="view-stats"></td>
                     <td><?=gettext("Block all IPv6 traffic");?></td>
                     <td>
                       <a href="system_advanced_firewall.php" data-toggle="tooltip" title="<?= html_safe(gettext('Edit')) ?>" class="btn btn-default btn-xs"><i class="fa fa-pencil fa-fw"></i></a>
@@ -406,13 +442,17 @@ $( document ).ready(function() {
                   <tr>
                     <td>&nbsp;</td>
                     <td><span class="fa fa-play text-success"></span></td>
-                    <td>*</td>
-                    <td>*</td>
+                    <td class="view-info">*</td>
+                    <td class="view-info">*</td>
                     <td class="hidden-xs hidden-sm">*</td>
                     <td class="hidden-xs hidden-sm"><?= html_safe(sprintf(gettext('%s address'), convert_friendly_interface_to_friendly_descr($lockout_intf))) ?></td>
                     <td class="hidden-xs hidden-sm"><?= html_safe(implode(', ', $lockout_prts)) ?></td>
                     <td class="hidden-xs hidden-sm">*</td>
                     <td class="hidden-xs hidden-sm">&nbsp;</td>
+                    <td class="view-stats"></td>
+                    <td class="view-stats"></td>
+                    <td class="view-stats"></td>
+                    <td class="view-stats"></td>
                     <td><?=gettext("Anti-Lockout Rule");?></td>
                     <td>
                       <a href="system_advanced_firewall.php" data-toggle="tooltip" title="<?= html_safe(gettext('Edit')) ?>" class="btn btn-default btn-xs"><i class="fa fa-pencil fa-fw"></i></a>
@@ -430,14 +470,18 @@ $( document ).ready(function() {
                       <i class="fa fa-info-circle text-info"></i>
 <?php endif ?>
                     </td>
-                    <td>*</td>
-                    <td><?=gettext("RFC 1918 networks");?></td>
-                    <td>*</td>
-                    <td class="hidden-xs hidden-sm">*</td>
-                    <td class="hidden-xs hidden-sm">*</td>
-                    <td class="hidden-xs hidden-sm">*</td>
-                    <td class="hidden-xs hidden-sm">&nbsp;</td>
-                    <td class="hidden-xs hidden-sm"><?=gettext("Block private networks");?></td>
+                    <td class="view-info">*</td>
+                    <td class="view-info"><?=gettext("RFC 1918 networks");?></td>
+                    <td class="view-info hidden-xs hidden-sm">*</td>
+                    <td class="view-info hidden-xs hidden-sm">*</td>
+                    <td class="view-info hidden-xs hidden-sm">*</td>
+                    <td class="view-info hidden-xs hidden-sm">*</td>
+                    <td class="view-info hidden-xs hidden-sm">&nbsp;</td>
+                    <td class="view-stats"></td>
+                    <td class="view-stats"></td>
+                    <td class="view-stats"></td>
+                    <td class="view-stats"></td>
+                    <td ><?=gettext("Block private networks");?></td>
                     <td class="nowrap">
                       <a href="interfaces.php?if=<?=$selected_if?>#rfc1918" data-toggle="tooltip" title="<?= html_safe(gettext('Edit')) ?>" class="btn btn-default btn-xs"><i class="fa fa-pencil fa-fw"></i></a>
                     </td>
@@ -453,13 +497,17 @@ $( document ).ready(function() {
                       <i class="fa fa-info-circle text-info"></i>
 <?php endif ?>
                     </td>
-                    <td>*</td>
-                    <td><?=gettext("Reserved/not assigned by IANA");?></td>
-                    <td class="hidden-xs hidden-sm">*</td>
-                    <td class="hidden-xs hidden-sm">*</td>
-                    <td class="hidden-xs hidden-sm">*</td>
-                    <td class="hidden-xs hidden-sm">*</td>
-                    <td class="hidden-xs hidden-sm">&nbsp;</td>
+                    <td class="view-info">*</td>
+                    <td class="view-info"><?=gettext("Reserved/not assigned by IANA");?></td>
+                    <td class="view-info hidden-xs hidden-sm">*</td>
+                    <td class="view-info hidden-xs hidden-sm">*</td>
+                    <td class="view-info hidden-xs hidden-sm">*</td>
+                    <td class="view-info hidden-xs hidden-sm">*</td>
+                    <td class="view-info hidden-xs hidden-sm">&nbsp;</td>
+                    <td class="view-stats"></td>
+                    <td class="view-stats"></td>
+                    <td class="view-stats"></td>
+                    <td class="view-stats"></td>
                     <td><?=gettext("Block bogon networks");?></td>
                     <td>
                       <a href="interfaces.php?if=<?=$selected_if?>#rfc1918" data-toggle="tooltip" title="<?= html_safe(gettext('Edit')) ?>" class="btn btn-default btn-xs"><i class="fa fa-pencil fa-fw"></i></a>
@@ -477,9 +525,9 @@ $( document ).ready(function() {
                         $selected_if == 'FloatingRules'
                      )
                 ):
-                  // calculate a hash so we can track these records in the rulset, new style (mvc) code will
+                  // calculate a hash so we can track these records in the ruleset, new style (mvc) code will
                   // automatically provide us with a uuid, this is a workaround to provide some help with tracking issues.
-                  $filterent['md5'] = md5(json_encode($filterent));
+                  $rule_hash = OPNsense\Firewall\Util::calcRuleHash($filterent);
                   $interface_has_rules = true;
 
                   // select icon
@@ -541,7 +589,7 @@ $( document ).ready(function() {
 <?php                 endif; ?>
                     </td>
 
-                    <td>
+                    <td class="view-info">
                         <?=$record_ipprotocol;?>
 <?php
                         $icmptypes = array(
@@ -575,7 +623,7 @@ $( document ).ready(function() {
                         endif;?>
                     </td>
 
-                    <td>
+                    <td class="view-info">
 <?php                 if (isset($filterent['source']['address']) && is_alias($filterent['source']['address'])): ?>
                         <span title="<?=htmlspecialchars(get_alias_description($filterent['source']['address']));?>" data-toggle="tooltip"  data-html="true">
                           <?=htmlspecialchars(pprint_address($filterent['source']));?>&nbsp;
@@ -589,7 +637,7 @@ $( document ).ready(function() {
 <?php                 endif; ?>
                     </td>
 
-                    <td class="hidden-xs hidden-sm">
+                    <td class="view-info hidden-xs hidden-sm">
 <?php                 if (isset($filterent['source']['port']) && is_alias($filterent['source']['port'])): ?>
                         <span title="<?=htmlspecialchars(get_alias_description($filterent['source']['port']));?>" data-toggle="tooltip"  data-html="true">
                           <?=htmlspecialchars(pprint_port($filterent['source']['port'])); ?>&nbsp;
@@ -603,7 +651,7 @@ $( document ).ready(function() {
 <?php                 endif; ?>
                     </td>
 
-                    <td class="hidden-xs hidden-sm">
+                    <td class="view-info hidden-xs hidden-sm">
 <?php                 if (isset($filterent['destination']['address']) && is_alias($filterent['destination']['address'])): ?>
                         <span title="<?=htmlspecialchars(get_alias_description($filterent['destination']['address']));?>" data-toggle="tooltip"  data-html="true">
                           <?=htmlspecialchars(pprint_address($filterent['destination'])); ?>
@@ -617,7 +665,7 @@ $( document ).ready(function() {
 <?php                 endif; ?>
                     </td>
 
-                    <td class="hidden-xs hidden-sm">
+                    <td class="view-info hidden-xs hidden-sm">
 <?php                 if (isset($filterent['destination']['port']) && is_alias($filterent['destination']['port'])): ?>
                         <span title="<?=htmlspecialchars(get_alias_description($filterent['destination']['port']));?>" data-toggle="tooltip"  data-html="true">
                           <?=htmlspecialchars(pprint_port($filterent['destination']['port'])); ?>&nbsp;
@@ -631,7 +679,7 @@ $( document ).ready(function() {
 <?php                 endif; ?>
                     </td>
 
-                    <td class="hidden-xs hidden-sm">
+                    <td class="view-info hidden-xs hidden-sm">
 <?php
                        if (isset($filterent['gateway'])):?>
                       <?=isset($config['interfaces'][$filterent['gateway']]['descr']) ? htmlspecialchars($config['interfaces'][$filterent['gateway']]['descr']) : htmlspecialchars(pprint_port($filterent['gateway'])); ?>
@@ -640,7 +688,7 @@ $( document ).ready(function() {
                       *
 <?php                 endif; ?>
                     </td>
-                    <td class="hidden-xs hidden-sm">
+                    <td class="view-info hidden-xs hidden-sm">
 <?php
                       if (!empty($filterent['sched'])):?>
 <?php
@@ -674,10 +722,14 @@ $( document ).ready(function() {
 <?php
                        endif;?>
                     </td>
+                    <td class="view-stats"><?=!empty($all_rule_stats[$rule_hash]) ? $all_rule_stats[$rule_hash]['evaluations'] : "";?></td>
+                    <td class="view-stats"><?=!empty($all_rule_stats[$rule_hash]) ? $all_rule_stats[$rule_hash]['packets'] : "";?></td>
+                    <td class="view-stats"><?=!empty($all_rule_stats[$rule_hash]) ? format_bytes($all_rule_stats[$rule_hash]['bytes']) : "";?></td>
+                    <td class="view-stats"><?=!empty($all_rule_stats[$rule_hash]) ? $all_rule_stats[$rule_hash]['states'] : "";?></td>
                     <td>
                       <?=htmlspecialchars($filterent['descr']);?>
                       <div class="collapse rule_md5_hash">
-                          <small><?=$filterent['md5'];?></small>
+                          <small><?=$rule_hash;?></small>
                       </div>
                     </td>
                     <td>
@@ -728,8 +780,11 @@ $( document ).ready(function() {
                   </tr>
                 <?php endif; ?>
                   <tr>
-                    <td colspan="5"></td>
-                    <td colspan="5" class="hidden-xs hidden-sm"></td>
+                    <td colspan="2"></td>
+                    <td colspan="2" class="view-info"></td>
+                    <td colspan="5" class="view-info hidden-xs hidden-sm"></td>
+                    <td colspan="4" class="view-stats hidden-xs hidden-sm"></td>
+                    <td></td>
                     <td>
                       <button id="move_<?=$i;?>" name="move_<?=$i;?>_x" data-toggle="tooltip" title="<?= html_safe(gettext('Move selected rules to end')) ?>" class="act_move btn btn-default btn-xs">
                         <i class="fa fa-arrow-left fa-fw"></i>
@@ -748,7 +803,7 @@ $( document ).ready(function() {
                 </tbody>
                 <tfoot>
                   <tr class="hidden-xs hidden-sm">
-                    <td colspan="11">
+                    <td colspan="9">
                       <table style="width:100%; border:0;">
                         <tr>
                           <td style="width:16px"><span class="fa fa-play text-success"></span></td>
@@ -790,17 +845,20 @@ $( document ).ready(function() {
                         </tr>
                       </table>
                     </td>
+                    <td colspan="2" class="view-info"></td>
                   </tr>
                   <tr class="hidden-xs hidden-sm">
                     <td><i class="fa fa-list fa-fw text-primary"></i></td>
-                    <td colspan="10"><?=gettext("Alias (click to view/edit)");?></td>
+                    <td colspan="8"><?=gettext("Alias (click to view/edit)");?></td>
+                    <td colspan="2" class="view-info"></td>
                   </tr>
                   <tr class="hidden-xs hidden-sm">
                     <td><i class="fa fa-calendar fa-fw text-success"></i><i class="fa fa-calendar fa-fw text-muted"></i></td>
-                    <td colspan="10"><?=gettext("Active/Inactive Schedule (click to view/edit)");?></td>
+                    <td colspan="8"><?=gettext("Active/Inactive Schedule (click to view/edit)");?></td>
+                    <td colspan="2" class="view-info"></td>
                   </tr>
                   <tr class="hidden-xs hidden-sm">
-                    <td colspan="11">
+                    <td colspan="8">
                       <?php if ("FloatingRules" != $selected_if): ?>
                       <?=gettext("Rules are evaluated on a first-match basis (i.e. " .
                         "the action of the first rule to match a packet will be executed). " .
@@ -815,6 +873,7 @@ $( document ).ready(function() {
                         "chosen. If no rule here matches, the per-interface or default rules are used. ");?>
                       <?php endif; ?>
                     </td>
+                    <td colspan="2" class="view-info"></td>
                   </tr>
                 </tfoot>
               </table>

@@ -639,7 +639,7 @@ include("head.inc");
                       <tr>
                         <td style="width:22%">&nbsp;</td>
                         <td style="width:78%">
-                          <input type="button" id="show_advanced" value="<?=gettext("Show advanced options"); ?>" class="btn btn-default btn-xs"/>
+                          <input type="button" id="show_advanced" value="<?= html_safe(gettext('Show advanced options')) ?>" class="btn btn-default btn-xs"/>
                         </td>
                       </tr>
                     </tbody>
@@ -927,8 +927,8 @@ include("head.inc");
                       <tr>
                         <td style="width:22%">&nbsp;</td>
                         <td style="width:78%">
-                          <input name="Submit" type="submit" class="btn btn-primary" value="<?=gettext("Save"); ?>" />
-                          <input type="button" class="btn btn-default" value="<?=gettext("Cancel");?>" onclick="window.location.href='/interfaces_ppps.php'" />
+                          <input name="Submit" type="submit" class="btn btn-primary" value="<?=html_safe(gettext('Save')); ?>" />
+                          <input type="button" class="btn btn-default" value="<?=html_safe(gettext('Cancel'));?>" onclick="window.location.href='/interfaces_ppps.php'" />
                           <input name="ptpid" type="hidden" value="<?=$pconfig['ptpid'];?>" />
                           <?php if (isset($id)): ?>
                             <input name="id" type="hidden" value="<?=$id;?>" />

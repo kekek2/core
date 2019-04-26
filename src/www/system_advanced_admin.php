@@ -463,9 +463,11 @@ $(document).ready(function() {
                   <select name="ssl-certref" class="selectpicker" data-style="btn-default">
 <?php
                   foreach ($a_cert as $cert) :?>
+<?php             if (isset($cert['prv'])) :?>
                     <option value="<?=$cert['refid'];?>" <?=$pconfig['ssl-certref'] == $cert['refid'] ? "selected=\"selected\"" : "";?>>
                       <?=$cert['descr'];?>
                     </option>
+<?php             endif; ?>
 <?php
                   endforeach;?>
                   </select>
@@ -736,9 +738,9 @@ $(document).ready(function() {
                 <td><a id="help_for_primaryconsole" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Primary Console")?></td>
                 <td>
                   <select name="primaryconsole" id="primaryconsole" class="selectpicker">
-<?php               foreach (system_console_types() as $console_key => $console_type): ?>
+<?php foreach (system_console_types() as $console_key => $console_type): ?>
                     <option value="<?= html_safe($console_key) ?>" <?= $pconfig['primaryconsole'] == $console_key ? 'selected="selected"' : '' ?>><?= $console_type['name'] ?></option>
-<?                  endforeach ?>
+<?php endforeach ?>
                   </select>
                   <div class="hidden" data-for="help_for_primaryconsole">
                     <?=gettext("Select the primary console. This preferred console will show boot script output.") ?>
@@ -751,9 +753,9 @@ $(document).ready(function() {
                 <td>
                   <select name="secondaryconsole" id="secondaryconsole" class="selectpicker">
                     <option value="" <?= empty($pconfig['secondaryconsole']) ? 'selected="selected"' : '' ?>><?= gettext('None') ?></option>
-<?php               foreach (system_console_types() as $console_key => $console_type): ?>
+<?php foreach (system_console_types() as $console_key => $console_type): ?>
                     <option value="<?= html_safe($console_key) ?>" <?= $pconfig['secondaryconsole'] == $console_key ? 'selected="selected"' : '' ?>><?= $console_type['name'] ?></option>
-<?                  endforeach ?>
+<?php endforeach ?>
                   </select>
                   <div class="hidden" data-for="help_for_secondaryconsole">
                     <?=gettext("Select the secondary console if multiple consoles are present."); ?>
@@ -847,7 +849,7 @@ $(document).ready(function() {
             <table class="table table-clean-form opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"></td>
-                <td style="width:78%"><input name="Submit" type="submit" class="btn btn-primary" value="<?= gettext("Save") ?>" /></td>
+                <td style="width:78%"><input name="Submit" type="submit" class="btn btn-primary" value="<?= html_safe(gettext('Save')) ?>" /></td>
               </tr>
             </table>
           </div>
