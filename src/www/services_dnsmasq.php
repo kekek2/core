@@ -72,7 +72,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if (!empty($pconfig['custom_options'])) {
             $args = '';
             foreach (preg_split('/\s+/', str_replace("\r\n", "\n", $pconfig['custom_options'])) as $c) {
-                $args .= escapeshellarg("--{$c}") . " ";
+                if (!empty($c)) {
+                    $args .= escapeshellarg("--{$c}") . " ";
+                }
             }
             exec("/usr/local/sbin/dnsmasq --test $args", $output, $rc);
             if ($rc != 0) {
@@ -257,7 +259,7 @@ $( document ).ready(function() {
                   <td>
                     <select id="interface" name="interface[]" multiple="multiple" class="selectpicker" title="<?= html_safe(gettext('All (recommended)')) ?>">
 <?php foreach (get_configured_interface_with_descr() as  $iface => $ifacename): ?>
-                      <option value="<?= html_safe($iface) ?>" <?=in_array($iface, $pconfig['interface']) ? 'selected="selected"' : "" ?>>
+                      <option value="<?= html_safe($iface) ?>" <?=!empty($pconfig['interface']) && in_array($iface, $pconfig['interface']) ? 'selected="selected"' : "" ?>>
                         <?= html_safe($ifacename) ?>
                       </option>
 <?php endforeach ?>
@@ -392,7 +394,7 @@ $( document ).ready(function() {
                 <tr>
                   <td></td>
                   <td>
-                    <input name="submit" type="submit" class="btn btn-primary" value="<?=gettext("Save"); ?>" />
+                    <input name="submit" type="submit" class="btn btn-primary" value="<?=html_safe(gettext('Save')); ?>" />
                   </td>
                 </tr>
                 <tr>
@@ -443,9 +445,8 @@ $( document ).ready(function() {
                     <a href="#" data-id="<?=$i;?>" class="act_delete_host btn btn-xs btn-default"><i class="fa fa-trash fa-fw"></i></a>
                   </td>
                 </tr>
-<?php
-                if (isset($hostent['aliases']['item'])):
-                  foreach ($hostent['aliases']['item'] as $alias): ?>
+<?php if (isset($hostent['aliases']['item'])): ?>
+<?php foreach ($hostent['aliases']['item'] as $alias): ?>
                 <tr>
                   <td><?=htmlspecialchars(strtolower($alias['host']));?></td>
                   <td><?=htmlspecialchars(strtolower($alias['domain']));?></td>
@@ -455,10 +456,8 @@ $( document ).ready(function() {
                     <a href="services_dnsmasq_edit.php?id=<?=$i;?>" class="btn btn-default btn-xs"><i class="fa fa-pencil fa-fw"></i></a>
                   </td>
                 </tr>
-<?php
-                  endforeach;
-                endif; ?>
-
+<?php endforeach ?>
+<?php endif ?>
 <?php endforeach ?>
                 <tr>
                   <td colspan="5">

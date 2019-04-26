@@ -426,7 +426,7 @@ include("head.inc");
                   <div class="hidden" data-for="help_pf_disable_force_gw">
                     <?= gettext('Outgoing packets from this firewall on an interface which has a gateway ' .
                                 'will normally use the specified gateway for that interface. ' .
-                                'When this option is set, the default routing rules apply (automatic rules will be disabled).') ?>
+                                'When this option is set the route will be selected by the system routing table instead.') ?>
                   </div>
                 </td>
               </tr>
@@ -696,7 +696,7 @@ include("head.inc");
             <table class="table table-clean-form opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"></td>
-                <td style="width:78%"><input name="Submit" type="submit" class="btn btn-primary" value="<?=gettext("Save");?>" /></td>
+                <td style="width:78%"><input name="Submit" type="submit" class="btn btn-primary" value="<?=html_safe(gettext('Save'));?>" /></td>
               </tr>
             </table>
           </div>

@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright (c) 2015-2018 Franco Fichtner <franco@opnsense.org>
+ * Copyright (c) 2015-2019 Franco Fichtner <franco@opnsense.org>
  * Copyright (c) 2015-2018 Deciso B.V.
  * All rights reserved.
  *
@@ -260,7 +260,13 @@ class FirmwareController extends ApiControllerBase
             } elseif (array_key_exists('connection', $response) && $response['connection'] != 'ok') {
                 $response['status_msg'] = gettext('An error occurred while connecting to the selected mirror.');
                 $response['status'] = 'error';
-            } elseif (array_key_exists('repository', $response) && $response['repository'] == 'error') {
+            } elseif (array_key_exists('repository', $response) && $response['repository'] == 'untrusted') {
+                $response['status_msg'] = gettext('Could not verify the repository fingerprint.');
+                $response['status'] = 'error';
+            } elseif (array_key_exists('repository', $response) && $response['repository'] == 'revoked') {
+                $response['status_msg'] = gettext('The repository fingerprint has been revoked.');
+                $response['status'] = 'error';
+            } elseif (array_key_exists('repository', $response) && $response['repository'] != 'ok') {
                 $response['status_msg'] = gettext('Could not find the repository on the selected mirror.');
                 $response['status'] = 'error';
             } elseif (array_key_exists('updates', $response) && $response['updates'] == 0) {
@@ -720,10 +726,12 @@ class FirmwareController extends ApiControllerBase
         $backend = new Backend();
         $response = array();
 
-        /* allows us to select UI features based on product state */
-        list ($response['product_name'], $response['product_version']) =
-            explode(' ', trim(shell_exec('opnsense-version -nv')));
+        $version = explode(' ', trim(shell_exec('opnsense-version -nv')));
+        foreach (array('product_name' => 0, 'product_version' => 1) as $result => $index) {
+            $response[$result] = !empty($version[$index]) ? $version[$index] : 'unknown';
+        }
 
+        /* allows us to select UI features based on product state */
         $devel = explode('-', $response['product_name']);
         $devel = count($devel) == 2 ? $devel[1] == 'devel' : false;
 

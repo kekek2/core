@@ -77,18 +77,35 @@ if (isset($config['ipsec']['phase2'])) {
 ?>
 <script>
     $(document).ready(function() {
-        $(".ipsec-tab").unbind('click').click(function(){
-            $(".ipsec-tab").css('background-color', '#777777');
-            $(".ipsec-tab").css('color', 'white');
-            $(this).css('background-color', '#EEEEEE');
-            $(this).css('color', 'black');
+        $(".ipsec-tab").unbind('click').click(function() {
+            $('.ipsec-tab').removeClass('activetab');
+            $(this).addClass('activetab');
             $(".ipsec-tab-content").hide();
             $("#"+$(this).attr('data-for')).show();
         });
     });
 </script>
+<style>
+    .dashboard_grid_column table {
+        table-layout: fixed;
+    }
+
+    #ipsec #ipsec-mobile, #ipsec #ipsec-tunnel, #ipsec #ipsec-overview {
+        background-color: #EEEEEE;
+    }
+
+    #ipsec .ipsec-tab {
+        background-color: #777777;
+        color: white;
+    }
+
+    #ipsec .ipsec-tab.activetab {
+        background-color: #EEEEEE;
+        color: black;
+    }
+</style>
 <div id="tabs">
-    <div data-for="ipsec-Overview" class="ipsec-tab table-cell" style="background-color:#EEEEEE; color:black; cursor: pointer; display:table-cell">
+    <div data-for="ipsec-overview" class="ipsec-tab table-cell" style="background-color:#EEEEEE; color:black; cursor: pointer; display:table-cell">
         <strong>&nbsp;&nbsp;<?=gettext("Overview");?>&nbsp;&nbsp;</strong>
     </div>
     <div data-for="ipsec-tunnel" class="ipsec-tab table-cell" style="background-color:#777777; color:white; cursor: pointer; display:table-cell">
@@ -99,7 +116,7 @@ if (isset($config['ipsec']['phase2'])) {
     </div>
 </div>
 
-<div id="ipsec-Overview" class="ipsec-tab-content" style="display:block;background-color:#EEEEEE;">
+<div id="ipsec-overview" class="ipsec-tab-content" style="display:block;background-color:#EEEEEE;">
   <table class="table table-clean-form">
     <thead>
       <tr>

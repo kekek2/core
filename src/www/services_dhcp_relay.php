@@ -87,13 +87,12 @@ $iflist = get_configured_interface_with_descr();
  */
 $dhcpd_enabled = false;
 if (is_array($config['dhcpd'])) {
-    foreach($config['dhcpd'] as $dhcp) {
-        if (isset($dhcp['enable'])) {
+    foreach($config['dhcpd'] as $intf => $dhcp) {
+        if (isset($dhcp['enable']) && !empty($config['interfaces'][$intf]['enable'])) {
             $dhcpd_enabled = true;
         }
     }
 }
-
 $service_hook = 'dhcrelay';
 include("head.inc");
 ?>
@@ -164,14 +163,14 @@ include("head.inc");
                       <td>
                         <input name="server" type="text" value="<?=!empty($pconfig['server']) ? htmlspecialchars($pconfig['server']):"";?>" />
                         <div class="hidden" data-for="help_for_server">
-                          <?=gettext("These are the IP addresses of servers to which DHCP requests are relayed. You can enter multiple server IP addresses, separated by commas. Select \"Proxy requests to DHCP server on WAN subnet\" to relay DHCP packets to the server that was used on the WAN interface.");?>
+                          <?=gettext("These are the IP addresses of servers to which DHCP requests are relayed. You can enter multiple server IP addresses, separated by commas.");?>
                         </div>
                       </td>
                     </tr>
                     <tr>
                       <td>&nbsp;</td>
                       <td>
-                        <input name="Submit" type="submit" class="btn btn-primary" value="<?=gettext("Save");?>" onclick="enable_change(true)" />
+                        <input name="Submit" type="submit" class="btn btn-primary" value="<?=html_safe(gettext('Save'));?>" onclick="enable_change(true)" />
                       </td>
                     </tr>
                   </table>

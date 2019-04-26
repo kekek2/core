@@ -57,7 +57,7 @@ function is_interface_mismatch()
             /* Do not mismatch if any lock was issued */
             $mismatch = false;
             break;
-        } elseif (preg_match('/^enc|^cua|^tun|^tap|^l2tp|^pptp|^ppp|^ovpn|^ocvpn|^gvpn|^tinc|^wg|^zt|^ue|^gif|^gre|^lagg|^bridge|vlan|_wlan|_stf/i', $ifcfg['if'])) {
+        } elseif (preg_match('/^enc|^cua|^tun|^tap|^l2tp|^pptp|^ppp|^ovpn|^ocvpn|^gvpn|^tinc|^wg|^zt|^ue|^gif|^gre|^lagg|^bridge|^ipsec|vlan|_wlan|_stf/i', $ifcfg['if'])) {
             /* Do not check these interfaces */
             continue;
         } elseif (does_interface_exist($ifcfg['if']) == false) {
@@ -238,7 +238,6 @@ EOD;
             }
 
             printf("\nEnter the Optional interface %s name or 'a' for auto-detection\n" .
-                "NOTE: this enables full Firewalling/NAT mode.\n" .
                 "(or nothing if finished): ", $io);
 
             if ($interactive) {

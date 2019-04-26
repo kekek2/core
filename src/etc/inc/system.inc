@@ -228,8 +228,6 @@ function get_locale_list()
     $locales['pt_BR'] = gettext('Portuguese (Brazil)');
     $locales['pt_PT'] = gettext('Portuguese (Portugal)');
     $locales['ru_RU'] = gettext('Russian');
-    $locales['es_ES'] = gettext('Spanish');
-    $locales['tr_TR'] = gettext('Turkish');
 
     return $locales;
 }
@@ -674,7 +672,6 @@ function get_memory() {
     return array(($physmem/1048576),($realmem/1048576));
 }
 
-
 function system_firmware_configure($verbose = false)
 {
     global $config, $g;
@@ -737,28 +734,6 @@ function system_timezone_configure($verbose = false)
 
     if ($verbose) {
         echo "done.\n";
-    }
-}
-
-function system_halt($sync = false)
-{
-    $cmd ='/usr/local/etc/rc.halt';
-
-    if (!$sync) {
-        mwexec_bg($cmd);
-    } else {
-        passthru($cmd);
-    }
-}
-
-function system_reboot($sync = false)
-{
-    $cmd ='/usr/local/etc/rc.reboot';
-
-    if (!$sync) {
-        mwexec_bg($cmd);
-    } else {
-        passthru($cmd);
     }
 }
 

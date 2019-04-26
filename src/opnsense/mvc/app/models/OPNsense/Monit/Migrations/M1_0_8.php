@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright (C) 2018 David Harrigan
+ * Copyright (C) 2019 EURO-LOG AG
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,14 +26,20 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-namespace OPNsense\Backup;
+namespace OPNsense\Monit\Migrations;
 
-use OPNsense\Base\BaseModel;
+use OPNsense\Base\BaseModelMigration;
+use OPNsense\Core\Config;
 
-/**
- * Class SCP Backup Settings
- * @package Backup
- */
-class ScpSettings extends BaseModel
+class M1_0_8 extends BaseModelMigration
 {
+    public function post($model)
+    {
+        foreach ($model->test->iterateItems() as $test) {
+            $test->type = $model->getTestType($test->condition->getNodeData());
+        }
+        // validation will fail because we want to change the type of tests linked to services
+        $model->serializeToConfig(false, true);
+        Config::getInstance()->save();
+    }
 }
