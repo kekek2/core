@@ -834,29 +834,6 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div id="alerts" class="tab-pane fade in">
         <!-- tab page "alerts" -->
-        <div class="bootgrid-header container-fluid">
-            <div class="row">
-                <div class="col-sm-12 actionBar">
-                    <select id="alert-logfile" class="selectpicker" data-width="200px"></select>
-                    <span id="actDeleteLog" class="btn btn-lg fa fa-trash" style="cursor: pointer;" title="{{ lang._('Delete Alert Log') }}"></span>
-                    <select id="alert-logfile-max" class="selectpicker" data-width="80px">
-                        <option value="7">7</option>
-                        <option value="50">50</option>
-                        <option value="100">100</option>
-                        <option value="250">250</option>
-                        <option value="500">500</option>
-                        <option value="1000">1000</option>
-                        <option value="-1">{{ lang._('All') }}</option>
-                    </select>
-                    <div class="search form-group">
-                        <div class="input-group">
-                            <input class="search-field form-control" placeholder="{{ lang._('Search') }}" type="text" id="inputSearchAlerts">
-                            <span id="actQueryAlerts" class="icon input-group-addon fa fa-refresh" title="{{ lang._('Query') }}" style="cursor: pointer;"></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
         <table id="grid-alerts" class="table table-condensed table-hover table-striped table-responsive">
             <thead>
               <tr>
