@@ -116,9 +116,9 @@ function print_summary_table($label, $iparr, $sort = TRUE) {
           <table class="table table-clean-form">
             <tr>
               <td><?=gettext("IP");?></td>
-              <td># <?=gettext("States");?></td>
+              <td><?=gettext("States");?></td>
               <td><?=gettext("Proto");?></td>
-              <td># <?=gettext("States");?></td>
+              <td><?=gettext("States");?></td>
               <td><?=gettext("Src Ports");?></td>
               <td><?=gettext("Dst Ports");?></td>
             </tr>
