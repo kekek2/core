@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# reload to fix race with ICAP
+/usr/local/etc/rc.d/squid reload
