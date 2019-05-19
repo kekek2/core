@@ -187,7 +187,7 @@ function core_cron()
 
     $jobs[]['autocron'] = array('/usr/local/sbin/ping_hosts.sh', '*/4');
 
-    if (!empty($config['system']['rrdbackup'])) {
+    if (!empty($config['system']['rrdbackup']) && $config['system']['rrdbackup'] > 0) {
         $jobs[]['autocron'] = array(
             '/usr/local/etc/rc.syshook.d/backup/20-rrd',
             '0',
@@ -195,7 +195,7 @@ function core_cron()
         );
     }
 
-    if (!empty($config['system']['dhcpbackup'])) {
+    if (!empty($config['system']['dhcpbackup']) && $config['system']['dhcpbackup'] > 0) {
         $jobs[]['autocron'] = array(
             '/usr/local/etc/rc.syshook.d/backup/20-dhcpleases',
             '0',
@@ -203,7 +203,7 @@ function core_cron()
         );
     }
 
-    if (!empty($config['system']['netflowbackup'])) {
+    if (!empty($config['system']['netflowbackup']) && $config['system']['netflowbackup'] > 0) {
         $jobs[]['autocron'] = array(
             '/usr/local/etc/rc.syshook.d/backup/20-netflow',
             '0',
@@ -211,7 +211,7 @@ function core_cron()
         );
     }
 
-    if (!empty($config['system']['captiveportalbackup'])) {
+    if (!empty($config['system']['captiveportalbackup']) && $config['system']['captiveportalbackup'] > 0) {
         $jobs[]['autocron'] = array(
             '/usr/local/etc/rc.syshook.d/backup/20-captiveportal',
             '0',

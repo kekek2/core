@@ -1,8 +1,7 @@
-#!/usr/local/bin/php
 <?php
 
 /*
- * Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
+ * Copyright (C) 2018 Deciso B.V.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,30 +26,53 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-require_once("config.inc");
-require_once("console.inc");
-require_once("filter.inc");
-require_once("util.inc");
-require_once("rrd.inc");
-require_once("system.inc");
-require_once("services.inc");
-require_once("interfaces.inc");
+namespace OPNsense\Auth;
 
-system_console_mute();
+use OPNsense\Core\Config;
 
-if (set_networking_interfaces_ports()) {
-    /* need to stop local servers to prevent faulty leases */
-    killbypid('/var/dhcpd/var/run/dhcpd.pid', 'TERM', true);
-    killbypid('/var/dhcpd/var/run/dhcpdv6.pid', 'TERM', true);
-    killbypid('/var/run/radvd.pid', 'TERM', true);
+/**
+ * RFC 6238 TOTP: Time-Based One-Time Password Authenticator + LDAP
+ * @package OPNsense\Auth
+ */
+class LDAPTOTP extends LDAP
+{
+    use TOTP;
 
-    interfaces_configure(true);
-    system_routing_configure(true);
-    filter_configure_sync(true);
-    services_dhcpd_configure(true);
-    plugins_configure('local', true);
-    plugins_configure('vpn', true);
-    rrd_configure(true);
+    /**
+     * type name in configuration
+     * @return string
+     */
+    public static function getType()
+    {
+        return 'ldap-totp';
+    }
+
+    /**
+     * user friendly description of this authenticator
+     * @return string
+     */
+    public function getDescription()
+    {
+        return gettext("LDAP + Timebased One Time Password");
+    }
+
+    /**
+     * set connector properties
+     * @param array $config connection properties
+     */
+    public function setProperties($config)
+    {
+        parent::setProperties($config);
+        $this->setTOTPProperties($config);
+    }
+
+    /**
+     * retrieve configuration options
+     * @return array
+     */
+    public function getConfigurationOptions()
+    {
+        $options = $this->getTOTPConfigurationOptions();
+        return $options;
+    }
 }
-
-system_console_unmute();

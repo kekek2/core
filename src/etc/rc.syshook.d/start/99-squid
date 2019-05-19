@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# reload to fix race with ICAP
+if [ -f /var/run/squid/squid.pid ]; then
+	echo -n "Reloading proxy..."
+	configctl proxy reload
+fi

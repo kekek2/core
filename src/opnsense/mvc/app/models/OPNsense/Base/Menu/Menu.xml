@@ -253,8 +253,8 @@
             <LogFile order="70" VisibleName="Log File" url="/ui/syslog/logview/showlog/openvpn"/>
         </OpenVPN>
     </VPN>
-    <Maintenance order="70" cssClass="fa fa-cogs">
+    <Power order="70" cssClass="fa fa-cogs">
         <Reboot order="10" url="/reboot.php" cssClass="fa fa-repeat fa-fw"/>
         <PowerOff VisibleName="Power Off" order="20" url="/diag_halt.php" cssClass="fa fa-power-off fa-fw"/>
-    </Maintenance>
+    </Power>
 </menu>

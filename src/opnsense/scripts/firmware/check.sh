@@ -47,6 +47,7 @@ pkg_running=""
 packes_output=""
 last_check="unknown"
 packages_upgraded=""
+pkg_selected=${1}
 pkg_upgraded=""
 packages_downgraded=""
 packages_new=""
@@ -75,7 +76,7 @@ if [ "$pkg_running" == "" ]; then
       done
 
       if [ $timer -eq 0 ]; then
-        # We have an connection issue and could not
+        # We have a connection issue and could not
         # reach the pkg repository in timely fashion
         # Kill all running pkg instances
         pkg_running=`ps -x | grep "pkg " | grep -v "grep"`
@@ -108,12 +109,12 @@ if [ "$pkg_running" == "" ]; then
         # connection is still ok
         connection="ok"
         # now check what happens when we would go ahead
-        if [ -z "${1}" ]; then
+        if [ -z "${pkg_selected}" ]; then
             pkg upgrade -n > $tmp_pkg_output_file &
         else
             # fetch before install lets us know more
-            pkg fetch -y "${1}" > $tmp_pkg_output_file &
-            pkg install -n "${1}" > $tmp_pkg_output_file &
+            pkg fetch -y "${pkg_selected}" > $tmp_pkg_output_file &
+            pkg install -n "${pkg_selected}" > $tmp_pkg_output_file &
 	fi
         timer=$timeout_upgrade
         pkg_running="started"
@@ -159,7 +160,7 @@ if [ "$pkg_running" == "" ]; then
                     else
                       i=`echo $i | tr -d :`
                       if [ -z "$packages_downgraded" ]; then
-                        packages_downgraded=$packages_downgraded"{\"name\":\"$i\"," # If it is the first item then we do not want a seperator
+                        packages_downgraded=$packages_downgraded"{\"name\":\"$i\"," # If it is the first item then we do not want a separator
                       else
                         packages_downgraded=$packages_downgraded", {\"name\":\"$i\","
                       fi
@@ -235,7 +236,7 @@ if [ "$pkg_running" == "" ]; then
                           # prevents leaking base / kernel advertising here
                           pkg_upgraded="yes"
                         fi
-                        packages_upgraded=$packages_upgraded"{\"name\":\"$i\"," # If it is the first item then we do not want a seperator
+                        packages_upgraded=$packages_upgraded"{\"name\":\"$i\"," # If it is the first item then we do not want a separator
                       else
                         packages_upgraded=$packages_upgraded", {\"name\":\"$i\","
                       fi
@@ -271,22 +272,22 @@ if [ "$pkg_running" == "" ]; then
             fi
 
             # the main update from package will provide this during upgrade
-            if [ -n "$pkg_upgraded" ]; then
+            if [ -n "${pkg_upgraded}${pkg_selected}" ]; then
               base_to_reboot=
             elif [ -z "$base_to_reboot" ]; then
               if opnsense-update -cbf; then
                   base_to_reboot="$(opnsense-update -v)"
+                  # XXX arch return is obsolete
                   base_to_reboot="${base_to_reboot%-*}"
               fi
             fi
 
             if [ -n "$base_to_reboot" ]; then
-              base_to_delete="$(opnsense-update -bv)"
-              base_to_delete="${base_to_delete%-*}"
+              base_to_delete="$(opnsense-version -v base)"
               base_is_size="$(opnsense-update -bfSr $base_to_reboot)"
               if [ "$base_to_reboot" != "$base_to_delete" -a -n "$base_is_size" ]; then
                 if [ "$packages_upgraded" == "" ]; then
-                  packages_upgraded=$packages_upgraded"{\"name\":\"base\"," # If it is the first item then we do not want a seperator
+                  packages_upgraded=$packages_upgraded"{\"name\":\"base\"," # If it is the first item then we do not want a separator
                 else
                   packages_upgraded=$packages_upgraded", {\"name\":\"base\","
                 fi
@@ -299,22 +300,22 @@ if [ "$pkg_running" == "" ]; then
             fi
 
             # the main update from package will provide this during upgrade
-            if [ -n "$pkg_upgraded" ]; then
+            if [ -n "${pkg_upgraded}${pkg_selected}" ]; then
               kernel_to_reboot=
             elif [ -z "$kernel_to_reboot" ]; then
               if opnsense-update -cfk; then
                   kernel_to_reboot="$(opnsense-update -v)"
+                  # XXX arch return is obsolete
                   kernel_to_reboot="${kernel_to_reboot%-*}"
               fi
             fi
 
             if [ -n "$kernel_to_reboot" ]; then
-              kernel_to_delete="$(opnsense-update -kv)"
-              kernel_to_delete="${kernel_to_delete%-*}"
+              kernel_to_delete="$(opnsense-version -v kernel)"
               kernel_is_size="$(opnsense-update -fkSr $kernel_to_reboot)"
               if [ "$kernel_to_reboot" != "$kernel_to_delete" -a -n "$kernel_is_size" ]; then
                 if [ "$packages_upgraded" == "" ]; then
-                  packages_upgraded=$packages_upgraded"{\"name\":\"kernel\"," # If it is the first item then we do not want a seperator
+                  packages_upgraded=$packages_upgraded"{\"name\":\"kernel\"," # If it is the first item then we do not want a separator
                 else
                   packages_upgraded=$packages_upgraded", {\"name\":\"kernel\","
                 fi
@@ -327,7 +328,7 @@ if [ "$pkg_running" == "" ]; then
             fi
           fi
         else
-          # We have an connection issue and could not reach the pkg repository in timely fashion
+          # We have a connection issue and could not reach the pkg repository in timely fashion
           # Kill all running pkg instances
           pkg_running=`ps -x | grep "pkg " | grep -v "grep"`
           if [ "$pkg_running" != "" ]; then

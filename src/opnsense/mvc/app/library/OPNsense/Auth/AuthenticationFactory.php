@@ -122,11 +122,11 @@ class AuthenticationFactory
             if (!empty($connectors[$servers[$authserver]['type']])) {
                 $authObject = $connectors[$servers[$authserver]['type']]['classHandle']->newInstance();
             }
-            if ($servers[$authserver]['type'] == 'ldap') {
+            if (in_array($servers[$authserver]['type'], array('ldap', 'ldap-totp'))) {
                 $localUserMap = $this->fetchUserDNs();
             }
 
-            if ($authObject != null) {
+            if (isset($authObject)) {
                 $props = $servers[$authserver];
                 // when a local user exist and has a different (distinguished) name on the authenticator we already
                 // know of, we send the mapping to the authenticator as property "local_users".

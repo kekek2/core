@@ -92,6 +92,9 @@ function getFormData(parent) {
                     } else {
                         node[keypart] = "0";
                     }
+                } else if (sourceNode.hasClass("json-data")) {
+                    // deserialize the field content - used for JS maintained fields
+                    node[keypart] = sourceNode.data('data');
                 } else {
                     // regular input type
                     node[keypart] = sourceNode.val();
@@ -134,24 +137,23 @@ function setFormData(parent,data) {
                         // handle select boxes
                         targetNode.empty(); // flush
                         $.each(node[keypart],function(indxItem, keyItem){
+                            var opt = $("<option>").val(indxItem).text(keyItem["value"]);
                             if (keyItem["selected"] != "0") {
-                                targetNode.append("<option value='"+indxItem+"' selected>" + keyItem["value"] + " </option>");
-                            } else {
-                                targetNode.append("<option value='"+indxItem+"'>" + keyItem["value"] + " </option>");
+                                opt.attr('selected', 'selected');
                             }
+                            targetNode.append(opt);
                         });
                     } else if (targetNode.prop("type") == "checkbox") {
                         // checkbox type
-                        if (node[keypart] != 0) {
-                            targetNode.prop("checked",true);
-                        } else {
-                            targetNode.prop("checked",false);
-                        }
+                        targetNode.prop("checked", node[keypart] != 0);
                     } else if (targetNode.is("span")) {
                         if (node[keypart] != null) {
                             targetNode.text("");
                             targetNode.append(htmlDecode(node[keypart]));
                         }
+                    } else if (targetNode.hasClass('json-data')) {
+                        // if the input field is JSON data, serialize the data into the field
+                        targetNode.data('data', node[keypart]);
                     } else {
                         // regular input type
                         targetNode.val(htmlDecode(node[keypart]));

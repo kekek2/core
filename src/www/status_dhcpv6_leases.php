@@ -1,46 +1,43 @@
 <?php
 
 /*
-    Copyright (C) 2014-2016 Deciso B.V.
-    Copyright (C) 2004-2009 Scott Ullrich <sullrich@gmail.com>
-    Copyright (C) 2011 Seth Mos <seth.mos@dds.nl>
-    Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
-    All rights reserved.
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are met:
-
-    1. Redistributions of source code must retain the above copyright notice,
-       this list of conditions and the following disclaimer.
-
-    2. Redistributions in binary form must reproduce the above copyright
-       notice, this list of conditions and the following disclaimer in the
-       documentation and/or other materials provided with the distribution.
-
-    THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
-    INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-    AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-    AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-    OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-    POSSIBILITY OF SUCH DAMAGE.
-*/
+ * Copyright (C) 2014-2016 Deciso B.V.
+ * Copyright (C) 2004-2009 Scott Ullrich <sullrich@gmail.com>
+ * Copyright (C) 2011 Seth Mos <seth.mos@dds.nl>
+ * Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
 require_once("guiconfig.inc");
 require_once("interfaces.inc");
 require_once("services.inc");
 
-function leasecmp($a, $b) {
-  return strcmp($a[$_GET['order']], $b[$_GET['order']]);
-}
-
-function adjust_gmt($dt) {
+function adjust_gmt($dt)
+{
     global $config;
 
-    $dhcpv6leaseinlocaltime == "no";
+    $dhcpv6leaseinlocaltime = 'no';
     if (is_array($config['dhcpdv6'])) {
         $dhcpdv6 = $config['dhcpdv6'];
         foreach ($dhcpdv6 as $dhcpv6leaseinlocaltime) {
@@ -100,15 +97,23 @@ $interfaces = legacy_config_get_interfaces(array('virtual' => false));
 $leasesfile = services_dhcpdv6_leasesfile();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $awk = "/usr/bin/awk";
+    $leases_content = array();
 
-    /* this pattern sticks comments into a single array item */
-    $cleanpattern = "'{ gsub(\"^#.*\", \"\");} { gsub(\"^server-duid.*\", \"\");} { gsub(\";$\", \"\"); print;}'";
-    /* We then split the leases file by } */
-    $splitpattern = "'BEGIN { RS=\"}\";} {for (i=1; i<=NF; i++) printf \"%s \", \$i; printf \"}\\n\";}'";
+    $fin = @fopen($leasesfile, "r");
+    $section = array();
+    if ($fin) {
+        while (($line = fgets($fin, 4096)) !== false) {
+            if (strpos($line, "ia-") !== false) {
+                $section = array();
+            } elseif (strpos($line, "}") === 0 && count($section) > 0) {
+                $output = implode($section, "");
+                $leases_content[] = $output;
+            }
+            $section[] = rtrim($line, "\n;");
+        }
+        fclose($fin);
+    }
 
-    /* stuff the leases file in a proper format into a array by line */
-    exec("/bin/cat {$leasesfile} | {$awk} {$cleanpattern} | {$awk} {$splitpattern} | /usr/bin/grep '^ia-.. '", $leases_content);
     $leases_count = count($leases_content);
     exec("/usr/sbin/ndp -an", $rawdata);
     $ndpdata = array();
@@ -252,11 +257,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     $f = $f+2;
                     break;
                 case "client-hostname":
-                    if ($data[$f+1] <> "") {
+                    if ($data[$f+1] != '') {
                         $entry['hostname'] = preg_replace('/"/','',$data[$f+1]);
                     } else {
                         $hostname = gethostbyaddr($entry['ip']);
-                        if ($hostname <> "") {
+                        if ($hostname != '') {
                             $entry['hostname'] = $hostname;
                         }
                     }
@@ -316,7 +321,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     if ($_GET['order']) {
-        usort($leases, "leasecmp");
+        usort($leases, function ($a, $b) {
+            return strcmp($a[$_GET['order']], $b[$_GET['order']]);
+        });
     }
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($_POST['deleteip']) && is_ipaddr($_POST['deleteip'])) {
@@ -371,6 +378,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 $service_hook = 'dhcpd6';
 
 include("head.inc");
+
+$leases_count = 0;
+
+foreach ($leases as $data) {
+   if (!($data['act'] == 'active' || $data['act'] == 'static' || $_GET['all'] == 1)) {
+       continue;
+   }
+   $leases_count++;
+}
+
+$gentitle_suffix = " ($leases_count)";
 
 ?>
 <body>
@@ -427,7 +445,7 @@ endif;?>
             <table class="table table-clean-form">
               <thead>
                 <tr>
-                    <th><?=gettext("Interface"); ?></td>
+                    <th><?=gettext("Interface"); ?></th>
                     <th><?=gettext("IPv6 address"); ?></th>
                     <th><?=gettext("IAID"); ?></th>
                     <th><?=gettext("DUID"); ?></th>
@@ -444,6 +462,9 @@ endif;?>
 <?php
               $mac_man = json_decode(configd_run("interface list macdb json"), true);
               foreach ($leases as $data):
+                if (!($data['act'] == 'active' || $data['act'] == 'static' || $_GET['all'] == 1)) {
+                    continue;
+                }
                 if ($data['act'] == "static") {
                     foreach ($config['dhcpdv6'] as $dhcpif => $dhcpifconf) {
                         if (isset($dhcpifconf['staticmap'])) {
@@ -483,7 +504,7 @@ endif;?>
 <?php if (!empty($data['if'])): ?>
 <?php if ($data['type'] == 'dynamic'): ?>
                         <a class="btn btn-default btn-xs" href="services_dhcpv6_edit.php?if=<?=$data['if'];?>&amp;duid=<?=$data['duid'];?>&amp;hostname=<?=$data['hostname'];?>">
-                          <i class="fa fa-plus fa-fw" alt="add"></i>
+                          <i class="fa fa-plus fa-fw"></i>
                         </a>
 <?php if ($data['online'] != 'online'): ?>
                     <a class="act_delete btn btn-default btn-xs" href="#" data-deleteip="<?=$data['ip'];?>" title="<?= html_safe(gettext('Delete')) ?>" data-toggle="tooltip">
@@ -559,5 +580,6 @@ endif;?>
     </div>
   </div>
 </section>
+<?php
 
-<?php include("foot.inc"); ?>
+include("foot.inc");

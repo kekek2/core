@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $diff = '';
 
     if (!empty($_GET['diff']) && isset($_GET['oldtime']) && isset($_GET['newtime'])
-          && is_numeric($_GET['oldtime']) && (is_numeric($_GET['newtime']) || ($_GET['newtime'] == 'current'))) {
+        && is_numeric($_GET['oldtime']) && (is_numeric($_GET['newtime']) || ($_GET['newtime'] == 'current'))) {
         foreach ($confvers as $filename => $revision) {
             if ($revision['time'] == $_GET['oldtime']) {
                 $oldfile = $filename;
@@ -227,7 +227,7 @@ include("fbegin.inc");
                   </td>
                   <td>
                     <?= gettext('Be aware of how much space is consumed by backups before adjusting this value.'); ?>
-                    <?php if (count($confvers)) {
+                    <?php if (isset($confvers) && count($confvers) > 0) {
                       print gettext('Current space used:') . ' ' . exec("/usr/bin/du -sh /conf/backup | /usr/bin/awk '{print $1;}'");
                     } ?>
                   </td>

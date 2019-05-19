@@ -118,7 +118,6 @@ class Local extends Base implements IAuthConnector
         $configObj = Config::getInstance()->object();
         if (!empty($configObj->system->webgui->enable_password_policy_constraints)) {
             if (!empty($configObj->system->webgui->password_policy_duration)) {
-                $duration = $configObj->system->webgui->password_policy_duration;
                 $userObject = $this->getUser($username);
                 if ($userObject != null) {
                     $now = microtime(true);
@@ -146,13 +145,7 @@ class Local extends Base implements IAuthConnector
      */
     public function authenticate($username, $password)
     {
-        if (is_a($username, 'SimpleXMLElement')) {
-            // user xml section provided
-            $userObject = $username;
-        } else {
-            // get xml section from config
-            $userObject = $this->getUser($username);
-        }
+        $userObject = $this->getUser($username);
         if ($userObject != null) {
             if (isset($userObject->disabled)) {
                 // disabled user

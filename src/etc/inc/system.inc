@@ -106,6 +106,8 @@ function get_default_sysctl_value($id)
         'net.link.bridge.pfil_member' => '1',
         'net.link.bridge.pfil_onlyip' => '0',
         'net.link.tap.user_open' => '1',
+        'security.bsd.see_other_gids' => '0',
+        'security.bsd.see_other_uids' => '0',
         'vfs.read_max' => '32',
         'vm.pmap.pti' => '1',
     );
@@ -153,6 +155,7 @@ function system_resolvconf_generate($verbose = false)
         flush();
     }
 
+    $resolvconf = '';
     if (!empty($syscfg['domain'])) {
         $resolvconf = "domain {$syscfg['domain']}\n";
     }
@@ -190,7 +193,7 @@ function system_resolvconf_generate($verbose = false)
         $dnsgw = "dns{$dnscounter}gw";
         if (isset($syscfg[$dnsgw])) {
             $gwname = $syscfg[$dnsgw];
-            if (($gwname <> "") && ($gwname <> "none")) {
+            if (($gwname != '') && ($gwname != 'none')) {
                 $gatewayip = lookup_gateway_ip_by_name($gwname);
                 if (is_ipaddrv4($gatewayip)) {
                     /* dns server array starts at 0 */
@@ -285,38 +288,30 @@ function get_searchdomains()
     return array_unique($master_list);
 }
 
-function get_dns_servers()
-{
-    $dns_servers = array();
-
-    $dns_s = file('/etc/resolv.conf', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-
-    foreach($dns_s as $dns) {
-        $matches = '';
-        if (preg_match('/nameserver ([^ ]+)/', $dns, $matches)) {
-            $dns_servers[] = $matches[1];
-        }
-    }
-
-    return array_unique($dns_servers);
-}
-
-function get_nameservers()
+function get_nameservers($interface = null)
 {
     $master_list = array();
 
     $dns_lists = glob('/var/etc/nameserver_*');
 
-    if (is_array($dns_lists)) {
-        foreach ($dns_lists as $fdns) {
-            $contents = file($fdns, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-            if (!is_array($contents)) {
-                continue;
-            }
-            foreach ($contents as $dns) {
-                if (!empty($dns) && is_ipaddr($dns)) {
-                    $master_list[] = $dns;
-                }
+    if (!empty($interface)) {
+        /* only acquire servers provided for this interface */
+        $realif = get_real_interface($interface);
+        $realifv6 = get_real_interface($interface, 'inet6');
+        $dns_lists = array(
+            "/var/etc/nameserver_{$realif}",
+            "/var/etc/nameserver_v6{$realifv6}",
+        );
+    }
+
+    foreach ($dns_lists as $fdns) {
+        $contents = @file($fdns, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if (!is_array($contents)) {
+            continue;
+        }
+        foreach ($contents as $dns) {
+            if (!empty($dns) && is_ipaddr($dns)) {
+                $master_list[] = $dns;
             }
         }
     }
@@ -606,6 +601,8 @@ function system_staticroutes_configure($interface = '')
                     if ($fargw) {
                         mwexecf('/sbin/route delete %s %s -interface %s ', array($inet, $gatewayip, $interfacegw), true);
                         mwexecf('/sbin/route add %s %s -interface %s', array($inet, $gatewayip, $interfacegw), true);
+                    } elseif (is_linklocal($gatewayip) && strpos($gatewayip, '%') === false) {
+                        $gatewayip .= "%{$interfacegw}";
                     }
                     mwexec("/sbin/route add".$cmd . escapeshellarg($gatewayip), true);
                 } elseif (!empty($interfacegw)) {

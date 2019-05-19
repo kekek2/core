@@ -56,9 +56,9 @@ class Alias(object):
         self._timeout = timeout
         self._name = None
         self._type = None
-        self._proto = None
+        self._proto = 'IPv4,IPv6'
         self._items = list()
-        self._resolve_content = list()
+        self._resolve_content = set()
         for subelem in elem:
             if subelem.tag == 'type':
                 self._type = subelem.text
@@ -240,18 +240,18 @@ class Alias(object):
                                         f_out.write('%s\n' % address)
                                         f_out.flush()
                                         # preserve addresses
-                                        self._resolve_content.append(address)
+                                        self._resolve_content.add(address)
                 except IOError:
                     # parse issue, keep data as-is, flush previous content to disk
                     with open(self._filename_alias_content, 'w') as f_out:
                         f_out.write(undo_content)
-                    self._resolve_content = undo_content.split("\n")
+                    self._resolve_content = set(undo_content.split("\n"))
                 # flush md5 hash to disk
                 open(self._filename_alias_hash, 'w').write(self.uniqueid())
             else:
-                self._resolve_content = open(self._filename_alias_content).read().split()
+                self._resolve_content = set(open(self._filename_alias_content).read().split())
         # return the addresses and networks of this alias
-        return self._resolve_content
+        return list(self._resolve_content)
 
     def get_parser(self):
         """ fetch address parser to use, None if alias type is not handled here

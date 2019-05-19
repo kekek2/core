@@ -76,7 +76,7 @@ function webgui_configure_do($verbose = false, $interface = '')
     $ca = '';
 
     /* non-standard port? */
-    if (isset($config['system']['webgui']['port']) && $config['system']['webgui']['port'] <> "") {
+    if (isset($config['system']['webgui']['port']) && $config['system']['webgui']['port'] != '') {
         $portarg = "{$config['system']['webgui']['port']}";
     }
 
@@ -196,6 +196,7 @@ EOD;
 
     $lighty_port = $port;
 
+    $lighty_use_syslog = '';
     if($config['OPNsense']['Syslog']['LogWebServer'] == 1) {
         $lighty_use_syslog = <<<EOD
 ## where to send error/access-messages to

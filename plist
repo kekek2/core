@@ -41,7 +41,6 @@
 /usr/local/etc/inc/notices.plain_sasl_client.inc
 /usr/local/etc/inc/notices.sasl.inc
 /usr/local/etc/inc/notices.smtp.inc
-/usr/local/etc/inc/PEAR.inc
 /usr/local/etc/inc/plugins.inc
 /usr/local/etc/inc/plugins.inc.d/configd.inc
 /usr/local/etc/inc/plugins.inc.d/core.inc
@@ -160,7 +159,6 @@
 /usr/local/etc/rc.syshook.d/early/15-php
 /usr/local/etc/rc.syshook.d/early/20-backup
 /usr/local/etc/rc.syshook.d/early/30-certs
-/usr/local/etc/rc.syshook.d/early/35-check-pkg-cache
 /usr/local/etc/rc.syshook.d/start/10-newwanip
 /usr/local/etc/rc.syshook.d/start/20-freebsd
 /usr/local/etc/rc.syshook.d/start/25-flowd
@@ -169,6 +167,7 @@
 /usr/local/etc/rc.syshook.d/start/90-cron
 /usr/local/etc/rc.syshook.d/start/95-beep
 /usr/local/etc/rc.syshook.d/start/97-apuled
+/usr/local/etc/rc.syshook.d/start/99-squid
 /usr/local/etc/rc.syshook.d/stop/05-beep
 /usr/local/etc/rc.syshook.d/stop/10-apuled
 /usr/local/etc/rc.syshook.d/stop/75-flowd
@@ -459,6 +458,7 @@
 /usr/local/opnsense/mvc/app/library/OPNsense/Auth/Base.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Auth/IAuthConnector.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Auth/LDAP.php
+/usr/local/opnsense/mvc/app/library/OPNsense/Auth/LDAPTOTP.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Auth/Local.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Auth/LocalTOTP.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Auth/Radius.php
@@ -495,6 +495,7 @@
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/Constraints/AllOrNoneConstraint.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/Constraints/BaseConstraint.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/Constraints/DependConstraint.php
+/usr/local/opnsense/mvc/app/models/OPNsense/Base/Constraints/SetIfConstraint.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/Constraints/SingleSelectConstraint.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/Constraints/UniqueConstraint.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/ArrayField.php
@@ -916,7 +917,7 @@
 /usr/local/opnsense/site-python/sqlite3_helper.py
 /usr/local/opnsense/site-python/watchers/__init__.py
 /usr/local/opnsense/site-python/watchers/dhcpd.py
-/usr/local/opnsense/version/opnsense
+/usr/local/opnsense/version/core
 /usr/local/opnsense/www/api.php
 /usr/local/opnsense/www/css/bootstrap-datepicker3.min.css
 /usr/local/opnsense/www/css/bootstrap-datetimepicker.css

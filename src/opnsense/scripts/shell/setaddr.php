@@ -80,7 +80,7 @@ function console_get_interface_from_ppp($realif)
 
 function prompt_for_enable_dhcp_server($version = 4)
 {
-    global $config, $fp, $interface;
+    global $config, $interface;
     if ($interface == "wan") {
         if ($config['interfaces']['lan']) {
             return false;
@@ -163,7 +163,7 @@ if ($intnum > $count) {
 }
 
 $index = 1;
-foreach ($ifdescrs as $ifname => $unused) {
+foreach (array_keys($ifdescrs) as $ifname) {
     if ($intnum == $index) {
         $interface = $ifname;
         break;
@@ -206,11 +206,11 @@ function next_unused_gateway_name($interface)
 
 function add_gateway_to_config($interface, $gatewayip, $inet_type, $is_in_subnet)
 {
-    global $config, $fp;
+    global $fp;
 
     $label_IPvX = $inet_type == 'inet6' ? 'IPv6' : 'IPv4';
 
-    $a_gateways =  &config_read_array('gateways', 'gateway_item');
+    $a_gateways = &config_read_array('gateways', 'gateway_item');
     $is_default = true;
     $new_name = '';
 
@@ -362,11 +362,9 @@ function console_configure_ip_address($version)
                         if ($intip == gen_subnet($intip, $intbits)) {
                             echo 'You cannot set network address to an interface';
                             continue 2;
-                            $intbits_ok = false;
                         } elseif ($intip == gen_subnet_max($intip, $intbits)) {
                             echo 'You cannot set broadcast address to an interface';
                             continue 2;
-                            $intbits_ok = false;
                         }
                     }
                 } while (!$intbits_ok);
@@ -565,7 +563,7 @@ setup_gateways_monitor(true);
 filter_configure_sync(true);
 
 if ($restart_dhcpd) {
-    services_dhcpd_configure('all', array(), true);
+    services_dhcpd_configure(true);
 }
 
 if ($restart_webgui) {

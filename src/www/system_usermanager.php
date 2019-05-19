@@ -481,8 +481,9 @@ $( document ).ready(function() {
     });
 
     // import ldap users
-    $("#import_ldap_users").click(function(){
-      url="system_usermanager_import_ldap.php";
+    $("#import_ldap_users").click(function(event){
+      event.preventDefault();
+      const url="system_usermanager_import_ldap.php";
       var oWin = window.open(url,"OPNsense","width=620,height=400,top=150,left=150,scrollbars=yes");
       if (oWin==null || typeof(oWin)=="undefined") {
         alert("<?= html_safe(gettext('Popup blocker detected. Action aborted.')) ?>");
@@ -496,7 +497,7 @@ $( document ).ready(function() {
         $.post(window.location, {act: 'newApiKey', userid: $("#userid").val() }, function(data) {
             if (data['key'] != undefined) {
                 // only generate a key file if there's data
-                output_data = 'key='+data['key'] +'\n' + 'secret='+data['secret'] +'\n';
+                const output_data = 'key='+data['key'] +'\n' + 'secret='+data['secret'] +'\n';
                 // create link, click and send to client
                 $('<a></a>')
                         .attr('id','downloadFile')
@@ -689,7 +690,7 @@ $( document ).ready(function() {
                   <tr>
                     <td><a id="help_for_groups" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Group Memberships");?></td>
                     <td>
-                      <table class="table" style="width:100%; border:0; cellpadding:0; cellspacing:0">
+                      <table class="table" style="width:100%; border:0;">
                         <thead>
                           <tr>
                             <th><?=gettext("Not Member Of"); ?></th>
@@ -935,7 +936,6 @@ $( document ).ready(function() {
                       <script>
                         $('#otp_qrcode').qrcode('<?= $otp_url ?>');
                       </script>
-                      </div>
                       <div class="hidden" data-for="help_for_otp_code">
                         <?= gettext('Scan this QR code for easy setup with external apps.') ?>
                       </div>
@@ -943,7 +943,6 @@ $( document ).ready(function() {
                   </tr>
 <?php
                         endif;?>
-                  <tr>
                   <tr>
                     <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Authorized keys");?></td>
                     <td>
@@ -988,8 +987,12 @@ $( document ).ready(function() {
                   </thead>
                   <tbody>
 <?php
-                  $i = 0;
-                  foreach ($a_user as $userent) :?>
+                  /* create a copy for sorting */
+                  $a_user_ro = $a_user;
+                  uasort($a_user_ro, function($a, $b) {
+                    return strnatcasecmp($a['name'], $b['name']);
+                  });
+                  foreach ($a_user_ro as $i => $userent): ?>
                     <tr>
                       <td>
 <?php
@@ -1006,24 +1009,19 @@ $( document ).ready(function() {
                       <td><?= implode(', ', local_user_get_groups($userent)) ?></td>
                       <td class="text-nowrap">
                         <a href="system_usermanager.php?act=edit&userid=<?=$i?>"
-                            class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("edit user");?>">
+                            class="btn btn-default btn-xs" data-toggle="tooltip" title="<?= html_safe(gettext('Edit')) ?>">
                           <span class="fa fa-pencil fa-fw"></span>
                         </a>
-<?php
-                        if ($userent['scope'] != "system") :?>
+<?php if ($userent['scope'] != 'system'): ?>
                         <button type="button" class="btn btn-default btn-xs act-del-user"
                             data-username="<?=$userent['name'];?>"
-                            data-userid="<?=$i?>" title="<?=gettext("delete user");?>" data-toggle="tooltip">
+                            data-userid="<?=$i?>" title="<?= html_safe(gettext('Delete')) ?>" data-toggle="tooltip">
                           <span class="fa fa-trash fa-fw"></span>
                         </button>
-<?php
-                        endif;?>
+<?php endif ?>
                       </td>
                     </tr>
-<?php
-                  $i++;
-                  endforeach;
-?>
+<?php endforeach ?>
                     <tr>
                       <td colspan="3">
                         <table>
@@ -1047,7 +1045,7 @@ $( document ).ready(function() {
                             $servers = explode(',', $config['system']['webgui']['authmode']);
                             foreach ($servers as $server) {
                                 $authcfg_type = auth_get_authserver($server)['type'];
-                                if ($authcfg_type == 'ldap') {
+                                if ($authcfg_type == 'ldap' || $authcfg_type == 'ldap-totp') {
                                     $can_import = true;
                                 }
                             }
@@ -1056,8 +1054,9 @@ $( document ).ready(function() {
 <?php if ($can_import): ?>
                           <button type="submit" name="import"
                                   id="import_ldap_users"
-                                  class="btn btn-default btn-xs"
-                                  title="<?=gettext("import users")?>">
+                                  data-toggle="tooltip"
+                                  class="btn btn-primary btn-xs"
+                                  title="<?= html_safe(gettext('Import')) ?>">
                               <i class="fa fa-cloud-download fa-fw"></i>
                           </button>
 <?php endif ?>

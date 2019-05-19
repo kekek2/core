@@ -569,7 +569,6 @@ function openvpn_reconfigure($mode, $settings, $device_only = false)
     if (substr($settings['protocol'], 0, 3) == "TCP") {
         $proto = "{$proto}-{$mode}";
     }
-    $dev_mode = $settings['dev_mode'];
     $cipher = $settings['crypto'];
     // OpenVPN defaults to SHA1, so use it when unset to maintain compatibility.
     $digest = !empty($settings['digest']) ? $settings['digest'] : "SHA1";
@@ -713,10 +712,15 @@ function openvpn_reconfigure($mode, $settings, $device_only = false)
                     if ($settings['serverbridge_dhcp']) {
                         if (!empty($settings['serverbridge_interface']) &&
                             strcmp($settings['serverbridge_interface'], "none")) {
-                            $biface_ip=get_interface_ip($settings['serverbridge_interface']);
-                            $biface_sm=gen_subnet_mask(get_interface_subnet($settings['serverbridge_interface']));
+                            $realif = get_real_interface($settings['serverbridge_interface']);
+                            if (!$realif && strstr($settings['serverbridge_interface'], '_vip')) {
+                                list($vipif, $vhid) = explode('_vip', $settings['serverbridge_interface']);
+                                $realif = get_real_interface($vipif);
+                            }
+                            list ($biface_ip, $biface_sn) = explode('/', find_interface_network($realif, false));
                             if (is_ipaddrv4($biface_ip) && is_ipaddrv4($settings['serverbridge_dhcp_start']) &&
                                 is_ipaddrv4($settings['serverbridge_dhcp_end'])) {
+                                $biface_sm = gen_subnet_mask($biface_sn);
                                 $conf .= "server-bridge {$biface_ip} {$biface_sm} " .
                                     "{$settings['serverbridge_dhcp_start']} {$settings['serverbridge_dhcp_end']}\n";
                                 $conf .= "client-config-dir /var/etc/openvpn-csc/".$vpnid."\n";
@@ -829,7 +833,7 @@ function openvpn_reconfigure($mode, $settings, $device_only = false)
         // The remote server
         $server_addr_a = explode(',', $settings['server_addr']);
         $server_port_a = explode(',', $settings['server_port']);
-        foreach ($server_addr_a as $i => $unused) {
+        foreach (array_keys($server_addr_a) as $i) {
             $server_addr = idn_to_ascii($server_addr_a[$i]);
             $conf .= "remote {$server_addr} {$server_port_a[$i]}\n";
         }
@@ -879,12 +883,13 @@ function openvpn_reconfigure($mode, $settings, $device_only = false)
         }
     }
 
-    // Add remote network route if set
-    if (openvpn_validate_cidr($settings['remote_network'], "", true, "ipv4") === false) {
-        $conf .= openvpn_gen_routes($settings['remote_network'], "ipv4", false);
+    if (!empty($settings['remote_network']) &&
+        openvpn_validate_cidr($settings['remote_network'], '', true, 'ipv4') === false) {
+        $conf .= openvpn_gen_routes($settings['remote_network'], 'ipv4', false);
     }
-    if (openvpn_validate_cidr($settings['remote_networkv6'], "", true, "ipv6") === false) {
-        $conf .= openvpn_gen_routes($settings['remote_networkv6'], "ipv6", false);
+    if (!empty($settings['remote_networkv6']) &&
+        openvpn_validate_cidr($settings['remote_networkv6'], '', true, 'ipv6') === false) {
+        $conf .= openvpn_gen_routes($settings['remote_networkv6'], 'ipv6', false);
     }
 
     // Write the settings for the keys
@@ -1000,7 +1005,7 @@ function openvpn_restart($mode, $settings)
     $a_groups = return_gateway_groups_array();
     if (is_array($a_groups[$settings['interface']])) {
         /* the interface is a gateway group. If a vip is defined and its a CARP backup then do not start */
-        if (($a_groups[$settings['interface']][0]['vip'] <> "") &&
+        if (($a_groups[$settings['interface']][0]['vip'] != '') &&
             get_carp_interface_status($a_groups[$settings['interface']][0]['vip']) == "BACKUP") {
             return;
         }
@@ -1085,15 +1090,13 @@ function openvpn_csc_conf_write($settings, $server, $target_filename = null)
         $conf .= openvpn_gen_routes($settings['local_networkv6'], "ipv6", true);
     }
 
-    // Add a remote network iroute if set
-    if (!empty($settings['remote_network'])
-      && openvpn_validate_cidr($settings['remote_network'], "", true, "ipv4") === false) {
-        $conf .= openvpn_gen_routes($settings['remote_network'], "ipv4", false, true);
+    if (!empty($settings['remote_network']) &&
+        openvpn_validate_cidr($settings['remote_network'], '', true, 'ipv4') === false) {
+        $conf .= openvpn_gen_routes($settings['remote_network'], 'ipv4', false, true);
     }
-    // Add a remote network iroute if set
-    if (!empty($settings['remote_networkv6'])
-      && openvpn_validate_cidr($settings['remote_networkv6'], "", true, "ipv6") === false) {
-        $conf .= openvpn_gen_routes($settings['remote_networkv6'], "ipv6", false, true);
+    if (!empty($settings['remote_networkv6']) &&
+        openvpn_validate_cidr($settings['remote_networkv6'], '', true, 'ipv6') === false) {
+        $conf .= openvpn_gen_routes($settings['remote_networkv6'], 'ipv6', false, true);
     }
 
     openvpn_add_dhcpopts($settings, $conf);
@@ -1309,8 +1312,8 @@ function openvpn_get_active_servers($type = 'multipoint')
 
 function openvpn_get_server_status($server, $socket)
 {
-    $errval;
-    $errstr;
+    $errval = 0;
+    $errstr = '';
     $fp = @stream_socket_client($socket, $errval, $errstr, 1);
     if ($fp) {
         stream_set_timeout($fp, 1);
@@ -1406,8 +1409,8 @@ function openvpn_get_active_clients()
 
 function openvpn_get_client_status($client, $socket)
 {
-    $errval;
-    $errstr;
+    $errval = 0;
+    $errstr = '';
     $fp = @stream_socket_client($socket, $errval, $errstr, 1);
     if ($fp) {
         stream_set_timeout($fp, 1);
@@ -1473,7 +1476,6 @@ function openvpn_get_client_status($client, $socket)
         }
         fclose($fp);
     } else {
-        $DisplayNote=true;
         $client['remote_host'] = "Unable to contact daemon";
         $client['virtual_addr'] = "Service not running?";
         $client['bytes_recv'] = 0;

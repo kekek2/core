@@ -52,7 +52,7 @@ require_once('plugins.inc.d/unbound.inc');
 function generate_ipv6_from_mac($mac)
 {
     $elements = explode(":", $mac);
-    if (count($elements) <> 6) {
+    if (count($elements) != 6) {
         return false;
     }
 
@@ -264,7 +264,7 @@ function services_radvd_configure($verbose = false, $blacklist = array())
         } elseif (!isset($dhcpv6ifconf['rasamednsasdhcp6']) && !empty($dhcpv6ifconf['radnsserver'][0])) {
             $dnslist_tmp = $dhcpv6ifconf['radnsserver'];
         } elseif (isset($config['dnsmasq']['enable']) || isset($config['unbound']['enable'])) {
-            $server = get_interface_ipv6($realif);
+            $server = find_interface_ipv6($realif);
             if (is_ipaddrv6($server)) {
                 $dnslist_tmp[] = $server;
             } else {
@@ -406,7 +406,7 @@ function services_dhcpdv6_leasesfile()
     return '/var/dhcpd/var/db/dhcpd6.leases';
 }
 
-function services_dhcpd_configure($family = 'all', $blacklist = array(), $verbose = false)
+function services_dhcpd_configure($verbose = false, $family = 'all', $blacklist = array())
 {
     $dirs = array('/dev', '/etc', '/lib', '/run', '/usr', '/usr/local/sbin', '/var/db', '/var/run');
 
@@ -580,12 +580,10 @@ EOPP;
     $iflist = get_configured_interface_with_descr();
 
     foreach ($config['dhcpd'] as $dhcpif => $dhcpifconf) {
-        $ifcfg = $config['interfaces'][$dhcpif];
-        $newzone = array();
-
         if (!isset($dhcpifconf['enable']) || !isset($iflist[$dhcpif])) {
             continue;
         }
+
         $ifcfgip = get_interface_ip($dhcpif);
         $ifcfgsn = get_interface_subnet($dhcpif);
         $subnet = gen_subnet($ifcfgip, $ifcfgsn);
@@ -610,6 +608,8 @@ EOPP;
         if (!empty($dhcpifconf['domainsearchlist'])) {
             $dnscfg .= "  option domain-search \"" . join("\",\"", preg_split("/[ ;]+/", $dhcpifconf['domainsearchlist'])) . "\";\n";
         }
+
+        $newzone = array();
 
         if (isset($dhcpifconf['ddnsupdate'])) {
             $need_ddns_updates = true;
@@ -946,7 +946,7 @@ EOD;
                 }
 
                 if (isset($sm['ddnsupdate'])) {
-                    if (($sm['ddnsdomain'] <> "") && ($sm['ddnsdomain'] != $dhcpifconf['ddnsdomain'])) {
+                    if (($sm['ddnsdomain'] != '') && ($sm['ddnsdomain'] != $dhcpifconf['ddnsdomain'])) {
                         $smdnscfg .= "    ddns-domainname \"{$sm['ddnsdomain']}\";\n";
                     }
                     $smdnscfg .= "    ddns-update-style interim;\n";
@@ -1078,14 +1078,16 @@ function is_dhcpv6_server_enabled()
 {
     global $config;
 
-    foreach (legacy_config_get_interfaces(array('virtual' => false)) as $ifcfg) {
-        if (isset($ifcfg['enable']) && !empty($ifcfg['track6-interface']) && !isset($ifcfg['dhcpd6track6allowoverride'])) {
+    /* handle manually configured DHCP6 server settings first */
+    foreach (config_read_array('dhcpdv6') as $dhcpv6if => $dhcpv6ifconf) {
+        if (isset($config['interfaces'][$dhcpv6if]['enable']) && isset($dhcpv6ifconf['enable'])) {
             return true;
         }
     }
 
-    foreach (config_read_array('dhcpdv6') as $dhcpv6if => $dhcpv6ifconf) {
-        if (isset($dhcpv6ifconf['enable']) && !empty($config['interfaces'][$dhcpv6if])) {
+    /* handle DHCP-PD prefixes and 6RD dynamic interfaces */
+    foreach (legacy_config_get_interfaces(array('virtual' => false)) as $ifcfg) {
+        if (isset($ifcfg['enable']) && !empty($ifcfg['track6-interface']) && !isset($ifcfg['dhcpd6track6allowoverride'])) {
             return true;
         }
     }
@@ -1129,7 +1131,6 @@ function services_dhcpdv6_configure($verbose = false, $blacklist = array())
             continue;
         }
         if (!empty($config['interfaces'][$ifname]['track6-interface'])) {
-            $realif = get_real_interface($ifname, 'inet6');
             $ifcfgipv6 = get_interface_ipv6($ifname);
             if (!is_ipaddrv6($ifcfgipv6)) {
                 continue;
@@ -1177,63 +1178,62 @@ function services_dhcpdv6_configure($verbose = false, $blacklist = array())
                     'to' => make_ipv6_64_address($ifcfgipv6, $dhcpdv6cfg[$ifname]['range']['to']),
                 );
 
-                $pd_prefix_from_array = explode(':', $dhcpdv6cfg[$ifname]['prefixrange']['from']);
-                $pd_prefix_to_array = explode(':', $dhcpdv6cfg[$ifname]['prefixrange']['to']);
+                if (!empty($dhcpdv6cfg[$ifname]['prefixrange']['from']) && !empty($dhcpdv6cfg[$ifname]['prefixrange']['to']) ) {
+                    $pd_prefix_from_array = explode(':', $dhcpdv6cfg[$ifname]['prefixrange']['from']);
+                    $pd_prefix_to_array = explode(':', $dhcpdv6cfg[$ifname]['prefixrange']['to']);
 
-                $pd_prefix_from_array[2] = sprintf("%02s", $pd_prefix_from_array[2]);
-                $pd_prefix_to_array[2] = sprintf("%02s", $pd_prefix_to_array[2]);
+                    $pd_prefix_from_array[2] = sprintf("%02s", $pd_prefix_from_array[2]);
+                    $pd_prefix_to_array[2] = sprintf("%02s", $pd_prefix_to_array[2]);
 
-                $pd_prefix_from_array_out = array();
-                $pd_prefix_to_array_out = array();
+                    for ($x = 0; $x < 4; $x++) {
+                        /* make the prefx long format otherwise dhcpd complains */
+                        $ifcfgipv6arr[$x] = sprintf("%04s", $ifcfgipv6arr[$x]);
+                    }
 
-                for ($x = 0; $x < 4; $x++) {
-                    /* make the prefx long format otherwise dhcpd complains */
-                    $ifcfgipv6arr[$x] = sprintf("%04s", $ifcfgipv6arr[$x]);
+                    $pd_prefix_from_array_out = $ifcfgipv6arr;
+                    $pd_prefix_to_array_out = $ifcfgipv6arr;
+
+                    $pdval = intval($dhcpdv6cfg[$ifname]['prefixrange']['prefixlength']);
+
+                    switch ($pdval) {
+                        // For PD sizes of /60 through /64, the user must do the math!
+                        case 60:
+                        case 62:
+                        case 63:
+                        case 64: // 3&4th bytes on 4th array
+                            $pd_prefix_from_array_out[3] = sprintf("%04s", $ifcfgipv6arr[3]); // make it 4 bytes
+                            $pd_prefix_from_array_out[3] = substr($pd_prefix_from_array_out[3], 0, 2) . $pd_prefix_from_array[2];
+                            $pd_prefix_to_array_out[3] = sprintf("%04s", $ifcfgipv6arr[3]); // make it 4 bytes
+                            $pd_prefix_to_array_out[3] = substr($pd_prefix_to_array_out[3], 0, 2) . $pd_prefix_to_array[2];
+                            break;
+                        case 56: // 1st&2nd bytes on 4th array
+                            $pd_prefix_from_array[2] = str_pad($pd_prefix_from_array[2], 4, "0");
+                            $pd_prefix_from_array_out[3] = sprintf("%s", $pd_prefix_from_array[2]); // make it 4 bytes
+                            $pd_prefix_to_array[2] = str_pad($pd_prefix_to_array[2], 4, "0");
+                            $pd_prefix_to_array_out[3] = sprintf("%s", $pd_prefix_to_array[2]); // make it 4 bytes
+                            break;
+                        case 52: // 1st byte on 4th array only, 0 to f, we only want one byte, but lookout for the user entering more
+                            $len = strlen($pd_prefix_from_array[2]);
+                            $pd_prefix_from_array[2] = substr($pd_prefix_from_array[2], $len - 1, 1);
+                            $pd_prefix_from_array_out[3] = sprintf("%s000", substr($pd_prefix_from_array[2], 0, 1)); // first byte from entered value
+                            $len = strlen($pd_prefix_to_array[2]);
+                            $pd_prefix_to_array[2] = substr($pd_prefix_to_array[2], $len-1, 1);
+                            $pd_prefix_to_array_out[3] = sprintf("%s000", substr($pd_prefix_to_array[2], 0, 1));
+                            break;
+                        case 48: // 4th byte on 2nd array
+                            $pd_prefix_from_array[2] = substr($pd_prefix_from_array[2], 0, 1);
+                            $pd_prefix_from_array_out[1] = substr(sprintf("%03s", $ifcfgipv6arr[1]), 0, 3) . $pd_prefix_from_array[2]; // get 1st 3 byte + nibble
+                            $pd_prefix_to_array[2] = substr($pd_prefix_to_array[2], 0, 1);
+                            $pd_prefix_to_array_out[1] = substr(sprintf("%03s", $ifcfgipv6arr[1]), 0, 3) . $pd_prefix_to_array[2]; // get 1st 3 byte + nibble
+                            break;
+                    }
+
+                    $ipv6_from_pd_from = implode(':', $pd_prefix_from_array_out);
+                    $ipv6_from_pd_to = implode(':', $pd_prefix_to_array_out);
+
+                    $dhcpdv6cfg[$ifname]['prefixrange']['from'] = Net_IPv6::compress($ipv6_from_pd_from);
+                    $dhcpdv6cfg[$ifname]['prefixrange']['to'] = Net_IPv6::compress($ipv6_from_pd_to);
                 }
-
-                $pd_prefix_from_array_out = $ifcfgipv6arr;
-                $pd_prefix_to_array_out = $ifcfgipv6arr;
-
-                $pdval = intval($dhcpdv6cfg[$ifname]['prefixrange']['prefixlength']);
-
-                switch ($pdval) {
-                    // For PD sizes of /60 through /64, the user must do the math!
-                    case 60:
-                    case 62:
-                    case 63:
-                    case 64: // 3&4th bytes on 4th array
-                        $pd_prefix_from_array_out[3] =  sprintf("%04s", $ifcfgipv6arr[3]); // make it 4 bytes
-                        $pd_prefix_from_array_out[3] = substr($pd_prefix_from_array_out[3], 0, 2) . $pd_prefix_from_array[2];
-                        $pd_prefix_to_array_out[3] =  sprintf("%04s", $ifcfgipv6arr[3]); // make it 4 bytes
-                        $pd_prefix_to_array_out[3] = substr($pd_prefix_to_array_out[3], 0, 2) . $pd_prefix_to_array[2];
-                        break;
-                    case 56: // 1st&2nd bytes on 4th array
-                        $pd_prefix_from_array[2] = str_pad($pd_prefix_from_array[2], 4, "0");
-                        $pd_prefix_from_array_out[3] =  sprintf("%s", $pd_prefix_from_array[2]); // make it 4 bytes
-                        $pd_prefix_to_array[2] = str_pad($pd_prefix_to_array[2], 4, "0");
-                        $pd_prefix_to_array_out[3] =  sprintf("%s", $pd_prefix_to_array[2]); // make it 4 bytes
-                        break;
-                    case 52: // 1st byte on 4th array only, 0 to f, we only want one byte, but lookout for the user entering more
-                        $len = strlen($pd_prefix_from_array[2]);
-                        $pd_prefix_from_array[2] = substr($pd_prefix_from_array[2], $len - 1, 1);
-                        $pd_prefix_from_array_out[3] =  sprintf("%s000", substr($pd_prefix_from_array[2], 0, 1)); // first byte from entered value
-                        $len = strlen($pd_prefix_to_array[2]);
-                        $pd_prefix_to_array[2] = substr($pd_prefix_to_array[2], $len-1, 1);
-                        $pd_prefix_to_array_out[3] =   sprintf("%s000", substr($pd_prefix_to_array[2], 0, 1));
-                        break;
-                    case 48: // 4th byte on 2nd array
-                        $pd_prefix_from_array[2] = substr($pd_prefix_from_array[2], 0, 1);
-                        $pd_prefix_from_array_out[1] =  substr(sprintf("%03s", $ifcfgipv6arr[1]), 0, 3) . $pd_prefix_from_array[2]; // get 1st 3 byte + nibble
-                        $pd_prefix_to_array[2] = substr($pd_prefix_to_array[2], 0, 1);
-                        $pd_prefix_to_array_out[1] =  substr(sprintf("%03s", $ifcfgipv6arr[1]), 0, 3) . $pd_prefix_to_array[2]; // get 1st 3 byte + nibble
-                        break;
-                }
-
-                $ipv6_from_pd_from = implode(':', $pd_prefix_from_array_out);
-                $ipv6_from_pd_to = implode(':', $pd_prefix_to_array_out);
-
-                $dhcpdv6cfg[$ifname]['prefixrange']['from'] =  Net_IPv6::compress($ipv6_from_pd_from);
-                $dhcpdv6cfg[$ifname]['prefixrange']['to'] =  Net_IPv6::compress($ipv6_from_pd_to);
             }
         }
     }
@@ -1273,17 +1273,17 @@ EOD;
     $dhcpdv6ifs = array();
     $ddns_zones = array();
     $nsupdate = false;
-    $dhcpv6num = 0;
 
     foreach ($dhcpdv6cfg as $dhcpv6if => $dhcpv6ifconf) {
-        $newzone = array();
-
         if (!isset($dhcpv6ifconf['enable']) || !isset($iflist[$dhcpv6if])) {
             continue;
         }
+
         if (isset($blacklist[$dhcpv6if])) {
             continue;
         }
+
+        $realif = get_real_interface($dhcpv6if, 'inet6');
 
         $ifcfgipv6 = get_interface_ipv6($dhcpv6if);
         $ifcfgsnv6 = get_interface_subnetv6($dhcpv6if);
@@ -1297,6 +1297,8 @@ EOD;
         if (!empty($dhcpv6ifconf['domainsearchlist'])) {
             $dnscfgv6 .= "  option domain-search \"" . join("\",\"", preg_split("/[ ;]+/", $dhcpv6ifconf['domainsearchlist'])) . "\";\n";
         }
+
+        $newzone = array();
 
         if (isset($dhcpv6ifconf['ddnsupdate'])) {
             if (!empty($dhcpv6ifconf['ddnsdomain'])) {
@@ -1426,6 +1428,8 @@ EOD;
                 $newzone['dns-servers'] = array($dhcpv6ifconf['ddnsdomainprimary']);
                 $newzone['ddnsdomainkeyname'] = $dhcpv6ifconf['ddnsdomainkeyname'];
                 $newzone['ddnsdomainkey'] = $dhcpv6ifconf['ddnsdomainkey'];
+                /* XXX not implemented for IPv6 */
+                $newzone['ddnsdomainalgorithm'] = 'hmac-md5';
                 $ddns_zones[] = $newzone;
             }
         }
@@ -1537,7 +1541,6 @@ function services_dhcrelay_configure($verbose = false)
             array_shift($route_str);
             array_shift($route_str);
             array_shift($route_str);
-            $route_arr = array();
             foreach ($route_str as $routeline) {
                 $items = preg_split("/[ ]+/i", $routeline);
                 if (is_subnetv4($items[0])) {
@@ -1660,7 +1663,6 @@ function services_dhcrelay6_configure($verbose = false)
             array_shift($route_str);
             array_shift($route_str);
             array_shift($route_str);
-            $route_arr = array();
             foreach ($route_str as $routeline) {
                 $items = preg_split("/[ ]+/i", $routeline);
                 if (ip_in_subnet($srvip, $items[0])) {
@@ -1714,7 +1716,7 @@ function get_dyndns_ip($int, $ipver = 4)
         return 'down';
     }
 
-    $gateways_status = return_gateways_status(true);
+    $gateways_status = return_gateways_status();
 
     /*
      * If the gateway for this interface is down, then the external
@@ -1745,7 +1747,7 @@ function get_dyndns_ip($int, $ipver = 4)
             $ip_address = '';
         }
         curl_close($ip_ch);
-    } elseif (ipver == 6 && is_linklocal($ip_address)) {
+    } elseif ($ipver == 6 && is_linklocal($ip_address)) {
         log_error('Aborted IPv6 detection: cannot bind to link-local address');
         $ip_address = '';
     }

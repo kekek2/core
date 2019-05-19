@@ -72,7 +72,7 @@ class ForwardRule extends Rule
     /**
      * search interfaces without a gateway other then the one provided
      * @param $interface
-     * @return list of interfaces
+     * @return array list of interfaces
      */
     private function reflectionInterfaces($interface)
     {
@@ -90,6 +90,7 @@ class ForwardRule extends Rule
      * preprocess internal rule data to detail level of actual ruleset
      * handles shortcuts, like inet46 and multiple interfaces
      * @return array
+     * @throws \OPNsense\Base\ModelException
      */
     private function parseRdrRules()
     {
@@ -154,8 +155,13 @@ class ForwardRule extends Rule
                 $rule = $tmp;
                 // automatically generate nat rule when enablenatreflectionhelper is set
                 if (!$rule['disabled'] && empty($rule['nordr']) && !empty($rule['enablenatreflectionhelper'])) {
-                    $rule['rule_types'][] = "rdr_nat";
-                    $rule['staticnatport'] = !empty($rule['staticnatport']);
+                    if (!empty($this->interfaceMapping[$rule['interface']]) && (
+                        !empty($this->interfaceMapping[$rule['interface']]['ifconfig']['ipv4']) ||
+                        !empty($this->interfaceMapping[$rule['interface']]['ifconfig']['ipv6'])
+                    )) {
+                        $rule['rule_types'][] = "rdr_nat";
+                        $rule['staticnatport'] = !empty($rule['staticnatport']);
+                    }
                 }
                 $rule['interface'] = $interf;
                 yield $rule;
@@ -166,6 +172,7 @@ class ForwardRule extends Rule
     /**
      * output rule as string
      * @return string ruleset
+     * @throws \OPNsense\Base\ModelException
      */
     public function __toString()
     {
