@@ -257,7 +257,9 @@ class SettingsController extends ApiMutableModelControllerBase
      */
     public function addRuleAction()
     {
-        return $this->addBase('rule', 'rules.rule', [ "origin" => "TrafficShaper"]);
+        $result = $this->addBase('rule', 'rules.rule', [ "origin" => "TrafficShaper"]);
+        firewall_syslog("Add Firewall/Traffic Shaper/Rule", $result["uuid"]);
+        return $result;
     }
     /**
      * Delete rule by uuid
