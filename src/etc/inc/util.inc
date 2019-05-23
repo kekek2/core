@@ -581,7 +581,7 @@ function is_domain($domain)
     if (!is_string($domain)) {
         return false;
     }
-    if (preg_match('/^(?:(?:[a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*(?:[a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$/i', $domain)) {
+    if (preg_match('/^(?:(?:[\p{L}0-9]|[\p{L}0-9][\p{L}0-9\-]*[\p{L}0-9])\.)*(?:[\p{L}0-9]|[\p{L}0-9][a-z0-9\-]*[\p{L}0-9])$/iu', $domain)) {
         return true;
     } else {
         return false;

@@ -466,7 +466,7 @@ function unbound_add_domain_overrides($pvt = false)
     $result = array();
 
     foreach ($domains as $domain) {
-        $domain_key = current($domain);
+        $domain_key = idn_to_ascii(current($domain));
         if (!isset($result[$domain_key])) {
             $result[$domain_key] = array();
         }
@@ -590,9 +590,9 @@ function unbound_add_host_entries()
     if (isset($config['unbound']['hosts'])) {
         foreach ($config['unbound']['hosts'] as $host) {
             $aliases = array(array(
-                'domain' => $host['domain'],
+                'domain' => idn_to_ascii($host['domain']),
                 'descr' => $host['descr'],
-                'host' => $host['host'],
+                'host' => idn_to_ascii($host['host']),
             ));
 
             if (!empty($host['aliases']['item'])) {
