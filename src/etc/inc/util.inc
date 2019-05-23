@@ -568,7 +568,7 @@ function is_hostname($hostname)
     if (!is_string($hostname)) {
         return false;
     }
-    if (preg_match('/^(?:(?:[a-z0-9_]|[a-z0-9_][a-z0-9_\-]*[a-z0-9_])\.)*(?:[a-z0-9_]|[a-z0-9_][a-z0-9_\-]*[a-z0-9_])$/i', $hostname)) {
+    if (preg_match('/^(?:(?:[\p{L}0-9_]|[\p{L}0-9_][\p{L}0-9_\-]*[\p{L}0-9_])\.)*(?:[\p{L}0-9_]|[\p{L}0-9_][\p{L}0-9_\-]*[\p{L}0-9_])$/iu', $hostname)) {
         return true;
     } else {
         return false;
