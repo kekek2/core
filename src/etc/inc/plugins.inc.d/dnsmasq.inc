@@ -216,7 +216,9 @@ function _dnsmasq_add_host_entries()
     }
 
     foreach ($dnsmasqcfg['hosts'] as $host) {
+        $host['domain'] = idn_to_ascii($host['domain']);
         if ($host['host']) {
+            $host['host'] = idn_to_ascii($host['host']);
             $lhosts .= "{$host['ip']}\t{$host['host']}.{$host['domain']} {$host['host']}\n";
         } else {
             $lhosts .= "{$host['ip']}\t{$host['domain']}\n";
@@ -225,7 +227,9 @@ function _dnsmasq_add_host_entries()
             continue;
         }
         foreach ($host['aliases']['item'] as $alias) {
+            $alias['domain'] = idn_to_ascii($alias['domain']);
             if ($alias['host']) {
+                $alias['host'] = idn_to_ascii($alias['host']);
                 $lhosts .= "{$host['ip']}\t{$alias['host']}.{$alias['domain']} {$alias['host']}\n";
             } else {
                 $lhosts .= "{$host['ip']}\t{$alias['domain']}\n";
