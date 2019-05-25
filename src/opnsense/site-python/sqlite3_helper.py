@@ -73,7 +73,7 @@ def check_and_repair(filename_mask, force_repair=False):
                     with open(filename_sql, 'r') as f_in:
                         with open(filename_sql_clean, 'w') as f_out:
                             for line in f_in:
-                                if line.strip().split(';')[0] not in ('BEGIN TRANSACTION', 'ROLLBACK'):
+                                if line.strip().split(';')[0] not in ('ROLLBACK'):
                                     f_out.write(line)
                     # create a new sqlite3 database
                     os.system('/usr/local/bin/sqlite3 %s < %s ' % (filename_tmp, filename_sql_clean))
