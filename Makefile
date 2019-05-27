@@ -171,8 +171,6 @@ MFCDIR?=${WRKDIR}/mfc
 FILES_TO_ENCODE=${WRKSRC}
 .else
 FILES_TO_ENCODE=${WRKSRC}${LOCALBASE}/etc/inc/authgui.inc \
-		${WRKSRC}${LOCALBASE}/www/ting_cert.php \
-		${WRKSRC}${LOCALBASE}/www/ting_cert_manual.php \
 		${WRKSRC}${LOCALBASE}/opnsense/mvc/app/library/SmartSoft/Core/Tools.php
 .endif
 
