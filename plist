@@ -153,6 +153,7 @@
 /usr/local/etc/rc.syshook.d/start/90-cron
 /usr/local/etc/rc.syshook.d/start/95-beep
 /usr/local/etc/rc.syshook.d/start/97-apuled
+/usr/local/etc/rc.syshook.d/start/99-squid
 /usr/local/etc/rc.syshook.d/stop/05-beep
 /usr/local/etc/rc.syshook.d/stop/10-apuled
 /usr/local/etc/rc.syshook.d/stop/75-flowd
