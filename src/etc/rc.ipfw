@@ -34,6 +34,17 @@ sysctl net.inet.ip.dummynet.hash_size=256 > /dev/null
 # reload ipfw rules
 ipfw -q /usr/local/etc/ipfw.rules
 
+RULESDIR="/usr/local/etc/ipfw.rules.d"
+
+if [ -d ${RULESDIR} ]; then
+    # collect all matching rules
+    RULES=$(find -s ${RULESDIR} -type f)
+
+    for RULESCHUNK in ${RULES}; do
+	/sbin/ipfw -f ${RULESCHUNK}
+    done
+fi
+
 if [ ! -f /tmp/ipfw.firstload ]; then
 	# we need to make sure ipfw is loaded as last
 	touch /tmp/ipfw.firstload
