@@ -530,8 +530,7 @@ function get_menu_messages()
 
             foreach ($notices as $key => $value) {
                 $date = date("m-d-y H:i:s", $key);
-                $noticemsg = ($value['notice'] != "" ? $value['notice'] : $value['id']);
-                $noticemsg = preg_replace("/(\"|\'|\n|<.?\w+>)/i","",$noticemsg);
+                $noticemsg = preg_replace("/(\"|\'|\n|<.?\w+>)/i","",$value);
                 $alert_action ="onclick=\"notice_action('acknowledge','{$key}'); jQuery(this).parent().parent().remove();\"";
                 $notice_msgs .= "<li><a href=\"#\"  {$alert_action}>{$date} [ ".htmlspecialchars($noticemsg)." ]</a></li>";
             }
@@ -545,13 +544,6 @@ function get_menu_messages()
             }
             $menu_messages.="<a href=\"/\" class=\"dropdown-toggle \" data-toggle=\"dropdown\" role=\"button\" aria-expanded=\"false\"><span class=\"text-primary\">{$msg}&nbsp;</span><span class=\"caret text-primary\"></span></a>{$notice_msgs}\n";
         }
-    } else {
-        $menu_messages .= sprintf(
-          '<span class="navbar-text">%s@%s.%s</span>',
-          $_SESSION['Username'],
-          $config['system']['hostname'],
-          $config['system']['domain']
-        );
     }
 
     return $menu_messages;

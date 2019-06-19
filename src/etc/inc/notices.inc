@@ -29,36 +29,33 @@
  *
  */
 
+$notices_file = '/var/tmp/notices';
+
 function file_notice($notice)
 {
+    global $notices_file;
     $queue = get_notices();
-    $queue[time()] = array('notice' => $notice);
-    file_put_contents('/tmp/notices', serialize($queue));
+    $queue[sprintf("%.4f", microtime(true))] = $notice;
+    file_put_contents($notices_file, serialize($queue));
 }
 
 function get_notices()
 {
-    $toreturn = array();
+    global $notices_file;
 
-    if (file_exists('/tmp/notices')) {
-        $queue = unserialize(file_get_contents('/tmp/notices'));
-        if ($queue) {
-            foreach($queue as $time => $notice) {
-                if (strtolower($notice['category']) == strtolower($category)) {
-                    $toreturn[$time] = $notice;
-                }
-            }
-        }
+    if (file_exists($notices_file)) {
+        return unserialize(file_get_contents($notices_file));
     }
 
-    return $toreturn;
+    return [];
 }
 
 function close_notice($id)
 {
-    if (file_exists('/tmp/notices')) {
+    global $notices_file;
+    if (file_exists($notices_file)) {
         if ($id == 'all') {
-            @unlink('/tmp/notices');
+            @unlink($notices_file);
         } else {
             $notices = get_notices();
             foreach (array_keys($notices) as $time) {
@@ -68,9 +65,9 @@ function close_notice($id)
                 }
             }
             if (count($notices) > 0) {
-                file_put_contents('/tmp/notices', serialize($notices));
+                file_put_contents($notices_file, serialize($notices));
             } else {
-                @unlink('/tmp/notices');
+                @unlink($notices_file);
             }
         }
     }
@@ -91,5 +88,6 @@ function print_notices($notices)
 
 function are_notices_pending()
 {
-    return file_exists('/tmp/notices');
+    global $notices_file;
+    return file_exists($notices_file);
 }
