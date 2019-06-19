@@ -95,6 +95,7 @@
 /usr/local/etc/rc.d/configd
 /usr/local/etc/rc.d/flowd_aggregate
 /usr/local/etc/rc.d/netflow
+/usr/local/etc/rc.defaults
 /usr/local/etc/rc.expireaccounts
 /usr/local/etc/rc.filter_configure
 /usr/local/etc/rc.filter_synchronize
