@@ -1,0 +1,5 @@
+pax {
+	path: "/usr/local/sbin/syslog-ng",
+	aslr: false,
+	segvguard: false
+}
