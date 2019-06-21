@@ -147,6 +147,7 @@
 /usr/local/etc/rc.syshook.d/early/15-templates
 /usr/local/etc/rc.syshook.d/early/20-backup
 /usr/local/etc/rc.syshook.d/early/30-certs
+/usr/local/etc/rc.syshook.d/early/99-secadm
 /usr/local/etc/rc.syshook.d/start/10-newwanip
 /usr/local/etc/rc.syshook.d/start/20-freebsd
 /usr/local/etc/rc.syshook.d/start/25-flowd
@@ -161,6 +162,7 @@
 /usr/local/etc/rc.syshook.d/stop/80-freebsd
 /usr/local/etc/rc.syshook.d/stop/90-backup
 /usr/local/etc/rc.syshook.d/stop/99-config
+/usr/local/etc/secadm.conf.d/syslog-ng
 /usr/local/etc/squid/errors/en/ERR_BANNED_ACCESS_DENIED
 /usr/local/etc/squid/errors/en/ERR_BLACKLIST_ACCESS_DENIED
 /usr/local/etc/squid/errors/en/ERR_BLOCKMIMETYPES_ACCESS_DENIED
