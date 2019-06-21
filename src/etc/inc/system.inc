@@ -1079,7 +1079,7 @@ function reset_factory_defaults($sync = true)
     mwexec('/usr/local/sbin/beep.sh stop');
 
     /* as we go through a special case directly shut down */
-    $shutdown_cmd = '/sbin/shutdown -op now';
+    $shutdown_cmd = '/sbin/shutdown -or now';
     if ($sync) {
         mwexec($shutdown_cmd);
     } else {
