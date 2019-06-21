@@ -1,0 +1,6 @@
+#!/bin/sh
+
+###Start secadm if secadm.conf.d directory not empty
+if [ "$(ls -A /usr/local/etc/secadm.conf.d/ 2>/dev/null)" ]; then
+    /usr/local/etc/rc.d/secadm onestart
+fi
