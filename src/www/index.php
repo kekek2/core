@@ -32,7 +32,7 @@ require_once('guiconfig.inc');
 
 // closing should be $_POST, but the whole notice handling needs more attention. Leave it as is for now.
 if (isset($_REQUEST['closenotice'])) {
-    close_notice($_REQUEST['closenotice']);
+    (new \OPNsense\Core\Notices())->delNotice($_REQUEST['closenotice']);
     echo get_menu_messages();
     exit;
 }

@@ -33,6 +33,7 @@
 
 require_once('filter.lib.inc');
 
+use \OPNsense\Core\Notices;
 
 function is_bogonsv6_used()
 {

@@ -516,34 +516,30 @@ function get_crash_report($pedantic = false)
 
 function get_menu_messages()
 {
-    global $config;
 
+    $notices = (new \OPNsense\Core\Notices())->getNotices();
     $menu_messages = '';
 
-    if (are_notices_pending()) {
-        $notices = get_notices();
+    if ($notices != []) {
+        $notice_msgs = "<ul class=\"dropdown-menu\" role=\"menu\">";
 
-        if (is_array($notices)) {
-            $notice_msgs = "<ul class=\"dropdown-menu\" role=\"menu\">";
+        $notice_msgs .= "<li><a href=\"#\" onclick=\"notice_action('acknowledge','all');\" >" . gettext("Acknowledge All Notices") . "</a></li><li class=\"divider\"></li>";
 
-            $notice_msgs .= "<li><a href=\"#\" onclick=\"notice_action('acknowledge','all');\" >".gettext("Acknowledge All Notices")."</a></li><li class=\"divider\"></li>";
-
-            foreach ($notices as $key => $value) {
-                $date = date("m-d-y H:i:s", $key);
-                $noticemsg = preg_replace("/(\"|\'|\n|<.?\w+>)/i","",$value);
-                $alert_action ="onclick=\"notice_action('acknowledge','{$key}'); jQuery(this).parent().parent().remove();\"";
-                $notice_msgs .= "<li><a href=\"#\"  {$alert_action}>{$date} [ ".htmlspecialchars($noticemsg)." ]</a></li>";
-            }
-
-            $notice_msgs .="</ul>";
-
-            if (count($notices) == 1) {
-                $msg= sprintf("%1$02d",count($notices))." ".gettext("unread notice");
-            } else {
-                $msg= sprintf("%1$02d",count($notices))." ".gettext("unread notices");
-            }
-            $menu_messages.="<a href=\"/\" class=\"dropdown-toggle \" data-toggle=\"dropdown\" role=\"button\" aria-expanded=\"false\"><span class=\"text-primary\">{$msg}&nbsp;</span><span class=\"caret text-primary\"></span></a>{$notice_msgs}\n";
+        foreach ($notices as $value) {
+            $date = date("m-d-y H:i:s", $value['datetime']);
+            $noticemsg = preg_replace("/(\"|\'|\n|<.?\w+>)/i", "", $value['message']);
+            $alert_action = "onclick=\"notice_action('acknowledge','{$value['datetime']}'); jQuery(this).parent().parent().remove();\"";
+            $notice_msgs .= "<li><a href=\"#\"  {$alert_action}>{$date} [ " . htmlspecialchars($noticemsg) . " ]</a></li>";
         }
+
+        $notice_msgs .= "</ul>";
+
+        if (count($notices) == 1) {
+            $msg = sprintf("%1$02d", count($notices)) . " " . gettext("unread notice");
+        } else {
+            $msg = sprintf("%1$02d", count($notices)) . " " . gettext("unread notices");
+        }
+        $menu_messages .= "<a href=\"/\" class=\"dropdown-toggle \" data-toggle=\"dropdown\" role=\"button\" aria-expanded=\"false\"><span class=\"text-primary\">{$msg}&nbsp;</span><span class=\"caret text-primary\"></span></a>{$notice_msgs}\n";
     }
 
     return $menu_messages;

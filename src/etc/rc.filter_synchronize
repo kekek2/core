@@ -38,6 +38,8 @@ require_once("util.inc");
 require_once("interfaces.inc");
 require_once("XMLRPC_Client.inc") ;
 
+use \OPNsense\Core\Notices;
+
 /**
  * fetch carp vips from config with modified advskew for the backup host to use
  * @return array
@@ -74,13 +76,14 @@ function carp_check_version($url, $username, $password, $method = 'opnsense.firm
 {
     $client = new SimpleXMLRPC_Client($url,240);
     $client->setCredentials($username, $password);
+    $Notices = new Notices();
     if ($client->query($method)) {
         $remote_version = $client->getResponse();
     } else {
         // propagate error to log
         $error = "An error occurred while attempting XMLRPC sync with username {$username} and {$url} " .  $client->error ;
         log_error($error);
-        file_notice($error);
+        $Notices->addNotice($error);
         // print communication details on failure
         echo $client->getDetails();
         return false ;
@@ -89,7 +92,7 @@ function carp_check_version($url, $username, $password, $method = 'opnsense.firm
     if (!is_array($remote_version) && trim($remote_version) == "Authentication failed") {
         $error = "An authentication failure occurred while trying to access {$url} ({$method}).";
         log_error($error);
-        file_notice($error);
+        $Notices->addNotice($error);
         return false;
     }
 
@@ -203,13 +206,14 @@ function carp_sync_xml($url, $username, $password, $sections, $method = 'opnsens
 
     $client = new SimpleXMLRPC_Client($url,240);
     $client->setCredentials($username, $password);
+    $Notices = new Notices();
     if ($client->query($method, $transport_data)) {
         $response = $client->getResponse();
     } else {
         // propagate error to log
         $error = "An error occurred while attempting XMLRPC sync with username {$username} and {$url} " .  $client->error ;
         log_error($error);
-        file_notice($error);
+        $Notices->addNotice($error);
         // print communication details on failure
         echo $client->getDetails();
         return false ;
@@ -218,7 +222,7 @@ function carp_sync_xml($url, $username, $password, $sections, $method = 'opnsens
     if (!is_array($response) && trim($response) == "Authentication failed") {
         $error = "An authentication failure occurred while trying to access {$url} ({$method}).";
         log_error($error);
-        file_notice($error);
+        $Notices->addNotice($error);
         exit;
     }
 
@@ -304,13 +308,14 @@ if (isset($config['hasync']) && is_array($config['hasync'])) {
     }
     $client = new SimpleXMLRPC_Client($synchronizeto, 240);
     $client->setCredentials($username, $hasync['password']);
+    $Notices = new Notices();
     if ($client->query("opnsense.filter_configure")) {
         $response = $client->getResponse();
     } else {
         // propagate error to log
         $error = "An error occurred while attempting XMLRPC sync with username {$username} and {$url} " .  $client->error ;
         log_error($error);
-        file_notice($error);
+        $Notices->delNotice($error);
         // print communication details on failure
         echo $client->getDetails();
         return false ;
@@ -319,7 +324,7 @@ if (isset($config['hasync']) && is_array($config['hasync'])) {
     if (!is_array($response) && trim($response) == "Authentication failed") {
         $error = "An authentication failure occurred while trying to access {$url} ({$method}).";
         log_error($error);
-        file_notice($error);
+        $Notices->delNotice($error);
         exit;
     }
 

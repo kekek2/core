@@ -3,23 +3,17 @@
 namespace OPNsense\Core\Api;
 
 use \OPNsense\Base\ApiControllerBase;
-
-require_once("notices.inc");
+use \OPNsense\Core\Notices;
 
 class NoticeController extends ApiControllerBase
 {
     public function listAction()
     {
-        if (!are_notices_pending())
-            return [];
-
-        $notices = get_notices();
-        if (!is_array($notices))
-            return [];
+        $Notices = new Notices();
 
         $result = [];
-        foreach ($notices as $key => $value)
-            $result[] = ["key" => $key, "txt" => preg_replace("/(\"|\'|\n|<.?\w+>)/i", "", $value)];
+        foreach ($Notices->getNotices() as $value)
+            $result[] = ["key" => $value['datetime'], "txt" => preg_replace("/(\"|\'|\n|<.?\w+>)/i", "", $value['message'])];
 
         return $result;
     }
@@ -28,7 +22,8 @@ class NoticeController extends ApiControllerBase
     {
         if (!$this->request->isPost() || !$this->request->hasPost("closenotice"))
             return [];
-        close_notice($this->request->getPost("closenotice"));
+        $Notices = new Notices();
+        $Notices->delNotice($this->request->getPost("closenotice"));
         return [];
     }
 }

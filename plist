@@ -28,7 +28,6 @@
 /usr/local/etc/inc/IPv6.inc
 /usr/local/etc/inc/legacy_bindings.inc
 /usr/local/etc/inc/logs.inc
-/usr/local/etc/inc/notices.inc
 /usr/local/etc/inc/plugins.inc
 /usr/local/etc/inc/plugins.inc.d/configd.inc
 /usr/local/etc/inc/plugins.inc.d/core.inc
@@ -476,6 +475,7 @@
 /usr/local/opnsense/mvc/app/library/OPNsense/Core/Backend.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Core/Config.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Core/ConfigException.php
+/usr/local/opnsense/mvc/app/library/OPNsense/Core/Notices.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Core/Routing.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Core/Shell.php
 /usr/local/opnsense/mvc/app/library/OPNsense/Core/Singleton.php

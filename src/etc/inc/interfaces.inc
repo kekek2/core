@@ -33,6 +33,7 @@
 require_once("interfaces.lib.inc");
 require_once("gwlb.inc");
 
+use \OPNsense\Core\Notices;
 /*
  * converts a string like "a,b,c,d"
  * into an array like array("a" => "b", "c" => "d")
@@ -1690,7 +1691,7 @@ function interface_carp_configure(&$vip)
     /* NOTE: Maybe its useless nowdays */
     $realif = get_real_interface($vip['interface']);
     if (!does_interface_exist($realif)) {
-        file_notice(sprintf(gettext("Interface specified for the virtual IP address %s does not exist. Skipping this VIP."), $vip['subnet']));
+        (new Notices())->addNotice(sprintf(gettext("Interface specified for the virtual IP address %s does not exist. Skipping this VIP."), $vip['subnet']));
         return;
     }
 
