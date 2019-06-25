@@ -52,6 +52,14 @@ function file_notice($id, $notice, $category = "General", $url = "", $priority =
 	 */
 
 	global $notices_file;
+	if (is_array($notice)) {
+	    if (count($notice) > 1) {
+	        $notice = $notice[1];
+        } else {
+	        $notice = $notice[0];
+        }
+    }
+
 	if(!$queue = get_notices()) $queue = array();
 	$queuekey = time();
 	$toqueue = array(
