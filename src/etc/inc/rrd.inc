@@ -60,6 +60,8 @@ function rrd_configure($verbose = false)
     gettext("cellular");
     gettext("vpnusers");
     gettext("cputemp");
+    gettext("quality");
+    gettext("services");
 
     $traffic = "-traffic.rrd";
     $packets = "-packets.rrd";
