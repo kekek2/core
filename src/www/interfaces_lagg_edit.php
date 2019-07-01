@@ -218,7 +218,7 @@ legacy_html_escape_form_data($pconfig);
 <?php
                       foreach ($laggprotos as $proto):?>
                         <option value="<?=$proto;?>" <?=$proto == $pconfig['proto'] ? "selected=\"selected\"": "";?>>
-                            <?=strtoupper($proto);?>
+                            <?=strtoupper(gettext($proto));?>
                         </option>
 <?php
                       endforeach;?>
