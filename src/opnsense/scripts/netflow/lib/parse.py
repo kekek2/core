@@ -26,7 +26,6 @@
     --------------------------------------------------------------------------------------
     parse flowd log files
 """
-import flowd
 import select
 import tempfile
 import subprocess
@@ -60,7 +59,7 @@ class Interfaces(object):
             subprocess.call(['/sbin/ifconfig', '-l'], stdout=output_stream, stderr=open(os.devnull, 'wb'))
             output_stream.seek(0)
             if_index = 1
-            for line in output_stream.read().split('\n')[0].split():
+            for line in output_stream.readline().split():
                 self._if_index["%s" % if_index] = line
                 if_index += 1
 

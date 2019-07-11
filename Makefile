@@ -49,12 +49,12 @@ CORE_ABI?=	19.1
 CORE_ARCH?=	${ARCH}
 CORE_FLAVOUR=	${FLAVOUR}
 CORE_OPENVPN?=	# empty
-CORE_PHP?=	71
+CORE_PHP?=	72
 CORE_PYTHON2?=	27
-CORE_PYTHON3?=	36
+CORE_PYTHON?=	37
 CORE_RADVD?=	1
-CORE_SQUID?=
-CORE_SURICATA?=
+CORE_SQUID?=	# empty
+CORE_SURICATA?=	# empty
 
 _FLAVOUR!=	if [ -f ${OPENSSL} ]; then ${OPENSSL} version; fi
 FLAVOUR?=	${_FLAVOUR:[1]}
@@ -141,12 +141,13 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			py${CORE_PYTHON2}-requests \
 			py${CORE_PYTHON2}-sqlite3 \
 			py${CORE_PYTHON2}-ujson \
-			py${CORE_PYTHON3}-Jinja2 \
-			py${CORE_PYTHON3}-dnspython \
-			py${CORE_PYTHON3}-netaddr \
-			py${CORE_PYTHON3}-requests \
-			py${CORE_PYTHON3}-sqlite3 \
-			py${CORE_PYTHON3}-ujson \
+			py${CORE_PYTHON}-Jinja2 \
+			py${CORE_PYTHON}-dnspython \
+			py${CORE_PYTHON}-netaddr \
+			py${CORE_PYTHON}-psutil \
+			py${CORE_PYTHON}-requests \
+			py${CORE_PYTHON}-sqlite3 \
+			py${CORE_PYTHON}-ujson \
 			radvd${CORE_RADVD} \
 			rate \
 			rrdtool \
@@ -177,7 +178,7 @@ FILES_TO_ENCODE=${WRKSRC}${LOCALBASE}/etc/inc/authgui.inc \
 .endif
 
 WANTS=		p5-File-Slurp php${CORE_PHP}-pear-PHP_CodeSniffer \
-		phpunit7-php${CORE_PHP} py${CORE_PYTHON2}-pycodestyle
+		phpunit7-php${CORE_PHP} py${CORE_PYTHON}-pycodestyle
 
 .for WANT in ${WANTS}
 want-${WANT}:
@@ -234,6 +235,12 @@ name:
 depends:
 	@echo ${CORE_DEPENDS}
 
+.if ${.TARGETS:Mupgrade}
+PKG_FORMAT?=	tar
+.else
+PKG_FORMAT?=	txz
+.endif
+
 PKG_SCRIPTS=	+PRE_INSTALL +POST_INSTALL \
 		+PRE_UPGRADE +POST_UPGRADE \
 		+PRE_DEINSTALL +POST_DEINSTALL
@@ -248,6 +255,10 @@ scripts:
 install:
 	@${MAKE} -C ${.CURDIR}/contrib install DESTDIR=${DESTDIR}
 	@${MAKE} -C ${.CURDIR}/src install DESTDIR=${DESTDIR} ${MAKE_REPLACE}
+.if exists(${LOCALBASE}/opnsense/www/index.php)
+	# try to update the current system if it looks like one
+	@touch ${LOCALBASE}/opnsense/www/index.php
+.endif
 
 collect:
 	@(cd ${.CURDIR}/src; find * -type f) | while read FILE; do \
@@ -337,8 +348,8 @@ package: plist-check package-check clean-wrksrc
 	fi
 	@echo " done"
 	@echo ">>> Packaging files for ${CORE_NAME}-${CORE_PKGVERSION}:"
-	@PORTSDIR=${.CURDIR} ${PKG} create -v -m ${WRKSRC} -r ${WRKSRC} \
-	    -p ${WRKSRC}/plist -o ${PKGDIR}
+	@PORTSDIR=${.CURDIR} ${PKG} create -f ${PKG_FORMAT} -v -m ${WRKSRC} \
+	    -r ${WRKSRC} -p ${WRKSRC}/plist -o ${PKGDIR}
 .endif
 
 upgrade-check:
@@ -349,8 +360,8 @@ upgrade-check:
 
 upgrade: upgrade-check clean-pkgdir package
 	@${PKG} delete -fy ${CORE_NAME} || true
-	@${PKG} add ${PKGDIR}/*.txz
-	@${LOCALBASE}/etc/rc.restart_webgui
+	@${PKG} add ${PKGDIR}/*.${PKG_FORMAT}
+	@pluginctl webgui
 
 lint-shell:
 	@find ${.CURDIR}/src ${.CURDIR}/Scripts \
@@ -363,7 +374,7 @@ lint-xml:
 SCRIPTDIRS!=	find ${.CURDIR}/src/opnsense/scripts -type d -depth 1
 
 lint-exec:
-.for DIR in ${.CURDIR}/src/etc/rc.d ${SCRIPTDIRS}
+.for DIR in ${.CURDIR}/src/etc/rc.d ${.CURDIR}/src/etc/rc.syshook.d ${SCRIPTDIRS}
 .if exists(${DIR})
 	@find ${DIR} -path '**/htdocs_default' -prune -o -type f \
 	    ! -name "*.xml" ! -name "*.csv" ! -name "*.sql" -print0 | \
@@ -398,9 +409,9 @@ sweep:
 	find ${.CURDIR} -type f -depth 1 -print0 | \
 	    xargs -0 -n1 ${.CURDIR}/Scripts/cleanfile
 
-STYLEDIRS?=	src/etc/inc/plugins.inc.d src/opnsense
+STYLEDIRS?=	src/etc/inc src/opnsense
 
-style-python: want-py${CORE_PYTHON2}-pycodestyle
+style-python: want-py${CORE_PYTHON}-pycodestyle
 	@pycodestyle --ignore=E501 ${.CURDIR}/src || true
 
 style-php: want-php${CORE_PHP}-pear-PHP_CodeSniffer

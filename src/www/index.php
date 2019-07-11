@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     usort($widgetCollection, function ($item1, $item2) {
       return strcmp(strtolower($item1['sortKey']), strtolower($item2['sortKey']));
     });
-} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['origin']) && $_POST['origin'] == 'dashboard') {
     if (!empty($_POST['sequence'])) {
         $config['widgets']['sequence'] = $_POST['sequence'];
     } elseif (isset($config['widgets']['sequence'])) {
@@ -124,7 +124,7 @@ include("fbegin.inc");?>
         <section class="col-xs-12">
           <div class="content-box" style="padding: 20px;">
             <div class="table-responsive">
-              <img src="/ui/themes/opnsense/build/images/ting-green.png" border="0" alt="logo" style="max-width:380px;" />
+                <img src="/ui/themes/opnsense/build/images/ting-green.png" border="0" alt="logo" style="max-width:380px;" />
               <br />
               <div class="content-box-main" style="padding-bottom:0px;">
                 <?php
@@ -318,6 +318,7 @@ include("fbegin.inc");?>
 
 <section class="page-content-main">
   <form method="post" id="iform">
+    <input type="hidden" value="dashboard" name="origin" id="origin" />
     <input type="hidden" value="" name="sequence" id="sequence" />
     <input type="hidden" value="<?= $pconfig['column_count'];?>" name="column_count" id="column_count_input" />
   </form>
@@ -327,7 +328,7 @@ include("fbegin.inc");?>
 <?php
           print_service_banner('livecd');
           $crash_report = get_crash_report();
-          if ($crash_report != '') {
+          if (!empty($crash_report)) {
               print_info_box($crash_report);
           }?>
         </div>

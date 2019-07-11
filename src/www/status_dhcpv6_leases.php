@@ -32,6 +32,7 @@
 require_once("guiconfig.inc");
 require_once("interfaces.inc");
 require_once("services.inc");
+require_once("plugins.inc.d/dhcpd.inc");
 
 function adjust_utc($dt)
 {
@@ -81,7 +82,7 @@ function parse_duid($duid_string)
 }
 
 $interfaces = legacy_config_get_interfaces(array('virtual' => false));
-$leasesfile = services_dhcpdv6_leasesfile();
+$leasesfile = dhcpd_dhcpv6_leasesfile();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $leases_content = array();
@@ -293,8 +294,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $slease['duid'] = $static['duid'];
                 $slease['start'] = "";
                 $slease['end'] = "";
-                $slease['hostname'] = htmlentities($static['hostname']);
-                $slease['descr'] = htmlentities($static['descr']);
+                $slease['hostname'] = $static['hostname'];
+                $slease['descr'] = $static['descr'];
                 $slease['act'] = "static";
                 if (in_array($slease['ip'], array_keys($ndpdata))) {
                     $slease['online'] = 'online';
@@ -355,8 +356,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             fclose($fout);
             @unlink($leasesfile);
             @rename($leasesfile.".new", $leasesfile);
-            /* Restart DHCP Service */
-            services_dhcpd_configure();
+
+            dhcpd_dhcp_configure(false, 'inet6');
         }
     }
     exit;
@@ -376,7 +377,7 @@ foreach ($leases as $data) {
 }
 
 $gentitle_suffix = " ($leases_count)";
-
+legacy_html_escape_form_data($leases);
 ?>
 <body>
   <script>

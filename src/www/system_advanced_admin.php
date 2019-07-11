@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright (C) 2017-2018 Franco Fichtner <franco@opnsense.org>
+ * Copyright (C) 2017-2019 Franco Fichtner <franco@opnsense.org>
  * Copyright (C) 2014-2015 Deciso B.V.
  * Copyright (C) 2005-2010 Scott Ullrich <sullrich@gmail.com>
  * Copyright (C) 2008 Shrew Soft Inc. <mgrooms@shrew.net>
@@ -34,7 +34,6 @@
 require_once("guiconfig.inc");
 require_once("filter.inc");
 require_once("system.inc");
-require_once("services.inc");
 
 $a_group = &config_read_array('system', 'group');
 $a_authmode = auth_get_authserver_list();
@@ -56,6 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['usevirtualterminal'] = isset($config['system']['usevirtualterminal']);
     $pconfig['disableintegratedauth'] = !empty($config['system']['disableintegratedauth']);
     $pconfig['sudo_allow_wheel'] = $config['system']['sudo_allow_wheel'];
+    $pconfig['sudo_allow_group'] = isset($config['system']['sudo_allow_group']) ? $config['system']['sudo_allow_group'] : null;
     $pconfig['nodnsrebindcheck'] = isset($config['system']['webgui']['nodnsrebindcheck']);
     $pconfig['nohttpreferercheck'] = isset($config['system']['webgui']['nohttpreferercheck']);
     $pconfig['althostnames'] = $config['system']['webgui']['althostnames'];
@@ -255,6 +255,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             unset($config['system']['ssh']['group']);
         }
 
+        if (!empty($pconfig['sudo_allow_group'])) {
+            $config['system']['sudo_allow_group'] = $pconfig['sudo_allow_group'];
+        } elseif (isset($config['system']['sudo_allow_group'])) {
+            unset($config['system']['sudo_allow_group']);
+        }
+
         if (!empty($pconfig['sshpasswordauth'])) {
             $config['system']['ssh']['passwordauth'] = true;
         } elseif (isset($config['system']['ssh']['passwordauth'])) {
@@ -305,7 +311,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         system_login_configure();
         system_hosts_generate();
         plugins_configure('dns');
-        services_dhcpd_configure();
+        plugins_configure('dhcp');
         configd_run('openssh restart', true);
 
         if ($restart_webgui) {
@@ -461,15 +467,13 @@ $(document).ready(function() {
                 <td><a id="help_for_sslcertref" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("SSL Certificate"); ?></td>
                 <td>
                   <select name="ssl-certref" class="selectpicker" data-style="btn-default">
-<?php
-                  foreach ($a_cert as $cert) :?>
-<?php             if (isset($cert['prv'])) :?>
+<?php foreach ($a_cert as $cert): ?>
+<?php if (isset($cert['prv'])): ?>
                     <option value="<?=$cert['refid'];?>" <?=$pconfig['ssl-certref'] == $cert['refid'] ? "selected=\"selected\"" : "";?>>
                       <?=$cert['descr'];?>
                     </option>
-<?php             endif; ?>
-<?php
-                  endforeach;?>
+<?php endif ?>
+<?php endforeach ?>
                   </select>
                   <div class='hidden' data-for="help_for_sslcertref">
                     <?=sprintf(
@@ -613,13 +617,11 @@ $(document).ready(function() {
               </tr>
               <tr>
                 <td><a id="help_for_webguiinterfaces" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Listen Interfaces') ?></td>
-                  <td>
+                <td>
                   <select id="webguiinterface" name="webguiinterfaces[]" multiple="multiple" class="selectpicker" title="<?= html_safe(gettext('All (recommended)')) ?>">
-<?php
-                  foreach ($interfaces as $iface => $ifacename): ?>
+<?php foreach ($interfaces as $iface => $ifacename): ?>
                       <option value="<?= html_safe($iface) ?>" <?= !empty($pconfig['webguiinterfaces']) && in_array($iface, $pconfig['webguiinterfaces']) ? 'selected="selected"' : '' ?>><?= html_safe($ifacename) ?></option>
-<?php
-                  endforeach;?>
+<?php endforeach ?>
                   </select>
                   <div class="hidden" data-for="help_for_webguiinterfaces">
                     <?= gettext('Only accept connections from the selected interfaces. Leave empty to listen globally. Use with care.') ?>
@@ -657,14 +659,12 @@ $(document).ready(function() {
               </tr>
               <tr>
                 <td><a id="help_for_sshlogingroup" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Login Group') ?></td>
-                  <td>
+                <td>
                   <select name="sshlogingroup" class="selectpicker">
                       <option value=""><!-- do not translate: -->wheel</option>
-<?php
-                  foreach ($a_group as $group) :?>
+<?php foreach ($a_group as $group): ?>
                       <option value="<?= html_safe($group['name']) ?>" <?= $pconfig['sshlogingroup'] == $group['name'] ? 'selected="selected"' : '' ?>><!-- do not translate: -->wheel, <?= html_safe($group['name']) ?></option>
-<?php
-                  endforeach;?>
+<?php endforeach ?>
                   </select>
                   <div class="hidden" data-for="help_for_sshlogingroup">
                     <?= gettext('Select the allowed groups for remote login. The "wheel" group is always set for recovery purposes and an additional local group can be selected at will. Do not yield remote access to non-adminstrators as every user can access system files using SSH or SFTP.') ?>
@@ -706,13 +706,11 @@ $(document).ready(function() {
               </tr>
               <tr>
                 <td><a id="help_for_sshinterfaces" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('Listen Interfaces') ?></td>
-                  <td>
+                <td>
                   <select name="sshinterfaces[]" multiple="multiple" class="selectpicker" title="<?= html_safe(gettext('All (recommended)')) ?>">
-<?php
-                  foreach ($interfaces as $iface => $ifacename): ?>
+<?php foreach ($interfaces as $iface => $ifacename): ?>
                       <option value="<?= html_safe($iface) ?>" <?= !empty($pconfig['sshinterfaces']) && in_array($iface, $pconfig['sshinterfaces']) ? 'selected="selected"' : '' ?>><?= html_safe($ifacename) ?></option>
-<?php
-                  endforeach;?>
+<?php endforeach ?>
                   </select>
                   <div class="hidden" data-for="help_for_sshinterfaces">
                     <?= gettext('Only accept connections from the selected interfaces. Leave empty to listen globally. Use with care.') ?>
@@ -805,18 +803,26 @@ $(document).ready(function() {
                 <td><a id="help_for_authmode" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('Server') ?></td>
                 <td>
                   <select name="authmode[]" multiple="multiple" class="selectpicker" data-style="btn-default">
-<?php
-                  foreach ($a_authmode as $auth_key => $auth_server): ?>
+<?php foreach ($a_authmode as $auth_key => $auth_server): ?>
                     <option value="<?= html_safe($auth_key) ?>" <?= !empty($pconfig['authmode']) && in_array($auth_key, $pconfig['authmode']) ? 'selected="selected"' : '' ?>>
                       <?= html_safe($auth_server['name']) ?>
                     </option>
-<?php
-                  endforeach ?>
+<?php endforeach ?>
                   </select>
                   <div class="hidden" data-for="help_for_authmode">
                     <?= gettext('Select one or more authentication servers to validate user credentials against. ' .
                         'Multiple servers can make sense with remote authentication methods to provide a fallback ' .
                         'during connectivity issues. When nothing is specified the default of "Local Database" is used.') ?>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td></td>
+                <td>
+                  <input name="disableintegratedauth" type="checkbox" value="yes" <?= empty($pconfig['disableintegratedauth']) ? '' : 'checked="checked"' ?>  />
+                  <?=gettext("Disable integrated authentication"); ?>
+                  <div class="hidden" data-for="help_for_authmode">
+                    <?= gettext('When set, console login, SSH, and other system services can only use standard UNIX account authentication.') ?>
                   </div>
                 </td>
               </tr>
@@ -834,12 +840,16 @@ $(document).ready(function() {
                 </td>
               </tr>
               <tr>
-                <td><a id="help_for_disableintegratedauth" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext('System') ?></td>
+                <td></td>
                 <td>
-                  <input name="disableintegratedauth" type="checkbox" value="yes" <?= empty($pconfig['disableintegratedauth']) ? '' : 'checked="checked"' ?>  />
-                  <?=gettext("Disable integrated authentication"); ?>
-                  <div class="hidden" data-for="help_for_disableintegratedauth">
-                    <?= gettext('When set, console login, SSH, and other system services can only use standard UNIX account authentication.') ?>
+                  <select name="sudo_allow_group" class="selectpicker">
+                      <option value=""><!-- do not translate: -->wheel</option>
+<?php foreach ($a_group as $group): ?>
+                      <option value="<?= html_safe($group['name']) ?>" <?= $pconfig['sudo_allow_group'] == $group['name'] ? 'selected="selected"' : '' ?>><!-- do not translate: -->wheel, <?= html_safe($group['name']) ?></option>
+<?php endforeach ?>
+                  </select>
+                  <div class="hidden" data-for="help_for_sudo_allow_wheel">
+                    <?= gettext('Select the allowed groups for sudo usage. The "wheel" group is always set for recovery purposes and an additional local group can be selected at will.') ?>
                   </div>
                 </td>
               </tr>

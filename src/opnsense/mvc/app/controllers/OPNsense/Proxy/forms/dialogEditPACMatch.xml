@@ -87,6 +87,6 @@
         <id>pac.match.weekday_to</id>
         <label>To Day</label>
         <type>dropdown</type>
-        <help>Enter the last day.</help>
+        <help>Enter the last day of the week.</help>
     </field>
 </form>

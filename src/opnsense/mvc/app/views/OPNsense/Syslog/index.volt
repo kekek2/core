@@ -16,7 +16,7 @@
                 $("#categories").hide();
             else
                 $("#categories").show();
-           	
+
         });
 
         // link save button to API set action
@@ -58,7 +58,7 @@
                 options:{rowCount:-1},
             }
         );
-		
+
         // hide table header & pager
 		$("#grid-categories-header").hide();
 		$("#grid-categories-footer").hide();

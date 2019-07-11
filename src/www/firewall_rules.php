@@ -33,6 +33,154 @@ require_once("filter.inc");
 require_once("logs.inc");
 require_once("system.inc");
 
+/***********************************************************************************************************
+ * format functions for this page
+ ***********************************************************************************************************/
+function firewall_rule_item_proto($filterent)
+{
+    // construct line ipprotocol
+    if (isset($filterent['ipprotocol'])) {
+        switch($filterent['ipprotocol']) {
+            case "inet":
+                $record_ipprotocol = "IPv4 ";
+                break;
+            case "inet6":
+                $record_ipprotocol = "IPv6 ";
+                break;
+            case "inet46":
+                $record_ipprotocol = "IPv4+6 ";
+                break;
+        }
+    } else {
+        $record_ipprotocol = "IPv4 ";
+    }
+    $icmptypes = array(
+      "" => gettext("any"),
+      "echoreq" => gettext("Echo Request"),
+      "echorep" => gettext("Echo Reply"),
+      "unreach" => gettext("Destination Unreachable"),
+      "squench" => gettext("Source Quench (Deprecated)"),
+      "redir" => gettext("Redirect"),
+      "althost" => gettext("Alternate Host Address (Deprecated)"),
+      "routeradv" => gettext("Router Advertisement"),
+      "routersol" => gettext("Router Solicitation"),
+      "timex" => gettext("Time Exceeded"),
+      "paramprob" => gettext("Parameter Problem"),
+      "timereq" => gettext("Timestamp"),
+      "timerep" => gettext("Timestamp Reply"),
+      "inforeq" => gettext("Information Request (Deprecated)"),
+      "inforep" => gettext("Information Reply (Deprecated)"),
+      "maskreq" => gettext("Address Mask Request (Deprecated)"),
+      "maskrep" => gettext("Address Mask Reply (Deprecated)")
+    );
+    $icmp6types = array(
+      "" => gettext("any"),
+      "unreach" => gettext("Destination unreachable"),
+      "toobig" => gettext("Packet too big"),
+      "timex" => gettext("Time exceeded"),
+      "paramprob" => gettext("Invalid IPv6 header"),
+      "echoreq" => gettext("Echo service request"),
+      "echorep" => gettext("Echo service reply"),
+      "groupqry" => gettext("Group membership query"),
+      "listqry" => gettext("Multicast listener query"),
+      "grouprep" => gettext("Group membership report"),
+      "listenrep" => gettext("Multicast listener report"),
+      "groupterm" => gettext("Group membership termination"),
+      "listendone" => gettext("Multicast listener done"),
+      "routersol" => gettext("Router solicitation"),
+      "routeradv" => gettext("Router advertisement"),
+      "neighbrsol" => gettext("Neighbor solicitation"),
+      "neighbradv" => gettext("Neighbor advertisement"),
+      "redir" => gettext("Shorter route exists"),
+      "routrrenum" => gettext("Route renumbering"),
+      "fqdnreq" => gettext("FQDN query"),
+      "niqry" => gettext("Node information query"),
+      "wrureq" => gettext("Who-are-you request"),
+      "fqdnrep" => gettext("FQDN reply"),
+      "nirep" => gettext("Node information reply"),
+      "wrurep" => gettext("Who-are-you reply"),
+      "mtraceresp" => gettext("mtrace response"),
+      "mtrace" => gettext("mtrace messages")
+    );
+    if (isset($filterent['protocol']) && $filterent['protocol'] == "icmp" && !empty($filterent['icmptype'])) {
+        $result = $record_ipprotocol;
+        $result .= sprintf(
+          "<span data-toggle=\"tooltip\" title=\"ICMP type: %s \"> %s </span>",
+          html_safe($icmptypes[$filterent['icmptype']]),
+          isset($filterent['protocol']) ? strtoupper($filterent['protocol']) : "*"
+        );
+        return $result;
+    } elseif (isset($filterent['protocol']) && !empty($filterent['icmp6-type'])) {
+        $result = $record_ipprotocol;
+        $result .= sprintf(
+          "<span data-toggle=\"tooltip\" title=\"ICMP6 type: %s \"> %s </span>",
+          html_safe($icmp6types[$filterent['icmp6-type']]),
+          isset($filterent['protocol']) ? strtoupper($filterent['protocol']) : "*"
+        );
+        return $result;
+    } else {
+        return $record_ipprotocol . (isset($filterent['protocol']) ? strtoupper($filterent['protocol']) : "*");
+    }
+}
+
+
+function firewall_rule_item_icons($filterent)
+{
+    $result = "";
+    if (!empty($filterent['direction']) && $filterent['direction'] == "in") {
+        $result .= sprintf(
+            "<i class=\"fa fa-long-arrow-right fa-fw text-info\" data-toggle=\"tooltip\" title=\"%s\"></i>",
+            gettext("in")
+        );
+    } elseif (!empty($filterent['direction']) && $filterent['direction'] == "out") {
+        $result .= sprintf(
+            "<i class=\"fa fa-long-arrow-left fa-fw\" data-toggle=\"tooltip\" title=\"%s\"></i>",
+            gettext("out")
+        );
+    }
+    if (!empty($filterent['floating'])) {
+        if (isset($filterent['quick']) && $filterent['quick'] === 'yes') {
+            $result .= sprintf(
+                "<i class=\"fa fa-flash fa-fw text-warning\" data-toggle=\"tooltip\" title=\"%s\"></i>",
+                gettext('first match')
+            );
+        } else {
+          $result .= sprintf(
+              "<i class=\"fa fa-flash fa-fw text-muted\" data-toggle=\"tooltip\" title=\"%s\"></i>",
+              gettext('last match')
+          );
+        }
+    }
+    if (isset($filterent['log'])) {
+          $result .= sprintf(
+              "<i class=\"fa fa-info-circle fa-fw %s\"></i>",
+              !empty($filterent['disabled']) ? 'text-muted' : 'text-info'
+          );
+    }
+
+    return $result;
+}
+
+function firewall_rule_item_action($filterent)
+{
+    if ($filterent['type'] == "block" && empty($filterent['disabled'])) {
+        return "fa fa-times fa-fw text-danger";
+    } elseif ($filterent['type'] == "block" && !empty($filterent['disabled'])) {
+        return "fa fa-times fa-fw text-muted";
+    }  elseif ($filterent['type'] == "reject" && empty($filterent['disabled'])) {
+        return "fa fa-times-circle fa-fw text-danger";
+    }  elseif ($filterent['type'] == "reject" && !empty($filterent['disabled'])) {
+        return "fa fa-times-circle fa-fw text-muted";
+    } elseif (empty($filterent['disabled'])) {
+        return "fa fa-play fa-fw text-success";
+    } else {
+        return "fa fa-play fa-fw text-muted";
+    }
+}
+/***********************************************************************************************************
+ *
+ ***********************************************************************************************************/
+
 $a_filter = &config_read_array('filter', 'rule');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -129,15 +277,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+$selected_if = 'FloatingRules';
 if (isset($_GET['if'])) {
     $selected_if = htmlspecialchars($_GET['if']);
-} else {
-    $selected_if = "FloatingRules";
 }
+
+$selected_category = [];
 if (isset($_GET['category'])) {
     $selected_category = !is_array($_GET['category']) ? array($_GET['category']) : $_GET['category'];
-} else {
-    $selected_category = array();
 }
 
 include("head.inc");
@@ -146,7 +293,6 @@ $main_buttons = array(
     array('label' => gettext('Add'), 'href' => 'firewall_rules_edit.php?if=' . $selected_if),
 );
 
-$lockout_spec = filter_core_get_antilockout();
 legacy_html_escape_form_data($a_filter);
 $all_rule_stats = json_decode(configd_run("filter rule stats"), true);
 ?>
@@ -263,7 +409,6 @@ $( document ).ready(function() {
 
   // link category select/search
   $("#fw_category").change(function(){
-      var stripe_color = 'transparent';
       var selected_values = [];
       $("#fw_category > option:selected").each(function(){
           if ($(this).val() != "") {
@@ -275,11 +420,6 @@ $( document ).ready(function() {
           }
       });
       $(".rule").each(function(){
-          // save zebra color
-          if ( $(this).children(0).css("background-color") != 'transparent') {
-              $("#fw_category").data('stripe_color', $(this).children(0).css("background-color"));
-          }
-
           if (selected_values.indexOf($(this).data('category')) == -1 && selected_values.length > 0) {
               $(this).hide();
           } else {
@@ -307,8 +447,8 @@ $( document ).ready(function() {
             $(this).val($(this).data('link') + add_link);
           }
       });
+      $(".opnsense-rules").change();
   });
-  $("#fw_category").change();
 
   // hide category search when not used
   if ($("#fw_category > option").length == 0) {
@@ -337,8 +477,39 @@ $( document ).ready(function() {
             $(this).addClass('active');
             $(this).data('mode', 'stats');
       }
+      $(this).blur();
   });
 
+  // expand internal auto generated rules
+  if ($("tr.internal-rule").length > 0) {
+      $("#expand-internal-rules").show();
+      $("#internal-rule-count").text($("tr.internal-rule").length);
+  }
+
+  // our usual zebra striping doesn't respect hidden rows, hook repaint on .opnsense-rules change() and fire initially
+  $(".opnsense-rules > tbody > tr").each(function(){
+      // save zebra color
+      let tr_color = $(this).children(0).css("background-color");
+      if (tr_color != 'transparent' && !tr_color.includes('(0, 0, 0')) {
+          $("#fw_category").data('stripe_color', tr_color);
+      }
+  });
+  $(".opnsense-rules").removeClass("table-striped");
+  $(".opnsense-rules").change(function(){
+      $(".opnsense-rules > tbody > tr:visible").each(function (index) {
+          $(this).css("background-color", "inherit");
+          if ( index % 2 == 0) {
+              $(this).css("background-color", $("#fw_category").data('stripe_color'));
+          }
+      });
+  });
+  //
+  $("#fw_category").change();
+  $("#expand-internal").click(function(event){
+      event.preventDefault();
+      $(".internal-rule").toggle();
+      $(".opnsense-rules").change();
+  });
 });
 </script>
 <style>
@@ -348,13 +519,16 @@ $( document ).ready(function() {
     .button-th {
         width: 150px;
     }
+    .opnsense-rules > tbody > tr > td {
+        padding-left:15px;
+        padding-right:15px;
+    }
 </style>
 
 <?php include("fbegin.inc"); ?>
   <div class="hidden">
     <div id="category_block" style="z-index:-100;">
-        <div class="hidden-sm hidden-lg"><br/></div>
-        <select class="selectpicker" data-live-search="true" data-size="5"  multiple placeholder="<?=gettext("Select category");?>" id="fw_category">
+        <select class="selectpicker hidden-xs hidden-sm hidden-md" data-live-search="true" data-size="5"  multiple placeholder="<?=gettext("Select category");?>" id="fw_category">
 <?php
             // collect unique list of categories and append to option list
             $categories = array();
@@ -368,7 +542,7 @@ $( document ).ready(function() {
 <?php
             endforeach;?>
         </select>
-        <button id="btn_inspect" class="btn btn-default">
+        <button id="btn_inspect" class="btn btn-default hidden-xs">
           <i class="fa fa-eye" aria-hidden="true"></i>
           <?=gettext("Inspect");?>
         </button>
@@ -382,141 +556,120 @@ $( document ).ready(function() {
         <?php if (is_subsystem_dirty('filter')): ?><p>
         <?php print_info_box_apply(gettext("The firewall rule configuration has been changed.<br />You must apply the changes in order for them to take effect."));?>
         <?php endif; ?>
+<?php
+          $interface_has_rules = false;
+          foreach ($a_filter as $i => $filterent) {
+            if ((!isset($filterent['floating']) && $selected_if == $filterent['interface']) ||
+              ((isset($filterent['floating']) || empty($filterent['interface'])) && $selected_if == 'FloatingRules')) {
+              $interface_has_rules = true;
+              break;
+            }
+          } ?>
+<?php if (!$interface_has_rules): ?>
+<?php if ($selected_if == 'FloatingRules'): ?>
+        <?php print_info_box(gettext('No floating rules are currently defined. Floating rules are ' .
+          'not bound to a single interface and can therefore be used to span ' .
+          'policies over multiple networks at the same time.')) ?>
+<?php else: ?>
+        <?php print_info_box(sprintf(gettext('No %s rules are currently defined. All incoming connections ' .
+          'on this interface will be blocked until you add a pass rule. Exceptions for automatically generated ' .
+          'rules may apply.'),
+          !empty($config['interfaces'][$selected_if]['descr']) ?
+          $config['interfaces'][$selected_if]['descr'] : strtoupper($selected_if))) ?>
+<?php endif ?>
+<?php endif ?>
         <section class="col-xs-12">
           <div class="content-box">
             <form action="firewall_rules.php?if=<?=$selected_if;?>" method="post" name="iform" id="iform">
               <input type="hidden" id="id" name="id" value="" />
               <input type="hidden" id="action" name="act" value="" />
-              <div class="table-responsive" >
-                <table class="table table-clean-form table-hover" id="rules">
-                  <thead>
+              <div class="table-responsive">
+                <table class="table table-condensed table-clean-form opnsense-rules">
+                  <tbody>
                     <tr>
-                      <th><input type="checkbox" id="selectAll"></th>
-                      <th>&nbsp;</th>
-                      <th class="view-info"><?=gettext("Proto");?></th>
-                      <th class="view-info"><?=gettext("Source");?></th>
-                      <th class="view-info hidden-xs hidden-sm"><?=gettext("Port");?></th>
-                      <th class="view-info hidden-xs hidden-sm"><?=gettext("Destination");?></th>
-                      <th class="view-info hidden-xs hidden-sm"><?=gettext("Port");?></th>
-                      <th class="view-info hidden-xs hidden-sm"><?=gettext("Gateway");?></th>
-                      <th class="view-info hidden-xs hidden-sm"><?=gettext("Schedule");?></th>
-                      <th class="view-stats"><?=gettext("Evaluations");?></th>
-                      <th class="view-stats"><?=gettext("Packets");?></th>
-                      <th class="view-stats"><?=gettext("Bytes");?></th>
-                      <th class="view-stats"><?=gettext("States");?></th>
-                      <th><?=gettext("Description");?>
-                          <i class="fa fa-question-circle" data-toggle="collapse" data-target=".rule_md5_hash" ></i>
-                      </th>
-                      <th class="button-th"></th>
+                      <td><input type="checkbox" id="selectAll"></td>
+                      <td>&nbsp;</td>
+                      <td class="view-info"><strong><?= gettext('Protocol') ?></strong></td>
+                      <td class="view-info"><strong><?= gettext('Source') ?></strong></td>
+                      <td class="view-info hidden-xs hidden-sm"><strong><?= gettext('Port') ?></strong></td>
+                      <td class="view-info hidden-xs hidden-sm"><strong><?= gettext('Destination') ?></strong></td>
+                      <td class="view-info hidden-xs hidden-sm"><strong><?= gettext('Port') ?></strong></td>
+                      <td class="view-info hidden-xs hidden-sm"><strong><?= gettext('Gateway') ?></strong></td>
+                      <td class="view-info hidden-xs hidden-sm"><strong><?= gettext('Schedule') ?></strong></td>
+                      <td class="view-stats hidden-xs hidden-sm"><strong><?= gettext('Evaluations') ?></strong></td>
+                      <td class="view-stats hidden-xs hidden-sm"><strong><?= gettext('States') ?></strong></td>
+                      <td class="view-stats"><strong><?= gettext('Packets') ?></strong></td>
+                      <td class="view-stats"><strong><?= gettext('Bytes') ?></strong></td>
+                      <td class="text-nowrap">
+                        <strong><?= gettext('Description') ?></strong>
+                        <i class="fa fa-question-circle" data-toggle="collapse" data-target=".rule_md5_hash" ></i>
+                      </td>
+                      <td class="button-th"></td>
                   </tr>
-                </thead>
-                <tbody>
-<?php
-                // Show floating block IPv6 rule if IPv6 is globally disabled in system settings
-                if (!isset($config['system']['ipv6allow']) &&
-                        ($selected_if == 'FloatingRules')):
-?>
-                  <tr>
-                    <td>&nbsp;</td>
-                    <td><span class="fa fa-times text-danger"></span></td>
-                    <td class="view-info">IPv6 *</td>
-                    <td class="view-info">*</td>
-                    <td class="view-info hidden-xs hidden-sm">*</td>
-                    <td class="view-info hidden-xs hidden-sm">*</td>
-                    <td class="view-info hidden-xs hidden-sm">*</td>
-                    <td class="view-info hidden-xs hidden-sm">*</td>
-                    <td class="view-info hidden-xs hidden-sm">&nbsp;</td>
-                    <td class="view-stats"></td>
-                    <td class="view-stats"></td>
-                    <td class="view-stats"></td>
-                    <td class="view-stats"></td>
-                    <td><?=gettext("Block all IPv6 traffic");?></td>
-                    <td>
-                      <a href="system_advanced_firewall.php" data-toggle="tooltip" title="<?= html_safe(gettext('Edit')) ?>" class="btn btn-default btn-xs"><i class="fa fa-pencil fa-fw"></i></a>
-                    </td>
+                  <tr id="expand-internal-rules" style="display: none;">
+                      <td><i class="fa fa-folder-o text-muted"></i></td>
+                      <td></td>
+                      <td class="view-info" colspan="2"> </td>
+                      <td class="view-info hidden-xs hidden-sm" colspan="5"> </td>
+                      <td colspan="2" class="view-stats hidden-xs hidden-sm"></td>
+                      <td colspan="2" class="view-stats"></td>
+                      <td><?= gettext('Automatically generated rules') ?></td>
+                      <td>
+                          <button class="btn btn-default btn-xs" id="expand-internal">
+                            <i class="fa fa-chevron-circle-down" aria-hidden="true"></i>
+                            <span class="badge">
+                              <span id="internal-rule-count"><span>
+                            </span>
+                          </button>
+                      </td>
                   </tr>
 <?php
-                endif; ?>
-<?php foreach ($lockout_spec as $lockout_intf => $lockout_prts): ?>
-<?php if ($selected_if == $lockout_intf): ?>
-                  <tr>
-                    <td>&nbsp;</td>
-                    <td><span class="fa fa-play text-success"></span></td>
-                    <td class="view-info">*</td>
-                    <td class="view-info">*</td>
-                    <td class="hidden-xs hidden-sm">*</td>
-                    <td class="hidden-xs hidden-sm"><?= html_safe(sprintf(gettext('%s address'), convert_friendly_interface_to_friendly_descr($lockout_intf))) ?></td>
-                    <td class="hidden-xs hidden-sm"><?= html_safe(implode(', ', $lockout_prts)) ?></td>
-                    <td class="hidden-xs hidden-sm">*</td>
-                    <td class="hidden-xs hidden-sm">&nbsp;</td>
-                    <td class="view-stats"></td>
-                    <td class="view-stats"></td>
-                    <td class="view-stats"></td>
-                    <td class="view-stats"></td>
-                    <td><?=gettext("Anti-Lockout Rule");?></td>
-                    <td>
-                      <a href="system_advanced_firewall.php" data-toggle="tooltip" title="<?= html_safe(gettext('Edit')) ?>" class="btn btn-default btn-xs"><i class="fa fa-pencil fa-fw"></i></a>
-                    </td>
-                  </tr>
+                $fw = filter_core_get_initialized_plugin_system();
+                filter_core_bootstrap($fw);
+                plugins_firewall($fw);
+                foreach ($fw->iterateFilterRules() as $rule):
+                    if ($rule->getInterface() == $selected_if && $rule->isEnabled()):
+                        $filterent = $rule->getRawRule();
+                        $rule_stats = !empty($rule->getLabel()) ? $all_rule_stats[$rule->getLabel()] : array();?>
+                    <tr class="internal-rule" style="display: none;">
+                      <td><i class="fa fa-magic"></i></td>
+                      <td>
+                          <span class="<?=firewall_rule_item_action($filterent);?>"></span><?=firewall_rule_item_icons($filterent);?>
+                      </td>
+                      <td class="view-info">
+                          <?=firewall_rule_item_proto($filterent);?>
+                      </td>
+                      <td class="view-info">
+                          <?=!empty($filterent['from']) ? $filterent['from'] : "*";?>
+                      </td>
+                      <td class="view-info hidden-xs hidden-sm">
+                          <?=!empty($filterent['from_port']) ? $filterent['from_port'] : "*";?>
+                      </td>
+                      <td class="view-info hidden-xs hidden-sm">
+                          <?=!empty($filterent['to']) ? $filterent['to'] : "*";?>
+                      </td>
+                      <td class="view-info hidden-xs hidden-sm">
+                          <?=!empty($filterent['to_port']) ? $filterent['to_port'] : "*";?>
+                      </td>
+                      <td class="view-info hidden-xs hidden-sm">
+                        <?= !empty($filterent['gateway']) ? $filterent['gateway'] : "*";?>
+                      </td>
+                      <td class="view-info hidden-xs hidden-sm">*</td>
+                      <td class="view-stats hidden-xs hidden-sm"><?= !empty($rule_stats) ? $rule_stats['evaluations'] : gettext('N/A') ?></td>
+                      <td class="view-stats hidden-xs hidden-sm"><?= !empty($rule_stats) ? $rule_stats['states'] : gettext('N/A') ?></td>
+                      <td class="view-stats"><?= !empty($rule_stats) ? $rule_stats['packets'] : gettext('N/A') ?></td>
+                      <td class="view-stats"><?= !empty($rule_stats) ? format_bytes($rule_stats['bytes']) : gettext('N/A') ?></td>
+                      <td><?=$rule->getDescr();?></td>
+                      <td>
+<?php if (!empty($rule->getRef())): ?>
+                          <a href="firewall_rule_lookup.php?rid=<?=html_safe($rule->getLabel());?>" class="btn btn-default btn-xs"><i class="fa fa-fw fa-search"></i></a>
 <?php endif ?>
-<?php endforeach ?>
+                      </td>
+                    </tr>
 <?php
-                if (isset($config['interfaces'][$selected_if]['blockpriv'])): ?>
-                  <tr>
-                    <td>&nbsp;</td>
-                    <td>
-                      <i class="fa fa-times text-danger"></i>
-<?php if ($config['OPNsense']['Syslog']['Firewall']['LogPrivateNets'] == 1): ?>
-                      <i class="fa fa-info-circle text-info"></i>
-<?php endif ?>
-                    </td>
-                    <td class="view-info">*</td>
-                    <td class="view-info"><?=gettext("RFC 1918 networks");?></td>
-                    <td class="view-info hidden-xs hidden-sm">*</td>
-                    <td class="view-info hidden-xs hidden-sm">*</td>
-                    <td class="view-info hidden-xs hidden-sm">*</td>
-                    <td class="view-info hidden-xs hidden-sm">*</td>
-                    <td class="view-info hidden-xs hidden-sm">&nbsp;</td>
-                    <td class="view-stats"></td>
-                    <td class="view-stats"></td>
-                    <td class="view-stats"></td>
-                    <td class="view-stats"></td>
-                    <td ><?=gettext("Block private networks");?></td>
-                    <td class="nowrap">
-                      <a href="interfaces.php?if=<?=$selected_if?>#rfc1918" data-toggle="tooltip" title="<?= html_safe(gettext('Edit')) ?>" class="btn btn-default btn-xs"><i class="fa fa-pencil fa-fw"></i></a>
-                    </td>
-                  </tr>
+                    endif;
+                endforeach;?>
 <?php
-              endif;
-              if (isset($config['interfaces'][$selected_if]['blockbogons'])): ?>
-                  <tr id="frrfc1918">
-                    <td>&nbsp;</td>
-                    <td>
-                      <i class="fa fa-times text-danger"></i>
-<?php if ($config['OPNsense']['Syslog']['Firewall']['LogBogons'] == 1): ?>
-                      <i class="fa fa-info-circle text-info"></i>
-<?php endif ?>
-                    </td>
-                    <td class="view-info">*</td>
-                    <td class="view-info"><?=gettext("Reserved/not assigned by IANA");?></td>
-                    <td class="view-info hidden-xs hidden-sm">*</td>
-                    <td class="view-info hidden-xs hidden-sm">*</td>
-                    <td class="view-info hidden-xs hidden-sm">*</td>
-                    <td class="view-info hidden-xs hidden-sm">*</td>
-                    <td class="view-info hidden-xs hidden-sm">&nbsp;</td>
-                    <td class="view-stats"></td>
-                    <td class="view-stats"></td>
-                    <td class="view-stats"></td>
-                    <td class="view-stats"></td>
-                    <td><?=gettext("Block bogon networks");?></td>
-                    <td>
-                      <a href="interfaces.php?if=<?=$selected_if?>#rfc1918" data-toggle="tooltip" title="<?= html_safe(gettext('Edit')) ?>" class="btn btn-default btn-xs"><i class="fa fa-pencil fa-fw"></i></a>
-                    </td>
-                  </tr>
-<?php
-                endif; ?>
-<?php
-                $interface_has_rules = false;
                 foreach ($a_filter as $i => $filterent):
                 if (
                     (!isset($filterent['floating']) && $selected_if == $filterent['interface']) ||
@@ -528,101 +681,20 @@ $( document ).ready(function() {
                   // calculate a hash so we can track these records in the ruleset, new style (mvc) code will
                   // automatically provide us with a uuid, this is a workaround to provide some help with tracking issues.
                   $rule_hash = OPNsense\Firewall\Util::calcRuleHash($filterent);
-                  $interface_has_rules = true;
-
-                  // select icon
-                  if ($filterent['type'] == "block" && empty($filterent['disabled'])) {
-                      $iconfn = "fa fa-times text-danger";
-                  } elseif ($filterent['type'] == "block" && !empty($filterent['disabled'])) {
-                      $iconfn = "fa fa-times text-muted";
-                  }  elseif ($filterent['type'] == "reject" && empty($filterent['disabled'])) {
-                      $iconfn = "fa fa-times-circle text-danger";
-                  }  elseif ($filterent['type'] == "reject" && !empty($filterent['disabled'])) {
-                      $iconfn = "fa fa-times-circle text-muted";
-                  } elseif (empty($filterent['disabled'])) {
-                      $iconfn = "fa fa-play text-success";
-                  } else {
-                      $iconfn = "fa fa-play text-muted";
-                  }
-
-                  // construct line ipprotocol
-                  if (isset($filterent['ipprotocol'])) {
-                      switch($filterent['ipprotocol']) {
-                          case "inet":
-                              $record_ipprotocol = "IPv4 ";
-                              break;
-                          case "inet6":
-                              $record_ipprotocol = "IPv6 ";
-                              break;
-                          case "inet46":
-                              $record_ipprotocol = "IPv4+6 ";
-                              break;
-                      }
-                  } else {
-                      $record_ipprotocol = "IPv4 ";
-                  }
-
-
 ?>
                   <tr class="rule  <?=isset($filterent['disabled'])?"text-muted":"";?>" data-category="<?=!empty($filterent['category']) ? $filterent['category'] : "";?>">
                     <td>
                       <input class="rule_select" type="checkbox" name="rule[]" value="<?=$i;?>"  />
                     </td>
                     <td>
-                      <a href="#" class="act_toggle" id="toggle_<?=$i;?>" data-toggle="tooltip" title="<?=(empty($filterent['disabled'])) ? gettext("Disable") : gettext("Enable");?>"><span class="<?=$iconfn;?>"></span></a>
-<?php
-                      if (!empty($filterent['direction']) && $filterent['direction'] == "in"):?>
-                        <i class="fa fa-long-arrow-right text-info" data-toggle="tooltip" title="<?=gettext("in");?>"></i>
-<?php
-                      elseif (!empty($filterent['direction']) && $filterent['direction'] == "out"):?>
-                        <i class="fa fa-long-arrow-left" data-toggle="tooltip" title="<?=gettext("out");?>"></i>
-<?php                 endif;?>
-<?php                 if ($selected_if != 'FloatingRules'):
-                        ; // interfaces are always quick
-                      elseif (isset($filterent['quick']) && $filterent['quick'] === 'yes'): ?>
-                        <i class="fa fa-flash text-warning" data-toggle="tooltip" title="<?= gettext('first match') ?>"></i>
-<?php                 else: ?>
-                        <i class="fa fa-flash text-muted" data-toggle="tooltip" title="<?= gettext('last match') ?>"></i>
-<?php                 endif; ?>
-<?php                 if (isset($filterent['log'])):?>
-                      <i class="fa fa-info-circle <?=!empty($filterent['disabled']) ? 'text-muted' : 'text-info' ?>"></i>
-<?php                 endif; ?>
+                      <a href="#" class="act_toggle" id="toggle_<?=$i;?>" data-toggle="tooltip" title="<?=(empty($filterent['disabled'])) ? gettext("Disable") : gettext("Enable");?>">
+                        <span class="<?=firewall_rule_item_action($filterent);?>"></span>
+                      </a>
+                      <?=firewall_rule_item_icons($filterent);?>
                     </td>
-
                     <td class="view-info">
-                        <?=$record_ipprotocol;?>
-<?php
-                        $icmptypes = array(
-                          "" => gettext("any"),
-                          "echoreq" => gettext("Echo Request"),
-                          "echorep" => gettext("Echo Reply"),
-                          "unreach" => gettext("Destination Unreachable"),
-                          "squench" => gettext("Source Quench (Deprecated)"),
-                          "redir" => gettext("Redirect"),
-                          "althost" => gettext("Alternate Host Address (Deprecated)"),
-                          "routeradv" => gettext("Router Advertisement"),
-                          "routersol" => gettext("Router Solicitation"),
-                          "timex" => gettext("Time Exceeded"),
-                          "paramprob" => gettext("Parameter Problem"),
-                          "timereq" => gettext("Timestamp"),
-                          "timerep" => gettext("Timestamp Reply"),
-                          "inforeq" => gettext("Information Request (Deprecated)"),
-                          "inforep" => gettext("Information Reply (Deprecated)"),
-                          "maskreq" => gettext("Address Mask Request (Deprecated)"),
-                          "maskrep" => gettext("Address Mask Reply (Deprecated)")
-                        );
-                        if (isset($filterent['protocol']) && $filterent['protocol'] == "icmp" && !empty($filterent['icmptype'])):
-?>
-                        <span data-toggle="tooltip" title="ICMP type: <?=$icmptypes[$filterent['icmptype']];?> ">
-                            <?= isset($filterent['protocol']) ? strtoupper($filterent['protocol']) : "*";?>
-                        </span>
-<?php
-                        else:?>
-                        <?= isset($filterent['protocol']) ? strtoupper($filterent['protocol']) : "*";?>
-<?php
-                        endif;?>
+                        <?=firewall_rule_item_proto($filterent);?>
                     </td>
-
                     <td class="view-info">
 <?php                 if (isset($filterent['source']['address']) && is_alias($filterent['source']['address'])): ?>
                         <span title="<?=htmlspecialchars(get_alias_description($filterent['source']['address']));?>" data-toggle="tooltip"  data-html="true">
@@ -720,14 +792,17 @@ $( document ).ready(function() {
                         endif;?>
                         </a>
 <?php
+                      else: ?>
+                      *
+<?php
                        endif;?>
                     </td>
-                    <td class="view-stats"><?=!empty($all_rule_stats[$rule_hash]) ? $all_rule_stats[$rule_hash]['evaluations'] : "";?></td>
-                    <td class="view-stats"><?=!empty($all_rule_stats[$rule_hash]) ? $all_rule_stats[$rule_hash]['packets'] : "";?></td>
-                    <td class="view-stats"><?=!empty($all_rule_stats[$rule_hash]) ? format_bytes($all_rule_stats[$rule_hash]['bytes']) : "";?></td>
-                    <td class="view-stats"><?=!empty($all_rule_stats[$rule_hash]) ? $all_rule_stats[$rule_hash]['states'] : "";?></td>
+                    <td class="view-stats hidden-xs hidden-sm"><?= !empty($all_rule_stats[$rule_hash]) ? $all_rule_stats[$rule_hash]['evaluations'] : gettext('N/A') ?></td>
+                    <td class="view-stats hidden-xs hidden-sm"><?= !empty($all_rule_stats[$rule_hash]) ? $all_rule_stats[$rule_hash]['states'] : gettext('N/A') ?></td>
+                    <td class="view-stats"><?= !empty($all_rule_stats[$rule_hash]) ? $all_rule_stats[$rule_hash]['packets'] : gettext('N/A') ?></td>
+                    <td class="view-stats"><?= !empty($all_rule_stats[$rule_hash]) ? format_bytes($all_rule_stats[$rule_hash]['bytes']) : gettext('N/A') ?></td>
                     <td>
-                      <?=htmlspecialchars($filterent['descr']);?>
+                      <?=$filterent['descr'];?>
                       <div class="collapse rule_md5_hash">
                           <small><?=$rule_hash;?></small>
                       </div>
@@ -736,54 +811,35 @@ $( document ).ready(function() {
                       <button id="move_<?=$i;?>" name="move_<?=$i;?>_x" data-toggle="tooltip" title="<?= html_safe(gettext("Move selected rules before this rule")) ?>" class="act_move btn btn-default btn-xs">
                         <i class="fa fa-arrow-left fa-fw"></i>
                       </button>
+<?php if (isset($filterent['type'])): ?>
 <?php
                       // not very nice.... associated NAT rules don't have a type...
                       // if for some reason (broken config) a rule is in there which doesn't have a related nat rule
                       // make sure we are able to delete it.
-                      if (isset($filterent['type'])):?>
+?>
                       <a href="firewall_rules_edit.php?if=<?=$selected_if;?>&id=<?=$i;?>" data-toggle="tooltip" title="<?= html_safe(gettext('Edit')) ?>" class="btn btn-default btn-xs">
                         <i class="fa fa-pencil fa-fw"></i>
                       </a>
-<?php
-                      endif;?>
-                      <a id="del_<?=$i;?>" title="<?= html_safe(gettext('Delete')) ?>" data-toggle="tooltip"  class="act_delete btn btn-default btn-xs">
-                        <i class="fa fa-trash fa-fw"></i>
-                      </a>
-<?php
-                      if (isset($filterent['type'])):?>
                       <a href="firewall_rules_edit.php?if=<?=$selected_if;?>&dup=<?=$i;?>" class="btn btn-default btn-xs" data-toggle="tooltip" title="<?= html_safe(gettext('Clone')) ?>">
                         <i class="fa fa-clone fa-fw"></i>
                       </a>
-<?php
-                      endif;?>
+<?php endif ?>
+                      <a id="del_<?=$i;?>" title="<?= html_safe(gettext('Delete')) ?>" data-toggle="tooltip"  class="act_delete btn btn-default btn-xs">
+                        <i class="fa fa-trash fa-fw"></i>
+                      </a>
                     </td>
                   </tr>
 <?php
                   endif;
                   endforeach;
                   $i++;
-                  if (!$interface_has_rules):
 ?>
-                  <tr>
-                    <td colspan="11">
-                    <span class="text-muted">
-                <?php if ($selected_if == 'FloatingRules'): ?>
-                      <?= gettext('No floating rules are currently defined. Floating rules are ' .
-                        'not bound to a single interface and can therefore be used to span ' .
-                        'policies over multiple networks at the same time.'); ?>
-                <?php else: ?>
-                      <?= gettext('No interfaces rules are currently defined. All incoming connections ' .
-                        'on this interface will be blocked until you add a pass rule.') ?>
-                <?php endif; ?>
-                    </span>
-                    </td>
-                  </tr>
-                <?php endif; ?>
                   <tr>
                     <td colspan="2"></td>
                     <td colspan="2" class="view-info"></td>
                     <td colspan="5" class="view-info hidden-xs hidden-sm"></td>
-                    <td colspan="4" class="view-stats hidden-xs hidden-sm"></td>
+                    <td colspan="2" class="view-stats hidden-xs hidden-sm"></td>
+                    <td colspan="2" class="view-stats"></td>
                     <td></td>
                     <td>
                       <button id="move_<?=$i;?>" name="move_<?=$i;?>_x" data-toggle="tooltip" title="<?= html_safe(gettext('Move selected rules to end')) ?>" class="act_move btn btn-default btn-xs">
@@ -801,9 +857,11 @@ $( document ).ready(function() {
                     </td>
                   </tr>
                 </tbody>
-                <tfoot>
+              </table>
+              <table class="table table-condensed table-clean-form opnsense-rules">
+                <tbody>
                   <tr class="hidden-xs hidden-sm">
-                    <td colspan="9">
+                    <td>
                       <table style="width:100%; border:0;">
                         <tr>
                           <td style="width:16px"><span class="fa fa-play text-success"></span></td>
@@ -819,10 +877,10 @@ $( document ).ready(function() {
                           <td style="width:100px"><?=gettext("log");?></td>
                           <td style="width:16px"><span class="fa fa-long-arrow-right text-info"></span></td>
                           <td style="width:100px"><?=gettext("in");?></td>
-<?php                     if ($selected_if == 'FloatingRules'): ?>
+<?php if ($selected_if == 'FloatingRules'): ?>
                           <td style="width:16px"><span class="fa fa-flash text-warning"></span></td>
                           <td style="width:100px"><?=gettext("first match");?></td>
-<?php                     endif; ?>
+<?php endif ?>
                         </tr>
                         <tr>
                           <td><span class="fa fa-play text-muted"></span></td>
@@ -838,44 +896,46 @@ $( document ).ready(function() {
                           <td class="nowrap"><?=gettext("log (disabled)");?></td>
                           <td style="width:16px"><span class="fa fa-long-arrow-left"></span></td>
                           <td style="width:100px"><?=gettext("out");?></td>
-<?php                     if ($selected_if == 'FloatingRules'): ?>
+<?php if ($selected_if == 'FloatingRules'): ?>
                           <td style="width:16px"><span class="fa fa-flash text-muted"></span></td>
                           <td style="width:100px"><?=gettext("last match");?></td>
-<?php                     endif; ?>
+<?php endif ?>
                         </tr>
                       </table>
                     </td>
-                    <td colspan="2" class="view-info"></td>
                   </tr>
                   <tr class="hidden-xs hidden-sm">
-                    <td><i class="fa fa-list fa-fw text-primary"></i></td>
-                    <td colspan="8"><?=gettext("Alias (click to view/edit)");?></td>
-                    <td colspan="2" class="view-info"></td>
-                  </tr>
-                  <tr class="hidden-xs hidden-sm">
-                    <td><i class="fa fa-calendar fa-fw text-success"></i><i class="fa fa-calendar fa-fw text-muted"></i></td>
-                    <td colspan="8"><?=gettext("Active/Inactive Schedule (click to view/edit)");?></td>
-                    <td colspan="2" class="view-info"></td>
-                  </tr>
-                  <tr class="hidden-xs hidden-sm">
-                    <td colspan="8">
-                      <?php if ("FloatingRules" != $selected_if): ?>
-                      <?=gettext("Rules are evaluated on a first-match basis (i.e. " .
-                        "the action of the first rule to match a packet will be executed). " .
-                        "This means that if you use block rules, you'll have to pay attention " .
-                        "to the rule order. Everything that isn't explicitly passed is blocked " .
-                        "by default. ");?>
-                      <?php else: ?>
-                        <?=gettext("Floating rules are evaluated on a first-match basis (i.e. " .
-                        "the action of the first rule to match a packet will be executed) only " .
-                        "if the 'quick' option is checked on a rule. Otherwise they will only apply if no " .
-                        "other rules match. Pay close attention to the rule order and options " .
-                        "chosen. If no rule here matches, the per-interface or default rules are used. ");?>
-                      <?php endif; ?>
+                    <td>
+                      <i class="fa fa-calendar fa-fw text-success"></i>
+                      <i class="fa fa-calendar fa-fw text-muted"></i>
+                      <?= gettext('Active/Inactive Schedule (click to view/edit)') ?></td>
                     </td>
-                    <td colspan="2" class="view-info"></td>
                   </tr>
-                </tfoot>
+                  <tr class="hidden-xs hidden-sm">
+                    <td>
+                      <i class="fa fa-list fa-fw text-primary"></i>
+                      <?= gettext('Alias (click to view/edit)') ?>
+                    </td>
+                  </tr>
+                  <tr class="hidden-xs hidden-sm">
+                    <td>
+<?php if ('FloatingRules' != $selected_if): ?>
+                      <?= sprintf(gettext('%s rules are evaluated on a first-match basis (i.e. ' .
+                        'the action of the first rule to match a packet will be executed). ' .
+                        'This means that if you use block rules, you will have to pay attention ' .
+                        'to the rule order. Everything that is not explicitly passed is blocked ' .
+                        'by default.'), !empty($config['interfaces'][$selected_if]['descr']) ?
+                        $config['interfaces'][$selected_if]['descr'] : strtoupper($selected_if)) ?>
+<?php else: ?>
+                        <?= gettext('Floating rules are evaluated on a first-match basis (i.e. ' .
+                        'the action of the first rule to match a packet will be executed) only ' .
+                        'if the "quick" option is checked on a rule. Otherwise they will only apply if no ' .
+                        'other rules match. Pay close attention to the rule order and options ' .
+                        'chosen. If no rule here matches, the per-interface or default rules are used.') ?>
+<?php endif ?>
+                    </td>
+                  </tr>
+                </tbody>
               </table>
             </div>
           </form>

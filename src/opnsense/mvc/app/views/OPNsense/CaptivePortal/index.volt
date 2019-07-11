@@ -233,6 +233,9 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
     </div>
     <div class="col-md-12">
+        <div id="changeMessage" class="alert alert-info" style="display: none" role="alert">
+            {{ lang._('After changing settings, please remember to apply them with the button below') }}
+        </div>
         <hr/>
         <button class="btn btn-primary" id="reconfigureAct" type="button"><b>{{ lang._('Apply') }}</b> <i id="reconfigureAct_progress"></i></button>
         <br/><br/>
@@ -244,6 +247,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <!-- upload (new) template content dialog -->
 <div class="modal fade" id="DialogTemplate" tabindex="-1" role="dialog" aria-labelledby="formDialogTemplateLabel" aria-hidden="true">
+    <div class="modal-backdrop fade in"></div>
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">

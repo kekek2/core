@@ -216,7 +216,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $mapent = array();
         $config_copy_fieldnames = array('mac', 'cid', 'ipaddr', 'hostname', 'descr', 'filename', 'rootpath',
           'arp_table_static_entry', 'defaultleasetime', 'maxleasetime', 'gateway', 'domain', 'domainsearchlist',
-          'ddnsdomain', 'ddnsupdate', 'tftp', 'bootname', 'winsserver', 'dnsserver');
+          'ddnsdomain', 'ddnsupdate', 'tftp', 'bootfilename', 'winsserver', 'dnsserver');
 
         foreach ($config_copy_fieldnames as $fieldname) {
             if (!empty($pconfig[$fieldname])) {
@@ -353,7 +353,7 @@ include("head.inc");
                   <td>
                     <input name="hostname" type="text" value="<?=$pconfig['hostname'];?>" />
                     <div class="hidden" data-for="help_for_hostname">
-                      <?=gettext("Name of the host, without domain part.");?>
+                      <?=gettext("Name of the host, without domain part. If no IP address is given above, hostname will not be resolved by Unbound DNS.");?>
                     </div>
                   </td>
                 </tr>

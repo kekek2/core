@@ -33,8 +33,6 @@ require_once("guiconfig.inc");
 require_once("filter.inc");
 require_once("system.inc");
 require_once("logs.inc");
-require_once("gwlb.inc");
-require_once("rrd.inc");
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = array();
@@ -237,7 +235,11 @@ legacy_html_escape_form_data($pconfig);
 
 include("head.inc");
 ?>
-
+<script>
+    $( document ).ready(function() {
+        window_highlight_table_option();
+    });
+</script>
 <body>
 <?php include("fbegin.inc"); ?>
   <!-- row -->
@@ -267,7 +269,7 @@ include("head.inc");
                 <td><a id="help_for_ipv6allow" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Allow IPv6"); ?></td>
                 <td>
                   <input name="ipv6allow" type="checkbox" value="yes" <?= !empty($pconfig['ipv6allow']) ? "checked=\"checked\"" :"";?> onclick="enable_change(false)" />
-                  <strong><?=gettext("Allow IPv6"); ?></strong>
+                  <?=gettext("Allow IPv6"); ?>
                   <div class="hidden" data-for="help_for_ipv6allow">
                     <?=gettext("All IPv6 traffic will be blocked by the firewall unless this box is checked."); ?><br />
                     <?=gettext("NOTE: This does not disable any IPv6 features on the firewall, it only blocks traffic."); ?><br />

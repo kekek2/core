@@ -6875,6 +6875,7 @@ td.visible-print {
 html, body {
   height: 100%;
   font-family: "SourceSansProRegular";
+  background-color: #FFF;
 }
 
 body {
@@ -7106,8 +7107,8 @@ main.page-content.col-lg-12 {
 }
 #navigation.col-sidebar-left {
   width: 70px;
-  background-color: transparent !important;
   overflow: hidden;
+  background-color: transparent !important;
   border: none !important;
 }
 #navigation.col-sidebar-left > div.row {

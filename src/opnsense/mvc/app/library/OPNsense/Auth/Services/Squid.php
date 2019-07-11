@@ -88,7 +88,18 @@ class Squid implements IService
       */
     public function checkConstraints()
     {
-         // XXX: replace with group membership in 19.7
-         return (new ACL())->hasPrivilege($this->getUserName(), 'user-proxy-auth');
+        $configObj = Config::getInstance()->object();
+        if (!empty((string)$configObj->OPNsense->proxy->forward->authentication->authEnforceGroup)) {
+            $groups = explode(',', (string)$configObj->OPNsense->proxy->forward->authentication->authEnforceGroup);
+            $acl = new ACL();
+            foreach ($groups as $local_group) {
+                if ($acl->inGroup($this->getUserName(), $local_group, false)) {
+                    return true;
+                }
+            }
+            return false;
+        } else {
+            return true;
+        }
     }
 }

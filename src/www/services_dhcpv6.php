@@ -34,14 +34,11 @@ require_once("system.inc");
 require_once("interfaces.inc");
 require_once("services.inc");
 
-/**
- * restart dhcp service
- */
 function reconfigure_dhcpd()
 {
     system_hosts_generate();
     clear_subsystem_dirty('hosts');
-    services_dhcpd_configure();
+    dhcpd_dhcp_configure(false, 'inet6');
     clear_subsystem_dirty('staticmaps');
 }
 
@@ -156,8 +153,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if (!empty($pconfig['ddnsdomain']) && !is_domain($pconfig['ddnsdomain'])) {
             $input_errors[] = gettext("A valid domain name must be specified for the dynamic DNS registration.");
         }
-        if (!empty($pconfig['ddnsdomain']) && !is_ipaddrv4($pconfig['ddnsdomainprimary'])) {
-            $input_errors[] = gettext("A valid primary domain name server IPv4 address must be specified for the dynamic domain name.");
+        if (!empty($pconfig['ddnsdomainprimary']) && !is_ipaddrv6($pconfig['ddnsdomainprimary'])) {
+            $input_errors[] = gettext("A valid primary domain name server IPv6 address must be specified for the dynamic domain name.");
         }
         if (!empty($pconfig['ddnsdomainkey']) && base64_encode(base64_decode($pconfig['ddnsdomainkey'], true)) !== $pconfig['ddnsdomainkey']) {
             $input_errors[] = gettext('You must specify a Base64-encoded domain key.');

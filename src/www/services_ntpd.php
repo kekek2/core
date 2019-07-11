@@ -72,6 +72,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (!empty($pconfig['orphan']) && ($pconfig['orphan'] < 0 || $pconfig['orphan'] > 15 || !is_numeric($pconfig['orphan']))) {
         $input_errors[] = gettext("Orphan mode must be a value between 0..15");
     }
+    $prev_opt = !empty($a_ntpd['custom_options']) ? $a_ntpd['custom_options'] : "";
+    if ($prev_opt != str_replace("\r\n", "\n", $pconfig['custom_options']) && !userIsAdmin($_SESSION['Username'])) {
+        $input_errors[] = gettext('Advanced options may only be edited by system administrators due to the increased possibility of privilege escalation.');
+    }
 
     // swap fields, really stupid field usage which we are not going to change now....
     foreach (array('kod', 'nomodify', 'nopeer', 'notrap') as $fieldname) {
@@ -122,6 +126,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
 
         write_config("Updated NTP Server Settings");
+
+        rrd_configure();
         ntpd_configure_start();
 
         header(url_safe('Location: /services_ntpd.php'));
@@ -238,7 +244,7 @@ include("head.inc");
                           if (!is_ipaddr(get_interface_ip($iface)) && !is_ipaddr($iface)) {
                               continue;
                           }?>
-                          <option value="<?=$iface;?>" <?=in_array($iface, $pconfig['interface']) ?" selected=\"selected\"" : "";?>>
+                          <option value="<?=$iface;?>" <?= !empty($pconfig['interface']) && in_array($iface, $pconfig['interface']) ? 'selected="selected"' : '' ?>>
                               <?=htmlspecialchars($ifacename);?>
                           </option>
 <?php
@@ -315,12 +321,10 @@ include("head.inc");
                     </td>
                   </tr>
                   <tr>
-                    <td><a id="help_for_statsgraph" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext('NTP graphs') ?></td>
+                    <td><i class="fa fa-info-circle text-muted"></i> <?=gettext('NTP graphs') ?></td>
                     <td>
                       <input name="statsgraph" type="checkbox" id="statsgraph" <?=!empty($pconfig['statsgraph']) ? " checked=\"checked\"" : ""; ?> />
-                      <div class="hidden" data-for="help_for_statsgraph">
-                        <?=gettext("Enable rrd graphs of NTP statistics (default: disabled)."); ?>
-                      </div>
+                      <?= gettext('Enable RRD graphs of NTP statistics (default: disabled).') ?>
                     </td>
                   </tr>
                   <tr>
@@ -363,7 +367,7 @@ include("head.inc");
                       <input type="button" id="showrestrictbox" class="btn btn-default btn-xs" value="<?= html_safe(gettext('Advanced')) ?>" /> - <?=gettext("Show access restriction options");?>
                       </div>
                       <div id="showrestrict" style="display:none">
-                      <?=gettext("these options control access to NTP from the WAN."); ?>
+                      <?=gettext("These options control access to NTP from the WAN."); ?>
                       <br /><br />
                       <input name="kod" type="checkbox" id="kod"<?=empty($pconfig['kod']) ? " checked=\"checked\"" : ""; ?> />
                       <?=gettext("Enable Kiss-o'-death packets (default: enabled)."); ?>
@@ -411,6 +415,7 @@ include("head.inc");
                       <div id="showadv" <?=empty($pconfig['custom_options']) ? "style='display:none'" : ""; ?>>
                         <strong><?=gettext("Advanced");?><br /></strong>
                         <textarea rows="6" cols="78" name="custom_options" id="custom_options"><?=$pconfig['custom_options'];?></textarea><br />
+                        <?=gettext("This option will be removed in the future due to being insecure by nature. In the mean time only full administrators are allowed to change this setting.");?><br/>
                         <?= gettext('Enter any additional options you would like to add to the network time configuration here, separated by a space or newline.') ?>
                       </div>
                     </td>

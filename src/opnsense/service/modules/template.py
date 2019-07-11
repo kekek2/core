@@ -75,8 +75,13 @@ class Template(object):
     def _encode_idna(x):
         """ encode string to idna, preserve leading dots
         """
-        tmp = b''.join([b''.join([b'.' for x in range(len(x) - len(x.lstrip('.')))]), x.lstrip('.').encode('idna')])
-        return tmp.decode()
+        try:
+            tmp = b''.join([b''.join([b'.' for x in range(len(x) - len(x.lstrip('.')))]), x.lstrip('.').encode('idna')])
+            return tmp.decode()
+        except UnicodeError:
+            # return source when unable to decode
+            syslog.syslog(syslog.LOG_NOTICE, "encode idna: unable to decode %s, return source" % x)
+            return x
 
     def _get_interface_ip(self, interface, mask=False):
         if type(interface) is jinja2.runtime.Undefined:

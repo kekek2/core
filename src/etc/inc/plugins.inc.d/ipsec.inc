@@ -113,6 +113,8 @@ $p2_protos = array(
 function ipsec_configure()
 {
     return array(
+        'ipsec' => array('ipsec_configure_do:2'),
+        'ipsec_prepare' => array('ipsec_configure_vti'),
         'vpn' => array('ipsec_configure_do:2'),
     );
 }
@@ -229,7 +231,8 @@ function ipsec_firewall(\OPNsense\Firewall\Plugin $fw)
                                       "quick" => false,
                                       "type" => "pass",
                                       "statetype" => "keep",
-                                      "label" => "IPsec: " . (!empty($ph1ent['descr']) ? $ph1ent['descr'] : $rgip)
+                                      "#ref" => "vpn_ipsec_settings.php#disablevpnrules",
+                                      "descr" => "IPsec: " . (!empty($ph1ent['descr']) ? $ph1ent['descr'] : $rgip)
                                     );
 
                     // find gateway
@@ -617,6 +620,7 @@ function ipsec_convert_to_modp($index): string
         28 => 'ecp256bp',
         29 => 'ecp384bp',
         30 => 'ecp512bp',
+        31 => 'curve25519',
     ];
 
     if (!array_key_exists($index, $map)) {
@@ -937,8 +941,11 @@ function ipsec_configure_do($verbose = false, $interface = '')
                 $strongswanTree['charon']['plugins']['attr']['# Search domain and default domain'] = '';
                 $strongswanTree['charon']['plugins']['attr']['28674'] = $a_client['dns_domain'];
             }
-            # 28675 --> UNITY_SPLITDNS_NAME
-            # 25 --> INTERNAL_DNS_DOMAIN
+
+            /*
+             * 28675 --> UNITY_SPLITDNS_NAME
+             * 25 --> INTERNAL_DNS_DOMAIN
+             */
             foreach (array("28675", "25") as $attr) {
                 if (!empty($a_client['dns_split'])) {
                     $strongswanTree['charon']['plugins']['attr'][$attr] = $a_client['dns_split'];
@@ -946,12 +953,14 @@ function ipsec_configure_do($verbose = false, $interface = '')
                     $strongswanTree['charon']['plugins']['attr'][$attr] = $a_client['dns_domain'];
                 }
             }
+
             if (!empty($a_client['dns_split'])) {
                 $strongswanTree['charon']['plugins']['attr']['28675'] = $a_client['dns_split'];
             }
 
             if (!empty($a_client['login_banner'])) {
-                $strongswanTree['charon']['plugins']['attr']['28672'] = sprintf("\"%s\"", $a_client['login_banner']);
+                /* defang login banner, it may be multiple lines and we should not let it escape */
+                $strongswanTree['charon']['plugins']['attr']['28672'] = '"' . str_replace(['\\', '"'], '', $a_client['login_banner']) . '"';
             }
 
             if (isset($a_client['save_passwd'])) {
@@ -1034,7 +1043,7 @@ function ipsec_configure_do($verbose = false, $interface = '')
         }
 
         $pskconf = "";
-
+        $is_route_base = false;
         foreach ($a_phase1 as $ph1ent) {
             if (isset($ph1ent['disabled'])) {
                 continue;
@@ -1142,10 +1151,14 @@ function ipsec_configure_do($verbose = false, $interface = '')
                     $mobike = !empty($ph1ent['mobike']) ? "mobike = no" : "mobike = yes";
                 }
 
-                if (isset($ph1ent['mobile'])) {
-                    $right_spec = "%any";
-                } else {
+                $right_spec = '%any';
+                $right_any = '';
+                if (!isset($ph1ent['mobile'])) {
                     $right_spec = $ph1ent['remote-gateway'];
+
+                    if ($ph1ent['rightallowany']) {
+                        $right_any = 'rightallowany = yes';
+                    }
                 }
 
                 if (!empty($ph1ent['auto'])) {
@@ -1320,6 +1333,7 @@ function ipsec_configure_do($verbose = false, $interface = '')
                                 $rightsubnet_spec[] = $tmpsubnet;
                             }
                         } elseif ($ph2ent['mode'] == 'route-based') {
+                            $is_route_base = true;
                             if (is_ipaddrv6($ph2ent['tunnel_local'])) {
                                 $leftsubnet_spec[] = '::/0';
                                 $rightsubnet_spec[] = '::/0';
@@ -1444,6 +1458,7 @@ conn con<<connectionId>>
   {$dpdline}
   left = {$left_spec}
   right = {$right_spec}
+  {$right_any}
   leftid = {$myid_data}
   {$ikelifeline}
 
@@ -1471,11 +1486,15 @@ EOD;
                     for ($idx = 0; $idx < count($leftsubnet_spec); ++$idx) {
                         if (count($leftsubnet_spec) == 1) {
                             $tmpconf = str_replace('<<connectionId>>', "{$ph1ent['ikeid']}", $connEntry);
-                            $tmpconf .= sprintf("\treqid = %d\n", (int)$ph1ent['ikeid'] * 1000 );
+                            if ($is_route_base) {
+                                $tmpconf .= sprintf("\treqid = %d\n", (int)$ph1ent['ikeid'] * 1000);
+                            }
                         } else {
                             // suffix connection with sequence number
                             $tmpconf = str_replace('<<connectionId>>', sprintf('%s-%03d', $ph1ent['ikeid'], $idx), $connEntry);
-                            $tmpconf .= sprintf("\treqid = %d\n", (int)$ph1ent['ikeid'] * 1000 + $idx );
+                            if ($is_route_base) {
+                                $tmpconf .= sprintf("\treqid = %d\n", (int)$ph1ent['ikeid'] * 1000 + $idx);
+                            }
                         }
                         $tmpconf .= "\trightsubnet = " . $rightsubnet_spec[$idx]. "\n";
                         $tmpconf .= "\tleftsubnet = " . $leftsubnet_spec[$idx] . "\n";
@@ -1499,7 +1518,9 @@ EOD;
                             // name from the first configured tunnel ($idx == 0):
                             $conn_suffix = $idx ? sprintf('-%03d', $idx) : '';
                             $tmpconf[] = "conn con{$ph1ent['ikeid']}{$conn_suffix}";
-                            $tmpconf[] = sprintf("\treqid = %d\n", (int)$ph1ent['ikeid'] * 1000 + $idx );
+                            if ($is_route_base) {
+                                $tmpconf[] = sprintf("\treqid = %d\n", (int)$ph1ent['ikeid'] * 1000 + $idx);
+                            }
                             if (!empty($rightsubnet_spec[$idx])) {
                                 $tmpconf[] = "\trightsubnet = {$rightsubnet_spec[$idx]}";
                             }
@@ -1518,7 +1539,9 @@ EOD;
                         }
                     } else {
                         $tmpconf = str_replace('<<connectionId>>', "{$ph1ent['ikeid']}", $connEntry);
-                        $tmpconf .= sprintf("\treqid = %d\n", (int)$ph1ent['ikeid'] * 1000 );
+                        if ($is_route_base) {
+                            $tmpconf .= sprintf("\treqid = %d\n", (int)$ph1ent['ikeid'] * 1000);
+                        }
                         if (!empty($rightsubnet_spec)) {
                             $tmpconf .= "\trightsubnet = " . join(',', array_unique($rightsubnet_spec)) . "\n";
                         }
@@ -1648,15 +1671,21 @@ function ipsec_get_configured_vtis()
 /**
  * Configure required Virtual Terminal Interfaces (synchronizes configuration with local interfaces named ipsec%)
  */
-function ipsec_configure_vti()
+function ipsec_configure_vti($verbose = false)
 {
     // query planned and configured interfaces
     $configured_intf = ipsec_get_configured_vtis();
     $current_interfaces = array();
+
     foreach (legacy_interfaces_details() as $intf => $intf_details) {
         if (strpos($intf, 'ipsec') === 0) {
             $current_interfaces[$intf] = $intf_details;
         }
+    }
+
+    if ($verbose) {
+        echo 'Creating IPsec VTI instances...';
+        flush();
     }
 
     // drop changed or not existing interfaces and tunnel endpoints
@@ -1681,12 +1710,15 @@ function ipsec_configure_vti()
                             }
                         }
                         if (!$isfound) {
-                          log_error(sprintf(
-                              "remove tunnel %s %s from interface %s", $addr['ipaddr'], $addr['endpoint'], $intf
-                          ));
-                          mwexecf('/sbin/ifconfig %s %s %s delete', array(
+                            log_error(sprintf(
+                                "remove tunnel %s %s from interface %s",
+                                $addr['ipaddr'],
+                                $addr['endpoint'],
+                                $intf
+                            ));
+                            mwexecf('/sbin/ifconfig %s %s %s delete', array(
                             $intf, $proto == 'ipv6' ? 'inet6' : 'inet',  $addr['ipaddr'], $addr['endpoint']
-                          ));
+                            ));
                         }
                     }
                 }
@@ -1700,8 +1732,9 @@ function ipsec_configure_vti()
         $inet = is_ipaddrv6($intf_details['local']) ? 'inet6' : 'inet';
         if (empty($current_interfaces[$intf])) {
             if (mwexecf('/sbin/ifconfig %s create reqid %s', array($intf, $intf_details['reqid'])) == 0) {
-                mwexecf('/sbin/ifconfig %s %s tunnel %s %s up',
-                        array($intf, $inet, $intf_details['local'], $intf_details['remote'])
+                mwexecf(
+                    '/sbin/ifconfig %s %s tunnel %s %s up',
+                    array($intf, $inet, $intf_details['local'], $intf_details['remote'])
                 );
             }
         }
@@ -1728,5 +1761,9 @@ function ipsec_configure_vti()
                 ));
             }
         }
+    }
+
+    if ($verbose) {
+        echo "done.\n";
     }
 }

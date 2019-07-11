@@ -257,11 +257,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $id = $_GET['id'];
     }
 
-    if (isset($_GET['act'])) {
-        $act = $_GET['act'];
-    } else {
-        $act = null;
-    }
+    $act = isset($_GET['act']) ? $_GET['act'] : null;
 
     $pconfig = array();
     if ($act == "new") {
@@ -344,8 +340,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
           }
       }
       exit;
+    }
+
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $pconfig = $_POST;
+    if (isset($a_cert[$_POST['id']])) {
+        $id = $_POST['id'];
+    }
+    if (isset($a_user[$_POST['userid']])) {
+        $userid = $_POST['userid'];
+    }
+    $act = isset($_POST['act']) ? $_POST['act'] : null;
+
+    if ($act == "del") {
+        if (isset($id)) {
+            unset($a_cert[$id]);
+            write_config();
+        }
+        header(url_safe('Location: /system_certmanager.php'));
+        exit;
     } elseif ($act == 'csr_info') {
-      if (!isset($_GET['csr'])) {
+      if (!isset($pconfig['csr'])) {
         http_response_code(400);
         header("Content-Type: text/plain;charset=UTF-8");
         echo gettext('Invalid request');
@@ -356,7 +371,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
       // use openssl to dump csr in readable format
       $process = proc_open('/usr/local/bin/openssl req -text -noout', array(array("pipe", "r"), array("pipe", "w"), array("pipe", "w")), $pipes);
       if (is_resource($process)) {
-        fwrite($pipes[0], $_GET['csr']);
+        fwrite($pipes[0], $pconfig['csr']);
         fclose($pipes[0]);
 
         $result_stdout = stream_get_contents($pipes[1]);
@@ -374,7 +389,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     } elseif ($act == 'csr_info_json') {
       header("Content-Type: application/json;charset=UTF-8");
 
-      if (!isset($_GET['csr'])) {
+      if (!isset($pconfig['csr'])) {
         http_response_code(400);
         echo json_encode(array(
           'error' => gettext('Invalid Request'),
@@ -383,7 +398,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
       }
 
-      $parsed_result = parse_csr($_GET['csr']);
+      $parsed_result = parse_csr($pconfig['csr']);
 
       if ($parsed_result['parse_success'] !== true) {
         http_response_code(400);
@@ -396,29 +411,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
       echo json_encode($parsed_result);
       exit;
-    }
-
-} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $pconfig = $_POST;
-    if (isset($a_cert[$_POST['id']])) {
-        $id = $_POST['id'];
-    }
-    if (isset($a_user[$_POST['userid']])) {
-        $userid = $_POST['userid'];
-    }
-    if (isset($_POST['act'])) {
-        $act = $_POST['act'];
-    } else {
-        $act = null;
-    }
-
-    if ($act == "del") {
-        if (isset($id)) {
-            unset($a_cert[$id]);
-            write_config();
-        }
-        header(url_safe('Location: /system_certmanager.php'));
-        exit;
     } elseif ($act == "p12") {
         // export cert+key in p12 format
         if (isset($id)) {
@@ -490,6 +482,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
     } elseif (!empty($_POST['save'])) {
         $input_errors = array();
+        $act = isset($_GET['act']) ? $_GET['act'] : null;
 
         /* input validation */
         if ($pconfig['certmethod'] == "import") {
@@ -913,7 +906,7 @@ if (empty($act)) {
         var csr_payload = $('#csr').val();
         $.ajax({
                 url:"system_certmanager.php",
-                type: 'get',
+                type: 'post',
                 data: {'act' : 'csr_info', 'csr' : csr_payload},
                 success: function(data){
                   BootstrapDialog.show({
@@ -931,7 +924,7 @@ if (empty($act)) {
         var csr_payload = $('#csr').val();
         $.ajax({
                 url:"system_certmanager.php",
-                type: 'get',
+                type: 'post',
                 data: {'act' : 'csr_info_json', 'csr' : csr_payload},
                 success: function(data){
                         subject_text = '';
@@ -1942,7 +1935,7 @@ $( document ).ready(function() {
 <?php
             $i = 0;
             foreach ($a_cert as $cert) :
-                $name = htmlspecialchars($cert['descr']);
+                $name = $cert['descr'];
                 $purpose = null;
 
                 if (!empty($cert['crt'])) {
@@ -2025,43 +2018,32 @@ $( document ).ready(function() {
 <?php
                 endif; ?>
 
-<?php
-                if (isset($cert['crt'])) :?>
+<?php if (isset($cert['crt'])): ?>
                   <a href="#" class="btn btn-default btn-xs act_info" data-id="<?=$i;?>" data-toggle="tooltip" title="<?=gettext("show certificate info");?>">
                     <i class="fa fa-info-circle fa-fw"></i>
                   </a>
-<?php
-                endif; ?>
-
-
+<?php endif ?>
                   <a href="system_certmanager.php?act=exp&amp;id=<?=$i;?>" class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("export user cert");?>">
                       <i class="fa fa-download fa-fw"></i>
                   </a>
-
-<?php if (isset($cert['prv'])) :?>
+<?php if (isset($cert['prv'])): ?>
                   <a href="system_certmanager.php?act=key&amp;id=<?=$i;?>" class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("export user key");?>">
                     <i class="fa fa-download fa-fw"></i>
                   </a>
-
                   <a data-id="<?=$i;?>"  class="btn btn-default btn-xs p12btn" data-toggle="tooltip" title="<?=gettext("export ca+user cert+user key in .p12 format");?>">
                       <i class="fa fa-download fa-fw"></i>
                   </a>
-<?php
-                endif; ?>
-<?php
-                  if (!cert_in_use($cert['refid'])) :?>
-
+<?php endif ?>
+<?php if (!cert_in_use($cert['refid'])): ?>
                   <a id="del_<?=$i;?>" data-id="<?=$i;?>" title="<?=gettext("delete cert"); ?>" data-toggle="tooltip"  class="act_delete btn btn-default btn-xs">
                     <i class="fa fa-trash fa-fw"></i>
                   </a>
-<?php
-                  endif;
-                  if (isset($cert['csr'])) :?>
+<?php endif ?>
+<?php if (isset($cert['csr'])): ?>
                   <a href="system_certmanager.php?act=csr&amp;id=<?=$i;?>" class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("update csr");?>">
                     <i class="fa fa-pencil fa-fw"></i>
                   </a>
-<?php
-                  endif; ?>
+<?php endif ?>
                 </td>
               </tr>
 <?php

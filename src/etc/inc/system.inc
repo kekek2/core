@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright (C) 2016-2018 Franco Fichtner <franco@opnsense.org>
+ * Copyright (C) 2016-2019 Franco Fichtner <franco@opnsense.org>
  * Copyright (C) 2004-2007 Scott Ullrich <sullrich@gmail.com>
  * Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
  * All rights reserved.
@@ -131,7 +131,7 @@ function system_sysctl_get()
     );
 
     if (isset($config['sysctl']['item'])) {
-        foreach($config['sysctl']['item'] as $tunable) {
+        foreach ($config['sysctl']['item'] as $tunable) {
             if ($tunable['value'] == 'default') {
                 $value = get_default_sysctl_value($tunable['tunable']);
             } else {
@@ -179,19 +179,21 @@ function system_resolvconf_generate($verbose = false)
         }
     }
 
-    $dnslock = lock('resolvconf', LOCK_EX);
+    $tempfile = tempnam('/tmp', 'resolv.conf');
+    file_put_contents($tempfile, $resolvconf);
+    chmod($tempfile, 0644);
 
-    file_put_contents('/etc/resolv.conf', $resolvconf);
-    chmod('/etc/resolv.conf', 0644);
+    rename($tempfile, '/etc/resolv.conf');
 
     /* setup static routes for DNS servers. */
+    $gateways = new \OPNsense\Routing\Gateways(legacy_interfaces_details());
     for ($dnscounter = 1; $dnscounter < 9; $dnscounter++) {
         /* setup static routes for dns servers */
         $dnsgw = "dns{$dnscounter}gw";
         if (isset($syscfg[$dnsgw])) {
             $gwname = $syscfg[$dnsgw];
             if (($gwname != '') && ($gwname != 'none')) {
-                $gatewayip = lookup_gateway_ip_by_name($gwname);
+                $gatewayip = $gateways->getAddress($gwname);
                 if (is_ipaddrv4($gatewayip)) {
                     /* dns server array starts at 0 */
                     $dnscountermo = $dnscounter - 1;
@@ -205,8 +207,6 @@ function system_resolvconf_generate($verbose = false)
             }
         }
     }
-
-    unlock($dnslock);
 
     if ($verbose) {
         echo "done.\n";
@@ -332,20 +332,14 @@ function system_hosts_generate($verbose = false)
 
     $hosts = "127.0.0.1\tlocalhost localhost.{$syscfg['domain']}\n";
 
-    if (isset($config['interfaces']['lan'])) {
-        $cfgip = get_interface_ip("lan");
-        if (is_ipaddr($cfgip)) {
+    /* we pull the second host entry from a "priority" list: lan, optX or wan */
+    $iflist = array_keys(get_configured_interface_with_descr());
+    sort($iflist);
+
+    if (!empty($iflist[0])) {
+        $cfgip = get_interface_ip($iflist[0]);
+        if (is_ipaddrv4($cfgip)) {
             $hosts .= "{$cfgip}\t{$syscfg['hostname']}.{$syscfg['domain']} {$syscfg['hostname']}\n";
-        }
-    } else {
-        foreach (array_keys(get_configured_interface_with_descr()) as $sysif) {
-            if (!interface_has_gateway($sysif)) {
-                $cfgip = get_interface_ip($sysif);
-                if (is_ipaddr($cfgip)) {
-                    $hosts .= "{$cfgip}\t{$syscfg['hostname']}.{$syscfg['domain']} {$syscfg['hostname']}\n";
-                    break;
-                }
-            }
         }
     }
 
@@ -420,7 +414,7 @@ function system_default_route($gateway, $family, $interface, $far = false)
     }
 
     if ($family == 'inet') {
-        foreach (glob('/tmp/*_defaultgw', GLOB_BRACE) as $to_delete) {
+        foreach (glob('/tmp/*_defaultgw') as $to_delete) {
             log_error("ROUTING: removing {$to_delete}");
             @unlink($to_delete);
         }
@@ -432,7 +426,7 @@ function system_default_route($gateway, $family, $interface, $far = false)
             $realif = null;
         }
     } else {
-        foreach (glob('/tmp/*_defaultgwv6', GLOB_BRACE) as $to_delete) {
+        foreach (glob('/tmp/*_defaultgwv6') as $to_delete) {
             log_error("ROUTING: removing {$to_delete}");
             @unlink($to_delete);
         }
@@ -459,88 +453,28 @@ function system_routing_configure($verbose = false, $interface = '')
         flush();
     }
 
-    $interfacegw = '';
-    $foundgw = false;
-    $gatewayip = '';
-    $fargw = false;
-
-    $interfacegwv6 = '';
-    $foundgwv6 = false;
-    $gatewayipv6 = '';
-
     if (!empty($interface)) {
         log_error("ROUTING: entering configure using '${interface}'");
     } else {
         log_error("ROUTING: entering configure using defaults");
     }
 
-    foreach (config_read_array('gateways', 'gateway_item') as $gateway) {
-        if (isset($gateway['defaultgw'])) {
-            if ($foundgw == false && $gateway['ipprotocol'] != 'inet6') {
-                if ($gateway['gateway'] == 'dynamic') {
-                    $gateway['gateway'] = get_interface_gateway($gateway['interface']);
-                }
+    $gateways = new \OPNsense\Routing\Gateways(legacy_interfaces_details());
 
-                $interfacegw = $gateway['interface'];
-                $fargw = isset($gateway['fargw']);
-                $gatewayip = $gateway['gateway'];
-                $foundgw = true;
-
-                log_error("ROUTING: IPv4 default gateway set to {$interfacegw}");
-            } elseif ($foundgwv6 == false && $gateway['ipprotocol'] == 'inet6') {
-                if ($gateway['gateway'] == 'dynamic') {
-                    $gateway['gateway'] = get_interface_gateway_v6($gateway['interface']);
-                }
-
-                $interfacegwv6 = $gateway['interface'];
-                $gatewayipv6 = $gateway['gateway'];
-                $foundgwv6 = true;
-
-                log_error("ROUTING: IPv6 default gateway set to {$interfacegwv6}");
+    foreach (['inet', 'inet6'] as $ipproto) {
+        // deterine default gateway for inet/inet6, without considering monitor status.
+        $gateway = $gateways->getDefaultGW(array(), $ipproto);
+        $logproto = $ipproto == 'inet' ? "IPv4" : "IPv6";
+        if ($gateway != null) {
+            log_error("ROUTING: {$logproto} default gateway set to {$gateway['interface']}");
+            $fargw = isset($gateway['fargw']);
+            if ((empty($interface) || $interface == $gateway['interface']) && !empty($gateway['gateway'])) {
+                log_error("ROUTING: setting {$logproto} default route to {$gateway['gateway']}");
+                system_default_route($gateway['gateway'], $ipproto, $gateway['interface'], $fargw);
+            } else {
+                log_error("ROUTING: skipping {$logproto} default route");
             }
         }
-    }
-
-    /*
-     * From the looks of the code below we cannot cope with
-     * multi-WAN without setting explicit gateways.  This is
-     * probably where the default gateway switching comes into
-     * play because this facility is allowed to use dynamically
-     * created gateways while the former code does not.
-     *
-     * In fact the following code is a mini gateway switcher
-     * facility which can only switch one hardcoded gateway and
-     * may obscure a problem with the setup for a long time... :(
-     *
-     * XXX Find a way to infer an upstream-capable interface or
-     * maybe make gateway switching the hardcoded behaviour, or
-     * at least the new default.
-     */
-
-    if (!$foundgw) {
-        $interfacegw = 'wan';
-        log_error("ROUTING: no IPv4 default gateway set, assuming {$interfacegw}");
-        $gatewayip = get_interface_gateway($interfacegw);
-    }
-
-    if (!$foundgwv6) {
-        $interfacegwv6 = 'wan';
-        log_error("ROUTING: no IPv6 default gateway set, assuming {$interfacegwv6}");
-        $gatewayipv6 = get_interface_gateway_v6($interfacegwv6);
-    }
-
-    if ((empty($interface) || $interface == $interfacegw) && is_ipaddrv4($gatewayip)) {
-        log_error("ROUTING: setting IPv4 default route to {$gatewayip}");
-        system_default_route($gatewayip, 'inet', $interfacegw, $fargw);
-    } else {
-        log_error("ROUTING: skipping IPv4 default route");
-    }
-
-    if ((empty($interface) || $interface == $interfacegwv6) && is_ipaddrv6($gatewayipv6)) {
-        log_error("ROUTING: setting IPv6 default route to {$gatewayipv6}");
-        system_default_route($gatewayipv6, 'inet6', $interfacegwv6);
-    } else {
-        log_error("ROUTING: skipping IPv6 default route");
     }
 
     system_staticroutes_configure($interface);
@@ -559,15 +493,15 @@ function system_staticroutes_configure($interface = '')
 {
     $static_routes = get_staticroutes(false, true);
     if (count($static_routes)) {
-        $gateways_arr = return_gateways_array(false, true);
-
+        $ifdetails = legacy_interfaces_details();
+        $gateways_arr = (new \OPNsense\Routing\Gateways($ifdetails))->gatewaysIndexedByName(false, true);
         foreach ($static_routes as $rtent) {
             if (empty($gateways_arr[$rtent['gateway']])) {
                 log_error(sprintf('Static Routes: Gateway IP could not be found for %s', $rtent['network']));
                 continue;
             }
             $gateway = $gateways_arr[$rtent['gateway']];
-            if (!empty($interface) && $interface != $gateway['friendlyiface']) {
+            if (!empty($interface) && $interface != $gateway['interface']) {
                 continue;
             }
 
@@ -575,7 +509,7 @@ function system_staticroutes_configure($interface = '')
                 log_error(sprintf('Cannot add static route to: %s', $rtent['network']));
                 continue;
             }
-            $interfacegw = $gateway['interface'];
+            $interfacegw = $gateway['if'];
             $gatewayip = $gateway['gateway'];
             $fargw = isset($gateway['fargw']) && $gateway['ipprotocol'] != 'inet6';
             $blackhole = '';
@@ -668,7 +602,8 @@ function system_clear_log($logfile, $restart_syslogd = true)
  *     [0] net memory available for the OS (FreeBSD) after some is taken by BIOS, video or whatever - e.g. 235 MBytes
  *     [1] real (actual) memory of the system, should be the size of the RAM card/s - e.g. 256 MBytes
  */
-function get_memory() {
+function get_memory()
+{
     $physmem = get_single_sysctl("hw.physmem");
     $realmem = get_single_sysctl("hw.realmem");
     /* convert from bytes to megabytes */
@@ -704,6 +639,22 @@ function system_firmware_configure($verbose = false)
                 strpos($config['system']['firmware']['flavour'], '/') === false ? "${g['product_abi']}/" : ''
             ))
         );
+    }
+
+    $ca_root_nss = '/usr/local/share/certs/ca-root-nss.crt';
+    $ca_cert_pem = '/usr/local/openssl/cert.pem';
+    if (file_exists($ca_root_nss)) {
+        $ca = file_get_contents($ca_root_nss);
+        foreach (config_read_array('ca') as $entry) {
+            if (!empty($entry['crt'])) {
+                $ca .= "\n# {$entry['descr']}\n" . str_replace("\r", '', base64_decode($entry['crt']));
+            }
+        }
+
+        file_put_contents($ca_cert_pem, $ca);
+        copy($ca_cert_pem, '/usr/local/etc/ssl/cert.pem');
+        @unlink('/etc/ssl/cert.pem'); /* do not clobber symlink target */
+        copy($ca_cert_pem, '/etc/ssl/cert.pem');
     }
 
     if ($verbose) {
@@ -1079,7 +1030,7 @@ function reset_factory_defaults($sync = true)
     mwexec('/usr/local/sbin/beep.sh stop');
 
     /* as we go through a special case directly shut down */
-    $shutdown_cmd = '/sbin/shutdown -or now';
+    $shutdown_cmd = '/sbin/shutdown -op now';
     if ($sync) {
         mwexec($shutdown_cmd);
     } else {

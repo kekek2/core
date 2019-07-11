@@ -1,7 +1,7 @@
-#!/usr/local/bin/python2.7
+#!/usr/local/bin/python3
 
 """
-    Copyright (c) 2017 Ad Schellevis <ad@opnsense.org>
+    Copyright (c) 2017-2019 Ad Schellevis <ad@opnsense.org>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -30,7 +30,7 @@
 """
 import os
 import sys
-import md5
+from hashlib import md5
 import argparse
 import ujson
 import tempfile
@@ -75,7 +75,7 @@ def fetch_rule_details():
         # parse running config, fetch all md5 hashed labels
         rule_map = dict()
         hex_digits = set("0123456789abcdef")
-        with open('/tmp/rules.debug') as f_in:
+        with open('/tmp/rules.debug', "rt", encoding="utf-8") as f_in:
             for line in f_in:
                 if line.find(' label ') > -1:
                     lbl = line.split(' label ')[-1]
@@ -86,10 +86,10 @@ def fetch_rule_details():
 
         # use pfctl to create a list per rule number with the details found
         with tempfile.NamedTemporaryFile() as output_stream:
-            subprocess.call(['/sbin/pfctl', '-vvPnf', '/tmp/rules.debug'],
+            subprocess.call(['/sbin/pfctl', '-vvPsr'],
                             stdout=output_stream, stderr=open(os.devnull, 'wb'))
             output_stream.seek(0)
-            for line in output_stream.read().strip().split('\n'):
+            for line in output_stream.read().decode().strip().split('\n'):
                 if line.startswith('@'):
                     line_id = line.split()[0][1:]
                     if line.find(' label ') > -1:
@@ -118,7 +118,7 @@ if __name__ == '__main__':
             metadata = dict()
             # rule metadata (unique hash, hostname, timestamp)
             tmp = record['line'].split('filterlog:')[0].split()
-            metadata['__digest__'] = md5.new(record['line']).hexdigest()
+            metadata['__digest__'] = md5(record['line'].encode()).hexdigest()
             metadata['__host__'] = tmp.pop()
             metadata['__timestamp__'] = ' '.join(tmp)
             rulep = record['line'].split('filterlog:')[1].strip().split(',')

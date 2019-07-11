@@ -1,7 +1,7 @@
-#!/usr/local/bin/python2.7
+#!/usr/local/bin/python3
 
 """
-    Copyright (c) 2016 Ad Schellevis <ad@opnsense.org>
+    Copyright (c) 2016-2019 Ad Schellevis <ad@opnsense.org>
     Copyright (c) 2015 Jos Schellevis <jos@opnsense.org>
     All rights reserved.
 
@@ -37,18 +37,15 @@ import tarfile
 import gzip
 import zipfile
 import syslog
-if sys.version_info < (3, 0):
-    from ConfigParser import ConfigParser
-    from urllib2 import urlopen
-    from urllib2 import URLError
-    from urllib2 import HTTPError
-else:
-    from configparser import ConfigParser
-    from urllib.request import urlopen
-    from urllib.error import URLError
-    from urllib.error import HTTPError
+import urllib3
+from configparser import ConfigParser
+from urllib.request import urlopen
+from urllib.error import URLError
+from urllib.error import HTTPError
 import requests
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+acl_config_fn = '/usr/local/etc/squid/externalACLs.conf'
 acl_target_dir = '/usr/local/etc/squid/acl'
 acl_max_timeout = 30
 
@@ -153,16 +150,12 @@ class Downloader(object):
         """ download / unpack ACL
             :return: iterator filename, type, content
         """
-        is_python3 = sys.version_info >= (3, 0)
         self.fetch()
         for filename, filehandle in self.get_files():
             basefilename = os.path.basename(filename).lower()
             file_ext = filename.split('.')[-1].lower()
             while True:
-                if is_python3:
-                    line = filehandle.readline().decode(encoding='utf-8', errors='ignore')
-                else:
-                    line = filehandle.readline()
+                line = filehandle.readline().decode(encoding='utf-8', errors='ignore')
                 if not line:
                     break
                 yield filename, basefilename, file_ext, line
@@ -173,7 +166,7 @@ class DomainSorter(object):
         Use as file type object, close flushes the actual (sorted) data to disc
     """
 
-    def __init__(self, filename=None, mode=None, Type='dstdomain'):
+    def __init__(self, filename=None, Type='dstdomain'):
         """ new sorted output file, uses an acl record in reverse order as sort key
             :param filename: target filename
             :param mode: file open mode
@@ -184,7 +177,6 @@ class DomainSorter(object):
         self._sort_map = dict()
         # setup target
         self._target_filename = filename
-        self._target_mode = mode
         self._Type = Type
         # setup temp files
         self.generate_targets()
@@ -197,7 +189,7 @@ class DomainSorter(object):
             target = chr(i + 1)
             setid = int(i / (sets / self._num_targets))
             if setid not in self._buckets:
-                self._buckets[setid] = tempfile.NamedTemporaryFile('w+', 10240)
+                self._buckets[setid] = tempfile.NamedTemporaryFile('wb+', 10240)
             self._sort_map[target] = self._buckets[setid]
 
     def write(self, data):
@@ -221,7 +213,7 @@ class DomainSorter(object):
         target = key[0]
         if target in self._sort_map:
             for part in (key, self._separator, value, '\n'):
-                self._sort_map[target].write(part)
+                self._sort_map[target].write(part.encode('utf-8'))
         else:
             # not supposed to happen, every key should have a calculated target pool
             pass
@@ -233,7 +225,7 @@ class DomainSorter(object):
             self._buckets[target].seek(0)
             set_content = dict()
             while True:
-                line = self._buckets[target].readline()
+                line = self._buckets[target].readline().decode()
                 if not line:
                     break
                 else:
@@ -261,9 +253,9 @@ class DomainSorter(object):
     def close(self):
         """ close and dump content
         """
-        if self._target_filename is not None and self._target_mode is not None:
+        if self._target_filename is not None:
             # flush to file on close
-            with open(self._target_filename, self._target_mode, buffering=10240) as f_out:
+            with open(self._target_filename, 'wb', buffering=10240) as f_out:
                 prev_line = None
                 for line in self.reader():
                     line = line.lstrip('.')
@@ -276,8 +268,8 @@ class DomainSorter(object):
                         if self.is_domain(line):
                             # prefix domain, if this domain is different then the previous one
                             if prev_line is None or '.%s' % line not in prev_line:
-                                f_out.write('.')
-                        f_out.write(line)
+                                f_out.write(b'.')
+                        f_out.write(line.encode())
                     prev_line = line
 
 
@@ -294,71 +286,63 @@ def filename_in_ignorelist(bfilename, filename_ext):
 
 
 def main():
-    # create acl directory (if new)
-    if not os.path.exists(acl_target_dir):
-        os.mkdir(acl_target_dir)
-    else:
-        # remove index files
-        for filename in glob.glob('%s/*.index' % acl_target_dir):
-            os.remove(filename)
+    # parse OPNsense external ACLs config
+    if os.path.exists(acl_config_fn):
+        # create acl directory (if new)
+        if not os.path.exists(acl_target_dir):
+            os.mkdir(acl_target_dir)
+        else:
+            # remove index files
+            for filename in glob.glob('%s/*.index' % acl_target_dir):
+                os.remove(filename)
+        # read config and download per section
+        cnf = ConfigParser()
+        cnf.read(acl_config_fn)
+        for section in cnf.sections():
+            target_filename = acl_target_dir + '/' + section
+            if cnf.has_option(section, 'url'):
+                # collect filters to apply
+                acl_filters = list()
+                if cnf.has_option(section, 'filter'):
+                    for acl_filter in cnf.get(section, 'filter').strip().split(','):
+                        if len(acl_filter.strip()) > 0:
+                            acl_filters.append(acl_filter)
 
-    filetype = 'domain'
-    for config_path in ['/usr/local/etc/squid/externalACLs.conf', '/usr/local/etc/squid/remoteLists.conf']:
-        # parse OPNsense external ACLs config_path
-        if os.path.exists(config_path):
-            # read config_path and download per section
-            cnf = ConfigParser()
-            cnf.read(config_path)
-            for section in cnf.sections():
-                target_filename = acl_target_dir + '/' + section
-                if cnf.has_option(section, 'url'):
-                    # collect filters to apply
-                    acl_filters = list()
-                    if cnf.has_option(section, 'filter'):
-                        for acl_filter in cnf.get(section, 'filter').strip().split(','):
-                            if len(acl_filter.strip()) > 0:
-                                acl_filters.append(acl_filter)
+                # define target(s)
+                targets = {'domain': {'filename': target_filename, 'handle': None, 'class': DomainSorter}}
 
-                    # define target(s)
-                    targets = {'domain': {'filename': target_filename, 'handle': None, 'class': DomainSorter}}
-
-                    # only generate files if enabled, otherwise dump empty files
-                    if cnf.has_option(section, 'enabled') and cnf.get(section, 'enabled') == '1':
-                        download_url = cnf.get(section, 'url')
-                        if cnf.has_option(section, 'username'):
-                            download_username = cnf.get(section, 'username')
-                            download_password = cnf.get(section, 'password')
-                        else:
-                            download_username = None
-                            download_password = None
-                        if cnf.has_option(section, 'sslNoVerify') and cnf.get(section, 'sslNoVerify') == '1':
-                            sslNoVerify = True
-                        else:
-                            sslNoVerify = False
-                        if cnf.has_option(section, 'type'):
-                            Type = cnf.get(section, 'type')
-                        else:
-                            Type = 'dstdomain'
-                        acl = Downloader(download_url, download_username, download_password, acl_max_timeout,
-                                         sslNoVerify)
-                        all_filenames = list()
-                        for filename, basefilename, file_ext, line in acl.download():
-                            if filename_in_ignorelist(basefilename, file_ext):
-                                # ignore documents, licenses and readme's
-                                continue
+                # only generate files if enabled, otherwise dump empty files
+                if cnf.has_option(section, 'enabled') and cnf.get(section, 'enabled') == '1':
+                    download_url = cnf.get(section, 'url')
+                    if cnf.has_option(section, 'username'):
+                        download_username = cnf.get(section, 'username')
+                        download_password = cnf.get(section, 'password')
+                    else:
+                        download_username = None
+                        download_password = None
+                    if cnf.has_option(section, 'sslNoVerify') and cnf.get(section, 'sslNoVerify') == '1':
+                        sslNoVerify = True
+                    else:
+                        sslNoVerify = False
+                    acl = Downloader(download_url, download_username, download_password, acl_max_timeout, sslNoVerify)
+                    all_filenames = list()
+                    for filename, basefilename, file_ext, line in acl.download():
+                        if filename_in_ignorelist(basefilename, file_ext):
+                            # ignore documents, licenses and readme's
+                            continue
 
                             if filename not in all_filenames:
                                 all_filenames.append(filename)
 
-                            if len(acl_filters) > 0:
-                                acl_found = False
-                                for acl_filter in acl_filters:
-                                    if acl_filter in filename:
-                                        acl_found = True
-                                        break
-                                if not acl_found:
-                                    # skip this acl entry
-                                    continue
+                        if len(acl_filters) > 0:
+                            acl_found = False
+                            for acl_filter in acl_filters:
+                                if acl_filter in filename:
+                                    acl_found = True
+                                    break
+                            if not acl_found:
+                                # skip this acl entry
+                                continue
 
                             if filetype in targets and targets[filetype]['handle'] is None:
                                 targets[filetype]['handle'] = targets[filetype]['class'](targets[filetype]['filename'], 'w', Type)
@@ -387,6 +371,7 @@ def main():
                             # no data fetched and no file available, create new empty file
                             with open(targets[filetype]['filename'], 'w') as target_out:
                                 target_out.write("")
+
 
 # execute downloader
 main()

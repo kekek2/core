@@ -2,7 +2,7 @@ $colors: (
   orange: #D94F00,
   lightgrey: #F7F7F7,
   lightergrey: #FBFBFB,
-  darkgrey: #000000,
+  darkgrey: #3C3C3B,
   bordergrey: #E5E5E5,
 );
 
@@ -118,6 +118,7 @@ $zindex: (
 html, body{
   height: 100%;
   font-family: 'SourceSansProRegular';
+  background-color: #FFF;
 }
 
 body{
@@ -365,8 +366,8 @@ main.page-content.col-lg-12 {
 
 #navigation.col-sidebar-left {
   width: 70px;
-  background-color: transparent !important;
   overflow: hidden;
+  background-color: transparent !important;
   border: none !important;
   > div {
     &.row {

@@ -14,7 +14,7 @@
                     let grid = $('#alias_content').UIBootgrid({
                         search: '/api/firewall/alias_util/list/' + $(this).val(),
                         options: {
-                            rowCount: 20,
+                            rowCount: [20, 50, 100, 200, -1],
                             formatters: {
                                 commands: function (column, row) {
                                     return '<button type="button" class="btn btn-xs btn-default delete-ip" data-row-id="' + row.ip + '"><span class="fa fa-trash-o"></span></button>';
@@ -106,7 +106,12 @@
                     // Remove all pre-existing event listeners, just to be sure.
                     $('#ip-search').off();
                     $('#ip-search').on('click', function(event) {
+                        if (!$("#ip-search > span").hasClass('fa-search')) {
+                            // already searching
+                            return;
+                        }
                         let ip = $('#ip').val();
+                        $("#ip-search > span").removeClass('fa-search').addClass("fa-spinner fa-pulse");
                         ajaxCall('/api/firewall/alias_util/find_references', {'ip': ip}, function(data, status) {
                             if (status !== 'success' || data['status'] !== 'ok') {
                                 $('#ip-results').html(
@@ -132,6 +137,7 @@
                                     $('#ip-results-list').append(item);
                                 });
                             }
+                            $("#ip-search > span").removeClass('fa-spinner fa-pulse').addClass("fa-search");
                         });
                     });
                 }
@@ -204,7 +210,7 @@
             <section class="col-xs-12">
                 <div class="content-box">
                     <div class="table-responsive">
-                        <table class="table table-clean-form" id="alias_content">
+                        <table class="table table-clean-form" id="alias_content" data-store-selection="true">
                             <thead>
                                 <tr>
                                     <th data-column-id="ip" data-type="string"  data-identifier="true">{{ lang._('IP Address') }}</th>

@@ -32,6 +32,7 @@ require_once("guiconfig.inc");
 require_once("services.inc");
 require_once("system.inc");
 require_once("interfaces.inc");
+require_once("plugins.inc.d/unbound.inc");
 
 $a_hosts = &config_read_array('unbound', 'hosts');
 $a_domains = &config_read_array('unbound', 'domainoverrides');
@@ -48,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($pconfig['apply'])) {
         system_resolvconf_generate();
         unbound_configure_do();
-        services_dhcpd_configure();
+        plugins_configure('dhcp');
         clear_subsystem_dirty('unbound');
         header(url_safe('Location: /services_unbound_overrides.php'));
         exit;

@@ -11,6 +11,7 @@
       });
     ?>
     <div class="modal fade" id="modal_widgets" tabindex="-1" role="dialog" aria-labelledby="modal_widgets_label" aria-hidden="true">
+      <div class="modal-backdrop fade in"></div>
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -50,6 +51,7 @@
     endif; ?>
     <!-- dialog "wait for (service) action" -->
     <div class="modal fade" id="OPNsenseStdWaitDialog" tabindex="-1" data-backdrop="static" data-keyboard="false">
+      <div class="modal-backdrop fade in"></div>
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-body">
