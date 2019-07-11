@@ -45,12 +45,11 @@ CORE_PKGVERSION=	${CORE_VERSION}
 .endif
 
 TING_ABI?=	1.5
-CORE_ABI?=	19.1
+CORE_ABI?=	19.7
 CORE_ARCH?=	${ARCH}
 CORE_FLAVOUR=	${FLAVOUR}
 CORE_OPENVPN?=	# empty
 CORE_PHP?=	72
-CORE_PYTHON2?=	27
 CORE_PYTHON?=	37
 CORE_RADVD?=	1
 CORE_SQUID?=	# empty
@@ -67,9 +66,9 @@ CORE_REPOSITORY?=	${TING_ABI}/libressl
 CORE_REPOSITORY?=	${FLAVOUR}
 .endif
 
-CORE_MESSAGE?=		Carry on my wayward son
-CORE_NAME?=		opnsense-devel
-CORE_TYPE?=		development
+CORE_MESSAGE?=		TBA
+CORE_NAME?=		opnsense
+CORE_TYPE?=		release
 
 CORE_COMMENT?=		${CORE_PRODUCT} ${CORE_TYPE} package
 CORE_MAINTAINER?=	project@opnsense.org
@@ -133,14 +132,6 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			php${CORE_PHP}-sqlite3 \
 			php${CORE_PHP}-xml \
 			php${CORE_PHP}-zlib \
-			py${CORE_PYTHON2}-Jinja2 \
-			py${CORE_PYTHON2}-dnspython \
-			py${CORE_PYTHON2}-ipaddress \
-			py${CORE_PYTHON2}-netaddr \
-			py${CORE_PYTHON2}-psutil \
-			py${CORE_PYTHON2}-requests \
-			py${CORE_PYTHON2}-sqlite3 \
-			py${CORE_PYTHON2}-ujson \
 			py${CORE_PYTHON}-Jinja2 \
 			py${CORE_PYTHON}-dnspython \
 			py${CORE_PYTHON}-netaddr \
