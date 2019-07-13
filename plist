@@ -30,7 +30,7 @@
 /usr/local/etc/inc/logs.inc
 /usr/local/etc/inc/notices.inc
 /usr/local/etc/inc/plugins.inc
-/usr/local/etc/inc/plugins.inc.d/configd.inc
+/usr/local/etc/inc/plugins.inc.d/configd_py.inc
 /usr/local/etc/inc/plugins.inc.d/core.inc
 /usr/local/etc/inc/plugins.inc.d/dhcp.inc
 /usr/local/etc/inc/plugins.inc.d/dhcpd.inc
