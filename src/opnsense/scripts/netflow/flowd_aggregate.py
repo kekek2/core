@@ -53,9 +53,6 @@ def aggregate_flowd(config, server, do_vacuum=False):
     :param do_vacuum: vacuum database after cleanup
     :return: None
     """
-    # init metadata (progress maintenance)
-    metadata = AggMetadata(config.database_dir)
-
     # register aggregate classes to stream data to
     stream_agg_objects = list()
     for agg_class in lib.aggregates.get_aggregators():
@@ -69,21 +66,19 @@ def aggregate_flowd(config, server, do_vacuum=False):
             # commit data on receive timestamp change or last record
             for stream_agg_object in stream_agg_objects:
                 stream_agg_object.commit()
+                commit_record_count = 0
         if flow_record is not None:
             # send to aggregator
             for stream_agg_object in stream_agg_objects:
                 # class add() may change the flow contents for processing, its better to isolate
-                # paremeters here.
-                flow_record_cpy = copy.copy(flow_record)
-                stream_agg_object.add(flow_record_cpy)
+                # parameters here.
+                stream_agg_object.add(copy.copy(flow_record))
             commit_record_count += 1
 
     # expire old data
     for stream_agg_object in stream_agg_objects:
         stream_agg_object.cleanup(do_vacuum)
         del stream_agg_object
-    del metadata
-
 
 class Main(object):
     config = None
