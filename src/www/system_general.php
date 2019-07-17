@@ -216,7 +216,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         /* time zone change first */
         system_timezone_configure();
 
-        filter_pflog_start();
         prefer_ipv4_or_ipv6();
         system_hostname_configure();
         system_hosts_generate();

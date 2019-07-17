@@ -122,7 +122,7 @@ include("fbegin.inc");?>
     <div class="container-fluid col-xs-12 col-sm-10 col-md-9">
       <div class="row">
         <section class="col-xs-12">
-          <div class="content-box" style="padding: 20px;">
+          <div class="content-box wizard" style="padding: 20px;">
             <div class="table-responsive">
                 <img src="/ui/themes/opnsense/build/images/ting-green.png" border="0" alt="logo" style="max-width:380px;" />
               <br />
