@@ -52,7 +52,7 @@ class ServiceController extends ApiMutableServiceControllerBase
         function disableRule($port)
         {
             $nat_delete = false;
-            $config = Config::getInstance()->toArray();
+            $config = Config::getInstance()->toArray(array_flip(["rule"]));
             if (isset($config["nat"]["rule"]))
                 foreach ($config["nat"]["rule"] as $nat_key => $nat)
                     if (!isset($nat["disabled"]) && isset($nat["target"]) && isset($nat["local-port"]) && $nat["protocol"] = "tcp" && in_array($nat["target"], ["127.0.0.1", "localhost"]) && $nat["local-port"] == $port)
