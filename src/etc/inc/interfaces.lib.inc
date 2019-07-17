@@ -207,7 +207,6 @@ function legacy_interface_stats($ifs = null)
 function legacy_interfaces_details($intf = null)
 {
     $result = array();
-
     if (!empty($intf)) {
         $tmp_intf = escapeshellarg($intf);
     } else {
@@ -249,9 +248,9 @@ function legacy_interfaces_details($intf = null)
             }
         } elseif (strpos(trim($line), 'options=') !== false) {
             // parse options
-            $capabilities = substr($line, strpos($line, '<') + 1, -1);
-            foreach (explode(',', $capabilities) as $capability) {
-                $result[$current_interface]["options"][] = strtolower(trim($capability));
+            $options = substr($line, strpos($line, '<') + 1, -1);
+            foreach (explode(',', $options) as $option) {
+                $result[$current_interface]["options"][] = strtolower(trim($option));
             }
         } elseif (strpos($line, "\tether ") !== false) {
             // mac address
@@ -393,9 +392,18 @@ function configure_interface_hardware($ifs)
     }
 }
 
-function legacy_get_interface_addresses($ifs)
+function legacy_get_interface_addresses($ifs, $ifconfig_details = null)
 {
-    $intf_details = legacy_interface_details($ifs);
+    if (empty($ifconfig_details)) {
+        $intf_details = legacy_interface_details($ifs);
+    } else {
+        if (!empty($ifconfig_details[$ifs])) {
+            $intf_details = $ifconfig_details[$ifs];
+        } else {
+            $intf_details = array();
+        }
+    }
+
     $addrs = array("macaddr" => $intf_details['macaddr']);
     if (!empty($intf_details['ipv4'][0])) {
         $addrs['ipaddr'] = $intf_details['ipv4'][0]['ipaddr'];

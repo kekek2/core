@@ -116,7 +116,6 @@
 /usr/local/etc/rc.loader.d/20-brand
 /usr/local/etc/rc.loader.d/20-misc
 /usr/local/etc/rc.loader.d/20-modules
-/usr/local/etc/rc.loader.d/20-netgraph
 /usr/local/etc/rc.loader.d/20-zfs
 /usr/local/etc/rc.loader.d/30-syscons
 /usr/local/etc/rc.newwanip
@@ -350,7 +349,6 @@
 /usr/local/opnsense/contrib/simplepie/README.markdown
 /usr/local/opnsense/contrib/tzdata/iso3166.tab
 /usr/local/opnsense/contrib/tzdata/zone.tab
-/usr/local/opnsense/firmware-upgrade
 /usr/local/opnsense/mvc/app/cache/README
 /usr/local/opnsense/mvc/app/config/config.php
 /usr/local/opnsense/mvc/app/config/loader.php
