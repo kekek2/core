@@ -27,6 +27,7 @@
     flowd log parser
 """
 import struct
+import select
 from socket import inet_ntop, AF_INET, AF_INET6, ntohl
 
 
@@ -77,8 +78,8 @@ class FlowParser:
         'flow_engine_info': 'HHII'
     }
 
-    def __init__(self, filename):
-        self._filename = filename
+    def __init__(self, server):
+        self._server = server
         # cache formatter vs byte length
         self._fmt_cache = dict()
         # pre-calculate powers of 2
@@ -125,16 +126,17 @@ class FlowParser:
         """ iterate flowd log file
         :return:
         """
-        # pre-compile address formatters to save time
-        with open(self._filename, 'rb') as flowh:
-            while True:
-                # header [version, len_words, reserved, fields]
-                hdata = flowh.read(8)
+        while True:
+            r, w, e = select.select([self._server], [], [], 0)
+            if not r:
+                break
+            for op in r:
+                hdata = op.recv(8)
                 if hdata == b'':
                     break
                 header = struct.unpack('BBHI', hdata)
                 record = self._parse_binary(
-                    raw_data=flowh.read(header[1] * 4),
+                    raw_data=op.recv(header[1] * 4),
                     data_fields=ntohl(header[3])
                 )
                 record['sys_uptime_ms'] = record['agent_info'][0]

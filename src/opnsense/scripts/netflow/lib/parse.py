@@ -26,27 +26,10 @@
     --------------------------------------------------------------------------------------
     parse flowd log files
 """
-import select
 import tempfile
 import subprocess
 import os
-
-# define field
-PARSE_FLOW_FIELDS = [
-    {'check': flowd.FIELD_OCTETS, 'target': 'octets'},
-    {'check': flowd.FIELD_PACKETS, 'target': 'packets'},
-    {'check': flowd.FIELD_SRC_ADDR, 'target': 'src_addr'},
-    {'check': flowd.FIELD_DST_ADDR, 'target': 'dst_addr'},
-    {'check': flowd.FIELD_SRCDST_PORT, 'target': 'src_port'},
-    {'check': flowd.FIELD_SRCDST_PORT, 'target': 'dst_port'},
-    {'check': flowd.FIELD_PROTO_FLAGS_TOS, 'target': 'protocol'},
-    {'check': flowd.FIELD_PROTO_FLAGS_TOS, 'target': 'tcp_flags'},
-    {'check': flowd.FIELD_PROTO_FLAGS_TOS, 'target': 'tos'},
-    {'check': flowd.FIELD_IF_INDICES, 'target': 'if_ndx_in'},
-    {'check': flowd.FIELD_IF_INDICES, 'target': 'if_ndx_out'},
-    {'check': flowd.FIELD_GATEWAY_ADDR, 'target': 'gateway_addr'},
-    {'check': flowd.FIELD_FLOW_TIMES, 'target': 'netflow_ver'}]
-
+from lib.flowparser import FlowParser
 
 class Interfaces(object):
     """ mapper for local interface index to interface name (1 -> em0 for example)
@@ -60,7 +43,7 @@ class Interfaces(object):
             output_stream.seek(0)
             if_index = 1
             for line in output_stream.readline().split():
-                self._if_index["%s" % if_index] = line
+                self._if_index["%s" % if_index] = line.decode()
                 if_index += 1
 
     def if_device(self, if_index):
@@ -76,35 +59,15 @@ class Interfaces(object):
 
 def parse_flow(server):
     """ parse flowd logs and yield records (dict type)
-    :param recv_stamp: last receive timestamp (recv)
+    :param server: srver for reading
     :return: iterator flow details
     """
     interfaces = Interfaces()
-    while True:
-        r, w, e = select.select([server], [], [], 0)
-        if not r:
-            break
-        for op in r:
-            flowrec = op.recv(8192)
-            flow = flowd.Flow(flowrec)
-            flow_record = dict()
-            if flow.has_field(flowd.FIELD_RECV_TIME):
-                # receive timestamp
-                flow_record['recv'] = flow.recv_sec
-                if flow.has_field(flowd.FIELD_FLOW_TIMES):
-                    # calculate flow start, end, duration in ms
-                    flow_record['flow_end'] = flow.recv_sec - (flow.sys_uptime_ms - flow.flow_finish) / 1000.0
-                    flow_record['duration_ms'] = (flow.flow_finish - flow.flow_start)
-                    flow_record['flow_start'] = flow_record['flow_end'] - flow_record['duration_ms'] / 1000.0
-                    # handle source data
-                    for flow_field in PARSE_FLOW_FIELDS:
-                        if flow.has_field(flow_field['check']):
-                            flow_record[flow_field['target']] = getattr(flow, flow_field['target'])
-                        else:
-                            flow_record[flow_field['target']] = None
-                    # map interface indexes to actual interface names
-                    flow_record['if_in'] = interfaces.if_device(flow_record['if_ndx_in'])
-                    flow_record['if_out'] = interfaces.if_device(flow_record['if_ndx_out'])
-                yield flow_record
+    for flow_record in FlowParser(server):
+        # map interface indexes to actual interface names
+        flow_record['if_in'] = interfaces.if_device(flow_record['if_ndx_in'])
+        flow_record['if_out'] = interfaces.if_device(flow_record['if_ndx_out'])
+        yield flow_record
+
     # send None to mark last record
     yield None
