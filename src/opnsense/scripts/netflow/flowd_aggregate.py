@@ -39,7 +39,6 @@ import socket
 import argparse
 from lib import load_config
 from lib.parse import parse_flow
-from lib.aggregate import AggMetadata
 import lib.aggregates
 
 
@@ -62,11 +61,11 @@ def aggregate_flowd(config, server, do_vacuum=False):
     # parse flow data and stream to registered consumers
     commit_record_count = 0
     for flow_record in parse_flow(server):
-        if (flow_record is None and commit_record_count > 0) or commit_record_count > 100000:
+        if (flow_record is None and commit_record_count > 0) or commit_record_count > 10:
             # commit data on receive timestamp change or last record
             for stream_agg_object in stream_agg_objects:
                 stream_agg_object.commit()
-                commit_record_count = 0
+            commit_record_count = 0
         if flow_record is not None:
             # send to aggregator
             for stream_agg_object in stream_agg_objects:
