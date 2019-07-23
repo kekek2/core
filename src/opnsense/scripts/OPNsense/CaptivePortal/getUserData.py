@@ -1,4 +1,4 @@
-#!/usr/local/bin/python2.7
+#!/usr/local/bin/python3
 
 """
     Copyright (c) 2017 E.Bevz <evbevz@gmail.com>
@@ -29,7 +29,6 @@
     get user data by IP adress (used for proxy authentication)
 """
 import sys
-import time
 import ujson
 from lib.db import DB
 
