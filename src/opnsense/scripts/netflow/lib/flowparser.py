@@ -28,8 +28,8 @@
 """
 import struct
 import select
+import os
 from socket import inet_ntop, AF_INET, AF_INET6, ntohl
-
 
 class FlowParser:
     # fields in order of appearance, use bitmask compare
@@ -131,43 +131,46 @@ class FlowParser:
             if not r:
                 break
             for op in r:
-                hdata = op.recv(8)
-                if hdata == b'':
-                    break
-                header = struct.unpack('BBHI', hdata)
-                record = self._parse_binary(
-                    raw_data=op.recv(header[1] * 4),
-                    data_fields=ntohl(header[3])
-                )
-                record['sys_uptime_ms'] = record['agent_info'][0]
-                record['netflow_ver'] = record['agent_info'][3]
-                record['recv_sec'] = record['recv_time'][0]
-                record['recv'] = record['recv_sec']
-                record['recv_usec'] = record['recv_time'][1]
-                if 'proto_flags_tos' in record:
-                    record['tcp_flags'] = record['proto_flags_tos'][0]
-                    record['protocol'] = record['proto_flags_tos'][1]
-                    record['tos'] = record['proto_flags_tos'][2]
-                if 'flow_times' in record:
-                    record['flow_start'] = record['flow_times'][0]
-                    record['flow_finish'] = record['flow_times'][1]
-                if 'if_indices' in record:
-                    record['if_ndx_in'] = record['if_indices'][0]
-                    record['if_ndx_out'] = record['if_indices'][1]
-                if 'srcdst_port' in record:
-                    record['src_port'] = record['srcdst_port'][0]
-                    record['dst_port'] = record['srcdst_port'][1]
+                with os.fdopen(op.fileno(), "rb") as flowh:
+                    while True:
+                        hdata = flowh.read(8)
+                        if hdata == b'':
+                            break
+                        header = struct.unpack('BBHI', hdata)
+                        record = self._parse_binary(
+                            raw_data=flowh.read(header[1] * 4),
+                            data_fields=ntohl(header[3])
+                        )
 
-                # concat ipv4/v6 fields into field without [4,6]
-                for key in self.field_definition_order:
-                    if key in record:
-                        if key[-1] == '4':
-                            record[key[:-1]] = inet_ntop(AF_INET, record[key])
-                        elif key[-1] == '6':
-                            record[key[:-1]] = inet_ntop(AF_INET6, record[key])
-                # calculated values
-                record['flow_end'] = record['recv_sec'] - (record['sys_uptime_ms'] - record['flow_finish']) / 1000.0
-                record['duration_ms'] = (record['flow_finish'] - record['flow_start'])
-                record['flow_start'] = record['flow_end'] - record['duration_ms'] / 1000.0
+                        record['sys_uptime_ms'] = record['agent_info'][0]
+                        record['netflow_ver'] = record['agent_info'][3]
+                        record['recv_sec'] = record['recv_time'][0]
+                        record['recv'] = record['recv_sec']
+                        record['recv_usec'] = record['recv_time'][1]
+                        if 'proto_flags_tos' in record:
+                            record['tcp_flags'] = record['proto_flags_tos'][0]
+                            record['protocol'] = record['proto_flags_tos'][1]
+                            record['tos'] = record['proto_flags_tos'][2]
+                        if 'flow_times' in record:
+                            record['flow_start'] = record['flow_times'][0]
+                            record['flow_finish'] = record['flow_times'][1]
+                        if 'if_indices' in record:
+                            record['if_ndx_in'] = record['if_indices'][0]
+                            record['if_ndx_out'] = record['if_indices'][1]
+                        if 'srcdst_port' in record:
+                            record['src_port'] = record['srcdst_port'][0]
+                            record['dst_port'] = record['srcdst_port'][1]
 
-                yield record
+                        # concat ipv4/v6 fields into field without [4,6]
+                        for key in self.field_definition_order:
+                            if key in record:
+                                if key[-1] == '4':
+                                    record[key[:-1]] = inet_ntop(AF_INET, record[key])
+                                elif key[-1] == '6':
+                                    record[key[:-1]] = inet_ntop(AF_INET6, record[key])
+                        # calculated values
+                        record['flow_end'] = record['recv_sec'] - (record['sys_uptime_ms'] - record['flow_finish']) / 1000.0
+                        record['duration_ms'] = (record['flow_finish'] - record['flow_start'])
+                        record['flow_start'] = record['flow_end'] - record['duration_ms'] / 1000.0
+
+                        yield record
