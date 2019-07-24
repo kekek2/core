@@ -1,4 +1,9 @@
 #!/bin/sh
 
-service flowd onestop
-service flowd_aggregate onestop
+if service flowd onestatus > /dev/null; then
+    service flowd onestop
+fi
+
+if service flowd_aggregate onestatus > /dev/null; then
+    service flowd_aggregate onestop
+fi
