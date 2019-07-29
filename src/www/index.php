@@ -124,7 +124,7 @@ include("fbegin.inc");?>
         <section class="col-xs-12">
           <div class="content-box wizard" style="padding: 20px;">
             <div class="table-responsive">
-                <img src="/ui/themes/opnsense/build/images/ting-green.png" border="0" alt="logo" style="max-width:380px;" />
+                <img src="/ui/themes/opnsense/build/images/default-logo.png" border="0" alt="logo" style="max-width:380px;" />
               <br />
               <div class="content-box-main" style="padding-bottom:0px;">
                 <?php

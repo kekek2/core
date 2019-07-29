@@ -38,7 +38,16 @@ $aclObj = new \OPNsense\Core\ACL();
     <div class="container-fluid">
       <div class="navbar-header">
         <a class="navbar-brand" href="/index.php">
-        <img class="brand-logo" src="/ui/themes/<?= $themename ?>/build/images/ting-green.png" height="30" alt="logo" />
+          <?php if (file_exists("/usr/local/opnsense/www/themes/{$themename}/build/images/default-logo.svg")): ?>
+                  <img class="brand-logo" src="<?= cache_safe("/ui/themes/{$themename}/build/images/default-logo.svg") ?>" height="30" alt="logo" />
+          <?php else: ?>
+                  <img class="brand-logo" src="<?= cache_safe("/ui/themes/{$themename}/build/images/default-logo.png") ?>" height="30" alt="logo" />
+          <?php endif ?>
+          <?php if (file_exists("/usr/local/opnsense/www/themes/{$themename}/build/images/icon-logo.svg")): ?>
+                  <img class="brand-icon" src="<?= cache_safe("/ui/themes/{$themename}/build/images/icon-logo.svg") ?>" height="30" alt="icon" />
+          <?php else: ?>
+                  <img class="brand-icon" src="<?= cache_safe("/ui/themes/{$themename}/build/images/icon-logo.png") ?>" height="30" alt="icon" />
+          <?php endif ?>
         </a>
         <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navigation">
           <span class="sr-only">Toggle navigation</span>

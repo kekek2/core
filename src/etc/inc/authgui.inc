@@ -352,7 +352,7 @@ function display_login_form($Login_Error)
     <!--[if lt IE 9]><script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.2/html5shiv.min.js"></script><![endif]-->
 
   </head>
-  <body class="page-login" style="background: #fff;">
+  <body class="page-login">
 
   <div class="container">
     <?php
@@ -365,7 +365,15 @@ function display_login_form($Login_Error)
     <main class="login-modal-container" style="border: none; margin-top: 50px;">
 
       <div class="login-modal-content">
-        <div><img src="/ui/themes/opnsense/build/images/ting_full.png" /></div>
+        <header class="login-modal-head">
+<?php if (file_exists("/usr/local/opnsense/www/themes/{$themename}/build/images/login-logo.png")): ?>
+            <img src="<?= cache_safe("/ui/themes/{$themename}/build/images/login-logo.png") ?>" alt="logo" />
+<?php elseif (file_exists("/usr/local/opnsense/www/themes/{$themename}/build/images/default-logo.svg")): ?>
+            <img src="<?= cache_safe("/ui/themes/{$themename}/build/images/default-logo.svg") ?>" alt="logo" />
+<?php else: ?>
+            <img src="<?= cache_safe("/ui/themes/{$themename}/build/images/default-logo.png") ?>" alt="logo" />
+<?php endif ?>
+        </header>
 
         <div id="inputerrors" class="text-danger"><?= !empty($Login_Error) ? $Login_Error : '&nbsp;' ?></div><br />
 
@@ -381,7 +389,9 @@ function display_login_form($Login_Error)
           <input id="passwordfld" type="password" name="passwordfld" class="form-control pwd" tabindex="2" />
         </div>
 
-        <button type="submit" name="login" value="1" class="btn btn-primary pull-right"><?=gettext("Login"); ?></button>
+        <div class="form-group text-center">
+          <button type="submit" name="login" value="1" class="btn btn-primary"><?=gettext("Login"); ?></button>
+        </div>
 
       </form>
 
