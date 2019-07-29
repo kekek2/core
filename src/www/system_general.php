@@ -48,6 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['hostname'] = $config['system']['hostname'];
     $pconfig['language'] = $config['system']['language'];
     $pconfig['prefer_ipv4'] = isset($config['system']['prefer_ipv4']);
+    $pconfig['theme'] = $config['theme'];
     $pconfig['timezone'] = empty($config['system']['timezone']) ? 'Etc/UTC' : $config['system']['timezone'];
 
     $pconfig['gw_switch_default'] = isset($config['system']['gw_switch_default']);
@@ -131,11 +132,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     if (count($input_errors) == 0) {
-        $oldlanguage = !empty($config['system']["language"]) ? $config['system']["language"] : "en_US" ;
         $config['system']['domain'] = $pconfig['domain'];
         $config['system']['hostname'] = $pconfig['hostname'];
         $config['system']['language'] = $pconfig['language'];
         $config['system']['timezone'] = $pconfig['timezone'];
+        $config['theme'] =  $pconfig['theme'];
 
         if (!empty($pconfig['prefer_ipv4'])) {
             $config['system']['prefer_ipv4'] = true;
@@ -223,9 +224,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         plugins_configure('dns');
         plugins_configure('dhcp');
         filter_configure();
-        if ($oldlanguage != $pconfig['language']) {
-            configd_run('template reload OPNsense/Lang');
-        }
 
         header(url_safe('Location: /system_general.php?savemsg=%s', array('The changes have been applied successfully.')));
         exit;
@@ -256,7 +254,7 @@ include("head.inc");
     <section class="col-xs-12">
       <form method="post">
         <div class="content-box tab-content __mb">
-          <table class="table table-clean-form opnsense_standard_table_form">
+          <table class="table table-striped opnsense_standard_table_form">
             <tr>
               <td style="width:22%"><strong><?= gettext('System') ?></strong></td>
               <td style="width:78%; text-align:right">
@@ -318,10 +316,28 @@ include("head.inc");
                 </div>
               </td>
             </tr>
+            <tr>
+              <td><a id="help_for_theme" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Theme"); ?></td>
+              <td>
+                <select name="theme" class="selectpicker">
+<?php
+                foreach (glob('/usr/local/opnsense/www/themes/*', GLOB_ONLYDIR) as $file):
+                  $file = basename($file);?>
+                  <option <?= $file == $pconfig['theme'] ? 'selected="selected"' : '' ?>>
+                    <?=$file;?>
+                  </option>
+<?php
+                endforeach; ?>
+                </select>
+                <div class="hidden" data-for="help_for_theme">
+                  <?= gettext('This will change the look and feel of the GUI.') ?>
+                </div>
+              </td>
+            </tr>
           </table>
         </div>
         <div class="content-box tab-content __mb">
-          <table class="table table-clean-form opnsense_standard_table_form">
+          <table class="table table-striped opnsense_standard_table_form">
             <tr>
               <td style="width:22%"><strong><?= gettext('Networking') ?></strong></td>
               <td style="width:78%"></td>
@@ -424,7 +440,7 @@ include("head.inc");
           </table>
         </div>
         <div class="content-box tab-content">
-          <table class="table table-clean-form opnsense_standard_table_form">
+          <table class="table table-striped opnsense_standard_table_form">
             <tr>
               <td style="width:22%"></td>
               <td>
