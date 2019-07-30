@@ -34,7 +34,7 @@
     <script src="{{ cache_safe('/ui/js/polyfills.js') }}"></script>
 
     <!-- Favicon -->
-    <link href="{{ cache_safe('/ui/themes/%s/build/images/favicon.png' | format(theme_name)) }}" rel="shortcut icon">
+    <link href="{{ cache_safe('/ui/themes/%s/build/images/favicon.png' | format('ting')) }}" rel="shortcut icon">
 
     <!-- Stylesheet for fancy select/dropdown -->
     <link rel="stylesheet" type="text/css" href="{{ cache_safe(theme_file_or_default('/css/bootstrap-select-1.13.3.css', theme_name)) }}">
@@ -258,15 +258,15 @@
       <div class="container-fluid">
         <div class="navbar-header">
           <a class="navbar-brand" href="/">
-            {% if file_exists(["/usr/local/opnsense/www/themes/",theme_name,"/build/images/default-logo.svg"]|join("")) %}
-                <img class="brand-logo" src="{{ cache_safe('/ui/themes/%s/build/images/default-logo.svg' | format(theme_name)) }}" height="30" alt="logo"/>
+            {% if file_exists(["/usr/local/opnsense/www/themes/ting/build/images/default-logo.svg"]|join("")) %}
+                <img class="brand-logo" src="{{ cache_safe('/ui/themes/%s/build/images/default-logo.svg' | format('ting')) }}" height="30" alt="logo"/>
             {% else %}
-                <img class="brand-logo" src="{{ cache_safe('/ui/themes/%s/build/images/default-logo.png' | format(theme_name)) }}" height="30" alt="logo"/>
+                <img class="brand-logo" src="{{ cache_safe('/ui/themes/%s/build/images/default-logo.png' | format('ting')) }}" height="30" alt="logo"/>
             {% endif %}
-            {% if file_exists(["/usr/local/opnsense/www/themes/",theme_name,"/build/images/icon-logo.svg"]|join("")) %}
-                <img class="brand-icon" src="{{ cache_safe('/ui/themes/%s/build/images/icon-logo.svg' | format(theme_name)) }}" height="30" alt="icon"/>
+            {% if file_exists(["/usr/local/opnsense/www/themes/ting/build/images/icon-logo.svg"]|join("")) %}
+                <img class="brand-icon" src="{{ cache_safe('/ui/themes/%s/build/images/icon-logo.svg' | format('ting')) }}" height="30" alt="icon"/>
             {% else %}
-                <img class="brand-icon" src="{{ cache_safe('/ui/themes/%s/build/images/icon-logo.png' | format(theme_name)) }}" height="30" alt="icon"/>
+                <img class="brand-icon" src="{{ cache_safe('/ui/themes/%s/build/images/icon-logo.png' | format('ting')) }}" height="30" alt="icon"/>
             {% endif %}
           </a>
           <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navigation">

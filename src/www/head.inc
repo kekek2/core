@@ -78,7 +78,7 @@ $pagetitle .= html_safe(sprintf(' | %s.%s', $config['system']['hostname'], $conf
     </style>
 
     <!-- Favicon -->
-    <link href="<?= cache_safe("/ui/themes/{$themename}/build/images/favicon.png") ?>" rel="shortcut icon">
+    <link href="<?= cache_safe("/ui/themes/ting/build/images/favicon.png") ?>" rel="shortcut icon">
 
     <!-- legacy browser functions -->
     <script src="<?= cache_safe("/ui/js/polyfills.js") ?>"></script>
