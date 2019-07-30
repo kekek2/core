@@ -345,7 +345,7 @@ $( document ).ready(function() {
       <form method="post" enctype="multipart/form-data">
         <section class="col-xs-12">
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-clean-form">
+            <table class="table table-striped">
                 <tr>
                   <td><strong><?= gettext('Download') ?></strong></td>
                 </tr>
@@ -382,7 +382,7 @@ $( document ).ready(function() {
             </table>
           </div>
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-clean-form">
+            <table class="table table-striped">
                 <tr>
                   <td><strong><?= gettext('Restore') ?></strong></td>
                 </tr>
@@ -430,7 +430,7 @@ $( document ).ready(function() {
 <?php
           foreach ($backupFactory->listProviders() as $providerId => $provider):?>
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-clean-form opnsense_standard_table_form">
+            <table class="table table-striped opnsense_standard_table_form">
                     <tr>
                         <td colspan="2"><strong><?= $provider['handle']->getName() ?></strong></td>
                     </tr>

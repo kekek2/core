@@ -159,7 +159,7 @@ include('head.inc');
 else :
 ?>
 <form method="post">
-  <table class="table table-clean-form">
+  <table class="table table-striped">
     <thead>
       <tr>
         <th colspan="2"><?=gettext("Please select users to import:");?></th>

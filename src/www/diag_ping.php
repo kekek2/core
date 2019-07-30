@@ -96,7 +96,7 @@ include("head.inc"); ?>
         <div class="content-box">
             <form method="post" name="iform" id="iform">
               <div class="table-responsive">
-                <table class="table table-clean-form __nomb">
+                <table class="table table-striped __nomb">
                     <tr>
                       <td><?=gettext("Host"); ?></td>
                       <td><input name="host" type="text" value="<?=$pconfig['host'];?>" /></td>

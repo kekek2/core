@@ -438,7 +438,7 @@ $(document).ready(function() {
       <section class="col-xs-12">
         <form method="post" name="iform" id="iform">
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-clean-form opnsense_standard_table_form">
+            <table class="table table-striped opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"><strong><?=gettext('Web GUI');?></strong></td>
                 <td style="width:78%; text-align:right">
@@ -645,7 +645,7 @@ $(document).ready(function() {
             </table>
           </div>
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-clean-form opnsense_standard_table_form">
+            <table class="table table-striped opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"><strong><?= gettext('Secure Shell') ?></strong></td>
                 <td style="width:78%"></td>
@@ -720,7 +720,7 @@ $(document).ready(function() {
             </table>
           </div>
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-clean-form opnsense_standard_table_form">
+            <table class="table table-striped opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"><strong><?= gettext('Console') ?></strong></td>
                 <td style="width:78%"></td>
@@ -794,7 +794,7 @@ $(document).ready(function() {
             </table>
           </div>
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-clean-form opnsense_standard_table_form">
+            <table class="table table-striped opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"><strong><?= gettext('Authentication') ?></strong></td>
                 <td style="width:78%"></td>
@@ -856,7 +856,7 @@ $(document).ready(function() {
             </table>
           </div>
           <div class="content-box tab-content table-responsive">
-            <table class="table table-clean-form opnsense_standard_table_form">
+            <table class="table table-striped opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"></td>
                 <td style="width:78%"><input name="Submit" type="submit" class="btn btn-primary" value="<?= html_safe(gettext('Save')) ?>" /></td>

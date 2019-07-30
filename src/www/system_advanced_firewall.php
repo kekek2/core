@@ -257,7 +257,7 @@ include("head.inc");
       <section class="col-xs-12">
         <form method="post" name="iform" id="iform">
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-clean-form opnsense_standard_table_form">
+            <table class="table table-striped opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"><strong><?= gettext('IPv6 Options') ?></strong></td>
                 <td style="width:78%; text-align:right">
@@ -280,7 +280,7 @@ include("head.inc");
             </table>
           </div>
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-clean-form opnsense_standard_table_form">
+            <table class="table table-striped opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"><strong><?= gettext('Network Address Translation') ?></strong></td>
                 <td style="width:78%"></td>
@@ -318,7 +318,7 @@ include("head.inc");
             </table>
           </div>
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-clean-form opnsense_standard_table_form">
+            <table class="table table-striped opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"><strong><?= gettext('Bogon Networks') ?></strong></td>
                 <td style="width:78%"></td>
@@ -345,7 +345,7 @@ include("head.inc");
             </table>
           </div>
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-clean-form opnsense_standard_table_form">
+            <table class="table table-striped opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"><strong><?= gettext('Gateway Monitoring') ?></strong></td>
                 <td style="width:78%"></td>
@@ -375,7 +375,7 @@ include("head.inc");
             </table>
           </div>
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-clean-form opnsense_standard_table_form">
+            <table class="table table-striped opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"><strong><?= gettext('Multi-WAN') ?></strong></td>
                 <td style="width:78%"></td>
@@ -435,7 +435,7 @@ include("head.inc");
             </table>
           </div>
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-clean-form opnsense_standard_table_form">
+            <table class="table table-striped opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"><strong><?= gettext('Schedules') ?></strong></td>
                 <td style="width:78%"></td>
@@ -453,7 +453,7 @@ include("head.inc");
             </table>
           </div>
           <div class="content-box tab-content table-responsive __mb">
-            <table class="table table-clean-form opnsense_standard_table_form">
+            <table class="table table-striped opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"><strong><?= gettext('Miscellaneous') ?></strong></td>
                 <td style="width:78%"></td>
@@ -695,7 +695,7 @@ include("head.inc");
             </table>
           </div>
           <div class="content-box tab-content table-responsive">
-            <table class="table table-clean-form opnsense_standard_table_form">
+            <table class="table table-striped opnsense_standard_table_form">
               <tr>
                 <td style="width:22%"></td>
                 <td style="width:78%"><input name="Submit" type="submit" class="btn btn-primary" value="<?=html_safe(gettext('Save'));?>" /></td>

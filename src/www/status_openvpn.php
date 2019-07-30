@@ -132,7 +132,7 @@ include("head.inc"); ?>
 <?php foreach ($servers as $i => $server): ?>
           <div class="tab-content content-box __mb">
             <div class="table-responsive">
-              <table class="table table-clean-form">
+              <table class="table table-striped">
                 <tbody>
                   <tr>
                     <td colspan="7">
@@ -217,7 +217,7 @@ include("head.inc"); ?>
 <? if (!empty($sk_servers)): ?>
           <div class="tab-content content-box __mb">
             <div class="table-responsive">
-              <table class="table table-clean-form">
+              <table class="table table-striped">
                 <tbody>
                   <tr>
                     <td colspan="8"><strong><?= gettext('Peer to Peer Server Instance Statistics') ?></strong></td>
@@ -258,7 +258,7 @@ include("head.inc"); ?>
 <?php if (!empty($clients)): ?>
           <div class="tab-content content-box __mb">
             <div class="table-responsive">
-              <table class="table table-clean-form">
+              <table class="table table-striped">
                 <tbody>
                   <tr>
                     <td colspan="8"><strong><?= gettext('Client Instance Statistics') ?><strong></td>
@@ -299,7 +299,7 @@ include("head.inc"); ?>
 <?php if (empty($clients) && empty($servers) && empty($sk_servers)): ?>
           <div class="tab-content content-box __mb">
             <div class="table-responsive">
-              <table class="table-responsive table table-clean-form">
+              <table class="table-responsive table table-striped">
                 <tbody>
                   <tr>
                     <td colspan="8"><strong><?= gettext('OpenVPN Status') ?></strong></th>

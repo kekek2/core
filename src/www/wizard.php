@@ -415,7 +415,7 @@ include("head.inc");
                     <input type="hidden" name="xml" value="<?= htmlspecialchars($xml) ?>"/>
                     <input type="hidden" name="stepid" value="<?= htmlspecialchars($stepid) ?>"/>
                     <div class="table-responsive">
-                        <table class="table table-clean-form">
+                        <table class="table table-striped">
                             <?php
                             $inputaliases = array();
                             if ($pkg['step'][$stepid]['fields']['field'] != '') {

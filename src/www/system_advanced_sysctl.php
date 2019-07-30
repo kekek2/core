@@ -194,7 +194,7 @@ $( document ).ready(function() {
         <div class="table-responsive content-box tab-content" style="overflow: auto;">
 <?php
         if ($act != "edit") :?>
-          <table class="table table-clean-form">
+          <table class="table table-striped">
             <tr>
               <th><?=gettext("Tunable Name"); ?></th>
               <th><?=gettext("Description"); ?></th>
@@ -232,7 +232,7 @@ $( document ).ready(function() {
 <?php
             else : ?>
             <form method="post">
-              <table class="table table-clean-form opnsense_standard_table_form">
+              <table class="table table-striped opnsense_standard_table_form">
                 <tr>
                   <td style="width:22%"><strong><?= gettext('Edit system tunable') ?></strong></td>
                   <td style="width:78%"></td>

@@ -235,7 +235,7 @@ $( document ).ready(function() {
         <div class="content-box">
           <form method="post" name="iform" id="iform">
             <div class="table-responsive">
-              <table class="table table-clean-form opnsense_standard_table_form">
+              <table class="table table-striped opnsense_standard_table_form">
                 <tr>
                   <td style="width:22%"><strong><?=gettext("General options");?></strong></td>
                   <td style="width:78%;text-align:right">
@@ -426,7 +426,7 @@ $( document ).ready(function() {
       <section class="col-xs-12">
         <div class="content-box">
           <div class="table-responsive">
-            <table class="table table-clean-form">
+            <table class="table table-striped">
               <tbody>
                 <tr>
                   <td colspan="5"><strong><?= gettext('Host Overrides') ?></strong></td>
@@ -479,7 +479,7 @@ $( document ).ready(function() {
       <section class="col-xs-12">
         <div class="content-box">
           <div class="table-responsive">
-            <table class="table table-clean-form">
+            <table class="table table-striped">
               <tbody>
                 <tr>
                   <td colspan="4"><strong><?= gettext('Domain Overrides') ?></strong></td>

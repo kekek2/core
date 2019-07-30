@@ -124,7 +124,7 @@ include("head.inc");
           <div class="content-box">
             <form method="post" name="iform" id="iform">
               <div class="table-responsive">
-                <table class="table table-clean-form">
+                <table class="table table-striped">
                   <tr>
                     <td style="width:22%"><strong><?= gettext('User Settings') ?></strong></td>
                     <td style="width:78%; text-align:right">

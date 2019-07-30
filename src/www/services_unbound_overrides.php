@@ -142,7 +142,7 @@ include_once("head.inc");
           <section class="col-xs-12">
             <div class="content-box">
                 <div class="table-responsive">
-                  <table class="table table-clean-form">
+                  <table class="table table-striped">
                     <tbody>
                       <tr>
                         <td colspan="6"><strong><?= gettext('Host Overrides') ?></strong></td>
@@ -214,7 +214,7 @@ include_once("head.inc");
          <section class="col-xs-12">
             <div class="content-box">
                 <div class="table-responsive">
-                  <table class="table table-clean-form">
+                  <table class="table table-striped">
                     <tbody>
                       <tr>
                         <td colspan="4"><strong><?= gettext('Domain Overrides') ?></strong></td>

@@ -141,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 <div id="thermal_sensors-settings" class="widgetconfigdiv" style="display:none;">
   <form action="/widgets/widgets/thermal_sensors.widget.php" method="post" id="iform_thermal_sensors_settings" name="iform_thermal_sensors_settings">
-    <table class="table table-clean-form">
+    <table class="table table-striped">
       <thead>
         <tr>
           <th colspan="2"><?= gettext('Thresholds in °C (1 to 100):') ?></th>

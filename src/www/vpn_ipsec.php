@@ -337,7 +337,7 @@ $( document ).ready(function() {
           <input type="hidden" id="action" name="act" value="" />
            <div class="tab-content content-box col-xs-12">
               <div class="table-responsive">
-                <table class="table table-clean-form">
+                <table class="table table-striped">
                   <thead>
                   <tr>
                     <td>&nbsp;</td>
@@ -460,7 +460,7 @@ $( document ).ready(function() {
                           </button>
                         </div>
                         <div id="tdph2-<?=$i?>" style="display:none">
-                          <table class="table table-clean-form table-condensed">
+                          <table class="table table-striped table-condensed">
                             <thead>
                               <tr>
                                 <td>&nbsp;</td>

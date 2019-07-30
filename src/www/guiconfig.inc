@@ -212,7 +212,7 @@ function print_content_box($msg)
 {
     echo <<<EOFnp
 <div class="table-responsive">
-  <table class="table table-clean-form">
+  <table class="table table-striped">
      <tr><td>{$msg}</td></tr>
   </table>
 </div>

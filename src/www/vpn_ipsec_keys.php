@@ -115,7 +115,7 @@ if (is_subsystem_dirty('ipsec')) {
         <div class="tab-content content-box col-xs-12">
           <form method="post">
             <div class="table-responsive">
-              <table class="table table-clean-form">
+              <table class="table table-striped">
                 <tr>
                   <td><?=gettext("Identifier"); ?></td>
                   <td><?=gettext("Pre-Shared Key"); ?></td>

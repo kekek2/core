@@ -75,7 +75,7 @@ include("head.inc");
           </p>
 
           <div class="table-responsive content-box tab-content">
-            <table class="table table-clean-form">
+            <table class="table table-striped">
               <tr>
                 <th class="col-md-2 col-sm-3 col-xs-4"><?= gettext('Date') ?></th>
                 <th class="col-md-10 col-sm-9 col-xs-8"><?= gettext('Message') ?></th>

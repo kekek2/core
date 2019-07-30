@@ -315,7 +315,7 @@ $( document ).ready(function() {
               <input type="hidden" id="id" name="id" value="" />
               <input type="hidden" id="action" name="act" value="" />
               <div class="table-responsive">
-                <table class="table table-clean-form">
+                <table class="table table-striped">
                   <thead>
                     <tr>
                       <td colspan="5"> </td>

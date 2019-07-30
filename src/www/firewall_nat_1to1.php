@@ -253,7 +253,7 @@ $main_buttons = array(
             <form method="post" name="iform" id="iform">
               <input type="hidden" id="id" name="id" value="" />
               <input type="hidden" id="action" name="action" value="" />
-              <table class="table table-clean-form">
+              <table class="table table-striped">
                 <thead>
                   <tr>
                     <th><input type="checkbox" id="selectAll"></th>

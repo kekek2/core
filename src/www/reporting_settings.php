@@ -180,7 +180,7 @@ $(document).ready(function() {
           <section class="col-xs-12">
             <div class="tab-content content-box col-xs-12">
               <div class="table-responsive">
-                <table class="table table-clean-form opnsense_standard_table_form">
+                <table class="table table-striped opnsense_standard_table_form">
                   <tr>
                     <td colspan="2"><strong><?=gettext('Reporting Database Options');?></strong></td>
                   </tr>
@@ -213,7 +213,7 @@ $(document).ready(function() {
           <section class="col-xs-12">
             <div class="tab-content content-box col-xs-12">
               <div class="table-responsive">
-                <table class="table table-clean-form opnsense_standard_table_form">
+                <table class="table table-striped opnsense_standard_table_form">
                   <tr>
                     <td colspan="2"><strong><?=gettext('Collected reports');?></strong></td>
                   </tr>
