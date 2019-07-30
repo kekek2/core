@@ -1,6 +1,6 @@
 <?php
 
-function configd_syslog()
+function configd_py_syslog()
 {
     $logfacilities = array();
 
