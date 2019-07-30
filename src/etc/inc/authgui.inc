@@ -364,17 +364,19 @@ function display_login_form($Login_Error)
 
     <main class="login-modal-container" style="border: none; margin-top: 50px;">
 
-      <div class="login-modal-content">
-        <header class="login-modal-head">
+      <header class="login-modal-head">
+        <div class="navbar-brand">
 <?php if (file_exists("/usr/local/opnsense/www/themes/{$themename}/build/images/login-logo.png")): ?>
-            <img src="<?= cache_safe("/ui/themes/{$themename}/build/images/login-logo.png") ?>" alt="logo" />
+          <img src="<?= cache_safe("/ui/themes/{$themename}/build/images/login-logo.png") ?>" alt="logo" />
 <?php elseif (file_exists("/usr/local/opnsense/www/themes/{$themename}/build/images/default-logo.svg")): ?>
-            <img src="<?= cache_safe("/ui/themes/{$themename}/build/images/default-logo.svg") ?>" alt="logo" />
+          <img src="<?= cache_safe("/ui/themes/{$themename}/build/images/default-logo.svg") ?>" alt="logo" height="30"/>
 <?php else: ?>
-            <img src="<?= cache_safe("/ui/themes/{$themename}/build/images/default-logo.png") ?>" alt="logo" />
+          <img src="<?= cache_safe("/ui/themes/{$themename}/build/images/default-logo.png") ?>" alt="logo" height="30"/>
 <?php endif ?>
-        </header>
+        </div>
+      </header>
 
+      <div class="login-modal-content">
         <div id="inputerrors" class="text-danger"><?= !empty($Login_Error) ? $Login_Error : '&nbsp;' ?></div><br />
 
             <form class="clearfix" id="iform" name="iform" method="post" autocomplete="off" action="<?=$_SERVER['REQUEST_URI'];?>">

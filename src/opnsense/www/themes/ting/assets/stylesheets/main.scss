@@ -312,11 +312,12 @@ div.content-box.wizard {
         margin: 50px auto 15px auto;
     }
 
-    //&-head{
+    &-head{
         //background: map-get($colors, darkgrey);
         //height: 75px;
+        height: 150px;
         //padding: 0 20px;
-    //}
+    }
 
     &-content{
         padding: 20px 20px 20px 20px;
