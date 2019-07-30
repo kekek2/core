@@ -328,7 +328,7 @@ include("head.inc");
         if ($act == "new") :?>
           <form method="post" name="iform" id="iform">
             <input type="hidden" name="act" id="action" value="<?=$act;?>"/>
-            <table class="table table-clean-form opnsense_standard_table_form">
+            <table class="table table-striped opnsense_standard_table_form">
 <?php
               if (!isset($id)) :?>
               <tr>
@@ -364,7 +364,7 @@ include("head.inc");
               </tr>
             </table>
             <!-- import existing -->
-            <table id="existing" class="table table-clean-form opnsense_standard_table_form">
+            <table id="existing" class="table table-striped opnsense_standard_table_form">
               <thead>
                 <tr>
                   <th colspan="2"><?=gettext("Existing Certificate Revocation List");?></th>
@@ -383,7 +383,7 @@ include("head.inc");
               </tbody>
             </table>
             <!-- create internal -->
-            <table id="internal" class="table table-clean-form opnsense_standard_table_form">
+            <table id="internal" class="table table-striped opnsense_standard_table_form">
               <thead>
                 <tr>
                   <th colspan="2"><?=gettext("Internal Certificate Revocation List");?></th>
@@ -411,7 +411,7 @@ include("head.inc");
               </tbody>
             </table>
 
-            <table class="table table-clean-form opnsense_standard_table_form">
+            <table class="table table-striped opnsense_standard_table_form">
               <tr>
                 <td style="width:22%">&nbsp;</td>
                 <td style="width:78%">
@@ -428,7 +428,7 @@ include("head.inc");
 <?php
           elseif ($act == "editimported") :?>
           <form method="post" name="iform" id="iform">
-            <table id="editimported" class="table table-clean-form opnsense_standard_table_form">
+            <table id="editimported" class="table table-striped opnsense_standard_table_form">
               <tr>
                 <th colspan="2"><?=gettext("Edit Imported Certificate Revocation List");?></th>
               </tr>
@@ -465,7 +465,7 @@ include("head.inc");
             <input type="hidden" name="act" id="action" value=""/>
           </form>
           <form method="post">
-            <table class="table table-clean-form">
+            <table class="table table-striped">
               <thead>
                 <tr>
                   <th colspan="4"><?=gettext("Currently Revoked Certificates for CRL");?> : <?=$thiscrl['descr'];?></th>
@@ -570,10 +570,10 @@ include("head.inc");
           </form>
 <?php
           else :?>
-          <form method="post" id="iform" class="table table-clean-form">
+          <form method="post" id="iform" class="table table-striped">
             <input type="hidden" name="id" id="id" value=""/>
             <input type="hidden" name="act" id="action" value=""/>
-            <table class="table table-clean-form">
+            <table class="table table-striped">
               <thead>
                 <tr>
                   <td><?=gettext("Name");?></td>

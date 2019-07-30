@@ -443,7 +443,7 @@ include("head.inc");
             <form method="post" name="iform" id="iform">
               <div class="tab-content content-box col-xs-12 __mb">
                 <div class="table-responsive">
-                  <table class="table table-clean-form opnsense_standard_table_form">
+                  <table class="table table-striped opnsense_standard_table_form">
                     <thead>
                       <tr>
                         <td style="width:22%"><strong><?=gettext("PPPs configuration");?></strong></td>
@@ -592,7 +592,7 @@ include("head.inc");
                       </tr>
                     </tbody>
                   </table>
-                  <table class="table table-clean-form" id="interface_details" style="display:none">
+                  <table class="table table-striped" id="interface_details" style="display:none">
                     <tbody>
 <?php
                       for ($intf_idx=0; $intf_idx <= count($portlist) ; ++$intf_idx):?>
@@ -632,7 +632,7 @@ include("head.inc");
               <!-- Advanced (button, show options) -->
               <div class="tab-content content-box col-xs-12 __mb" id="show_advanced_opt">
                 <div class="table-responsive">
-                  <table class="table table-clean-form" >
+                  <table class="table table-striped" >
                     <tbody>
                       <tr>
                         <td style="width:22%">&nbsp;</td>
@@ -647,7 +647,7 @@ include("head.inc");
               <div class="tab-content content-box col-xs-12 __mb" >
                 <div class="table-responsive">
                   <!-- Advanced PPP -->
-                  <table class="table table-clean-form" id="ppp_adv" style="display:none">
+                  <table class="table table-striped" id="ppp_adv" style="display:none">
                     <thead>
                       <tr style="display:none" class="act_show_advanced">
                         <th colspan="2"><?= gettext("Advanced Options"); ?></th>
@@ -710,7 +710,7 @@ include("head.inc");
                     </tbody>
                   </table>
                   <!-- Advanced (all) -->
-                  <table class="table table-clean-form" >
+                  <table class="table table-striped" >
                     <tbody>
                       <tr style="display:none" class="act_show_advanced">
                         <td style="width:22%"><a id="help_for_ondemand" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?= gettext("Dial On Demand"); ?></td>
@@ -873,14 +873,14 @@ include("head.inc");
                       </tr>
                     </tbody>
                   </table>
-                  <table class="table table-clean-form act_show_advanced" style="display:none">
+                  <table class="table table-striped act_show_advanced" style="display:none">
                     <tbody>
 <?php
                       for ($intf_idx=0; $intf_idx <= count($portlist); ++$intf_idx):?>
                       <tr style="display:none" class="intf_select_<?=$intf_idx;?>">
                         <td style="width:22%"> <a id="help_for_link_<?=$intf_idx;?>" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a>  <?=gettext("Link Parameters");?> <span class="intf_select_txt_<?=$intf_idx;?>"> </span></td>
                         <td style="width:78%">
-                          <table class="table table-clean-form table-condensed">
+                          <table class="table table-striped table-condensed">
                             <tr>
                               <td><?=gettext("Bandwidth");?></td>
                               <td>
@@ -920,7 +920,7 @@ include("head.inc");
                       endfor;?>
                     </tbody>
                   </table>
-                  <table class="table table-clean-form">
+                  <table class="table table-striped">
                     <tbody>
                       <tr>
                         <td style="width:22%">&nbsp;</td>

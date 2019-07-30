@@ -180,7 +180,7 @@ include("head.inc");
             <h3><?=gettext("Network Time Protocol Status");?></h3>
           </header>
           <div class="table-responsive">
-            <table class="table table-clean-form">
+            <table class="table table-striped">
               <thead>
                 <tr>
                   <th><?=gettext("Status"); ?></th>
@@ -237,7 +237,7 @@ include("head.inc");
 <?php
             if ($gps_ok):
             $gps_goo_lnk = 2; ?>
-            <table class="table table-clean-form">
+            <table class="table table-striped">
               <thead>
                 <tr>
                   <th><?=gettext("Clock Latitude"); ?></th>

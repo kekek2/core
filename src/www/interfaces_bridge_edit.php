@@ -231,7 +231,7 @@ $(document).ready(function() {
           <form method="post" name="iform" id="iform">
             <div class="tab-content content-box col-xs-12 __mb">
               <div class="table-responsive">
-                <table class="table table-clean-form opnsense_standard_table_form">
+                <table class="table table-striped opnsense_standard_table_form">
                   <thead>
                     <tr>
                       <td style="width:22%"><strong><?=gettext("Bridge configuration");?></strong></td>
@@ -302,7 +302,7 @@ $(document).ready(function() {
             <!-- Advanced / RSTP/STP -->
             <div class="tab-content content-box col-xs-12 __mb act_show_advanced" style="display:none">
               <div class="table-responsive">
-                <table class="table table-clean-form">
+                <table class="table table-striped">
                   <thead>
                     <tr>
                       <td colspan="2"><strong><?=gettext("Spanning Tree Protocol");?> (<?=gettext("RSTP/STP"); ?>)</strong></td>
@@ -409,7 +409,7 @@ $(document).ready(function() {
                     <tr>
                       <td><a id="help_for_intf_priority" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Priority"); ?></td>
                       <td>
-                        <table class="table table-clean-form table-condensed">
+                        <table class="table table-striped table-condensed">
 <?php
                         foreach ($ifacelist as $ifn => $ifdescr):?>
                           <tr>
@@ -430,7 +430,7 @@ $(document).ready(function() {
                     <tr>
                       <td><a id="help_for_intf_pathcost" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Path cost"); ?></td>
                       <td>
-                        <table class="table table-clean-form table-condensed">
+                        <table class="table table-striped table-condensed">
 <?php
                         foreach ($ifacelist as $ifn => $ifdescr):?>
                           <tr>
@@ -456,7 +456,7 @@ $(document).ready(function() {
             <!-- Advanced options-->
             <div class="tab-content content-box col-xs-12 __mb act_show_advanced" style="display:none">
               <div class="table-responsive">
-                <table class="table table-clean-form">
+                <table class="table table-striped">
                   <thead>
                     <tr>
                       <td colspan="2"><strong><?=gettext("Advanced options");?></strong></td>
@@ -631,7 +631,7 @@ $(document).ready(function() {
             <!-- Advanced / RSTP/STP -->
             <div class="tab-content content-box col-xs-12 __mb">
               <div class="table-responsive">
-                <table class="table table-clean-form">
+                <table class="table table-striped">
                   <tbody>
                     <tr>
                       <td style="width:22%">&nbsp;</td>

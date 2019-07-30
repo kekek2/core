@@ -391,7 +391,7 @@ include("head.inc");
               <input type="hidden" id="id" name="id" value="">
 
               <div class="table-responsive">
-                <table class="table table-clean-form">
+                <table class="table table-striped">
                   <thead>
                     <tr>
                       <th><?=gettext("Interface"); ?></th>

@@ -383,7 +383,7 @@ include("head.inc"); ?>
         <section class="col-xs-12">
           <div class="tab-content content-box col-xs-12">
             <div class="table-responsive">
-              <table class="table table-clean-form">
+              <table class="table table-striped">
                 <tr>
                   <td>
                     <strong><?= sprintf(gettext('The following summaries have been collected from the last %s lines of the firewall log (maximum is %s).'), $gotlines, $lines)?></strong>
@@ -412,7 +412,7 @@ include("head.inc"); ?>
               <div class="piechart" id="<?=$field?>">
                 <svg></svg>
               </div>
-              <table class="table table-clean-form table-bordered">
+              <table class="table table-striped table-bordered">
                 <tr>
                   <th><?=$fields[$field]?></th>
                   <th><?=gettext("Count");?></th>

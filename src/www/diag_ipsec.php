@@ -125,7 +125,7 @@ include("head.inc");
           <section class="col-xs-12">
             <div class="tab-content content-box">
               <div class="table-responsive">
-                <table class="table table-clean-form">
+                <table class="table table-striped">
                   <thead>
                   <tr>
                     <th><?= gettext("Connection");?></th>

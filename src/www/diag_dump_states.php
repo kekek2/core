@@ -99,7 +99,7 @@ include("head.inc");
         <section class="col-xs-12">
           <div class="content-box">
             <form  method="post" name="iform">
-              <table class="table table-clean-form">
+              <table class="table table-striped">
                 <thead>
                   <tr>
                     <th><?=gettext("Current total state count");?></th>
@@ -128,7 +128,7 @@ include("head.inc");
         <section class="col-xs-12">
           <div class="content-box">
               <div class="table-responsive">
-                <table id="state_table" class="table table-condensed table-hover table-clean-form">
+                <table id="state_table" class="table table-condensed table-hover table-striped">
                   <thead>
                     <tr>
                       <th data-column-id="int"><?=gettext("Int");?></th>

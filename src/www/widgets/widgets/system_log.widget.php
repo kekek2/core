@@ -50,7 +50,7 @@ require_once('diag_logs_common.inc');
 
 <div id="system_log-settings" class="widgetconfigdiv" style="display:none;">
   <form action="/widgets/widgets/system_log.widget.php" method="post" name="iform">
-    <table class="table table-clean-form">
+    <table class="table table-striped">
       <tr>
         <td><?=gettext("Number of Log lines to display");?>:</td>
         <td>
@@ -69,7 +69,7 @@ require_once('diag_logs_common.inc');
 </div>
 
 <div id="system_log-widgets" class="content-box" style="overflow:scroll;">
-  <table class="table table-clean-form">
+  <table class="table table-striped">
     <?php dump_log($system_logfile, $syslogEntriesToFetch, '', 250); ?>
   </table>
 </div>

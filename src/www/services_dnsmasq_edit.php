@@ -176,7 +176,7 @@ include("head.inc");
         <div class="content-box">
           <form method="post" name="iform" id="iform">
             <div class="table-responsive">
-              <table class="table table-clean-form opnsense_standard_table_form">
+              <table class="table table-striped opnsense_standard_table_form">
                 <tr>
                   <td style="width:22%"><strong><?= gettext('Edit entry') ?></strong></td>
                   <td style="width:78%; text-align:right">
@@ -226,7 +226,7 @@ include("head.inc");
                 <tr>
                   <td><a id="help_for_alias" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Aliases"); ?></td>
                   <td>
-                    <table class="table table-clean-form table-condensed" id="aliases_table">
+                    <table class="table table-striped table-condensed" id="aliases_table">
                       <thead>
                         <tr>
                           <th></th>

@@ -430,7 +430,7 @@ if (isset($config['interfaces'][$if]['dhcpd6track6allowoverride'])) {
               <?php print_content_box(gettext('DHCP Relay is currently enabled. Cannot enable the DHCP Server service while the DHCP Relay is enabled on any interface.')); ?>
               <?php else: ?>
                 <div class="table-responsive">
-                  <table class="table table-clean-form opnsense_standard_table_form">
+                  <table class="table table-striped opnsense_standard_table_form">
                     <tr>
                       <td style="width:22%"></td>
                       <td style="width:78%; text-align:right">

@@ -117,7 +117,7 @@ if (isset($config['ipsec']['phase2'])) {
 </div>
 
 <div id="ipsec-overview" class="ipsec-tab-content" style="display:block;background-color:#EEEEEE;">
-  <table class="table table-clean-form">
+  <table class="table table-striped">
     <thead>
       <tr>
         <th><?= gettext('Active Tunnels');?></th>
@@ -157,7 +157,7 @@ if (isset($config['ipsec']['phase2'])) {
 </div>
 
 <div id="ipsec-tunnel" class="ipsec-tab-content" style="display:none;background-color:#EEEEEE;">
-  <table class="table table-clean-form">
+  <table class="table table-striped">
     <thead>
       <tr>
         <th><?= gettext('Connection');?></th>
@@ -184,7 +184,7 @@ if (isset($config['ipsec']['phase2'])) {
   </table>
 </div>
 <div id="ipsec-mobile" class="ipsec-tab-content" style="display:none;background-color:#EEEEEE;">
-  <table class="table table-clean-form">
+  <table class="table table-striped">
     <thead>
       <tr>
         <th><?= gettext('User');?></th>
@@ -215,7 +215,7 @@ if (isset($config['ipsec']['phase2'])) {
 else {
 ?>
 <div style="display:block">
-   <table class="table table-clean-form" style="width:100%; border:0;">
+   <table class="table table-striped" style="width:100%; border:0;">
     <tr>
       <td>
         <?= gettext('Note: There are no configured IPsec Tunnels') ?>

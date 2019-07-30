@@ -103,7 +103,7 @@ $( document ).ready(function() {
     <div class="row">
       <div class="table-responsive">
         <form method="post" action="<?=$_SERVER['REQUEST_URI'];?>">
-          <table class="table table-clean-form">
+          <table class="table table-striped">
             <thead>
               <tr>
                 <th><?=gettext("View type:"); ?></th>

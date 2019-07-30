@@ -545,7 +545,7 @@ $( document ).ready(function() {
         <section class="col-xs-12">
          <div class="tab-content content-box col-xs-12">
           <div class="table-responsive">
-          <table class="table table-clean-form opnsense_standard_table_form">
+          <table class="table table-striped opnsense_standard_table_form">
             <tr>
               <td style="width:22%"><strong><?=gettext("General information"); ?></strong></td>
               <td style="width:78%; text-align:right">
@@ -657,7 +657,7 @@ $( document ).ready(function() {
           <tr>
             <td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Remote server");?></td>
             <td>
-              <table class="table table-clean-form table-condensed" id="maintable">
+              <table class="table table-striped table-condensed" id="maintable">
                 <thead>
                   <tr>
                     <th></th>
@@ -761,7 +761,7 @@ $( document ).ready(function() {
       <section class="col-xs-12">
        <div class="tab-content content-box col-xs-12">
         <div class="table-responsive">
-         <table class="table table-clean-form opnsense_standard_table_form">
+         <table class="table table-striped opnsense_standard_table_form">
           <tr>
             <td colspan="2"><strong><?=gettext("User Authentication Settings"); ?></strong></td>
           </tr>
@@ -794,7 +794,7 @@ $( document ).ready(function() {
        <section class="col-xs-12">
         <div class="tab-content content-box col-xs-12">
          <div class="table-responsive">
-          <table class="table table-clean-form opnsense_standard_table_form">
+          <table class="table table-striped opnsense_standard_table_form">
           <tr>
             <td style="width:22%"><strong><?=gettext("Cryptographic Settings"); ?></strong></td>
             <td style="width:78%"></td>
@@ -958,7 +958,7 @@ $( document ).ready(function() {
       <section class="col-xs-12">
        <div class="tab-content content-box col-xs-12">
         <div class="table-responsive">
-        <table class="table table-clean-form opnsense_standard_table_form">
+        <table class="table table-striped opnsense_standard_table_form">
           <tr>
             <td colspan="2"><strong><?=gettext("Tunnel Settings"); ?></strong></td>
           </tr>
@@ -1097,7 +1097,7 @@ $( document ).ready(function() {
       <section class="col-xs-12">
        <div class="tab-content content-box col-xs-12">
         <div class="table-responsive">
-         <table class="table table-clean-form opnsense_standard_table_form">
+         <table class="table table-striped opnsense_standard_table_form">
           <tr>
             <td colspan="2"><strong><?=gettext("Advanced configuration"); ?></strong></td>
           </tr>
@@ -1141,7 +1141,7 @@ $( document ).ready(function() {
      <section class="col-xs-12">
       <div class="tab-content content-box col-xs-12">
        <div class="table-responsive">
-        <table class="table table-clean-form opnsense_standard_table_form">
+        <table class="table table-striped opnsense_standard_table_form">
           <tr>
             <td>&nbsp;</td>
             <td style="width:78%">
@@ -1166,7 +1166,7 @@ $( document ).ready(function() {
          <div class="tab-content content-box col-xs-12">
           <input type="hidden" id="id" name="id" value="" />
           <input type="hidden" id="action" name="act" value="" />
-          <table class="table table-clean-form">
+          <table class="table table-striped">
             <thead>
               <tr>
                 <td></td>

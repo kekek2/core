@@ -125,7 +125,7 @@ include("head.inc");
         <section class="col-xs-12">
           <div class="tab-content content-box col-xs-12 __mb">
             <div class="table-responsive">
-              <table class="table table-clean-form opnsense_standard_table_form">
+              <table class="table table-striped opnsense_standard_table_form">
                 <tr>
                   <td style="width:22%"><strong><?= gettext('State Synchronization') ?></strong></td>
                   <td style="width:78%; text-align:right">
@@ -196,7 +196,7 @@ include("head.inc");
           </div>
           <div class="tab-content content-box col-xs-12 __mb">
             <div class="table-responsive">
-              <table class="table table-clean-form opnsense_standard_table_form">
+              <table class="table table-striped opnsense_standard_table_form">
                 <tr>
                   <td colspan="2">
                     <strong><?= gettext('Configuration Synchronization Settings (XMLRPC Sync)') ?></strong>
@@ -360,7 +360,7 @@ include("head.inc");
           </div>
           <div class="tab-content content-box col-xs-12">
             <div class="table-responsive">
-              <table class="table table-clean-form opnsense_standard_table_form">
+              <table class="table table-striped opnsense_standard_table_form">
                 <tr>
                   <td style="width:22%"></td>
                   <td>

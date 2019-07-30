@@ -68,7 +68,7 @@ if ($_POST) {
 
 <div id="picture-settings" class="widgetconfigdiv" style="display:none;">
   <form action="/widgets/widgets/picture.widget.php" method="post" name="iforma" enctype="multipart/form-data">
-    <table class="table table-clean-form">
+    <table class="table table-striped">
       <tr>
         <td>
           <input name="pictfile" type="file" class="btn btn-primary formbtn" id="pictfile" size="20" />

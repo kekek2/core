@@ -117,7 +117,7 @@ $main_buttons = array(
             <form method="post" name="iform" id="iform">
               <input type="hidden" id="id" name="id" value="" />
               <input type="hidden" id="action" name="act" value="" />
-              <table class="table table-clean-form">
+              <table class="table table-striped">
                 <thead>
                   <tr>
                     <td><?=gettext("Name");?></td>
@@ -138,7 +138,7 @@ $main_buttons = array(
                         endif;?>
                     </td>
                     <td>
-                      <table class="table table-condensed table-clean-form">
+                      <table class="table table-condensed table-striped">
 <?php
                           foreach($schedule['timerange'] as $timerange) {
                               $firstprint = false;

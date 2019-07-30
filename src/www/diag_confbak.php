@@ -214,7 +214,7 @@ include("fbegin.inc");
             <input type="hidden" id="time" name="time" value="" />
             <input type="hidden" id="action" name="act" value="" />
             <div class="content-box tab-content table-responsive __mb">
-              <table class="table table-clean-form">
+              <table class="table table-striped">
                 <tbody>
                   <tr>
                     <td colspan="2"><strong><?= gettext('Backup Count') ?></strong></td>
@@ -243,7 +243,7 @@ include("fbegin.inc");
           </form>
 <?php if ($diff): ?>
           <div class="content-box tab-content table-responsive __mb" style="overflow: scroll;">
-            <table class="table table-clean-form">
+            <table class="table table-striped">
               <tbody>
                 <tr>
                   <td colspan="2">
@@ -283,7 +283,7 @@ include("fbegin.inc");
 <?php if (count($confvers)): ?>
           <form method="get">
             <div class="content-box tab-content table-responsive">
-              <table class="table table-clean-form">
+              <table class="table table-striped">
                 <tbody>
                   <tr>
                     <td colspan="2"><strong><?= gettext('History') ?></strong></td>
@@ -300,7 +300,7 @@ include("fbegin.inc");
                   </tr>
                 </tbody>
               </table>
-              <table class="table table-clean-form">
+              <table class="table table-striped">
                 <tbody>
                   <tr>
                     <th colspan="2"><?= gettext("Diff"); ?></th>
