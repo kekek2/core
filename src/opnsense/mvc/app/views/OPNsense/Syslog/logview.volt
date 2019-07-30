@@ -84,16 +84,14 @@
             </div>
     </p>
     <div class="content-box">
-        <div id="logview" class="content-box-main">
-            <table id="grid-logview" class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th class="col-xs-2" id="dateTimeHeader">{{lang._('Time')}}</th>
-                        <th>{{lang._('Message')}}</th>
-                    </tr>
-                </thead>
-            </table>
-        </div>
+        <table id="grid-logview" class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th class="col-xs-2" id="dateTimeHeader">{{lang._('Time')}}</th>
+                    <th>{{lang._('Message')}}</th>
+                </tr>
+            </thead>
+        </table>
     </div>
     <p>
         <div class="input-group">
