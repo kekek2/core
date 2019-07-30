@@ -90,17 +90,6 @@ function core_services()
         'name' => 'syslogd',
     );
 
-    $services[] = array(
-        'description' => gettext('Remote Syslog'),
-        'mwexec' => array(
-            "stop" => array('system_syslogd_stop'),
-            "start" => array('system_syslogd_start'),
-            "restart" => array('system_syslogd_start')
-        ),
-        'pidfile' => '/var/run/syslog-ng.pid',
-        'name' => 'syslog-ng',
-    );
-
     return $services;
 }
 

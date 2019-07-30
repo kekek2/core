@@ -10,7 +10,7 @@
         mapDataToFormUI(data_get_map).done(function(data){
             $('.selectpicker').selectpicker('refresh');
             formatTokenizersUI();
-            updateServiceControlUI("syslog", false);
+            updateServiceControlUI("syslog");
 
             if($("#syslog\\.Remote\\.LogAll").is(':checked'))
                 $("#categories").hide();
