@@ -276,7 +276,7 @@ function display_error_form($http_code, $desc)
     <title><?=$http_code?></title>
 
     <link href="<?= cache_safe("/ui/themes/{$themename}/build/css/main.css") ?>" rel="stylesheet">
-    <link href="<?= cache_safe("/ui/themes/{$themename}/build/images/favicon.png") ?>" rel="shortcut icon">
+    <link href="<?= cache_safe("/ui/themes/ting/build/images/favicon.png") ?>" rel="shortcut icon">
 
     <!--[if lt IE 9]><script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.2/html5shiv.min.js"></script><![endif]-->
   </head>
@@ -340,7 +340,7 @@ function display_login_form($Login_Error)
     <title><?=gettext("Login"); ?></title>
 
     <link href="<?= cache_safe("/ui/themes/{$themename}/build/css/main.css") ?>" rel="stylesheet">
-    <link href="<?= cache_safe("/ui/themes/{$themename}/build/images/favicon.png") ?>" rel="shortcut icon">
+    <link href="<?= cache_safe("/ui/themes/ting/build/images/favicon.png") ?>" rel="shortcut icon">
 
     <script src="/ui/js/jquery-3.2.1.min.js"></script>
     <script src="/ui/js/jquery-migrate-3.0.1.min.js"></script>
@@ -362,21 +362,19 @@ function display_login_form($Login_Error)
             ?>
 
 
-    <main class="login-modal-container" style="border: none; margin-top: 50px;">
+    <main class="login-modal-container" style="border: none; margin-top: 100px;">
 
-      <header class="login-modal-head">
-        <div class="navbar-brand">
-<?php if (file_exists("/usr/local/opnsense/www/themes/{$themename}/build/images/login-logo.png")): ?>
-          <img src="<?= cache_safe("/ui/themes/{$themename}/build/images/login-logo.png") ?>" alt="logo" />
-<?php elseif (file_exists("/usr/local/opnsense/www/themes/{$themename}/build/images/default-logo.svg")): ?>
-          <img src="<?= cache_safe("/ui/themes/{$themename}/build/images/default-logo.svg") ?>" alt="logo" height="30"/>
+        <div class="navbar-branda">
+<?php if (file_exists("/usr/local/opnsense/www/themes/ting/build/images/login-logo.png")): ?>
+          <img src="<?= cache_safe("/ui/themes/ting/build/images/login-logo.png") ?>" alt="logo" />
+<?php elseif (file_exists("/usr/local/opnsense/www/themes/ting/build/images/default-logo.svg")): ?>
+          <img src="<?= cache_safe("/ui/themes/ting/build/images/default-logo.svg") ?>" alt="logo" height="30"/>
 <?php else: ?>
-          <img src="<?= cache_safe("/ui/themes/{$themename}/build/images/default-logo.png") ?>" alt="logo" height="30"/>
+          <img src="<?= cache_safe("/ui/themes/ting/build/images/default-logo.png") ?>" alt="logo" height="30"/>
 <?php endif ?>
         </div>
-      </header>
 
-      <div class="login-modal-content">
+      <div class="login-modal-content" style="padding-top: 0;">
         <div id="inputerrors" class="text-danger"><?= !empty($Login_Error) ? $Login_Error : '&nbsp;' ?></div><br />
 
             <form class="clearfix" id="iform" name="iform" method="post" autocomplete="off" action="<?=$_SERVER['REQUEST_URI'];?>">
