@@ -174,6 +174,18 @@ class AccessController extends ApiControllerBase
                     // no authentication needed, set username to "anonymous@ip"
                     $userName = "anonymous@" . $clientIp;
                     $isAuthenticated = true;
+
+                    if (class_exists('\SmartSoft\ProxyIPIdent\ProxyIPIdent')) {
+                        $mdlIPIdent = new \SmartSoft\ProxyIPIdent\ProxyIPIdent();
+
+                        foreach ($mdlIPIdent->UserList->User->getChildren() as $user) {
+                            if ((string) $user->IP == $clientIp
+                                || (string) $user->MAC == $mac) {
+                                $userName = (string) $user->Name;
+                                break;
+                            }
+                        }
+                    }
                 }
 
                 if ($isAuthenticated) {
