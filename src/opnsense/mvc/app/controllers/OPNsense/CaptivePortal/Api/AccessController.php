@@ -178,11 +178,13 @@ class AccessController extends ApiControllerBase
                     if (class_exists('\SmartSoft\ProxyIPIdent\ProxyIPIdent')) {
                         $mdlIPIdent = new \SmartSoft\ProxyIPIdent\ProxyIPIdent();
 
-                        foreach ($mdlIPIdent->UserList->User->getChildren() as $user) {
-                            if ((string) $user->IP == $clientIp
-                                || (string) $user->MAC == $mac) {
-                                $userName = (string) $user->Name;
-                                break;
+                        if ((string) $mdlIPIdent->Enable == '1') {
+                            foreach ($mdlIPIdent->UserList->User->getChildren() as $user) {
+                                if ((string) $user->IP == $clientIp
+                                    || (string) $user->MAC == $mac) {
+                                    $userName = (string) $user->Name;
+                                    break;
+                                }
                             }
                         }
                     }
