@@ -181,7 +181,7 @@ class AccessController extends ApiControllerBase
                         if ((string) $mdlIPIdent->Enable == '1') {
                             foreach ($mdlIPIdent->UserList->User->getChildren() as $user) {
                                 if ((string) $user->IP == $clientIp
-                                    || (string) $user->MAC == $mac) {
+                                    || strtolower((string) $user->MAC) == $mac) {
                                     $userName = (string) $user->Name;
                                     break;
                                 }
