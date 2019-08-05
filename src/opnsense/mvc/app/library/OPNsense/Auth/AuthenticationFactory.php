@@ -187,10 +187,20 @@ class AuthenticationFactory
     {
         $service = $this->getService($service_name);
         if ($service !== null) {
-            $service->setUserName($username);
+            $user_split = explode('@', $username);
+            $service->setUserName($user_split[0]);
             foreach ($service->supportedAuthenticators() as $authname) {
                 $authenticator = $this->get($authname);
                 if ($authenticator !== null) {
+                    if (count($user_split) > 1) {
+                        $zones = [];
+                        foreach (explode(".", $user_split[1]) as $zone) {
+                            $zones[] = 'dc=' . $zone;
+                        }
+                        if (strtoupper($authenticator->getBaseSearchDN()) != strtoupper(implode(',', $zones))) {
+                            continue;
+                        }
+                    }
                     $this->lastUsedAuth = $authenticator;
                     if ($authenticator->authenticate($service->getUserName(), $password)) {
                         if ($service->checkConstraints()) {

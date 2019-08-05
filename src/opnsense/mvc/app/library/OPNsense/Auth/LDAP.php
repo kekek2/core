@@ -589,4 +589,12 @@ class LDAP extends Base implements IAuthConnector
 
         return $ldap_is_connected;
     }
+
+    /**
+     * @return null
+     */
+    public function getBaseSearchDN()
+    {
+        return $this->baseSearchDN;
+    }
 }
