@@ -31,6 +31,7 @@ import select
 import os
 from socket import inet_ntop, AF_INET, AF_INET6, ntohl
 
+
 class FlowParser:
     # fields in order of appearance, use bitmask compare
     field_definition_order = [

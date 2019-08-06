@@ -56,9 +56,9 @@ function filter_core_bootstrap($fw)
 function filter_core_get_initialized_plugin_system()
 {
     $fw = new \OPNsense\Firewall\Plugin();
-    $gateways = new \OPNsense\Routing\Gateways(legacy_interfaces_details());
-    $cnfint = legacy_config_get_interfaces(array("enable" => true));
     $ifdetails = legacy_interfaces_details();
+    $gateways = new \OPNsense\Routing\Gateways($ifdetails);
+    $cnfint = legacy_config_get_interfaces(array("enable" => true));
     foreach ($cnfint as $key => &$value) {
         // to set "reply-to" we need to know the gateway for our interface, let's collect it here and pass it on to
         // setInterfaceMapping()
@@ -83,6 +83,7 @@ function filter_core_get_initialized_plugin_system()
     // init interfaces and gateways
     $fw->setInterfaceMapping($cnfint);
     $fw->setGateways($gateways);
+    $fw->setIfconfigDetails($ifdetails);
     $fw->setGatewayGroups($gateways->getGroups(return_gateways_status()));
     return $fw;
 }
@@ -584,11 +585,11 @@ function filter_core_rules_system($fw, $defaults)
     // Our default setting has been to force traffic leaving a specific interface to use the associated gateway.
     // This behaviour can be disabled, so settings can be customized using manual firewall rules.
     if (empty($config['system']['pf_disable_force_gw'])) {
-        foreach ($fw->getInterfaceMapping() as $ifdescr => $ifcfg) {
+        foreach ($fw->getInterfaceMapping() as $intf => $ifcfg) {
             if (!isset($ifcfg['internal_dynamic']) && $ifcfg['if'] != 'lo0') {
                 $intf_has_v4 = false;
                 $intf_has_v6 = false;
-                foreach (array_keys(interfaces_addresses($ifcfg['if'], true)) as $addr) {
+                foreach (array_keys(interfaces_addresses($ifcfg['if'], true, $fw->getIfconfigDetails())) as $addr) {
                     $intf_has_v4 = $intf_has_v4 || is_subnetv4($addr);
                     $intf_has_v6 = $intf_has_v6 || is_subnetv6($addr);
                 }
@@ -599,11 +600,9 @@ function filter_core_rules_system($fw, $defaults)
                     if (($gwproto == 'inet' && $intf_has_v4) || ($gwproto == 'inet6' && $intf_has_v6)) {
                         $fw->registerFilterRule(
                             100000,
-                            array('from' => $ifcfg['if'], 'direction' => 'out', 'gateway' => $gwname,
-                            'destination' => array('network'=> $ifdescr, "not" => true),
-                            'statetype' => 'keep',
-                            'allowopts' => true,
-                            'quick' => false,
+                            array('interface'=> $intf, 'from' => $ifcfg['if'], 'direction' => 'out',
+                            'destination' => array('network'=> $intf, "not" => true),
+                            'statetype' => 'keep', 'allowopts' => true, 'quick' => false, 'gateway' => $gwname,
                             '#ref' => 'system_advanced_firewall.php#pf_disable_force_gw',
                             'descr' => "let out anything from firewall host itself (force gw)"),
                             $defaults['pass']

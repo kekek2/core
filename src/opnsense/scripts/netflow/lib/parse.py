@@ -31,6 +31,7 @@ import subprocess
 import os
 from lib.flowparser import FlowParser
 
+
 class Interfaces(object):
     """ mapper for local interface index to interface name (1 -> em0 for example)
     """

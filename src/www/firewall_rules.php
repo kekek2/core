@@ -52,7 +52,21 @@ function firewall_rule_item_proto($filterent)
                 break;
         }
     } else {
-        $record_ipprotocol = "IPv4 ";
+        // when ipprotocol is not set, pf would normally figure out the ip proto itself.
+        // reconstruct ipproto depending on source/destination address.
+        if (!empty($filterent['from']) && is_ipaddr(explode("/", $filterent['from'])[0])) {
+            $record_ipprotocol = strpos($filterent['from'], ":") === false ? "IPv4 " :  "IPv6 ";
+        } elseif (!empty($filterent['to']) && is_ipaddr(explode("/", $filterent['to'])[0])) {
+            $record_ipprotocol = strpos($filterent['to'], ":") === false ? "IPv4 " :  "IPv6 ";
+        } elseif (isset($filterent['source']['address'])
+                    && is_ipaddr(explode("/", $filterent['source']['address'])[0])) {
+            $record_ipprotocol = strpos($filterent['source']['address'], ":") === false ? "IPv4 " : "IPv6 ";
+        } elseif (isset($filterent['destination']['address'])
+                    && is_ipaddr(explode("/", $filterent['destination']['address'])[0])) {
+            $record_ipprotocol = strpos($filterent['destination']['address'], ":") === false ? "IPv4 " : "IPv6 ";
+        } else {
+            $record_ipprotocol = "IPv4+6 ";
+        }
     }
     $icmptypes = array(
       "" => gettext("any"),
@@ -628,8 +642,12 @@ $( document ).ready(function() {
                 filter_core_bootstrap($fw);
                 plugins_firewall($fw);
                 foreach ($fw->iterateFilterRules() as $rule):
-                    if ($rule->getInterface() == $selected_if && $rule->isEnabled()):
+                    $is_selected = $rule->getInterface() == $selected_if || (
+                        $rule->getInterface() == "" && $selected_if == "FloatingRules"
+                    );
+                    if ($rule->isEnabled() && $is_selected):
                         $filterent = $rule->getRawRule();
+                        legacy_html_escape_form_data($filterent);
                         $rule_stats = !empty($rule->getLabel()) ? $all_rule_stats[$rule->getLabel()] : array();?>
                     <tr class="internal-rule" style="display: none;">
                       <td><i class="fa fa-magic"></i></td>

@@ -59,56 +59,63 @@ const IPSEC_LOG_LEVELS = [
     4 => 'Highest',
 ];
 
-$p1_ealgos = array(
-    'aes' => array( 'name' => 'AES', 'keysel' => array( 'lo' => 128, 'hi' => 256, 'step' => 64 ), 'iketype' => null ),
-    'aes128gcm16' => array( 'name' => '128 bit AES-GCM with 128 bit ICV', 'iketype' => null ),
-    'aes192gcm16' => array( 'name' => '192 bit AES-GCM with 128 bit ICV', 'iketype' => null ),
-    'aes256gcm16' => array( 'name' => '256 bit AES-GCM with 128 bit ICV', 'iketype' => null ),
-    'camellia' => array( 'name' => 'Camellia', 'keysel' => array( 'lo' => 128, 'hi' => 256, 'step' => 64 ), 'iketype' => 'ikev2' ),
-    'blowfish' => array( 'name' => 'Blowfish', 'keysel' => array( 'lo' => 128, 'hi' => 256, 'step' => 64 ), 'iketype' => null ),
-    '3des' => array( 'name' => '3DES', 'iketype' => null ),
-    'cast128' => array( 'name' => 'CAST128', 'iketype' => null ),
-    'des' => array( 'name' => 'DES', 'iketype' => null )
-);
+function ipsec_p1_ealgos()
+{
+    return array(
+        'aes' => array( 'name' => 'AES', 'keysel' => array( 'lo' => 128, 'hi' => 256, 'step' => 64 ), 'iketype' => null ),
+        'aes128gcm16' => array( 'name' => '128 bit AES-GCM with 128 bit ICV', 'iketype' => null ),
+        'aes192gcm16' => array( 'name' => '192 bit AES-GCM with 128 bit ICV', 'iketype' => null ),
+        'aes256gcm16' => array( 'name' => '256 bit AES-GCM with 128 bit ICV', 'iketype' => null ),
+        'camellia' => array( 'name' => 'Camellia', 'keysel' => array( 'lo' => 128, 'hi' => 256, 'step' => 64 ), 'iketype' => 'ikev2' ),
+        'blowfish' => array( 'name' => 'Blowfish', 'keysel' => array( 'lo' => 128, 'hi' => 256, 'step' => 64 ), 'iketype' => null ),
+        '3des' => array( 'name' => '3DES', 'iketype' => null ),
+        'cast128' => array( 'name' => 'CAST128', 'iketype' => null ),
+        'des' => array( 'name' => 'DES', 'iketype' => null )
+    );
+}
 
-$p1_authentication_methods = array(
-    'hybrid_rsa_server' => array( 'name' => 'Hybrid RSA + Xauth', 'mobile' => true ),
-    'xauth_rsa_server' => array( 'name' => 'Mutual RSA + Xauth', 'mobile' => true ),
-    'xauth_psk_server' => array( 'name' => 'Mutual PSK + Xauth', 'mobile' => true ),
-    'eap-tls' => array( 'name' => 'EAP-TLS', 'mobile' => true),
-    'psk_eap-tls' => array( 'name' => 'RSA (local) + EAP-TLS (remote)', 'mobile' => true),
-    'eap-mschapv2' => array( 'name' => 'EAP-MSCHAPV2', 'mobile' => true),
-    'rsa_eap-mschapv2' => array( 'name' => 'Mutual RSA + EAP-MSCHAPV2', 'mobile' => true),
-    'eap-radius' => array( 'name' => 'EAP-RADIUS', 'mobile' => true),
-    'rsasig' => array( 'name' => 'Mutual RSA', 'mobile' => false ),
-    'pre_shared_key' => array( 'name' => 'Mutual PSK', 'mobile' => false ),
-);
+function ipsec_p1_authentication_methods()
+{
+    return array(
+        'hybrid_rsa_server' => array( 'name' => 'Hybrid RSA + Xauth', 'mobile' => true ),
+        'xauth_rsa_server' => array( 'name' => 'Mutual RSA + Xauth', 'mobile' => true ),
+        'xauth_psk_server' => array( 'name' => 'Mutual PSK + Xauth', 'mobile' => true ),
+        'eap-tls' => array( 'name' => 'EAP-TLS', 'mobile' => true),
+        'psk_eap-tls' => array( 'name' => 'RSA (local) + EAP-TLS (remote)', 'mobile' => true),
+        'eap-mschapv2' => array( 'name' => 'EAP-MSCHAPV2', 'mobile' => true),
+        'rsa_eap-mschapv2' => array( 'name' => 'Mutual RSA + EAP-MSCHAPV2', 'mobile' => true),
+        'eap-radius' => array( 'name' => 'EAP-RADIUS', 'mobile' => true),
+        'rsasig' => array( 'name' => 'Mutual RSA', 'mobile' => false ),
+        'pre_shared_key' => array( 'name' => 'Mutual PSK', 'mobile' => false ),
+    );
+}
 
-$p2_ealgos = array(
-    'aes' => array( 'name' => 'AES', 'keysel' => array( 'lo' => 128, 'hi' => 256, 'step' => 64 ) ),
-    'aes128gcm16' => array( 'name' => 'aes128gcm16'),
-    'aes192gcm16' => array( 'name' => 'aes192gcm16'),
-    'aes256gcm16' => array( 'name' => 'aes256gcm16'),
-    'blowfish' => array( 'name' => 'Blowfish', 'keysel' => array( 'lo' => 128, 'hi' => 256, 'step' => 64 ) ),
-    '3des' => array( 'name' => '3DES' ),
-    'cast128' => array( 'name' => 'CAST128' ),
-    'des' => array( 'name' => 'DES' ),
-    'null' => array( 'name' => gettext("NULL (no encryption)"))
-);
+function ipsec_p2_ealgos()
+{
+    return array(
+        'aes' => array( 'name' => 'AES', 'keysel' => array( 'lo' => 128, 'hi' => 256, 'step' => 64 ) ),
+        'aes128gcm16' => array( 'name' => 'aes128gcm16'),
+        'aes192gcm16' => array( 'name' => 'aes192gcm16'),
+        'aes256gcm16' => array( 'name' => 'aes256gcm16'),
+        'blowfish' => array( 'name' => 'Blowfish', 'keysel' => array( 'lo' => 128, 'hi' => 256, 'step' => 64 ) ),
+        '3des' => array( 'name' => '3DES' ),
+        'cast128' => array( 'name' => 'CAST128' ),
+        'des' => array( 'name' => 'DES' ),
+        'null' => array( 'name' => gettext("NULL (no encryption)"))
+    );
+}
 
-$p2_halgos = array(
-    'hmac_md5' => 'MD5',
-    'hmac_sha1' => 'SHA1',
-    'hmac_sha256' => 'SHA256',
-    'hmac_sha384' => 'SHA384',
-    'hmac_sha512' => 'SHA512',
-    'aesxcbc' => 'AES-XCBC'
-);
-
-$p2_protos = array(
-    'esp' => 'ESP',
-    'ah' => 'AH'
-);
+function ipsec_p2_halgos()
+{
+    return array(
+        'hmac_md5' => 'MD5',
+        'hmac_sha1' => 'SHA1',
+        'hmac_sha256' => 'SHA256',
+        'hmac_sha384' => 'SHA384',
+        'hmac_sha512' => 'SHA512',
+        'aesxcbc' => 'AES-XCBC'
+    );
+}
 
 function ipsec_configure()
 {
@@ -665,9 +672,15 @@ function ipsec_configure_spd()
     // add manual added spd entries
     if (!empty($config['ipsec']['phase1']) && !empty($config['ipsec']['phase2'])) {
         foreach ($config['ipsec']['phase1'] as $ph1ent) {
+            if (!empty($ph1ent['disabled'])) {
+                continue;
+            }
             foreach ($config['ipsec']['phase2'] as $ph2ent) {
                 if (!isset($ph2ent['disabled']) && $ph1ent['ikeid'] == $ph2ent['ikeid'] && !empty($ph2ent['spd'])) {
-                    $myid_data = ipsec_find_id($ph1ent, "local");
+                    $tunnel_src = ipsec_get_phase1_src($ph1ent);
+                    $tunnel_dst = ipsec_resolve($ph1ent['remote-gateway']);
+
+                    // XXX: remove me, temporary logging to validate https://github.com/opnsense/core/issues/1773
                     $peerid_spec = ipsec_find_id($ph1ent, "peer");
                     if (!is_ipaddr($peerid_spec)) {
                         if (is_ipaddr($ph1ent['remote-gateway'])) {
@@ -678,9 +691,29 @@ function ipsec_configure_spd()
                                 $peerid_spec,
                                 $ph1ent['remote-gateway']
                             ));
-                            continue;
                         }
                     }
+                    $myid_data = ipsec_find_id($ph1ent, "local");
+                    if ($myid_data != $tunnel_src) {
+                        log_error(sprintf(
+                            "spdadd: using %s in source policy, local id set to %s",
+                            $tunnel_src,
+                            $myid_data
+                        ));
+                    }
+                    if ($peerid_spec != $tunnel_dst) {
+                        log_error(sprintf(
+                            "spdadd: using %s in destination policy, peer id set to %s",
+                            $tunnel_dst,
+                            $peerid_spec
+                        ));
+                    }
+                    // XXX: end
+
+                    if (empty($tunnel_dst) || empty($tunnel_src)) {
+                        continue;
+                    }
+
                     foreach (explode(',', $ph2ent['spd']) as $local_net) {
                         $proto = $ph2ent['mode'] == "tunnel" ? "4" : "6";
                         $remote_net = ipsec_idinfo_to_cidr($ph2ent['remoteid'], false, $ph2ent['mode']);
@@ -690,8 +723,8 @@ function ipsec_configure_spd()
                             trim($local_net),
                             $remote_net,
                             $ph2ent['protocol'],
-                            $myid_data,
-                            $peerid_spec
+                            $tunnel_src,
+                            $tunnel_dst
                         );
                     }
                 }
@@ -707,7 +740,8 @@ function ipsec_configure_spd()
 
 function ipsec_configure_do($verbose = false, $interface = '')
 {
-    global $config, $p2_ealgos;
+    global $config;
+    $p2_ealgos = ipsec_p2_ealgos();
 
     if (!empty($interface)) {
          $active = false;
@@ -1197,7 +1231,7 @@ function ipsec_configure_do($verbose = false, $interface = '')
                 }
 
                 if (!empty($ph1ent['dpd_delay']) && !empty($ph1ent['dpd_maxfail'])) {
-                    if ($conn_auto == "route") {
+                    if (in_array($conn_auto, array('route', 'start'))) {
                         $dpdline = "dpdaction = restart";
                     } else {
                         $dpdline = "dpdaction = clear";
@@ -1205,8 +1239,6 @@ function ipsec_configure_do($verbose = false, $interface = '')
                     $dpdline .= "\n\tdpddelay = {$ph1ent['dpd_delay']}s";
                     $dpdtimeout = $ph1ent['dpd_delay'] * ($ph1ent['dpd_maxfail'] + 1);
                     $dpdline .= "\n\tdpdtimeout = {$dpdtimeout}s";
-                } else {
-                    $dpdline = "dpdaction = none";
                 }
 
                 if (!empty($ph1ent['lifetime'])) {
@@ -1479,7 +1511,6 @@ EOD;
                 if (!empty($peerid_spec)) {
                     $connEntry .= "\trightid = {$peerid_spec}\n";
                 }
-
                 // append ipsec connections
                 if (!isset($ph1ent['mobile']) && $keyexchange == 'ikev1') {
                     // ikev1 not mobile

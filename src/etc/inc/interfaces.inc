@@ -2470,8 +2470,8 @@ function interface_configure($verbose = false, $interface = 'wan', $reload = fal
         }
     }
 
-    /* skip vlans for media setup and only apply when changed */
-    if (!stristr($realhwif, "_vlan") && (!empty($wancfg['media']) || !empty($wancfg['mediaopt']))) {
+    /* only try to set media properties on (parent) device when requested */
+    if (!empty($wancfg['media']) || !empty($wancfg['mediaopt'])) {
         $intf_details = legacy_interface_details($realhwif);
         $media_changed = stripos($intf_details['media_raw'], $wancfg['media']) == false;
         if (!empty($wancfg['mediaopt'])) {
@@ -2546,12 +2546,12 @@ function interface_configure($verbose = false, $interface = 'wan', $reload = fal
         }
     }
 
-    $intf_stats = legacy_interface_stats();
     if (!empty($wancfg['mtu'])) {
+        $intf_stats = legacy_interface_stats($realhwif);
         if (stristr($realif, "_vlan")) {
             // max mtu to parent
-            $mtu = $wancfg['mtu'] < $intf_stats[$realhwif]['mtu'] ? $wancfg['mtu'] : $intf_stats[$realhwif]['mtu'];
-            if ($mtu != $intf_stats[$realif]['mtu']) {
+            $mtu = $wancfg['mtu'] < $intf_stats['mtu'] ? $wancfg['mtu'] : $intf_stats['mtu'];
+            if ($mtu != $intf_stats['mtu']) {
                 legacy_interface_mtu($realif, $mtu);
             }
         } elseif ($wancfg['mtu'] != $intf_stats['mtu']) {
@@ -3948,9 +3948,9 @@ function link_interface_to_gif($interface)
     return $result;
 }
 
-function find_interface_ip($realif)
+function find_interface_ip($realif, $ifconfig_details = null)
 {
-    $ifinfo = legacy_get_interface_addresses($realif);
+    $ifinfo = legacy_get_interface_addresses($realif, $ifconfig_details);
 
     if (!isset($ifinfo['ipaddr'])) {
         return null;
@@ -3959,9 +3959,9 @@ function find_interface_ip($realif)
     return $ifinfo['ipaddr'];
 }
 
-function find_interface_network($realif, $subnet = true)
+function find_interface_network($realif, $subnet = true, $ifconfig_details = null)
 {
-    $ifinfo = legacy_get_interface_addresses($realif);
+    $ifinfo = legacy_get_interface_addresses($realif, $ifconfig_details);
 
     if (!isset($ifinfo['ipaddr']) || !isset($ifinfo['subnetbits'])) {
         return null;
@@ -3977,9 +3977,9 @@ function find_interface_network($realif, $subnet = true)
     return "{$addr}/${net}";
 }
 
-function find_interface_ipv6($realif)
+function find_interface_ipv6($realif, $ifconfig_details = null)
 {
-    $ifinfo = legacy_get_interface_addresses($realif);
+    $ifinfo = legacy_get_interface_addresses($realif, $ifconfig_details);
 
     if (!isset($ifinfo['ipaddr6'])) {
         return null;
@@ -3988,9 +3988,9 @@ function find_interface_ipv6($realif)
     return $ifinfo['ipaddr6'];
 }
 
-function find_interface_networkv6($realif, $subnet = true)
+function find_interface_networkv6($realif, $subnet = true, $ifconfig_details = null)
 {
-    $ifinfo = legacy_get_interface_addresses($realif);
+    $ifinfo = legacy_get_interface_addresses($realif, $ifconfig_details);
 
     if (!isset($ifinfo['ipaddr6']) || !isset($ifinfo['subnetbits6'])) {
         return null;
@@ -4006,9 +4006,9 @@ function find_interface_networkv6($realif, $subnet = true)
     return "{$addr}/${net}";
 }
 
-function find_interface_ipv6_ll($realif)
+function find_interface_ipv6_ll($realif, $ifconfig_details = null)
 {
-    $ifinfo = legacy_get_interface_addresses($realif);
+    $ifinfo = legacy_get_interface_addresses($realif, $ifconfig_details);
 
     if (!isset($ifinfo['ipaddr6_ll'])) {
         return null;
@@ -4043,19 +4043,19 @@ function ip_in_interface_alias_subnet($interface, $ipalias)
     return false;
 }
 
-function get_interface_ip($interface = 'wan')
+function get_interface_ip($interface = 'wan', $ifconfig_details = null)
 {
     /* XXX maybe we should make a proper lookup */
     if (strstr($interface, '_vip')) {
         return get_configured_carp_interface_list($interface);
     }
 
-    $realif = get_real_interface($interface);
+    $realif = get_real_interface($interface, $ifconfig_details);
 
     return find_interface_ip($realif);
 }
 
-function get_interface_ipv6($interface = 'wan')
+function get_interface_ipv6($interface = 'wan', $ifconfig_details = null)
 {
     global $config;
 
@@ -4067,7 +4067,7 @@ function get_interface_ipv6($interface = 'wan')
     $realif = get_real_interface($interface, 'inet6');
 
     return isset($config['interfaces'][$interface]['dhcp6prefixonly']) ?
-        find_interface_ipv6_ll($realif) : find_interface_ipv6($realif);
+        find_interface_ipv6_ll($realif, $ifconfig_details) : find_interface_ipv6($realif, $ifconfig_details);
 }
 
 /****f* interfaces/is_interface_wireless
@@ -4092,9 +4092,9 @@ function is_interface_wireless($interface)
     return true;
 }
 
-function get_interface_mac($interface)
+function get_interface_mac($interface, $ifconfig_details = null)
 {
-    $macinfo = legacy_get_interface_addresses($interface);
+    $macinfo = legacy_get_interface_addresses($interface, $ifconfig_details);
 
     return $macinfo["macaddr"];
 }
@@ -4123,7 +4123,10 @@ function interfaces_staticarp_configure($if)
 
     if (isset($config['dhcpd'][$if]['staticarp'])) {
         mwexecf('/sbin/ifconfig %s staticarp', array($ifcfg['if']));
-        mwexecf('/usr/sbin/arp -d -i %s  -a > /dev/null 2>&1', array($ifcfg['if']));
+        if (!file_exists("/var/run/booting")) {
+            // XXX: arp is really slow when there are many interfaces, while booting -d -a shouldn't be needed anyway
+            mwexecf('/usr/sbin/arp -d -i %s  -a > /dev/null 2>&1', array($ifcfg['if']));
+        }
         if (isset($config['dhcpd'][$if]['staticmap'])) {
             foreach ($config['dhcpd'][$if]['staticmap'] as $arpent) {
                 if (isset($arpent['ipaddr'])) {
@@ -4136,7 +4139,10 @@ function interfaces_staticarp_configure($if)
         }
     } else {
         mwexecf('/sbin/ifconfig %s -staticarp', array($ifcfg['if']));
-        mwexecf('/usr/sbin/arp -d -i %s  -a > /dev/null 2>&1', array($ifcfg['if']));
+        if (!file_exists("/var/run/booting")) {
+            // XXX: arp is really slow when there are many interfaces, while booting -d -a shouldn't be needed anyway
+            mwexecf('/usr/sbin/arp -d -i %s  -a > /dev/null 2>&1', array($ifcfg['if']));
+        }
         if (isset($config['dhcpd'][$if]['staticmap'])) {
             foreach ($config['dhcpd'][$if]['staticmap'] as $arpent) {
                 if (isset($arpent['arp_table_static_entry'])) {
@@ -4535,7 +4541,7 @@ function make_ipv6_64_address($prefix, $suffix)
     return implode(':', $prefix_array);
 }
 
-function interfaces_addresses($interfaces, $as_subnet = false)
+function interfaces_addresses($interfaces, $as_subnet = false, $ifconfig_details = null)
 {
     global $config;
 
@@ -4561,8 +4567,13 @@ function interfaces_addresses($interfaces, $as_subnet = false)
         return $result;
     }
 
-    $intf_details = legacy_interfaces_details();
+
     $realifs = array_unique($realifs);
+    if (!empty($ifconfig_details)) {
+        $intf_details = $ifconfig_details;
+    } else {
+        $intf_details = count($realifs) > 1 ? legacy_interfaces_details() : legacy_interfaces_details($realifs[0]);
+    }
 
     foreach ($realifs as $realif) {
         foreach (array('ipv4', 'ipv6') as $proto) {
