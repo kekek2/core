@@ -486,8 +486,13 @@ function filter_core_rules_system($fw, $defaults)
                 );
                 break;
             default:
-                if (isset($config['dhcpdv6'][$intf]['enable']) || isset($intfinfo['track6-interface'])
-                || (!empty($config['dhcrelay6']['interface']) && in_array($intf, explode(',', $config['dhcrelay6']['interface'])))) {
+                $dhcpdv6_enabled = isset($config['dhcpdv6'][$intf]['enable']);
+                $dhcrelay6_enabled = isset($config['dhcrelay6']['enable']);
+                $dhcrelay6_interfaces = array();
+                if (!empty($config['dhcrelay6']['interface'])) {
+                    $dhcrelay6_interfaces = explode(',', $config['dhcrelay6']['interface']);
+                }
+                if ($dhcpdv6_enabled || ($dhcrelay6_enabled && in_array($intf, $dhcrelay6_interfaces))) {
                     $fw->registerFilterRule(
                         1,
                         array('protocol' => 'udp','ipprotocol' => 'inet6', 'from' => 'fe80::/10', 'to' => 'fe80::/10,ff02::/16',
@@ -585,7 +590,7 @@ function filter_core_rules_system($fw, $defaults)
     // Our default setting has been to force traffic leaving a specific interface to use the associated gateway.
     // This behaviour can be disabled, so settings can be customized using manual firewall rules.
     if (empty($config['system']['pf_disable_force_gw'])) {
-        foreach ($fw->getInterfaceMapping() as $ifdescr => $ifcfg) {
+        foreach ($fw->getInterfaceMapping() as $intf => $ifcfg) {
             if (!isset($ifcfg['internal_dynamic']) && $ifcfg['if'] != 'lo0') {
                 $intf_has_v4 = false;
                 $intf_has_v6 = false;
@@ -600,11 +605,9 @@ function filter_core_rules_system($fw, $defaults)
                     if (($gwproto == 'inet' && $intf_has_v4) || ($gwproto == 'inet6' && $intf_has_v6)) {
                         $fw->registerFilterRule(
                             100000,
-                            array('from' => $ifcfg['if'], 'direction' => 'out', 'gateway' => $gwname,
-                            'destination' => array('network'=> $ifdescr, "not" => true),
-                            'statetype' => 'keep',
-                            'allowopts' => true,
-                            'quick' => false,
+                            array('interface'=> $intf, 'from' => $ifcfg['if'], 'direction' => 'out',
+                            'destination' => array('network'=> $intf, "not" => true),
+                            'statetype' => 'keep', 'allowopts' => true, 'quick' => false, 'gateway' => $gwname,
                             '#ref' => 'system_advanced_firewall.php#pf_disable_force_gw',
                             'descr' => "let out anything from firewall host itself (force gw)"),
                             $defaults['pass']

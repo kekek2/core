@@ -325,11 +325,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $filterent['destination']['port'] = $pconfig['local-port'];
             }
 
-            /*
-             * Our firewall filter description may be no longer than
-             * 63 characters, so don't let it be.
-             */
-            $filterent['descr'] = "NAT " . $pconfig['descr'];
+            $filterent['descr'] = $pconfig['descr'];
 
             // If this is a new rule, create an ID and add the rule
             if (!empty($pconfig['filter-rule-association']) && $pconfig['filter-rule-association'] != 'pass') {

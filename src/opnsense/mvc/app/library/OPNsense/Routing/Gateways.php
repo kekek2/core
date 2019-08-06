@@ -134,6 +134,7 @@ class Gateways
             $dynamic_gw = array();
             $gatewaySeq = 1;
             $i=0; // sequence used in legacy edit form (item in the list)
+            $reservednames = array();
 
             // add loopback, lowest priority
             $this->cached_gateways[$this->newKey(255)] = [
@@ -158,6 +159,7 @@ class Gateways
             if (!empty($this->configHandle->gateways)) {
                 foreach ($this->configHandle->gateways->children() as $tag => $gateway) {
                     if ($tag == "gateway_item") {
+                        $reservednames[] = (string)$gateway->name;
                         $gw_arr = array();
                         foreach ($gateway as $key => $value) {
                             $gw_arr[(string)$key] = (string)$value;
@@ -179,6 +181,7 @@ class Gateways
                             if (empty($dynamic_gw[(string)$gateway->interface])) {
                                 $dynamic_gw[(string)$gateway->interface] = array();
                             }
+                            $gw_arr['dynamic'] =  true;
                             $dynamic_gw[(string)$gateway->interface][] = $gw_arr;
                         }
                     }
@@ -206,6 +209,7 @@ class Gateways
                         "monitor_disable" => true, // disable monitoring by default
                         "if" => $ifcfg['if'],
                         "dynamic" => true,
+                        "virtual" => true
                     ];
                     // set default priority
                     if (strstr($ifcfg['if'], 'gre') || strstr($ifcfg['if'], 'gif') || strstr($ifcfg['if'], 'ovpn')) {
@@ -225,7 +229,10 @@ class Gateways
                         }
                     }
                     // dynamic gateways dump their address in /tmp/[IF]_router[FSUFFIX]
-                    if (file_exists("/tmp/{$ifcfg['if']}_router".$fsuffix)) {
+                    if (!empty($thisconf['virtual']) && in_array($thisconf['name'], $reservednames)) {
+                        // if name is already taken, don't try to add a new (virtual) entry
+                        null;
+                    } elseif (file_exists("/tmp/{$ifcfg['if']}_router".$fsuffix)) {
                         $thisconf['gateway'] = trim(@file_get_contents("/tmp/{$ifcfg['if']}_router".$fsuffix));
                         if (empty($thisconf['monitor_disable']) && empty($thisconf['monitor'])) {
                             $thisconf['monitor'] = $thisconf['gateway'];
@@ -238,7 +245,9 @@ class Gateways
                         // gateway should only contain a valid address, make sure its empty
                         unset($thisconf['gateway']);
                         $this->cached_gateways[$gwkey] = $thisconf;
-                    } elseif (empty($thisconf['dynamic'])) {
+                    } elseif ($ipproto == 'inet6'
+                            && in_array($ifcfg['ipaddrv6'], array('slaac', 'dhcp6', '6to4', '6rd'))) {
+                        // Dynamic IPv6 interface, but no router solicit response received using rtsold.
                         $gwkey = $this->newKey($thisconf['priority'], !empty($thisconf['defaultgw']));
                         // gateway should only contain a valid address, make sure its empty
                         unset($thisconf['gateway']);
@@ -389,11 +398,11 @@ class Gateways
      */
     public function getGroups($status_info)
     {
-          $all_gateways = $this->gatewaysIndexedByName();
-          $result = array();
+        $all_gateways = $this->gatewaysIndexedByName();
+        $result = array();
         if (isset($this->configHandle->gateways)) {
             foreach ($this->configHandle->gateways->children() as $tag => $gw_group) {
-                if ($tag == "gateway_group") {
+                if ($tag == "gateway_group" && !empty($gw_group)) {
                     $tiers = array();
                     if (isset($gw_group->item)) {
                         foreach ($gw_group->item as $item) {
@@ -453,7 +462,7 @@ class Gateways
                 }
             }
         }
-          return $result;
+        return $result;
     }
 
     /**

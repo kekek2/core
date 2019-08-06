@@ -110,6 +110,7 @@ class Main(object):
         server.bind(SOCKET_PATH)
         syslog.syslog(syslog.LOG_NOTICE, 'start watching flowd')
         while self.running:
+            loop_start = time.time()
             # should we perform a vacuum
             if not vacuum_countdown or vacuum_countdown < time.time():
                 vacuum_countdown = time.time() + vacuum_interval
@@ -129,7 +130,10 @@ class Main(object):
             if Main.config.single_pass:
                 break
             else:
-                for i in range(30):
+                # calculate time to wait in between parses. since tailing flowd.log is quite time consuming
+                # its better to wait a bit longer. max 120 x 0.5 seconds.
+                wait_time = max(120 - int(time.time() - loop_start), 0)
+                for i in range(wait_time):
                     if self.running:
                         time.sleep(0.5)
                     else:
