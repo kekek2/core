@@ -189,10 +189,13 @@ class AuthenticationFactory
         if ($service !== null) {
             $user_split = explode('@', $username);
             $service->setUserName($user_split[0]);
-            foreach ($service->supportedAuthenticators() as $authname) {
+            foreach ($service->supportedAuthenticators() as $key => $authname) {
                 $authenticator = $this->get($authname);
                 if ($authenticator !== null) {
                     if (count($user_split) > 1) {
+                        if (!method_exists($authenticator, 'getBaseSearchDN')) {
+                            continue;
+                        }
                         $zones = [];
                         foreach (explode(".", $user_split[1]) as $zone) {
                             $zones[] = 'dc=' . $zone;
