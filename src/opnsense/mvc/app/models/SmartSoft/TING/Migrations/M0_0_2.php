@@ -14,7 +14,7 @@ class M0_0_2 extends BaseModelMigration
 
 	$cfg = Config::getInstance();
 	$cfgArray = $cfg->toArray(array_flip(["rule"]));
-	foreach ($cfgArray['nat']['rule'] as $rule) {
+	foreach ($cfgArray['filter']['rule'] as $rule) {
 	    $rule['descr'] = preg_replace("/\r|\n/", "", $rule['descr']);
     }
 	$cfg->fromArray($cfgArray);
