@@ -41,9 +41,9 @@ def unbound_control_reader(action):
             sys.exit(1)
     except:
         sys.exit(1)
-    with tempfile.NamedTemporaryFile('w+') as output_stream:
+    with tempfile.NamedTemporaryFile('wb+') as output_stream:
         subprocess.call(['/usr/local/sbin/unbound-control', '-c', '/var/unbound/unbound.conf', action],
-                        stdout=output_stream, stderr=open(os.devnull, 'w'))
+                        stdout=output_stream, stderr=open(os.devnull, 'wb'))
         output_stream.seek(0)
         for line in output_stream:
             yield line.decode()
