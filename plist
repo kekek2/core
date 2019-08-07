@@ -615,6 +615,7 @@
 /usr/local/opnsense/mvc/app/models/SmartSoft/License/ACL/ACL.xml
 /usr/local/opnsense/mvc/app/models/SmartSoft/License/Menu/Menu.xml
 /usr/local/opnsense/mvc/app/models/SmartSoft/TING/Migrations/M0_0_1.php
+/usr/local/opnsense/mvc/app/models/SmartSoft/TING/Migrations/M0_0_2.php
 /usr/local/opnsense/mvc/app/models/SmartSoft/TING/TING.php
 /usr/local/opnsense/mvc/app/models/SmartSoft/TING/TING.xml
 /usr/local/opnsense/mvc/app/views/layout_partials/base_dialog_processing.volt
