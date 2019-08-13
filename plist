@@ -1773,8 +1773,10 @@
 /usr/local/opnsense/www/themes/ting/build/fonts/SourceSansPro-Semibold/SourceSansPro-Semibold.woff
 /usr/local/opnsense/www/themes/ting/build/images/caret.png
 /usr/local/opnsense/www/themes/ting/build/images/default-logo.png
+/usr/local/opnsense/www/themes/ting/build/images/default-logo.svg
 /usr/local/opnsense/www/themes/ting/build/images/favicon.png
 /usr/local/opnsense/www/themes/ting/build/images/icon-logo.png
+/usr/local/opnsense/www/themes/ting/build/images/icon-logo.svg
 /usr/local/opnsense/www/themes/ting/build/images/login-logo.png
 /usr/local/opnsense/www/themes/ting/LICENSE
 /usr/local/sbin/3gstats.php
