@@ -39,14 +39,14 @@ $aclObj = new \OPNsense\Core\ACL();
       <div class="navbar-header">
         <a class="navbar-brand" href="/index.php">
           <?php if (file_exists("/usr/local/opnsense/www/themes/ting/build/images/default-logo.svg")): ?>
-                  <img class="brand-logo" src="<?= cache_safe("/ui/themes/ting/build/images/default-logo.svg") ?>" height="30" alt="logo" />
+                  <img class="brand-logo" src="<?= cache_safe("/ui/themes/ting/build/images/default-logo.svg") ?>" height="40" alt="logo" />
           <?php else: ?>
-                  <img class="brand-logo" src="<?= cache_safe("/ui/themes/ting/build/images/default-logo.png") ?>" height="30" alt="logo" />
+                  <img class="brand-logo" src="<?= cache_safe("/ui/themes/ting/build/images/default-logo.png") ?>" height="40" alt="logo" />
           <?php endif ?>
           <?php if (file_exists("/usr/local/opnsense/www/themes/ting/build/images/icon-logo.svg")): ?>
-                  <img class="brand-icon" src="<?= cache_safe("/ui/themes/ting/build/images/icon-logo.svg") ?>" height="30" alt="icon" />
+                  <img class="brand-icon" src="<?= cache_safe("/ui/themes/ting/build/images/icon-logo.svg") ?>" height="40" alt="icon" />
           <?php else: ?>
-                  <img class="brand-icon" src="<?= cache_safe("/ui/themes/ting/build/images/icon-logo.png") ?>" height="30" alt="icon" />
+                  <img class="brand-icon" src="<?= cache_safe("/ui/themes/ting/build/images/icon-logo.png") ?>" height="40" alt="icon" />
           <?php endif ?>
         </a>
         <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navigation">
