@@ -12,12 +12,15 @@ class M0_0_2 extends BaseModelMigration
     {
         parent::run($model);
 
-	$cfg = Config::getInstance();
-	$cfgArray = $cfg->toArray(array_flip(["rule"]));
-	foreach ($cfgArray['filter']['rule'] as $rule) {
-	    $rule['descr'] = preg_replace("/\r|\n/", "", $rule['descr']);
-    }
-	$cfg->fromArray($cfgArray);
+        $cfg = Config::getInstance();
+        $cfgArray = $cfg->toArray(array_flip(["rule"]));
+        foreach ($cfgArray['filter']['rule'] as $rule) {
+            if (!isset($rule['descr'])) {
+                continue;
+            }
+            $rule['descr'] = preg_replace("/\r|\n/", "", $rule['descr']);
+        }
+        $cfg->fromArray($cfgArray);
         $cfg->save();
     }
 }
