@@ -31,6 +31,7 @@ namespace OPNsense\CaptivePortal\Api;
 use \OPNsense\Base\ApiControllerBase;
 use \OPNsense\Core\Backend;
 use \OPNsense\Auth\AuthenticationFactory;
+use \OPNsense\Auth\IAuthConnector2;
 use \OPNsense\CaptivePortal\CaptivePortal;
 
 /**
@@ -39,6 +40,25 @@ use \OPNsense\CaptivePortal\CaptivePortal;
  */
 class AccessController extends ApiControllerBase
 {
+    /**
+     */
+    private function isAnonymousAllowed($cpZone)
+    {
+        if ($cpZone != null && trim((string)$cpZone->authservers) != "") {
+            $authFactory = new AuthenticationFactory();
+
+            foreach (explode(',', (string)$cpZone->authservers) as $authServerName) {
+                $authServer = $authFactory->get(trim($authServerName));
+
+                if ($authServer != null
+                    && !(($authServer instanceof IAuthConnector2) && $authServer->isAnonymousAllowed())) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     /**
      * request client session data
      * @param string $zoneid captive portal zone
@@ -68,7 +88,7 @@ class AccessController extends ApiControllerBase
         $result = array('clientState' => "NOT_AUTHORIZED", "ipAddress" => $this->getClientIp());
         $mdlCP = new CaptivePortal();
         $cpZone = $mdlCP->getByZoneID($zoneid);
-        if ($cpZone != null && trim((string)$cpZone->authservers) == "") {
+        if ($this->isAnonymousAllowed($cpZone)) {
             // no authentication needed, logon without username/password
             $result['authType'] = 'none';
         } else {
@@ -143,51 +163,57 @@ class AccessController extends ApiControllerBase
 
             // get username from post
             $userName = $this->request->getPost("user", "striptags", null);
+            $password = $this->request->getPost("password", "string");
 
             // search zone info, to retrieve list of authenticators
             if ($cpZone != null) {
+                $isAuthenticated = false;
+
                 if (trim((string)$cpZone->authservers) != "") {
                     // authenticate user
-                    $isAuthenticated = false;
+                    $authInfo = array(
+                        'username' => $userName,
+                        'password' => $password,
+                        'ip'       => $clientIp,
+                        'mac'      => $mac,
+                        'group'    => (string)$cpZone->authEnforceGroup
+                    );
+
                     $authFactory = new AuthenticationFactory();
+
                     foreach (explode(',', (string)$cpZone->authservers) as $authServerName) {
                         $authServer = $authFactory->get(trim($authServerName));
                         if ($authServer != null) {
                             // try this auth method
-                            $isAuthenticated = $authServer->authenticate(
-                                $userName,
-                                $this->request->getPost("password", "string")
-                            );
+                            if ($authServer instanceof IAuthConnector2) {
+                                $isAuthenticated = $authServer->authenticate2($authInfo);
+                            } else {
+                                $isAuthenticated = $authServer->authenticate($userName, $password);
 
-                            // check group when group enforcement is set
-                            if ($isAuthenticated && (string)$cpZone->authEnforceGroup != "") {
-                                $isAuthenticated = $authServer->groupAllowed($userName, $cpZone->authEnforceGroup);
+                                // check group when group enforcement is set
+                                if ($isAuthenticated && (string)$cpZone->authEnforceGroup != "") {
+                                    $isAuthenticated = $authServer->groupAllowed($userName, $cpZone->authEnforceGroup);
+                                }
                             }
 
                             if ($isAuthenticated) {
+                                $authProps = $authServer->getLastAuthProperties();
+
+                                if (array_key_exists('username', $authProps)) {
+                                    $userName = $authProps['username'];
+                                }
+
                                 // stop trying, when authenticated
                                 break;
                             }
                         }
                     }
-                } else {
+                }
+
+                if (!$isAuthenticated && $this->isAnonymousAllowed($cpZone)) {
                     // no authentication needed, set username to "anonymous@ip"
                     $userName = "anonymous@" . $clientIp;
                     $isAuthenticated = true;
-
-                    if (class_exists('\SmartSoft\ProxyIPIdent\ProxyIPIdent')) {
-                        $mdlIPIdent = new \SmartSoft\ProxyIPIdent\ProxyIPIdent();
-
-                        if ((string) $mdlIPIdent->Enable == '1') {
-                            foreach ($mdlIPIdent->UserList->User->getChildren() as $user) {
-                                if ((string) $user->IP == $clientIp
-                                    || strtolower((string) $user->MAC) == $mac) {
-                                    $userName = (string) $user->Name;
-                                    break;
-                                }
-                            }
-                        }
-                    }
                 }
 
                 if ($isAuthenticated) {
