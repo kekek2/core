@@ -1022,7 +1022,7 @@ function system_login_configure($verbose = false)
 
 function reset_factory_defaults($sync = true)
 {
-    mwexec('/bin/rm -fr /conf/* /var/log/* /root/.history');
+    mwexec('/bin/rm -fr /conf/* /var/log/* /root/.history /usr/local/etc/ssl/ting-client.* /var/db/notices.db');
     disable_security_checks();
 
     mwexec('/usr/local/sbin/beep.sh stop');
