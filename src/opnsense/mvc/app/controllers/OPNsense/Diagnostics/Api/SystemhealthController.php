@@ -459,8 +459,8 @@ class SystemhealthController extends ApiControllerBase
                     $result["result"] = "ok";
                     $healthItem['filename'] = $filename;
                     $result["data"] = $healthItem;
-                    $result["data"]['title'] = gettext($healthItem['title']);
-                    $result["data"]["y-axis_label"] = gettext($healthItem["y-axis_label"]);
+                    $result["data"]['title'] = $healthItem['title'] != '' ? gettext($healthItem['title']) : '';
+                    $result["data"]["y-axis_label"] = $healthItem["y-axis_label"] != '' ? gettext($healthItem["y-axis_label"]) : '';
                     return $result;
                 }
             }
