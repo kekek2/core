@@ -308,7 +308,12 @@ package: plist-check package-check clean-wrksrc
 	@echo -n ">>> Staging files for ${CORE_NAME}-${CORE_PKGVERSION}..."
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} install
 	@echo " done"
+	@mkdir -p ${WRKSRC}${LOCALBASE}/version
+	@touch ${WRKSRC}${LOCALBASE}/version/banner
 .if defined(DEMO)
+	@echo "<span class="navbar-text"><span class="text-danger"><b>DEMO expired at " > ${WRKSRC}${LOCALBASE}/version/banner
+	@date -v "+${DEMO}" "+ %d.%m.%Y %H:%M:%S" >> ${WRKSRC}${LOCALBASE}/version/banner
+	@echo "</b></span></span>" >> ${WRKSRC}${LOCALBASE}/version/banner
 	@echo ">>> Encoding all files for DEMO..."
 	@if [ -f /root/.ssh/encoder_rsa ]; then \
 	    ENC_TEMP=`${REMOTESHELL} 'mktemp -d'`; \

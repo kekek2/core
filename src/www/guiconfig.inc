@@ -550,3 +550,11 @@ function get_menu_messages()
 
     return $menu_messages;
 }
+
+function get_menu_banner()
+{
+    if (file_exists("/usr/local/opnsense/version/banner")) {
+        return file_get_contents("/usr/local/opnsense/version/banner");
+    }
+    return '';
+}
