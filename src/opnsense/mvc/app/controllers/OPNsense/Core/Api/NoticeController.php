@@ -26,4 +26,14 @@ class NoticeController extends ApiControllerBase
         $Notices->delNotice($this->request->getPost("closenotice"));
         return [];
     }
+
+    public function bannerAction()
+    {
+        $banner = '';
+        if (file_exists("/usr/local/opnsense/version/banner")) {
+            $banner = file_get_contents("/usr/local/opnsense/version/banner");
+        }
+
+        return ['banner' => $banner];
+    }
 }

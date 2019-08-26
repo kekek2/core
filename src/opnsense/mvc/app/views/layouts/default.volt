@@ -166,6 +166,7 @@
                 $('[data-toggle="tooltip"]').tooltip();
 
                 get_notices();
+                get_banner();
 
                 // fix menu scroll position on page load
                 $(".list-group-item.active").each(function(){
@@ -217,6 +218,12 @@
                   $("#menu_messages").html(menu_messages);
                 }
               });
+            }
+
+            function get_banner() {
+                ajaxCall(url = "/api/core/notice/banner", sendData = {}, callback = function (data) {
+                    $("#menu_banner").html($('<div>').html(data.banner).text());
+                });
             }
         </script>
 
@@ -279,6 +286,8 @@
         <button class="toggle-sidebar" data-toggle="tooltip right" title="{{ lang._('Toggle sidebar') }}" style="display:none;"><i class="fa fa-chevron-left"></i></button>
         <div class="collapse navbar-collapse">
           <ul class="nav navbar-nav navbar-right">
+            <li id="menu_banner">
+            </li>
             <li id="menu_messages">
             </li>
             <li>
