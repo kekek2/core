@@ -27,6 +27,7 @@
     data aggregator type
 """
 from . import BaseFlowAggregator
+import gettext
 
 
 class FlowSourceAddrTotals(BaseFlowAggregator):
@@ -54,6 +55,14 @@ class FlowSourceAddrTotals(BaseFlowAggregator):
             3600: 86400,
             86400: cls.seconds_per_day(365)
         }
+
+    @classmethod
+    def translate(cls):
+        """
+        :return: translate for GUI
+        """
+        # sample in 30 seconds, 5 minutes, 1 hour and 1 day
+        return gettext.gettext("Sources total")
 
     def __init__(self, resolution, database_dir='/var/netflow'):
         """
@@ -94,6 +103,14 @@ class FlowSourceAddrDetails(BaseFlowAggregator):
         return {
             86400: cls.seconds_per_day(62)
         }
+
+    @classmethod
+    def translate(cls):
+        """
+        :return: translate for GUI
+        """
+        # sample in 30 seconds, 5 minutes, 1 hour and 1 day
+        return gettext.gettext("Sources detail")
 
     def __init__(self, resolution, database_dir='/var/netflow'):
         """

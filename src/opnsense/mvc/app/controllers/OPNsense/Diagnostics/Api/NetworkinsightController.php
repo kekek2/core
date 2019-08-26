@@ -186,6 +186,9 @@ class NetworkinsightController extends ApiControllerBase
             $response = $backend->configdRun($configd_cmd);
             $metadata = json_decode($response, true);
             if ($metadata != null) {
+                foreach ($metadata['aggregators'] as &$aggregator) {
+                    $aggregator['translate'] = gettext($aggregator['translate']);
+                }
                 return $metadata;
             }
         }
