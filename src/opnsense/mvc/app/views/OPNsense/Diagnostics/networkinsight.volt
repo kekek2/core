@@ -86,7 +86,7 @@ POSSIBILITY OF SUCH DAMAGE.
                           ajaxGet('/api/diagnostics/networkinsight/getMetadata',{}, function(metadata, status) {
                             Object.keys(metadata['aggregators']).forEach(function (agg_name) {
                               var res = metadata['aggregators'][agg_name]['resolutions'].join(',');
-                              $("#export_collection").append($("<option data-resolutions='"+res+"'/>").val(agg_name).text(agg_name));
+                              $("#export_collection").append($("<option data-resolutions='"+res+"'/>").val(agg_name).text(metadata['aggregators'][agg_name]['translate']));
                             });
                             $("#export_collection").change(function(){
                                 $("#export_resolution").html("");

@@ -64,6 +64,14 @@ class BaseFlowAggregator(object):
         """
         return 60*60*24*days
 
+    @classmethod
+    def translate(cls):
+        """
+        :return: translate for GUI
+        """
+        # sample in 30 seconds, 5 minutes, 1 hour and 1 day
+        return ''
+
     def __init__(self, resolution, database_dir='/var/netflow'):
         """ construct new flow sample class
         :return: None

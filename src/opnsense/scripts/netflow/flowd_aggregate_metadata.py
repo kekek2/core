@@ -34,6 +34,10 @@ import argparse
 from lib import load_config
 from lib.aggregate import AggMetadata
 import lib.aggregates
+import gettext
+
+gettext.bindtextdomain('OPNsense', '/usr/local/share/locale')
+gettext.textdomain('OPNsense')
 
 result = dict()
 
@@ -50,7 +54,7 @@ result['last_sync'] = metadata.last_sync()
 # fetch aggregators
 result['aggregators'] = dict()
 for agg_class in lib.aggregates.get_aggregators():
-    result['aggregators'][agg_class.__name__] = {'resolutions': list()}
+    result['aggregators'][agg_class.__name__] = {'resolutions': list(), 'translate': agg_class.translate()}
     for resolution in agg_class.resolutions():
         result['aggregators'][agg_class.__name__]['resolutions'].append(resolution)
 

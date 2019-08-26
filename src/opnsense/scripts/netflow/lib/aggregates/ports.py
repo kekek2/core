@@ -27,6 +27,7 @@
     data aggregator type
 """
 from . import BaseFlowAggregator
+import gettext
 
 
 class FlowDstPortTotals(BaseFlowAggregator):
@@ -54,6 +55,14 @@ class FlowDstPortTotals(BaseFlowAggregator):
             3600: 86400,
             86400: cls.seconds_per_day(365)
         }
+
+    @classmethod
+    def translate(cls):
+        """
+        :return: translate for GUI
+        """
+        # sample in 30 seconds, 5 minutes, 1 hour and 1 day
+        return gettext.gettext("Ports")
 
     def __init__(self, resolution, database_dir='/var/netflow'):
         """

@@ -26,6 +26,7 @@
     --------------------------------------------------------------------------------------
     data aggregator type
 """
+import gettext
 from . import BaseFlowAggregator
 
 
@@ -54,6 +55,14 @@ class FlowInterfaceTotals(BaseFlowAggregator):
             3600: cls.seconds_per_day(31),
             86400: cls.seconds_per_day(365)
         }
+
+    @classmethod
+    def translate(cls):
+        """
+        :return: translate for GUI
+        """
+        # sample in 30 seconds, 5 minutes, 1 hour and 1 day
+        return gettext.gettext("Interfaces")
 
     def __init__(self, resolution, database_dir='/var/netflow'):
         """
