@@ -65,6 +65,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $pconfig['timeservers_noselect'] = !empty($a_ntpd['noselect']) ? explode(' ', $a_ntpd['noselect']) : array();
         $pconfig['timeservers_prefer'] = !empty($a_ntpd['prefer']) ? explode(' ', $a_ntpd['prefer']) : array();
         $pconfig['timeservers_host'] = explode(' ', $config['system']['timeservers']);
+        foreach ($pconfig['timeservers_host'] as &$timeserver_host) {
+            $timeserver_host = idn_to_utf8($timeserver_host);
+        }
     }
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pconfig = $_POST;
@@ -93,6 +96,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
 
         // list types
+        foreach ($pconfig['timeservers_host'] as &$timeserver_host) {
+            $timeserver_host = idn_to_ascii($timeserver_host);
+        }
         $config['system']['timeservers'] = trim(implode(' ', $pconfig['timeservers_host']));
         $a_ntpd['noselect'] = !empty($pconfig['timeservers_noselect']) ? trim(implode(' ', $pconfig['timeservers_noselect'])) : null;
         $a_ntpd['prefer'] = !empty($pconfig['timeservers_prefer']) ? trim(implode(' ', $pconfig['timeservers_prefer'])) : null;
