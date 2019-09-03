@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright (C) 2019 EURO-LOG AG
+ * Copyright (C) 2019 Deciso B.V.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,21 +26,40 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-namespace OPNsense\Monit\Migrations;
-
-use OPNsense\Base\BaseModelMigration;
-use OPNsense\Core\Config;
-
-class M1_0_8 extends BaseModelMigration
+function opendns_configure()
 {
-    public function post($model)
-    {
-        foreach ($model->test->iterateItems() as $test) {
-            $test->type = $model->getTestType($test->condition->getNodeData());
+    return array(
+        'bootup' => array('opendns_configure_do'),
+        'local' => array('opendns_configure_do'),
+        'newwanip' => array('opendns_configure_do'),
+    );
+}
+
+function opendns_configure_do($verbose = false)
+{
+    global $config;
+
+    if (!empty($config['opendns']['enable'])) {
+        if ($verbose) {
+            echo 'Configure OpenDNS...';
+            flush();
         }
-        // validation will fail because we want to change the type of tests linked to services
-        $model->serializeToConfig(false, true);
-        Config::getInstance()->save();
-        $model->configClean();
+        $result = opendns_register($config['opendns']);
+        syslog(LOG_NOTICE, "opendns response : " . $result);
+        if ($verbose) {
+            echo "done.\n";
+        }
     }
+}
+
+function opendns_register($pconfig)
+{
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, sprintf( 'https://updates.opendns.com/nic/update?hostname=%s', $pconfig['host']));
+    curl_setopt($ch, CURLOPT_USERPWD, sprintf('%s:%s', $pconfig['username'], $pconfig['password']));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $output = curl_exec($ch);
+    curl_close($ch);
+
+    return $output;
 }

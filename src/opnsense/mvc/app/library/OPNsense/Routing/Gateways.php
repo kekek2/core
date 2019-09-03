@@ -220,9 +220,10 @@ class Gateways
                     }
                     // locate interface gateway settings
                     if (!empty($dynamic_gw[$ifname])) {
-                        foreach ($dynamic_gw[$ifname] as $gw_arr) {
+                        foreach ($dynamic_gw[$ifname] as $gwidx => $gw_arr) {
                             if ($gw_arr['ipprotocol'] == $ipproto) {
                                 // dynamic gateway for this ip protocol found, use config
+                                unset($dynamic_gw[$ifname][$gwidx]);
                                 $thisconf = $gw_arr;
                                 break;
                             }
@@ -252,11 +253,25 @@ class Gateways
                         // gateway should only contain a valid address, make sure its empty
                         unset($thisconf['gateway']);
                         $this->cached_gateways[$gwkey] = $thisconf;
+                    } elseif (empty($thisconf['virtual'])) {
+                        // skipped dynamic gateway from config, add to $dynamic_gw to handle defunct
+                        $dynamic_gw[$ifname][] = $thisconf;
                     }
                 }
             }
             // sort by priority
             krsort($this->cached_gateways);
+            // entries left in $dynamic_gw are defunct,  add them in in disabled state
+            foreach ($dynamic_gw as $intfgws) {
+                foreach ($intfgws as $gw_arr) {
+                    if (!empty($gw_arr)) {
+                        $gw_arr['disabled'] = true;
+                        $gw_arr['defunct'] = true;
+                        unset($gw_arr['gateway']);
+                        $this->cached_gateways[] = $gw_arr;
+                    }
+                }
+            }
         }
         return $this->cached_gateways;
     }
@@ -373,9 +388,10 @@ class Gateways
     /**
      * @param string $interface interface name
      * @param string $ipproto inet/inet6
+     * @param boolean $only_configured only return configured in interface or dynamic gateways
      * @return string|null gateway address
      */
-    public function getInterfaceGateway($interface, $ipproto = "inet")
+    public function getInterfaceGateway($interface, $ipproto = "inet", $only_configured = false)
     {
         foreach ($this->getGateways() as $gateway) {
             if (!empty($gateway['disabled']) || $gateway['ipprotocol'] != $ipproto) {
@@ -383,9 +399,20 @@ class Gateways
             } elseif (!empty($gateway['is_loopback']) || empty($gateway['gateway'])) {
                 continue;
             }
+            // The interface might have a gateway configured
+            if (isset($this->configHandle->interfaces->$interface)) {
+                $intf_gateway = $this->configHandle->interfaces->$interface->gateway;
+            } else {
+                $intf_gateway = null;
+            }
 
             if (!empty($gateway['interface']) && $gateway['interface'] == $interface) {
-                return $gateway['gateway'];
+                // XXX: $only_configured mimics the pre 19.7 behaviour, which means static non linked interfaces
+                //      are not returned as valid gateway address (automatic outbound nat rules).
+                //      An alternative setup option would be practical here, less fuzzy.
+                if (!$only_configured || $intf_gateway == $gateway['name'] || !empty($gateway['dynamic'])) {
+                    return $gateway['gateway'];
+                }
             }
         }
         return null;

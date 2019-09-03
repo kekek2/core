@@ -38,7 +38,8 @@ class M1_0_6 extends BaseModelMigration
         /* extend tests */
         $defaultTests = array();
         $defaultTests['ChangedStatus'] = array(
-          "name" => "ChangedStatus", "condition" => "changed status", "action" => "alert"
+          "name" => "ChangedStatus", "condition" => "changed status",
+          "action" => "alert", "type" => "ProgramStatus"
         );
 
         foreach ($defaultTests as &$newtest) {
@@ -53,6 +54,7 @@ class M1_0_6 extends BaseModelMigration
                 $found->name = $newtest['name'];
                 $found->condition = $newtest['condition'];
                 $found->action = $newtest['action'];
+                $found->type = $newtest['type'];
             }
             $newtest['uuid'] = $found->getAttribute('uuid');
         }
