@@ -43,6 +43,7 @@
 /usr/local/etc/inc/plugins.inc.d/netflow.inc
 /usr/local/etc/inc/plugins.inc.d/ntpd.inc
 /usr/local/etc/inc/plugins.inc.d/ntpd/ntpdate_sync_once.sh
+/usr/local/etc/inc/plugins.inc.d/opendns.inc
 /usr/local/etc/inc/plugins.inc.d/openssh.inc
 /usr/local/etc/inc/plugins.inc.d/openvpn.inc
 /usr/local/etc/inc/plugins.inc.d/openvpn/attributes.sh
@@ -91,6 +92,7 @@
 /usr/local/etc/pkg/fingerprints/TING/trusted/smart-soft.ru.2017.1.1
 /usr/local/etc/rc
 /usr/local/etc/rc.bootup
+/usr/local/etc/rc.carp_service_status.d/.placeholder
 /usr/local/etc/rc.configure_firmware
 /usr/local/etc/rc.configure_interface
 /usr/local/etc/rc.configure_plugins
@@ -147,6 +149,7 @@
 /usr/local/etc/rc.syshook.d/early/15-templates
 /usr/local/etc/rc.syshook.d/early/20-backup
 /usr/local/etc/rc.syshook.d/early/30-certs
+/usr/local/etc/rc.syshook.d/early/99-carp_service_status
 /usr/local/etc/rc.syshook.d/early/99-secadm
 /usr/local/etc/rc.syshook.d/monitor/10-dpinger
 /usr/local/etc/rc.syshook.d/start/10-newwanip
@@ -1783,6 +1786,7 @@
 /usr/local/opnsense/www/themes/ting/LICENSE
 /usr/local/sbin/3gstats.php
 /usr/local/sbin/beep.sh
+/usr/local/sbin/carp_service_status
 /usr/local/sbin/configctl
 /usr/local/sbin/opnsense-importer
 /usr/local/sbin/opnsense-installer
