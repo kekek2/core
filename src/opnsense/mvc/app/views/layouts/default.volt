@@ -246,7 +246,7 @@
                 'refresh': "{{ lang._('Refresh') }}",
                 'search': "{{ lang._('Search') }}"
             }
-        )
+        );
         </script>
 
         <!-- Bootstrap type ahead -->
@@ -351,6 +351,12 @@
     <!-- bootstrap script -->
     <script src="{{ cache_safe('/ui/js/bootstrap.min.js') }}"></script>
     <script src="{{ cache_safe('/ui/js/bootstrap-select.min.js') }}"></script>
+    <script>
+        jQuery.fn.selectpicker.Constructor.DEFAULTS.noneSelectedText = "{{ lang._('Nothing selected') }}";
+        jQuery.fn.selectpicker.Constructor.DEFAULTS.noneResultsText = "{{ lang._('No results matched {0}') }}";
+        jQuery.fn.selectpicker.Constructor.DEFAULTS.selectAllText = "{{ lang._('Select All') }}";
+        jQuery.fn.selectpicker.Constructor.DEFAULTS.deselectAllText = "{{ lang._('Deselect All') }}";
+    </script>
     <!-- bootstrap dialog -->
     <script src="{{ cache_safe('/ui/js/bootstrap-dialog.min.js') }}"></script>
 
