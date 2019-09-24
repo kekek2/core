@@ -161,12 +161,8 @@ WRKSRC?=${WRKDIR}/src
 PKGDIR?=${WRKDIR}/pkg
 MFCDIR?=${WRKDIR}/mfc
 
-.if defined(DEMO)
-FILES_TO_ENCODE=${WRKSRC}
-.else
 FILES_TO_ENCODE=${WRKSRC}${LOCALBASE}/etc/inc/authgui.inc \
 		${WRKSRC}${LOCALBASE}/opnsense/mvc/app/library/SmartSoft/Core/Tools.php
-.endif
 
 WANTS=		p5-File-Slurp php${CORE_PHP}-pear-PHP_CodeSniffer \
 		phpunit7-php${CORE_PHP} py${CORE_PYTHON}-pycodestyle
@@ -316,11 +312,14 @@ package: plist-check package-check clean-wrksrc
 	@echo "</b></span></span>" >> ${WRKSRC}${LOCALBASE}/version/banner
 	@echo ">>> Encoding all files for DEMO..."
 	@if [ -f /root/.ssh/encoder_rsa ]; then \
+            touch ${WRKSRC}${LOCALBASE}/bin/python3.7; \
 	    ENC_TEMP=`${REMOTESHELL} 'mktemp -d'`; \
 	    ${RCP} -r ${WRKSRC} ${RCPHOST}:$${ENC_TEMP}; \
 	    ${REMOTESHELL} "cd $${ENC_TEMP}; /usr/local/ioncube/ioncube_encoder.sh -C -71 --encode '*.inc' --expire-in ${DEMO} --copy src/usr/local/opnsense/contrib/ --copy src/usr/local/opnsense/mvc/app/library/OPNsense/Core/Config.php src -o src-enc --shell-script-line '#\!/usr/bin/env php'"; \
 	    ${RCP} -r ${RCPHOST}:$${ENC_TEMP}/src-enc ${WRKDIR} ; \
 	    ${REMOTESHELL} "rm -rf $${ENC_TEMP}"; \
+            rm -f ${WRKSRC}${LOCALBASE}/bin/python3.7 ${WRKDIR}/src-enc${LOCALBASE}/bin/python3*; \
+            cp -RP ${WRKSRC}${LOCALBASE}/bin/python3 ${WRKDIR}/src-enc${LOCALBASE}/bin/; \
 	else \
 	    exit 1; \
 	fi
