@@ -293,6 +293,7 @@ package-check:
 REMOTESHELL?=ssh -q encoder
 RCP?=scp -q
 RCPHOST?=encoder
+BANNER=${WRKSRC}${LOCALBASE}/opnsense/version/banner
 
 package: plist-check package-check clean-wrksrc
 .for CORE_DEPEND in ${CORE_DEPENDS}
@@ -307,9 +308,10 @@ package: plist-check package-check clean-wrksrc
 	@mkdir -p ${WRKSRC}${LOCALBASE}/version
 	@touch ${WRKSRC}${LOCALBASE}/version/banner
 .if defined(DEMO)
-	@echo "<span class="navbar-text"><span class="text-danger"><b>DEMO expired at " > ${WRKSRC}${LOCALBASE}/version/banner
-	@date -v "+${DEMO}" "+ %d.%m.%Y %H:%M:%S" >> ${WRKSRC}${LOCALBASE}/version/banner
-	@echo "</b></span></span>" >> ${WRKSRC}${LOCALBASE}/version/banner
+	@echo ">>> Generate DEMO banner in ${BANNER}"
+	@echo "<span class="navbar-text"><span class="text-danger"><b>DEMO expired at " > ${BANNER}
+	@date -v "+${DEMO}" "+ %d.%m.%Y %H:%M:%S" >> ${BANNER}
+	@echo "</b></span></span>" >> ${BANNER}
 	@echo ">>> Encoding all files for DEMO..."
 	@if [ -f /root/.ssh/encoder_rsa ]; then \
             touch ${WRKSRC}${LOCALBASE}/bin/python3.7; \
