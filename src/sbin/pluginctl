@@ -34,7 +34,6 @@ require_once 'util.inc';
 require_once 'system.inc';
 require_once 'interfaces.inc';
 require_once 'filter.inc';
-require_once 'services.inc';
 require_once 'auth.inc';
 
 /*
@@ -55,7 +54,7 @@ if (isset($opts['h'])) {
     // no arguments, list plugins of selected type
     $results = [];
     if (isset($opts['s'])) {
-        foreach (services_get() as $service) {
+        foreach (plugins_services() as $service) {
             $results[$service['name']] = 1;
         }
     } else {
@@ -87,13 +86,13 @@ if (isset($opts['h'])) {
     $act = !empty($args[1]) ? $args[1] : '';
     switch ($act) {
         case 'start':
-            service_control_start($name, array());
+            echo service_control_start($name, array()) . PHP_EOL;
             break;
         case 'stop':
-            service_control_stop($name, array());
+            echo service_control_stop($name, array()) . PHP_EOL;
             break;
         case 'restart':
-            service_control_restart($name, array());
+            echo service_control_restart($name, array()) . PHP_EOL;
             break;
         default:
             echo "Unknown command `$act'\n";

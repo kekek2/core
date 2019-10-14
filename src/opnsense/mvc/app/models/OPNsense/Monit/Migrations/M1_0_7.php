@@ -29,7 +29,6 @@
 namespace OPNsense\Monit\Migrations;
 
 use OPNsense\Base\BaseModelMigration;
-use OPNsense\Core\Config;
 
 class M1_0_7 extends BaseModelMigration
 {
@@ -41,6 +40,7 @@ class M1_0_7 extends BaseModelMigration
             'name' => 'NonZeroStatus',
             'condition' => 'status != 0',
             'action' => 'alert',
+            'type' => 'ProgramStatus'
         ];
 
         foreach ($defaultTests as &$newtest) {
@@ -55,6 +55,7 @@ class M1_0_7 extends BaseModelMigration
                 $found->name = $newtest['name'];
                 $found->condition = $newtest['condition'];
                 $found->action = $newtest['action'];
+                $found->type = $newtest['type'];
             }
             $newtest['uuid'] = $found->getAttribute('uuid');
         }
@@ -76,8 +77,5 @@ class M1_0_7 extends BaseModelMigration
             $srv->path = $newservice['path'];
             $srv->tests = $newservice['tests'];
         }
-        // validation will fail because we want to change the type of tests linked to services
-        $model->serializeToConfig(false, true);
-        Config::getInstance()->save();
     }
 }
