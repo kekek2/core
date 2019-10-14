@@ -1239,6 +1239,8 @@ function ipsec_configure_do($verbose = false, $interface = '')
                     $dpdline .= "\n\tdpddelay = {$ph1ent['dpd_delay']}s";
                     $dpdtimeout = $ph1ent['dpd_delay'] * ($ph1ent['dpd_maxfail'] + 1);
                     $dpdline .= "\n\tdpdtimeout = {$dpdtimeout}s";
+                } else {
+                    $dpdline = '';
                 }
 
                 if (!empty($ph1ent['lifetime'])) {
@@ -1321,6 +1323,12 @@ function ipsec_configure_do($verbose = false, $interface = '')
                     $rekey = "rekey = no";
                 } else {
                     $rekey = "rekey = yes";
+                    if (!empty($ph1ent['margintime'])) {
+                        $rekey .= "\n\tmargintime = {$ph1ent['margintime']}s";
+                    }
+                    if (!empty($ph1ent['rekeyfuzz'])) {
+                        $rekey .= "\n\trekeyfuzz = {$ph1ent['rekeyfuzz']}%";
+                    }
                 }
 
                 $forceencaps = 'forceencaps = no';
