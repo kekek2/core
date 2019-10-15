@@ -58,7 +58,6 @@
 /usr/local/etc/inc/plugins.inc.d/squid.inc
 /usr/local/etc/inc/plugins.inc.d/suricata.inc
 /usr/local/etc/inc/plugins.inc.d/unbound.inc
-/usr/local/etc/inc/plugins.inc.d/unbound/root.min.hints
 /usr/local/etc/inc/plugins.inc.d/webgui.inc
 /usr/local/etc/inc/rrd.inc
 /usr/local/etc/inc/services.inc
@@ -149,6 +148,7 @@
 /usr/local/etc/rc.syshook.d/early/15-templates
 /usr/local/etc/rc.syshook.d/early/20-backup
 /usr/local/etc/rc.syshook.d/early/30-certs
+/usr/local/etc/rc.syshook.d/early/98_carp_maintenance
 /usr/local/etc/rc.syshook.d/early/99-carp_service_status
 /usr/local/etc/rc.syshook.d/early/99-secadm
 /usr/local/etc/rc.syshook.d/monitor/10-dpinger
@@ -957,6 +957,8 @@
 /usr/local/opnsense/service/templates/OPNsense/Syslog/syslog-ng-legacy-remote.conf
 /usr/local/opnsense/service/templates/OPNsense/Syslog/syslog-ng-legacy.conf
 /usr/local/opnsense/service/templates/OPNsense/Syslog/syslog-ng.conf
+/usr/local/opnsense/service/templates/OPNsense/Unbound/core/+TARGETS
+/usr/local/opnsense/service/templates/OPNsense/Unbound/core/root.min.hints
 /usr/local/opnsense/service/templates/OPNsense/WebGui/+TARGETS
 /usr/local/opnsense/service/templates/OPNsense/WebGui/php.etc.ini
 /usr/local/opnsense/service/templates/OPNsense/WebGui/php.ini
