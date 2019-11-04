@@ -159,6 +159,9 @@ class Backend
             if ((time() - $starttime) > $timeout) {
                 $this->getLogger()->error("Timeout (".$timeout.") executing : ".$event);
                 return null;
+            } elseif (feof($stream)) {
+                $this->getLogger()->error("Configd disconnected while executing : ".$event);
+                return null;
             }
         }
 
