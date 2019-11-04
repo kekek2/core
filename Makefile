@@ -82,7 +82,11 @@ CORE_COPYRIGHT_HOLDER?=	Deciso B.V.
 CORE_COPYRIGHT_WWW?=	https://www.deciso.com/
 CORE_COPYRIGHT_YEARS?=	2014-2019
 
-CORE_DEPENDS_amd64?=	beep bsdinstaller secadm
+CORE_DEPENDS_amd64?=	beep \
+			bsdinstaller \
+			secadm \
+			suricata${CORE_SURICATA}
+
 CORE_DEPENDS_i386?=	${CORE_DEPENDS_amd64}
 
 CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
@@ -133,6 +137,7 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			php${CORE_PHP}-sqlite3 \
 			php${CORE_PHP}-xml \
 			php${CORE_PHP}-zlib \
+			pkg \
 			py${CORE_PYTHON}-Jinja2 \
 			py${CORE_PYTHON}-dnspython \
 			py${CORE_PYTHON}-netaddr \
@@ -148,8 +153,8 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			sshlockout_pf \
 			strongswan \
 			sudo \
-			suricata${CORE_SURICATA} \
 			syslog-ng \
+			syslogd \
 			unbound \
 			ting-update \
 			ting-lang \

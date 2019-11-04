@@ -64,7 +64,7 @@ while getopts AaefHNnsvwT OPT; do
 		OUTPUT="${OUTPUT} \${product_tingabi}"
 		;;
 	*)
-		echo "Usage: man opnsense-version" >&2
+		echo "Usage: man ${0##*/}" >&2
 		exit 1
 		;;
 	esac

@@ -293,11 +293,13 @@ function dpinger_run()
 function dpinger_status($verbose = false)
 {
     $status = array();
+    $gateways_arr = array();
 
     foreach (config_read_array('gateways', 'gateway_item') as $gwitem) {
         if (isset($gwitem['disabled'])) {
             continue;
         }
+        $gateways_arr[$gwitem['name']] = $gwitem;
 
         $gwstatus = isset($gwitem['monitor_disable']) ? 'none' : 'down';
 
@@ -380,6 +382,7 @@ function dpinger_status($verbose = false)
                 'stddev' => sprintf('%0.1f ms', empty($r['latency_stddev']) ? 0.0 : round($r['latency_stddev'], 1)),
                 'loss' => sprintf('%0.1f %%', empty($r['loss']) ? 0.0 : round($r['loss'], 1)),
                 'status' => $r['status'],
+                'details' => array_merge($r, $settings),
                 'name' => $gwname,
             );
         }
