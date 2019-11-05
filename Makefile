@@ -154,7 +154,6 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			strongswan \
 			sudo \
 			syslog-ng \
-			syslogd \
 			unbound \
 			ting-update \
 			ting-lang \
