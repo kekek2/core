@@ -269,7 +269,7 @@ $( document ).ready(function() {
                     <tbody>
                       <tr>
                         <td>
-                          <select size="10" name="notmembers[]" id="notmembers" onchange="clear_selected('members')" multiple="multiple" class="selectpicker">
+                          <select size="10" name="notmembers[]" id="notmembers" onchange="clear_selected('members')" multiple="multiple"">
 <?php
                           foreach ($config['system']['user'] as $user) :
                               if (is_array($pconfig['members']) && in_array($user['uid'], $pconfig['members'])) {
@@ -294,7 +294,7 @@ $( document ).ready(function() {
                           </a>
                         </td>
                         <td>
-                          <select size="10" name="members[]" id="members" onchange="clear_selected('notmembers')" multiple="multiple" class="selectpicker">
+                          <select size="10" name="members[]" id="members" onchange="clear_selected('notmembers')" multiple="multiple">
 <?php
                           foreach ($config['system']['user'] as $user) :
                               if (!(is_array($pconfig['members']) && in_array($user['uid'], $pconfig['members']))) {
