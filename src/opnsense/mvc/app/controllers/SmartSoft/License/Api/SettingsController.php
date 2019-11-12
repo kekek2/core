@@ -106,7 +106,6 @@ class SettingsController extends ApiControllerBase
             $rows[] = [
                 "module" => $module,
                 "expires" => ($cert["cert"]["validTo_time_t"] > time()) ? strftime("%Y-%m-%d", $cert["cert"]["validTo_time_t"]) : gettext("Expired"),
-                "organisation" => $cert["cert"]["subject"]["O"],
                 "license" => $license,
                 "note" => $note
             ];
