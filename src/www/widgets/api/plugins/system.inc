@@ -184,10 +184,6 @@ function system_api_hardware()
         isset($data['Version']) ? $data['Version'] : ''
     );
 
-    if(isset($data['Serial Number'])) {
-        $result[] = 'SN ' . $data['Serial Number'];
-    }
-
     return $result;
 }
 
@@ -200,22 +196,23 @@ function system_api_bios()
     foreach ($bios as $item) {
         if(strpos($item, 'Vendor:')         !== false
         || strpos($item, 'Version:')        !== false
-        || strpos($item, 'Release Date:')   !== false
         || strpos($item, 'BIOS Revision:')  !== false) {
             $parts = explode(':', $item);
             $data[trim($parts[0])] = trim($parts[1]);
         }
     }
 
-    $result[] = sprintf('%s %s %s',
-        isset($data['Vendor']) ? $data['Vendor'] : '',
-        isset($data['Version']) ? $data['Version'] : '',
-        isset($data['BIOS Revision']) ? $data['BIOS Revision'] : ''
-    );
-
-    if(isset($data['Release Date'])) {
-        $result[] = 'Release date: ' . $data['Release Date'];
+    if (isset($data['Version']) ) {
+        $split = explode('.', $data['Version']);
+        if (count($split) > 1) {
+            $data['Version'] = $split[0] . '.' . $split[1];
+        }
     }
+
+    $result[] = sprintf('%s %s',
+        isset($data['Vendor']) ? $data['Vendor'] : '',
+        isset($data['Version']) ? str_replace('v', '', $data['Version']) : ''
+    );
 
     return $result;
 }
