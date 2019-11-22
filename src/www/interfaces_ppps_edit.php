@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // special cases
     $pconfig['password'] = isset($a_ppps[$id]['password']) ? base64_decode($a_ppps[$id]['password']) : null;
     $pconfig['initstr'] = isset($a_ppps[$id]['initstr']) ? base64_decode($a_ppps[$id]['initstr']) : null;
-    $pconfig['null_service'] = (isset($a_ppps[$id]['provider']) && empty($a_ppps[$id]['provider']));
+    $pconfig['null_service'] = (!isset($a_ppps[$id]['provider']) || empty($a_ppps[$id]['provider']));
 
     if ($pconfig['ptpid'] == null) {
         $pconfig['ptpid'] = interfaces_ptpid_next();
@@ -242,8 +242,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             case "pppoe":
                 if (!empty($pconfig['provider'])) {
                     $ppp['provider'] = $pconfig['provider'];
-                } else {
-                    $ppp['provider'] = !empty($pconfig['null_service']);
                 }
                 if (!empty($pconfig['hostuniq'])) {
                     $ppp['hostuniq'] = $pconfig['hostuniq'];
@@ -328,7 +326,10 @@ include("head.inc");
             case "pppoe":
               $('#pppoe').show();
               $('#hostuniqopt').show();
-              // fall through to show interface items
+              $('#ports > [data-type="interface"]').show();
+              $('#ports > [data-type="interface"]').prop('disabled', false);
+              $("#interface_details").hide();
+              break;
             default:
               $('#ports > [data-type="interface"]').show();
               $('#ports > [data-type="interface"]').prop('disabled', false);
