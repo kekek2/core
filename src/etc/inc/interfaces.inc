@@ -2973,9 +2973,8 @@ function interface_dhcpv6_configure($interface = 'wan', $wancfg)
         )
     );
 
-    if (isset($wancfg['dhcp6sendsolicit'])) {
-        mwexec("/var/etc/rtsold_{$realifv6}_script.sh");
-    }
+    /* unconditional trigger for hybrid approach, reloads without advertisements */
+    mwexec("/var/etc/rtsold_{$realifv6}_script.sh");
 }
 
 function interface_dhcpv6_prepare($interface = 'wan', $wancfg)

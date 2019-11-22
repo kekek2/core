@@ -54,7 +54,7 @@ CORE_PYTHON?=	37
 CORE_RADVD?=	1
 CORE_SQUID?=	# empty
 CORE_SURICATA?=	# empty
-CORE_SYSLOGNG?=	3.23
+CORE_SYSLOGNG?=	3.24
 
 _FLAVOUR!=	if [ -f ${OPENSSL} ]; then ${OPENSSL} version; fi
 FLAVOUR?=	${_FLAVOUR:[1]}
@@ -120,6 +120,7 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			php${CORE_PHP}-dom \
 			php${CORE_PHP}-filter \
 			php${CORE_PHP}-gettext \
+			php${CORE_PHP}-google-api-php-client \
 			php${CORE_PHP}-hash \
 			php${CORE_PHP}-intl \
 			php${CORE_PHP}-json \
