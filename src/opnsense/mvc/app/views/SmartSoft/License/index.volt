@@ -63,7 +63,6 @@
             <th data-column-id="module" data-type="string" data-width="10%">{{ lang._('Module') }}</th>
             <th data-column-id="expires" data-type="string" data-width="10%">{{ lang._('Expires at') }}</th>
             <th data-column-id="license" data-type="string">{{ lang._('License') }}</th>
-            <th data-column-id="note" data-type="string">{{ lang._('Note') }}</th>
         </tr>
         </thead>
         <tbody>

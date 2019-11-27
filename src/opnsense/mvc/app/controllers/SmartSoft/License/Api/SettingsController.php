@@ -94,20 +94,18 @@ class SettingsController extends ApiControllerBase
                 $license = "";
             }
 
-            $note = "";
             if ($cert_mac != Tools::getCurrentMacAddress()) {
-                $note = gettext("License is not valid for this device");
+                $license = gettext("License is not valid for this device");
             }
 
             if ($cert["modulus"] != $key_modulus) {
-                $note = gettext("The certificate does not match the private key");
+                $license = gettext("The certificate does not match the private key");
             }
 
             $rows[] = [
                 "module" => $module,
                 "expires" => ($cert["cert"]["validTo_time_t"] > time()) ? strftime("%Y-%m-%d", $cert["cert"]["validTo_time_t"]) : gettext("Expired"),
                 "license" => $license,
-                "note" => $note
             ];
         }
 
