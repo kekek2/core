@@ -5,7 +5,8 @@
             {
                 search: "/api/license/settings/search",
                 options: {
-                    rowCount: -1
+                    rowCount: -1,
+                    navigation: 0
                 }
             }
         );
