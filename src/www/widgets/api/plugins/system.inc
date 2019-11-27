@@ -202,16 +202,9 @@ function system_api_bios()
         }
     }
 
-    if (isset($data['Version']) ) {
-        $split = explode('.', $data['Version']);
-        if (count($split) > 1) {
-            $data['Version'] = $split[0] . '.' . $split[1];
-        }
-    }
-
     $result[] = sprintf('%s %s',
         isset($data['Vendor']) ? $data['Vendor'] : '',
-        isset($data['Version']) ? str_replace('v', '', $data['Version']) : ''
+        isset($data['Version']) ? $data['Version'] : ''
     );
 
     return $result;
