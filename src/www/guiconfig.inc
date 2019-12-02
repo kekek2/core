@@ -612,7 +612,7 @@ function service_control_links($service, $xs = false)
 function get_menu_banner()
 {
     if (file_exists("/usr/local/opnsense/version/banner")) {
-        return file_get_contents("/usr/local/opnsense/version/banner");
+        return '<span class="navbar-text">' . file_get_contents("/usr/local/opnsense/version/banner") . '</span>';
     }
     return '';
 }
