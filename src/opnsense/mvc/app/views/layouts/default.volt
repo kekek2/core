@@ -167,6 +167,7 @@
 
                 get_notices();
                 get_banner();
+                get_expire();
 
                 // fix menu scroll position on page load
                 $(".list-group-item.active").each(function(){
@@ -223,6 +224,12 @@
             function get_banner() {
                 ajaxCall(url = "/api/core/notice/banner", sendData = {}, callback = function (data) {
                     $("#menu_banner").html($('<span>').addClass('navbar-text').text(data.banner));
+                });
+            }
+
+            function get_expire() {
+                ajaxCall(url = "/api/core/notice/expire", sendData = {}, callback = function (data) {
+                    $("#menu_expire").html($('<a>').attr("href", "/ui/license/").text(data.expire));
                 });
             }
         </script>
@@ -305,6 +312,8 @@
         <button class="toggle-sidebar" data-toggle="tooltip right" title="{{ lang._('Toggle sidebar') }}" style="display:none;"><i class="fa fa-chevron-left"></i></button>
         <div class="collapse navbar-collapse">
           <ul class="nav navbar-nav navbar-right">
+            <li id="menu_expire">
+            </li>
             <li id="menu_banner">
             </li>
             <li id="menu_messages">
@@ -317,7 +326,7 @@
                   </div>
                 </form>
               </li>
-            <li><a href="#">{{session_username}}@{{system_hostname}}.{{system_domain}}</a></li>
+              <li><span class="navbar-text">{{session_username}}@{{system_hostname}}.{{system_domain}}</span></li>
             <li><a href="/index.php?logout"><span class="fa fa-sign-out fa-fw"></span>{{ lang._('Logout') }}</a></li>
           </ul>
         </div>

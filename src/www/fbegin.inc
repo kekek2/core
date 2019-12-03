@@ -59,6 +59,7 @@ $aclObj = new \OPNsense\Core\ACL();
       <button class="toggle-sidebar" data-toggle="tooltip right" title="<?= html_safe(gettext('Toggle sidebar')) ?>" style="display:none"><i class="fa fa-chevron-left"></i></button>
       <div class="collapse navbar-collapse">
         <ul class="nav navbar-nav navbar-right">
+          <li id="menu_expire"><a href="/ui/license/"><?= \OPNsense\Core\Api\NoticeController::expireAction()['expire'] ?></a></li>
           <li id="menu_banner"><?= get_menu_banner() ?></li>
           <li id="menu_messages"><?= get_menu_messages() ?></li>
           <li>
