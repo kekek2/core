@@ -223,7 +223,7 @@
 
             function get_banner() {
                 ajaxCall(url = "/api/core/notice/banner", sendData = {}, callback = function (data) {
-                    $("#menu_banner").html($('<span>').addClass('navbar-text').text(data.banner));
+                    $("#menu_banner").html($('<div>').html(data.banner).text());
                 });
             }
 
