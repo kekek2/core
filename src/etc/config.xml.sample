@@ -307,6 +307,12 @@
   </dhcpd>
   <unbound>
     <enable>1</enable>
+    <custom_options>do-not-query-localhost: no
+
+      forward-zone:
+      name: "."
+      forward-addr: 127.0.0.1@5353
+    </custom_options>
   </unbound>
   <snmpd>
     <syslocation/>
