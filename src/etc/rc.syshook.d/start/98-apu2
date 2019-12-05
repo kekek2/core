@@ -1,0 +1,45 @@
+#!/usr/local/bin/php
+
+<?php
+
+require_once('script/load_phalcon.php');
+
+use OPNsense\Core\Config;
+
+if (file_exists("/.probe.for.install.media") && file_exists("/conf/config.xml"))
+{
+    exit(0);
+}
+
+if (trim(shell_exec('dmidecode -s baseboard-manufacturer')) != 'PC Engines' || trim(shell_exec('dmidecode -s baseboard-product-name')) != 'apu2')
+{
+    exit(0);
+}
+
+file_put_contents("/usr/local/etc/rc.loader.d/40-net", <<<EOD
+# agree with Intel license terms
+legal.intel_ipw.license_ack=1
+legal.intel_iwi.license_ack=1
+
+# this is the magic. If you don't set this, queues won't be utilized properly
+# allow multiple processes for receive/transmit processing
+hw.igb.rx_process_limit="-1"
+hw.igb.tx_process_limit="-1"
+EOD
+);
+
+$config = Config::getInstance()->object();
+
+if (isset($config->system->disablechecksumoffloading)) {
+    unset($config->system->disablechecksumoffloading);
+}
+
+if (isset($config->system->disablesegmentationoffloading)) {
+    unset($config->system->disablesegmentationoffloading);
+}
+
+if (isset($config->system->disablelargereceiveoffloading)) {
+    unset($config->system->disablelargereceiveoffloading);
+}
+
+Config::getInstance()->save();
