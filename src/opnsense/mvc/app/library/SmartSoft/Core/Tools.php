@@ -76,6 +76,7 @@ class Tools
             }
         }
 
+        $installed_crt_info = [];
         $cert_array = glob(self::installed_crt_modules_path);
         array_unshift($cert_array, self::installed_crt_path);
         foreach ($cert_array as $crt_path) {
