@@ -530,17 +530,17 @@ function system_staticroutes_configure($interface = '')
                 $inet = (is_subnetv6($ip) ? "-inet6" : "-inet");
                 $cmd = " {$inet} {$blackhole} " . escapeshellarg($ip) . " ";
                 if (is_ipaddr($gatewayip)) {
-                    mwexec("/sbin/route delete".$cmd . escapeshellarg($gatewayip), true);
+                    mwexec("/sbin/route delete" . $cmd . escapeshellarg($gatewayip), true);
                     if ($fargw) {
                         mwexecf('/sbin/route delete %s %s -interface %s ', array($inet, $gatewayip, $interfacegw), true);
                         mwexecf('/sbin/route add %s %s -interface %s', array($inet, $gatewayip, $interfacegw), true);
                     } elseif (is_linklocal($gatewayip) && strpos($gatewayip, '%') === false) {
                         $gatewayip .= "%{$interfacegw}";
                     }
-                    mwexec("/sbin/route add".$cmd . escapeshellarg($gatewayip), true);
+                    mwexec("/sbin/route add" . $cmd . escapeshellarg($gatewayip), true);
                 } elseif (!empty($interfacegw)) {
-                    mwexec("/sbin/route delete".$cmd . "-interface " . escapeshellarg($interfacegw), true);
-                    mwexec("/sbin/route add".$cmd . "-interface " . escapeshellarg($interfacegw), true);
+                    mwexec("/sbin/route delete" . $cmd . "-interface " . escapeshellarg($interfacegw), true);
+                    mwexec("/sbin/route add" . $cmd . "-interface " . escapeshellarg($interfacegw), true);
                 }
             }
         }
@@ -606,7 +606,7 @@ function get_memory()
     $physmem = get_single_sysctl("hw.physmem");
     $realmem = get_single_sysctl("hw.realmem");
     /* convert from bytes to megabytes */
-    return array(($physmem/1048576),($realmem/1048576));
+    return array(($physmem / 1048576),($realmem / 1048576));
 }
 
 function system_firmware_configure($verbose = false)
@@ -687,8 +687,10 @@ function system_timezone_configure($verbose = false)
     $timezones = get_zoneinfo();
 
     /* reset to default if empty or nonexistent */
-    if (empty($timezone) || !in_array($timezone, $timezones) ||
-        !file_exists(sprintf('/usr/share/zoneinfo/%s', $timezone))) {
+    if (
+        empty($timezone) || !in_array($timezone, $timezones) ||
+        !file_exists(sprintf('/usr/share/zoneinfo/%s', $timezone))
+    ) {
         $timezone = 'Etc/UTC';
     }
 
@@ -952,7 +954,7 @@ function system_login_configure($verbose = false)
 
     if ($serial_enabled) {
         @file_put_contents('/boot.config', "-S{$serialspeed} -D\n");
-        $new_boot_config['comconsole_speed'] = '"'.$serialspeed.'"';
+        $new_boot_config['comconsole_speed'] = '"' . $serialspeed . '"';
         $new_boot_config['boot_serial'] = '"YES"';
     } elseif (!$output_enabled) {
         @file_put_contents('/boot.config', "-q -m\n");

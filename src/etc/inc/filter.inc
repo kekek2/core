@@ -203,7 +203,7 @@ function filter_configure_sync($verbose = false, $flush_states = false, $load_al
                             }
                             /* disable rule, suffix label to mark end of schedule */
                             $rule['disabled'] = true;
-                            $rule['descr'] = "[FIN]".$rule['descr'];
+                            $rule['descr'] = "[FIN]" . $rule['descr'];
                         }
                         break;
                     }
@@ -214,8 +214,10 @@ function filter_configure_sync($verbose = false, $flush_states = false, $load_al
     }
 
     // manual outbound nat rules
-    if (!empty($config['nat']['outbound']['mode']) &&
-          in_array($config['nat']['outbound']['mode'], array("advanced", "hybrid"))) {
+    if (
+        !empty($config['nat']['outbound']['mode']) &&
+          in_array($config['nat']['outbound']['mode'], array("advanced", "hybrid"))
+    ) {
         if (!empty($config['nat']['outbound']['rule'])) {
             foreach ($config['nat']['outbound']['rule'] as $rule) {
                 $fw->registerSNatRule(100, $rule);
@@ -223,8 +225,10 @@ function filter_configure_sync($verbose = false, $flush_states = false, $load_al
         }
     }
 
-    if (empty($config['nat']['outbound']['mode']) ||
-          in_array($config['nat']['outbound']['mode'], array("automatic", "hybrid"))) {
+    if (
+        empty($config['nat']['outbound']['mode']) ||
+          in_array($config['nat']['outbound']['mode'], array("automatic", "hybrid"))
+    ) {
         // generate standard outbound rules when mode is automatic ot hybrid
         $intfv4 = array();
         foreach ($fw->getInterfaceMapping() as $intf => $intfcf) {
@@ -447,7 +451,7 @@ function filter_configure_sync($verbose = false, $flush_states = false, $load_al
             $line_number = $line_error[1];
             $line_split = file('/tmp/rules.debug');
             if (is_array($line_split)) {
-                $config_line = sprintf(' - ' . gettext('The line in question reads [%s]: %s'), $line_number, $line_split[$line_number-1]);
+                $config_line = sprintf(' - ' . gettext('The line in question reads [%s]: %s'), $line_number, $line_split[$line_number - 1]);
             }
         }
 
@@ -539,12 +543,12 @@ function filter_generate_scrubing(&$FilterIflist)
                         $interfaces[] = $FilterIflist[$interface]['if'];
                     }
                 }
-                $scrub_rule_out .= count($interfaces) > 1 ? "{ ". implode(' ', $interfaces) . " } " : $interfaces[0];
+                $scrub_rule_out .= count($interfaces) > 1 ? "{ " . implode(' ', $interfaces) . " } " : $interfaces[0];
                 $scrub_rule_out .= $scrub_rule['proto'] != 'any' ? " proto " . $scrub_rule['proto'] : "";
                 $scrub_rule_out .= " from ";
                 if (is_alias($scrub_rule['src'])) {
                     $scrub_rule_out .= !empty($scrub_rule['srcnot']) ? "!" : "";
-                    $scrub_rule_out .= '$'.$scrub_rule['src'];
+                    $scrub_rule_out .= '$' . $scrub_rule['src'];
                 } elseif (is_ipaddr($scrub_rule['src'])) {
                     $scrub_rule_out .= !empty($scrub_rule['srcnot']) ? "!" : "";
                     $scrub_rule_out .= $scrub_rule['src'] . "/" . $scrub_rule['srcmask'];
@@ -555,7 +559,7 @@ function filter_generate_scrubing(&$FilterIflist)
                 $scrub_rule_out .= " to ";
                 if (is_alias($scrub_rule['dst'])) {
                     $scrub_rule_out .= !empty($scrub_rule['dstnot']) ? "!" : "";
-                    $scrub_rule_out .= '$'.$scrub_rule['dst'];
+                    $scrub_rule_out .= '$' . $scrub_rule['dst'];
                 } elseif (is_ipaddr($scrub_rule['dst'])) {
                     $scrub_rule_out .= !empty($scrub_rule['dstnot']) ? "!" : "";
                     $scrub_rule_out .= $scrub_rule['dst'] . "/" . $scrub_rule['dstmask'];
@@ -586,8 +590,10 @@ function filter_generate_scrubing(&$FilterIflist)
             }
 
             $mssclamp = '';
-            if (!empty($scrubcfg['mss']) && is_numeric($scrubcfg['mss']) &&
-                !in_array($scrubcfg['if'], array('pppoe', 'pptp', 'l2tp'))) {
+            if (
+                !empty($scrubcfg['mss']) && is_numeric($scrubcfg['mss']) &&
+                !in_array($scrubcfg['if'], array('pppoe', 'pptp', 'l2tp'))
+            ) {
                 $mssclamp = 'max-mss ' . (intval($scrubcfg['mss'] - 40));
             }
 
@@ -661,7 +667,6 @@ function filter_rules_legacy(&$FilterIflist)
     }
     return $ipfrules;
 }
-
 
 /****f* filter/filter_get_time_based_rule_status
  * NAME
@@ -821,7 +826,7 @@ function default_state_size()
     $physmem = $memory[0];
 
     /* Be cautious and only allocate 10% of system memory to the state table */
-    $max_states = (int) ($physmem/10)*1000;
+    $max_states = (int) ($physmem / 10) * 1000;
 
     return $max_states;
 }
@@ -846,4 +851,3 @@ function get_protocols()
     }
     return $protocols;
 }
-
