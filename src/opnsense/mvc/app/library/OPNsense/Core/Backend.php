@@ -74,7 +74,7 @@ class Backend
      */
     public function configdRun($event, $detach = false, $timeout = 120, $connect_timeout = 10)
     {
-        $endOfStream = chr(0).chr(0).chr(0);
+        $endOfStream = chr(0) . chr(0) . chr(0);
         $errorOfStream = 'Execute error';
         $poll_timeout = 2; // poll timeout interval
 
@@ -157,16 +157,18 @@ class Backend
 
             // handle timeouts
             if ((time() - $starttime) > $timeout) {
-                $this->getLogger()->error("Timeout (".$timeout.") executing : ".$event);
+                $this->getLogger()->error("Timeout (" . $timeout . ") executing : " . $event);
                 return null;
             } elseif (feof($stream)) {
-                $this->getLogger()->error("Configd disconnected while executing : ".$event);
+                $this->getLogger()->error("Configd disconnected while executing : " . $event);
                 return null;
             }
         }
 
-        if (strlen($resp) >= strlen($errorOfStream) &&
-            substr($resp, 0, strlen($errorOfStream)) == $errorOfStream) {
+        if (
+            strlen($resp) >= strlen($errorOfStream) &&
+            substr($resp, 0, strlen($errorOfStream)) == $errorOfStream
+        ) {
             return null;
         }
 

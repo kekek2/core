@@ -89,6 +89,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (isset($pconfig['id']) && isset($a_vip[$pconfig['id']])) {
         $id = $pconfig['id'];
     }
+    $selected_interface = config_read_array('interfaces', $pconfig['interface']);
+    $selected_interface = !empty($selected_interface) ? $selected_interface['if'] : $pconfig['interface'] ;
 
     // perform form validations
     $reqdfields = array("mode");
@@ -132,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if ($pconfig['mode'] == 'carp') {
             /* verify against reusage of vhids */
             foreach($config['virtualip']['vip'] as $vipId => $vip) {
-               if (isset($vip['vhid']) &&  $vip['vhid'] == $pconfig['vhid'] && $vip['type'] == 'carp' && $vip['interface'] == $pconfig['interface'] && $vipId != $id) {
+               if (isset($vip['vhid']) &&  $vip['vhid'] == $pconfig['vhid'] && $vip['mode'] == 'carp' && $vip['interface'] == $pconfig['interface'] && $vipId != $id) {
                    $input_errors[] = sprintf(gettext("VHID %s is already in use on interface %s. Pick a unique number on this interface."),$pconfig['vhid'], convert_friendly_interface_to_friendly_descr($pconfig['interface']));
                }
             }
@@ -142,10 +144,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             if (empty($pconfig['vhid'])) {
                $input_errors[] = gettext('A VHID must be selected for this CARP VIP.');
             }
-            if ($pconfig['interface'] == 'lo0') {
+            if (substr($selected_interface,0, 2) === 'lo') {
                 $input_errors[] = gettext('For this type of VIP loopback is not allowed.');
             }
-        } else if ($pconfig['mode'] != 'ipalias' && $pconfig['interface'] == 'lo0') {
+        } else if ($pconfig['mode'] != 'ipalias' && substr($selected_interface,0, 2) === 'lo') {
             $input_errors[] = gettext('For this type of VIP loopback is not allowed.');
         } elseif ($pconfig['mode'] == 'ipalias' && !empty($pconfig['vhid'])) {
             $carpvip_found = false;

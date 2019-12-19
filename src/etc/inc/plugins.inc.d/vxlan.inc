@@ -26,13 +26,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
- function vxlan_configure()
- {
-     return array(
-         'vxlan_prepare' => array('vxlan_configure_interface'),
-         'newwanip' => array('vxlan_configure_interface'),
-     );
- }
+function vxlan_configure()
+{
+    return array(
+        'vxlan_prepare' => array('vxlan_configure_interface'),
+        'newwanip' => array('vxlan_configure_interface'),
+    );
+}
 
 function vxlan_devices()
 {
@@ -43,13 +43,13 @@ function vxlan_devices()
     return $devices;
 }
 
-function vxlan_configure_interface($verbose=false)
+function vxlan_configure_interface($verbose = false)
 {
     $cnf = OPNsense\Core\Config::getInstance()->object();
     $interfaces_details = legacy_interfaces_details();
     $configured_devices = array();
     $changed_devices = array();
-    $vxlans = iterator_to_array((new \OPNsense\Interfaces\VxLan())->vxlans->vxlan->iterateItems());
+    $vxlans = iterator_to_array((new \OPNsense\Interfaces\VxLan())->vxlan->iterateItems());
     if ($verbose && !empty($vxlans)) {
         echo 'Configuring VXLAN interfaces...';
         flush();
@@ -119,7 +119,7 @@ function vxlan_configure_interface($verbose=false)
     }
     // destroy non existing interfaces
     foreach ($interfaces_details as $intf => $data) {
-        if (strpos($intf, "vxlan.") === 0) {
+        if (strpos($intf, "vxlan") === 0) {
             if (!in_array($intf, $configured_devices)) {
                 mwexecf('/sbin/ifconfig %s destroy', array($intf));
             }
