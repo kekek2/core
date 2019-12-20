@@ -1,0 +1,7 @@
+#!/bin/sh
+
+if [ "`dmidecode -s baseboard-manufacturer`" != "PC Engines" -o "`dmidecode -s baseboard-product-name`" != "apu2" ]; then
+  exit 0
+fi
+echo "Upgrading BIOS..."
+flashrom -w /usr/local/share/apu2/apu2_v4.11.0.1.rom -p internal:boardmismatch=force

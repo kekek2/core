@@ -104,6 +104,7 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			expiretable \
 			filterlog \
 			ifinfo \
+			flashrom \
 			flock \
 			flowd \
 			hostapd \
