@@ -62,7 +62,8 @@ class SettingsController extends ApiControllerBase
             $company = " ";
         }
 
-        $pkey = openssl_get_privatekey("file://{tools::installed_key_path}");
+        $pkey_path = tools::installed_key_path;
+        $pkey = openssl_get_privatekey("file://{$pkey_path}");
 
         $csrData = [
             'C' => 'RU',
