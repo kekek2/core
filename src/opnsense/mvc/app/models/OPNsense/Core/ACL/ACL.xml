@@ -312,8 +312,7 @@
     <page-diagnostics-logs-firewall-plain>
         <name>Diagnostics: Logs: Firewall: Plain View</name>
         <patterns>
-            <pattern>ui/diagnostics/log/core/filter/*</pattern>
-            <pattern>api/diagnostics/log/core/filter/*</pattern>
+            <pattern>ui/syslog/logview/showlog/filter</pattern>
         </patterns>
     </page-diagnostics-logs-firewall-plain>
     <page-diagnostics-logs-firewall-dynamic>
@@ -538,22 +537,19 @@
     <page-status-systemlogs-portalauth>
         <name>Status: System logs: Captive portal</name>
         <patterns>
-            <pattern>ui/diagnostics/log/core/portalauth/*</pattern>
-            <pattern>api/diagnostics/log/core/portalauth/*</pattern>
+            <pattern>ui/syslog/logview/showlog/portalauth</pattern>
         </patterns>
     </page-status-systemlogs-portalauth>
     <page-status-systemlogs-ppp>
         <name>Status: System logs: PPP</name>
         <patterns>
-            <pattern>ui/diagnostics/log/core/ppp/*</pattern>
-            <pattern>api/diagnostics/log/core/ppp/*</pattern>
+            <pattern>ui/syslog/logview/showlog/ppps</pattern>
         </patterns>
     </page-status-systemlogs-ppp>
     <page-status-systemlogs-openvpn>
         <name>Status: System logs: OpenVPN</name>
         <patterns>
-            <pattern>ui/diagnostics/log/core/openvpn/*</pattern>
-            <pattern>api/diagnostics/log/core/openvpn/*</pattern>
+            <pattern>ui/syslog/logview/showlog/openvpn</pattern>
         </patterns>
     </page-status-systemlogs-openvpn>
     <page-status-systemlogs-routing>
@@ -565,8 +561,7 @@
     <page-status-systemlogs-wireless>
         <name>Status: System logs: Wireless</name>
         <patterns>
-            <pattern>ui/diagnostics/log/core/wireless/*</pattern>
-            <pattern>api/diagnostics/log/core/wireless/*</pattern>
+            <pattern>ui/syslog/logview/showlog/wireless</pattern>
         </patterns>
     </page-status-systemlogs-wireless>
     <page-status-trafficgraph>
