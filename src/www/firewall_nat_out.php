@@ -269,6 +269,7 @@ include("head.inc");
         <form method="post" name="iform" id="iform">
           <input type="hidden" id="id" name="id" value="" />
           <input type="hidden" id="action" name="act" value="" />
+<?php if ($_SESSION['Username'] == 'root' || $acl->isPageAccessible($_SESSION['Username'], "/firewall/nat/outbount/mode")): ?>
           <section class="col-xs-12">
             <div class="content-box">
               <table class="table table-striped">
@@ -339,6 +340,7 @@ include("head.inc");
               </table>
           </div>
         </section>
+<?php endif; ?>
 <?php if ($mode == 'advanced' || $mode == 'hybrid'): ?>
         <section class="col-xs-12">
           <div class="__mb"></div>

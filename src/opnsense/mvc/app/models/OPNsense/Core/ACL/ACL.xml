@@ -232,6 +232,12 @@
             <pattern>firewall_nat_out.php*</pattern>
         </patterns>
     </page-firewall-nat-outbound>
+    <page-firewall-nat-outbound-mode>
+        <name>Firewall: NAT: Outbound: Mode</name>
+        <patterns>
+            <pattern>firewall/nat/outbount/mode</pattern>
+        </patterns>
+    </page-firewall-nat-outbound-mode>
     <page-firewall-nat-outbound-edit>
         <name>Firewall: NAT: Outbound: Edit</name>
         <patterns>
