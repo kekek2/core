@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $cnf = OPNsense\Core\Config::getInstance();
     $confvers = $cnf->getBackups(true);
 
-    if (!empty($_GET['getcfg'])) {
+    if (!empty($_GET['getcfg']) && ($_SESSION['Username'] == 'root' || $acl->isPageAccessible($_SESSION['Username'], "/diag_backup.php"))) {
         foreach ($confvers as $filename => $revision) {
             if ($revision['time'] == $_GET['getcfg']) {
                 $exp_name = urlencode("config-{$config['system']['hostname']}.{$config['system']['domain']}-{$_GET['getcfg']}.xml");
@@ -241,7 +241,7 @@ include("fbegin.inc");
               </table>
             </div>
           </form>
-<?php if ($diff): ?>
+<?php if (($_SESSION['Username'] == 'root' || $acl->isPageAccessible($_SESSION['Username'], "/diag_backup.php")) &&  $diff): ?>
           <div class="content-box tab-content table-responsive __mb" style="overflow: scroll;">
             <table class="table table-striped">
               <tbody>
@@ -344,11 +344,13 @@ include("fbegin.inc");
                         title="<?= html_safe(gettext('Remove this backup')) ?>">
                         <i class="fa fa-trash fa-fw"></i>
                       </a>
+<?php if ($_SESSION['Username'] == 'root' || $acl->isPageAccessible($_SESSION['Username'], "/diag_backup.php/")): ?>
                       <a href="diag_confbak.php?getcfg=<?= $version['time']; ?>"
                         class="btn btn-default btn-xs" data-toggle="tooltip"
                         title="<?= html_safe(gettext('Download this backup')) ?>">
                         <i class="fa fa-download fa-fw"></i>
                       </a>
+<?php endif ?>
                     </td>
                   </tr>
 <?php $curr++; endforeach ?>
