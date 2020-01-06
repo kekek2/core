@@ -312,7 +312,7 @@
     <page-diagnostics-logs-firewall-plain>
         <name>Diagnostics: Logs: Firewall: Plain View</name>
         <patterns>
-            <pattern>diag_logs_filter_plain.php*</pattern>
+            <pattern>ui/syslog/logview/showlog/filter</pattern>
         </patterns>
     </page-diagnostics-logs-firewall-plain>
     <page-diagnostics-logs-firewall-dynamic>
@@ -537,19 +537,19 @@
     <page-status-systemlogs-portalauth>
         <name>Status: System logs: Captive portal</name>
         <patterns>
-            <pattern>diag_logs_auth.php*</pattern>
+            <pattern>ui/syslog/logview/showlog/portalauth</pattern>
         </patterns>
     </page-status-systemlogs-portalauth>
     <page-status-systemlogs-ppp>
         <name>Status: System logs: PPP</name>
         <patterns>
-            <pattern>diag_logs_ppp.php*</pattern>
+            <pattern>ui/syslog/logview/showlog/ppps</pattern>
         </patterns>
     </page-status-systemlogs-ppp>
     <page-status-systemlogs-openvpn>
         <name>Status: System logs: OpenVPN</name>
         <patterns>
-            <pattern>diag_logs_openvpn.php*</pattern>
+            <pattern>ui/syslog/logview/showlog/openvpn</pattern>
         </patterns>
     </page-status-systemlogs-openvpn>
     <page-status-systemlogs-routing>
@@ -561,7 +561,7 @@
     <page-status-systemlogs-wireless>
         <name>Status: System logs: Wireless</name>
         <patterns>
-            <pattern>diag_logs_wireless.php*</pattern>
+            <pattern>ui/syslog/logview/showlog/wireless</pattern>
         </patterns>
     </page-status-systemlogs-wireless>
     <page-status-trafficgraph>
