@@ -95,7 +95,7 @@
     <page-diagnostics-logs-dhcp>
         <name>Diagnostics: Logs: DHCP</name>
         <patterns>
-            <pattern>diag_logs_dhcp.php*</pattern>
+            <pattern>ui/syslog/logview/showlog/dhcpd</pattern>
         </patterns>
     </page-diagnostics-logs-dhcp>
     <page-diagnostics-logs-gateways>
@@ -555,7 +555,7 @@
     <page-status-systemlogs-routing>
         <name>Status: System logs: Routing</name>
         <patterns>
-            <pattern>diag_logs_routing.php*</pattern>
+            <pattern>ui/syslog/logview/showlog/routing</pattern>
         </patterns>
     </page-status-systemlogs-routing>
     <page-status-systemlogs-wireless>

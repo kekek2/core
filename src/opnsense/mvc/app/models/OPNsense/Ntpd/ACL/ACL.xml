@@ -26,7 +26,7 @@
     <page-status-systemlogs-ntpd>
         <name>Status: System logs: NTP</name>
         <patterns>
-            <pattern>diag_logs_ntpd.php*</pattern>
+            <pattern>ui/syslog/logview/showlog/ntpd</pattern>
         </patterns>
     </page-status-systemlogs-ntpd>
 </acl>
