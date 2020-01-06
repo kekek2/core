@@ -86,6 +86,12 @@
             <pattern>diag_limiter_info.php*</pattern>
         </patterns>
     </page-diagnostics-limiter-info>
+    <page-diagnostics-logs-configd>
+        <name>Diagnostics: Logs: Configd</name>
+        <patterns>
+            <pattern>ui/syslog/logview/showlog/configd</pattern>
+        </patterns>
+    </page-diagnostics-logs-configd>
     <page-diagnostics-logs-dhcp>
         <name>Diagnostics: Logs: DHCP</name>
         <patterns>
@@ -96,25 +102,25 @@
     <page-diagnostics-logs-gateways>
         <name>Diagnostics: Logs: Gateways</name>
         <patterns>
-            <pattern>ui/diagnostics/log/core/gateways/*</pattern>
-            <pattern>api/diagnostics/log/core/gateways/*</pattern>
+            <pattern>ui/syslog/logview/showlog/routing</pattern>
         </patterns>
     </page-diagnostics-logs-gateways>
+    <page-diagnostics-logs-httpd>
+        <name>Diagnostics: Logs: Httpd</name>
+        <patterns>
+            <pattern>ui/syslog/logview/showlog/lighttpd</pattern>
+        </patterns>
+    </page-diagnostics-logs-httpd>
     <page-diagnostics-logs-settings>
         <name>Diagnostics: Logs: Settings</name>
         <patterns>
-            <pattern>diag_logs_settings.php*</pattern>
+            <pattern>ui/syslog/</pattern>
         </patterns>
     </page-diagnostics-logs-settings>
     <page-diagnostics-logs-system>
         <name>Diagnostics: Logs: System</name>
         <patterns>
-            <pattern>ui/diagnostics/log/core/configd/*</pattern>
-            <pattern>api/diagnostics/log/core/configd/*</pattern>
-            <pattern>ui/diagnostics/log/core/system/*</pattern>
-            <pattern>api/diagnostics/log/core/system/*</pattern>
-            <pattern>ui/diagnostics/log/core/lighttpd/*</pattern>
-            <pattern>api/diagnostics/log/core/lighttpd/*</pattern>
+            <pattern>ui/syslog/logview/showlog/system</pattern>
         </patterns>
     </page-diagnostics-logs-system>
     <page-diagnostics-packetcapture>
