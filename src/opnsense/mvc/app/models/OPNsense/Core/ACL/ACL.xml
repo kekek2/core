@@ -95,8 +95,7 @@
     <page-diagnostics-logs-dhcp>
         <name>Diagnostics: Logs: DHCP</name>
         <patterns>
-            <pattern>ui/diagnostics/log/core/dhcp/*</pattern>
-            <pattern>api/diagnostics/log/core/dhcp/*</pattern>
+            <pattern>ui/syslog/logview/showlog/dhcpd</pattern>
         </patterns>
     </page-diagnostics-logs-dhcp>
     <page-diagnostics-logs-gateways>
@@ -560,8 +559,7 @@
     <page-status-systemlogs-routing>
         <name>Status: System logs: Routing</name>
         <patterns>
-            <pattern>ui/diagnostics/log/core/routing/*</pattern>
-            <pattern>api/diagnostics/log/core/routing/*</pattern>
+            <pattern>ui/syslog/logview/showlog/routing</pattern>
         </patterns>
     </page-status-systemlogs-routing>
     <page-status-systemlogs-wireless>
