@@ -48,12 +48,14 @@ TING_ABI?=	1.5
 CORE_ABI?=	19.7
 CORE_ARCH?=	${ARCH}
 CORE_FLAVOUR=	${FLAVOUR}
+
 CORE_OPENVPN?=	# empty
 CORE_PHP?=	72
 CORE_PYTHON?=	37
 CORE_RADVD?=	1
 CORE_SQUID?=	# empty
 CORE_SURICATA?=	# empty
+CORE_SYSLOGD?=	# empty
 CORE_SYSLOGNG?=	3.24
 
 _FLAVOUR!=	if [ -f ${OPENSSL} ]; then ${OPENSSL} version; fi
@@ -80,7 +82,7 @@ CORE_WWW?=		https://opnsense.org/
 
 CORE_COPYRIGHT_HOLDER?=	Deciso B.V.
 CORE_COPYRIGHT_WWW?=	https://www.deciso.com/
-CORE_COPYRIGHT_YEARS?=	2014-2019
+CORE_COPYRIGHT_YEARS?=	2014-2020
 
 CORE_DEPENDS_amd64?=	beep \
 			bsdinstaller \

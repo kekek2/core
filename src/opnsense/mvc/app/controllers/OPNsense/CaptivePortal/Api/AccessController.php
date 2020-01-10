@@ -104,7 +104,8 @@ class AccessController extends ApiControllerBase
     {
         // determine orginal sender of this request
         $trusted_proxy = array(); // optional, not implemented
-        if ($this->request->getHeader('X-Forwarded-For') != "" &&
+        if (
+            $this->request->getHeader('X-Forwarded-For') != "" &&
             (
             explode('.', $this->request->getClientAddress())[0] == '127' ||
             in_array($this->request->getClientAddress(), $trusted_proxy)
@@ -217,7 +218,7 @@ class AccessController extends ApiControllerBase
                 }
 
                 if ($isAuthenticated) {
-                    $this->getLogger("captiveportal")->info("AUTH " . $userName .  " (".$clientIp.") zone " . $zoneid);
+                    $this->getLogger("captiveportal")->info("AUTH " . $userName .  " (" . $clientIp . ") zone " . $zoneid);
                     // when authenticated, we have $authServer available to request additional data if needed
                     $clientSession = $this->clientSession($cpZone->zoneid);
                     if ($clientSession['clientState'] == 'AUTHORIZED') {
@@ -258,7 +259,7 @@ class AccessController extends ApiControllerBase
                         }
                     }
                 } else {
-                    $this->getLogger("captiveportal")->info("DENY " . $userName .  " (".$clientIp.") zone " . $zoneid);
+                    $this->getLogger("captiveportal")->info("DENY " . $userName .  " (" . $clientIp . ") zone " . $zoneid);
                     return array("clientState" => 'NOT_AUTHORIZED', "ipAddress" => $clientIp);
                 }
             }
@@ -282,7 +283,8 @@ class AccessController extends ApiControllerBase
         } else {
             $this->sessionClose();
             $clientSession = $this->clientSession((string)$zoneid);
-            if ($clientSession['clientState'] == 'AUTHORIZED' &&
+            if (
+                $clientSession['clientState'] == 'AUTHORIZED' &&
                 $clientSession['authenticated_via'] != '---ip---' &&
                 $clientSession['authenticated_via'] != '---mac---'
             ) {
@@ -295,7 +297,7 @@ class AccessController extends ApiControllerBase
                 $status = json_decode($statusRAW, true);
                 if ($status != null) {
                     $this->getLogger("captiveportal")->info(
-                        "LOGOUT " . $clientSession['userName'] .  " (".$this->getClientIp().") zone " . $zoneid
+                        "LOGOUT " . $clientSession['userName'] .  " (" . $this->getClientIp() . ") zone " . $zoneid
                     );
                     return $status;
                 }
