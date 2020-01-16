@@ -54,7 +54,7 @@
                 <List url="/system_gateway_groups.php*" visibility="hidden"/>
                 <Edit url="/system_gateway_groups_edit.php*" visibility="hidden"/>
             </Group>
-            <LogFile VisibleName="Log File" order="30" url="/diag_logs_gateways.php"/>
+            <LogFile VisibleName="Log File" order="30" url="/ui/syslog/logview/showlog/routing"/>
         </Gateways>
         <HighAvailability VisibleName="High Availability" cssClass="fa fa-refresh fa-fw">
             <Settings order="100" url="/system_hasync.php"/>
