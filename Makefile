@@ -44,8 +44,8 @@ CORE_PKGVERSION=	${CORE_VERSION}_${CORE_REVISION}
 CORE_PKGVERSION=	${CORE_VERSION}
 .endif
 
-TING_ABI?=	1.5
-CORE_ABI?=	19.7
+TING_ABI?=	1.6
+CORE_ABI?=	20.1
 CORE_ARCH?=	${ARCH}
 CORE_FLAVOUR=	${FLAVOUR}
 
@@ -54,7 +54,7 @@ CORE_PHP?=	72
 CORE_PYTHON?=	37
 CORE_RADVD?=	1
 CORE_SQUID?=	# empty
-CORE_SURICATA?=	-devel
+CORE_SURICATA?=	# empty
 CORE_SYSLOGD?=	# empty
 CORE_SYSLOGNG?=	3.24
 
@@ -69,9 +69,9 @@ CORE_REPOSITORY?=	${TING_ABI}/libressl
 CORE_REPOSITORY?=	${FLAVOUR}
 .endif
 
-CORE_MESSAGE?=		Carry on my wayward son
-CORE_NAME?=		opnsense-devel
-CORE_TYPE?=		development
+CORE_MESSAGE?=		Chirp, chirp
+CORE_NAME?=		opnsense
+CORE_TYPE?=		release
 
 CORE_COMMENT?=		${CORE_PRODUCT} ${CORE_TYPE} package
 CORE_MAINTAINER?=	project@opnsense.org
