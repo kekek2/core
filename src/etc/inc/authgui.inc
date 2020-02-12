@@ -363,7 +363,7 @@ function display_login_form($Login_Error)
 
 
     <main class="login-modal-container" style="border: none; margin-top: 100px;">
-      <header class="login-modal-head" style="height:50px;">
+      <header class="login-modal-head">
         <div class="navbar-brand">
 <?php if (file_exists("/usr/local/opnsense/www/themes/ting/build/images/login-logo.png")): ?>
           <img src="<?= cache_safe("/ui/themes/ting/build/images/login-logo.png") ?>" alt="logo" />
