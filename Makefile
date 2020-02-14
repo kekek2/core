@@ -23,6 +23,9 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+
+SHA1!=          which sha1 || echo true
+
 all:
 	@cat ${.CURDIR}/README.md | ${PAGER}
 
@@ -62,7 +65,7 @@ _FLAVOUR!=	if [ -f ${OPENSSL} ]; then ${OPENSSL} version; fi
 FLAVOUR?=	${_FLAVOUR:[1]}
 
 .if "${FLAVOUR}" == OpenSSL || "${FLAVOUR}" == ""
-CORE_REPOSITORY?=	${TING_ABI}/latest
+CORE_REPOSITORY?=	${TING_ABI}-fstec/latest
 .elif "${FLAVOUR}" == LibreSSL
 CORE_REPOSITORY?=	${TING_ABI}/libressl
 .else
@@ -269,6 +272,7 @@ bootstrap:
 	    NO_SAMPLE=please ${MAKE_REPLACE}
 
 plist:
+	@${SHA1} -q ${.CURDIR}/src/etc/config.xml.sample > ${.CURDIR}/src/etc/config.xml.sum.sample
 	@(${MAKE} -C ${.CURDIR}/contrib plist && \
 	    ${MAKE} -C ${.CURDIR}/src plist) | sort
 
@@ -334,7 +338,7 @@ package: plist-check package-check clean-wrksrc
 	else \
 	    exit 1; \
 	fi
-	@sed -i '' 's/url:.*/url: "file:\/\/\/var\/pkg\/sets\/$$\{ABI\}\/${TING_ABI}\/latest"/' ${WRKDIR}/src-enc/usr/local/etc/pkg/repos/TING.conf.sample
+	@sed -i '' 's/url:.*/url: "file:\/\/\/var\/pkg\/sets\/$$\{ABI\}\/${TING_ABI}-fstec\/latest"/' ${WRKDIR}/src-enc/usr/local/etc/pkg/repos/TING.conf.sample
 	@echo " done"
 	@echo ">>> Packaging files for ${CORE_NAME}-${CORE_PKGVERSION}:"
 	@PORTSDIR=${.CURDIR} ${PKG} create -v -m ${WRKSRC} -r ${WRKDIR}/src-enc \

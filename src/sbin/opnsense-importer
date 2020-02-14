@@ -49,6 +49,7 @@ bootstrap_and_exit()
 	if [ ! -f /conf/config.xml ]; then
 		echo -n "Bootstrapping config.xml..."
 		cp /usr/local/etc/config.xml /conf/config.xml
+		cp /usr/local/etc/config.xml.sum /conf/config.xml.sum
 		echo "done."
 	fi
 
@@ -303,7 +304,7 @@ while : ; do
 	elif [ -f "${MNT}/conf/config.xml" ]; then
 		rm -rf /conf/*
 
-		for FILE in captiveportal.sqlite config.xml dhcpleases.tgz dhcp6c_duid netflow.tgz rrd.tgz; do
+		for FILE in captiveportal.sqlite config.xml config.xml.sum dhcpleases.tgz dhcp6c_duid netflow.tgz rrd.tgz; do
 			if [ -f "${MNT}/conf/${FILE}" ]; then
 				echo -n "Restoring ${FILE}..."
 				cp "${MNT}/conf/${FILE}" /conf

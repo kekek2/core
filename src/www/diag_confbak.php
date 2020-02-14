@@ -132,6 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     $savemsg = sprintf(gettext('Deleted backup with timestamp %s and description "%s".'), date(gettext("n/j/y H:i:s"), $revision['time']), $revision['description']);
                     unset($confvers[$filename]);
                     @unlink($filename);
+                    @unlink($filename . ".sum");
                 } else {
                     $savemsg = gettext("Unable to delete the selected configuration.");
                 }

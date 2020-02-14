@@ -155,7 +155,7 @@ function system_api_versions()
 
     $result = array();
 
-    $result[] = sprintf('%s %s-%s', $g['product_name'], $g['product_version'], $g['product_arch']);
+    $result[] = sprintf('%s %s-%s FSTEC', $g['product_name'], $g['product_version'], $g['product_arch']);
     $result[] = php_uname('s') . ' ' . php_uname('r');
     $result[] = trim(shell_exec('/usr/local/bin/openssl version'));
 
