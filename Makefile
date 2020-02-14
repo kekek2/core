@@ -58,9 +58,6 @@ CORE_SURICATA?=	-devel
 CORE_SYSLOGD?=	# empty
 CORE_SYSLOGNG?=	3.25
 
-_FLAVOUR!=	if [ -f ${OPENSSL} ]; then ${OPENSSL} version; fi
-FLAVOUR?=	${_FLAVOUR:[1]}
-
 .if "${FLAVOUR}" == OpenSSL || "${FLAVOUR}" == ""
 CORE_REPOSITORY?=	${TING_ABI}/latest
 .elif "${FLAVOUR}" == LibreSSL
@@ -442,6 +439,8 @@ style: style-python style-php
 
 license: want-p5-File-Slurp
 	@${.CURDIR}/Scripts/license > ${.CURDIR}/LICENSE
+
+sync: license
 
 dhparam:
 .for BITS in 1024 2048 4096
