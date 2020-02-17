@@ -27,7 +27,7 @@
 MTREE="mtree -e -p /"
 PKG_PROGRESS_FILE=/tmp/pkg_upgrade.progress
 TMPFILE=/tmp/pkg_check.exclude
-UPSTREAM="OPNsense"
+UPSTREAM="TING"
 
 # Truncate upgrade progress file
 : > ${PKG_PROGRESS_FILE}

@@ -7,7 +7,7 @@
 @sample /usr/local/opnsense/service/templates/OPNsense/IDS/custom.yaml.sample
 @shadow /usr/local/etc/pkg/repos/FreeBSD.conf.sample
 @shadow /usr/local/etc/pkg/repos/OPNsense.conf.sample
-@shadow /usr/local/etc/pkg/repos/SmartSoft.conf.sample
+@shadow /usr/local/etc/pkg/repos/TING.conf.sample
 /boot/brand-ting.4th
 /boot/logo-ting.4th
 /usr/local/bin/python3
