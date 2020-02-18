@@ -7,7 +7,7 @@
 @sample /usr/local/opnsense/service/templates/OPNsense/IDS/custom.yaml.sample
 @shadow /usr/local/etc/pkg/repos/FreeBSD.conf.sample
 @shadow /usr/local/etc/pkg/repos/OPNsense.conf.sample
-@shadow /usr/local/etc/pkg/repos/SmartSoft.conf.sample
+@shadow /usr/local/etc/pkg/repos/TING.conf.sample
 /boot/brand-ting.4th
 /boot/logo-ting.4th
 /usr/local/bin/python3
@@ -171,6 +171,7 @@
 /usr/local/etc/rc.syshook.d/stop/90-backup
 /usr/local/etc/rc.syshook.d/stop/99-config
 /usr/local/etc/rc.syshook.d/update/50-apu2
+/usr/local/etc/rc.syshook.d/update/60-repo
 /usr/local/etc/secadm.conf.d/syslog-ng
 /usr/local/etc/squid/errors/en/ERR_BANNED_ACCESS_DENIED
 /usr/local/etc/squid/errors/en/ERR_BLACKLIST_ACCESS_DENIED
