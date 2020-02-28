@@ -3,4 +3,5 @@
 if [ -f /usr/local/etc/pkg/repos/SmartSoft.conf ]; then
     rm -f /usr/local/etc/pkg/repos/SmartSoft.conf*
     /usr/local/etc/rc.configure_firmware
+    pkg update
 fi
