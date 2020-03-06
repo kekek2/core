@@ -122,6 +122,16 @@ abstract class BaseField
      */
     private $internalParentModel = null;
 
+
+    /**
+     * @return bool
+     */
+    public function isArrayType()
+    {
+        return is_a($this, "OPNsense\\Base\\FieldTypes\\ArrayField") ||
+            is_subclass_of($this, "OPNsense\\Base\\FieldTypes\\ArrayField");
+    }
+
     /**
      * generate a new UUID v4 number
      * @return string uuid v4 number
@@ -328,7 +338,7 @@ abstract class BaseField
     public function setValue($value)
     {
         // if first set and not altered by the user, store initial value
-        if ($this->internalFieldLoaded === false && $this->internalInitialValue === false && $value != "") {
+        if ($this->internalFieldLoaded === false && $this->internalInitialValue === false) {
             $this->internalInitialValue = $value;
         }
         $this->internalValue = $value;
@@ -583,7 +593,7 @@ abstract class BaseField
         }
 
         // add new items to array type objects
-        if (get_class($this) == "OPNsense\\Base\\FieldTypes\\ArrayField") {
+        if ($this->isArrayType()) {
             foreach ($data as $dataKey => $dataValue) {
                 if (!isset($this->__items[$dataKey])) {
                     $node = $this->add();
@@ -600,7 +610,7 @@ abstract class BaseField
      */
     public function addToXMLNode($node)
     {
-        if ($this->internalReference == "" || get_class($this) == "OPNsense\\Base\\FieldTypes\\ArrayField") {
+        if ($this->internalReference == "" || $this->isArrayType()) {
             // ignore tags without internal reference (root) and ArrayTypes
             $subnode = $node;
         } else {

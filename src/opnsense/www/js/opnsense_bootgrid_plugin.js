@@ -27,7 +27,6 @@
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  */
 
-
 /**
  * reload bootgrid, return to current selected page
  */
@@ -456,7 +455,6 @@ $.fn.UIBootgrid = function (params) {
     }));
 };
 
-$.fn.UIBootgrid.defaults =
-    {
-        'removeWarningText': "Remove selected items?"
-    };
+$.fn.UIBootgrid.defaults = {
+    removeWarningText: "Remove selected item(s)?"
+};

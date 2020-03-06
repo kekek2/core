@@ -128,7 +128,6 @@ private-address: 100.64.0.0/10
 private-address: 127.0.0.0/8     # Loopback Localhost
 private-address: 169.254.0.0/16
 private-address: 172.16.0.0/12
-private-address: 192.0.0.0/24    # IANA IPv4 special purpose net
 private-address: 192.0.2.0/24    # Documentation network TEST-NET
 private-address: 192.168.0.0/16
 private-address: 198.18.0.0/15   # Used for testing inter-network communications
@@ -452,7 +451,7 @@ function unbound_configure_do($verbose = false, $interface = '')
         if (isset($config['unbound']['regdhcpdomain'])) {
             $domain = $config['unbound']['regdhcpdomain'];
         }
-        mwexecf('/usr/local/opnsense/scripts/dns/unbound_dhcpd.py /domain %s', $domain);
+        mwexecf('/usr/local/opnsense/scripts/dns/unbound_dhcpd.py --domain %s', $domain);
     }
     mwexecf('/usr/local/sbin/unbound -c %s', '/var/unbound/unbound.conf');
 
@@ -681,12 +680,18 @@ function unbound_add_host_entries()
                     }
 
                     $domain = $config['system']['domain'];
-                    if ($host['domain']) {
+                    // XXX: dhcpdv6 domain entries have been superseded by domainsearchlist,
+                    //      for backward compatibilty support both here.
+                    if (!empty($host['domainsearchlist'])) {
+                        $domain = $host['domainsearchlist'];
+                    } elseif (!empty($host['domain'])) {
                         $domain = $host['domain'];
-                    } elseif ($dhcpifconf['domain']) {
+                    } elseif (!empty($dhcpifconf['domainsearchlist'])) {
+                        $domain = $dhcpifconf['domainsearchlist'];
+                    } elseif (!empty($dhcpifconf['domain'])) {
                         $domain = $dhcpifconf['domain'];
                     }
-
+                    $domain = explode(";", $domain)[0]; // XXX: first entry of domainsearchlist
                     $unbound_entries .= "local-data-ptr: \"{$host['ipaddrv6']} {$host['hostname']}.{$domain}\"\n";
                     $unbound_entries .= "local-data: \"{$host['hostname']}.{$domain} IN AAAA {$host['ipaddrv6']}\"\n";
                     if (!empty($host['descr']) && $unboundcfg['txtsupport'] == 'on') {

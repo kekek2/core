@@ -30,9 +30,9 @@
 
 namespace OPNsense\TrafficShaper\Api;
 
-use \OPNsense\Base\ApiMutableModelControllerBase;
-use \OPNsense\TrafficShaper\TrafficShaper;
-use \OPNsense\Core\Config;
+use OPNsense\Base\ApiMutableModelControllerBase;
+use OPNsense\TrafficShaper\TrafficShaper;
+use OPNsense\Core\Config;
 
 require_once("logs.inc");
 
