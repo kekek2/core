@@ -2,7 +2,7 @@
 
 /*
  * Copyright (C) 2018 Fabian Franz
- * Copyright (C) 2015-2019 Franco Fichtner <franco@opnsense.org>
+ * Copyright (C) 2015-2020 Franco Fichtner <franco@opnsense.org>
  * Copyright (C) 2015 Manuel Faux <mfaux@conf.at>
  * Copyright (C) 2014 Warren Baker <warren@decoy.co.za>
  * Copyright (C) 2004-2007 Scott Ullrich <sullrich@gmail.com>
@@ -681,12 +681,18 @@ function unbound_add_host_entries()
                     }
 
                     $domain = $config['system']['domain'];
-                    if ($host['domain']) {
+                    // XXX: dhcpdv6 domain entries have been superseded by domainsearchlist,
+                    //      for backward compatibilty support both here.
+                    if (!empty($host['domainsearchlist'])) {
+                        $domain = $host['domainsearchlist'];
+                    } elseif (!empty($host['domain'])) {
                         $domain = $host['domain'];
-                    } elseif ($dhcpifconf['domain']) {
+                    } elseif (!empty($dhcpifconf['domainsearchlist'])) {
+                        $domain = $dhcpifconf['domainsearchlist'];
+                    } elseif (!empty($dhcpifconf['domain'])) {
                         $domain = $dhcpifconf['domain'];
                     }
-
+                    $domain = explode(";", $domain)[0]; // XXX: first entry of domainsearchlist
                     $unbound_entries .= "local-data-ptr: \"{$host['ipaddrv6']} {$host['hostname']}.{$domain}\"\n";
                     $unbound_entries .= "local-data: \"{$host['hostname']}.{$domain} IN AAAA {$host['ipaddrv6']}\"\n";
                     if (!empty($host['descr']) && $unboundcfg['txtsupport'] == 'on') {
@@ -736,13 +742,13 @@ function unbound_acls_subnets()
     foreach (interfaces_addresses(array_keys($active_interfaces), true) as $subnet => $info) {
         if (!empty($active_interfaces[$info['name']]['net4']) && is_subnetv4($subnet)) {
             $subnet = explode('/', $subnet)[0] . '/' . $active_interfaces[$info['name']]['net4'];
-        } elseif (!empty($active_interfaces[$info['name']]['net6']) && is_subnetv6($subnet)) {
+        } elseif (!empty($active_interfaces[$info['name']]['net6']) && is_subnetv6($subnet) && !$info['scope']) {
             $subnet = explode('/', $subnet)[0] . '/' . $active_interfaces[$info['name']]['net6'];
         }
         $subnets[] = $subnet;
     }
 
-    return $subnets;
+    return array_unique($subnets);
 }
 
 function unbound_acls_config()
