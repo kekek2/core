@@ -481,14 +481,18 @@ include("head.inc");
 <?php
                           endforeach;?>
 <?php
-                          $portlist = get_configured_interface_with_descr();
+                          $portlist = get_interface_list();
+                          $iflist = get_configured_interface_with_descr();
+                          $portlist = array_merge($portlist, $iflist);
 
-                          foreach ($portlist as $intf_key => $intf_value):
-                              if (isset($config["interfaces"][$intf_key]["if"]) && strpos($config["interfaces"][$intf_key]["if"], "pppoe") !== FALSE ) {
-                                  continue;
-                              }?>
+                          if (isset($config['vlans']['vlan'])) {
+                              foreach ($config['vlans']['vlan'] as $vlan) {
+                                  $portlist[$vlan['vlanif']] = $vlan;
+                              }
+                          }
+                          foreach ($portlist as $intf_key => $intf_value):?>
                           <option data-type="interface" value="<?=$intf_key;?>" <?=in_array($intf_key, $pconfig['ports']) ? "selected=\"selected\"" : "";?> >
-                            <?=$intf_value;?> <?=isset($intf_value['mac']) ? '('.$intf_value['mac'].')' : "";?>
+                            <?=$intf_key;?> <?=isset($intf_value['mac']) ? '('.$intf_value['mac'].')' : "";?>
                           </option>
 <?php
                           endforeach;?>
