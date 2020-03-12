@@ -11,7 +11,7 @@ if (file_exists("/.probe.for.install.media") && file_exists("/conf/config.xml"))
     exit(0);
 }
 
-if (trim(shell_exec('dmidecode -s baseboard-manufacturer')) != 'PC Engines' || trim(shell_exec('dmidecode -s baseboard-product-name')) != 'apu2')
+if (trim(shell_exec('dmidecode -s baseboard-manufacturer')) != 'PC Engines' || strtolower(trim(shell_exec('dmidecode -s baseboard-product-name'))) != 'apu2')
 {
     exit(0);
 }
