@@ -16,6 +16,8 @@ if (trim(shell_exec('dmidecode -s baseboard-manufacturer')) != 'PC Engines' || t
     exit(0);
 }
 
+shell_exec('/usr/local/etc/rc.syshook.d/update/50-apu2');
+
 file_put_contents("/usr/local/etc/rc.loader.d/40-net", <<<EOD
 # agree with Intel license terms
 legal.intel_ipw.license_ack=1
