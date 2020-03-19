@@ -151,7 +151,7 @@ function parse_filter_line($line, $interface_names = array())
     $flent = array();
     $log_split = '';
 
-    if (!preg_match('/(.*)\s(.*)\sfilterlog:\s(.*)$/', $line, $log_split)) {
+    if (!preg_match('/(.*)\s(.*)\sfilterlog.*:\s(.*)$/', $line, $log_split)) {
         return '';
     }
 
