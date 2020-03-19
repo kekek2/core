@@ -84,9 +84,9 @@
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20171219
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20180614
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20181218
+/usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20190702
 /usr/local/etc/pkg/fingerprints/OPNsense/trusted/opnsense-update.deciso.com.20180627
 /usr/local/etc/pkg/fingerprints/OPNsense/trusted/opnsense-update.deciso.com.20200122
-/usr/local/etc/pkg/fingerprints/OPNsense/trusted/pkg.opnsense.org.20190702
 /usr/local/etc/pkg/fingerprints/OPNsense/trusted/pkg.opnsense.org.20200119
 /usr/local/etc/pkg/fingerprints/TING/revoked/smart-soft.20180207
 /usr/local/etc/pkg/fingerprints/TING/revoked/smart-soft.ru.2017
@@ -309,6 +309,7 @@
 /usr/local/opnsense/mvc/app/controllers/OPNsense/Interfaces/VxlanController.php
 /usr/local/opnsense/mvc/app/controllers/OPNsense/IPsec/Api/KeyPairsController.php
 /usr/local/opnsense/mvc/app/controllers/OPNsense/IPsec/Api/LegacySubsystemController.php
+/usr/local/opnsense/mvc/app/controllers/OPNsense/IPsec/Api/ServiceController.php
 /usr/local/opnsense/mvc/app/controllers/OPNsense/IPsec/forms/dialogKeyPair.xml
 /usr/local/opnsense/mvc/app/controllers/OPNsense/IPsec/KeyPairsController.php
 /usr/local/opnsense/mvc/app/controllers/OPNsense/Monit/Api/ServiceController.php
@@ -430,11 +431,14 @@
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/IntegerField.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/InterfaceField.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/JsonKeyValueStoreField.php
+/usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/LegacyLinkField.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/ModelRelationField.php
+/usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/NetworkAliasField.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/NetworkField.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/NumericField.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/OptionField.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/PortField.php
+/usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/ProtocolField.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/TextField.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/UniqueIdField.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/UpdateOnlyTextField.php
@@ -599,7 +603,11 @@
 /usr/local/opnsense/mvc/tests/app/models/OPNsense/Base/FieldTypes/InterfaceFieldTest/config.xml
 /usr/local/opnsense/mvc/tests/app/models/OPNsense/Base/FieldTypes/ModelRelationFieldTest.php
 /usr/local/opnsense/mvc/tests/app/models/OPNsense/Base/FieldTypes/ModelRelationFieldTest/config.xml
+/usr/local/opnsense/mvc/tests/app/models/OPNsense/Base/FieldTypes/NetworkAliasFieldTest.php
+/usr/local/opnsense/mvc/tests/app/models/OPNsense/Base/FieldTypes/NetworkAliasFieldTest/config.xml
 /usr/local/opnsense/mvc/tests/app/models/OPNsense/Base/FieldTypes/OptionFieldTest.php
+/usr/local/opnsense/mvc/tests/app/models/OPNsense/Base/FieldTypes/PortFieldTest.php
+/usr/local/opnsense/mvc/tests/app/models/OPNsense/Base/FieldTypes/ProtocolFieldTest.php
 /usr/local/opnsense/mvc/tests/PHPunit.xml
 /usr/local/opnsense/mvc/tests/setup.php
 /usr/local/opnsense/scripts/dhcp/get_leases.py
@@ -767,6 +775,9 @@
 /usr/local/opnsense/scripts/systemhealth/fetchData.py
 /usr/local/opnsense/scripts/systemhealth/flush_rrd.py
 /usr/local/opnsense/scripts/systemhealth/listReports.py
+/usr/local/opnsense/scripts/systemhealth/logformats/__init__.py
+/usr/local/opnsense/scripts/systemhealth/logformats/squid.py
+/usr/local/opnsense/scripts/systemhealth/logformats/syslog.py
 /usr/local/opnsense/scripts/systemhealth/queryLog.py
 /usr/local/opnsense/scripts/unbound/cache.sh
 /usr/local/opnsense/scripts/unbound/wrapper.py
