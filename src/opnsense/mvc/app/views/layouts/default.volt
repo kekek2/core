@@ -197,7 +197,7 @@
               ajaxCall(url = "/api/core/notice/list", sendData = {}, callback = function (notices) {
                 var count = notices.length;
                 if (count > 0) {
-                  var notice_msgs = "<ul class=\"dropdown-menu\" role=\"menu\">";
+                  var notice_msgs = "<ul class=\"dropdown-menu pre-scrollable\" role=\"menu\">";
 
                   notice_msgs += "<li><a href=\"#\" onclick=\"notice('all');\" >" + "{{ lang._('Acknowledge All Notices') }}" + "</a></li><li class=\"divider\"></li>";
                   for (var i = 0; i < count; i++)

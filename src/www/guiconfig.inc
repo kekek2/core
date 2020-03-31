@@ -527,7 +527,7 @@ function get_menu_messages()
     $menu_messages = '';
 
     if ($notices != []) {
-        $notice_msgs = "<ul class=\"dropdown-menu\" role=\"menu\">";
+        $notice_msgs = "<ul class=\"dropdown-menu pre-scrollable\" role=\"menu\">";
 
         $notice_msgs .= "<li><a href=\"#\" onclick=\"notice_action('acknowledge','all');\" >" . gettext("Acknowledge All Notices") . "</a></li><li class=\"divider\"></li>";
 
