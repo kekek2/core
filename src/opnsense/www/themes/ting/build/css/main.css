@@ -1339,7 +1339,9 @@ pre {
 
 .pre-scrollable {
   max-height: 340px;
-  overflow-y: scroll; }
+  overflow-y: scroll;
+  max-width: 720px;
+  overflow-x: scroll;}
 
 .container {
   margin-right: auto;
