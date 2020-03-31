@@ -52,7 +52,7 @@ class NoticeController extends ApiControllerBase
             }
             if ($cert["validTo_time_t"]  - time() < 60 * 60 * 24 * 30)
             {
-                return ['expire' => sprintf(gettext("WARNING! Your licence will expire after %d days. Click hrere to renew."), ($cert["validTo_time_t"] - time()) / (60 * 60 * 24))];
+                return ['expire' => sprintf(gettext("WARNING! Your licence will expire after %d days."), ($cert["validTo_time_t"] - time()) / (60 * 60 * 24))];
             }
         }
         return ['expire' => ""];
