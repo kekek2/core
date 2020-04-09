@@ -226,7 +226,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         if (!empty($pconfig['local_port'])) {
             $portused = openvpn_port_used($pconfig['protocol'], $pconfig['interface'], $pconfig['local_port'], $vpnid);
-            if ($portused != $vpnid && $portused != 0) {
+            if ($portused) {
                 $input_errors[] = gettext("The specified 'Local port' is in use. Please select another value");
             }
         }
@@ -1186,7 +1186,7 @@ endif; ?>
                         <input name="gwredir" id="gwredir" type="checkbox" value="yes" <?=!empty($pconfig['gwredir']) ? "checked=\"checked\"" : "" ;?> />
                         <div class="hidden" data-for="help_for_gwredir">
                             <span>
-                                <?=gettext("Force all client generated traffic through the tunnel"); ?>.
+                                <?= gettext('Force all client generated traffic through the tunnel.') ?>
                             </span>
                         </div>
                       </td>
