@@ -101,6 +101,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
         }
 
+        $pconfig['remote-gateway'] = idn_to_utf8($pconfig['remote-gateway']);
+
         // attributes with some kind of logic behind them...
         if (!isset($_GET['dup']) || !is_numericint($_GET['dup'])) {
             // don't copy the ikeid on dup
@@ -255,6 +257,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     if (!empty($pconfig['remote-gateway'])) {
+        $host_utf8 = trim($pconfig['remote-gateway']);
+        $pconfig['remote-gateway'] = idn_to_ascii($host_utf8);
         if (!is_ipaddr($pconfig['remote-gateway']) && !is_domain($pconfig['remote-gateway'])) {
             $input_errors[] = gettext("A valid remote gateway address or host name must be specified.");
         } elseif (is_ipaddrv4($pconfig['remote-gateway']) && ($pconfig['protocol'] != "inet")) {
@@ -377,6 +381,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if (!empty($pconfig['iketype']) && !empty($pconfig['encryption-algorithm']['name']) && !empty($algodata['iketype'])
           && $pconfig['iketype'] != $algodata['iketype'] && $pconfig['encryption-algorithm']['name'] == $algo) {
             $input_errors[] = sprintf(gettext("%s can only be used with IKEv2 type VPNs."), $algodata['name']);
+        }
+    }
+
+    if (!empty($pconfig['pre-shared-key'])) {
+        if (!preg_match('/^[a-zA-Z0-9\/\r\n+]*$/', $pconfig['pre-shared-key'])) {
+            $input_errors[] = sprintf(gettext("Invalid characters in Pre-Shared Key"));
         }
     }
 

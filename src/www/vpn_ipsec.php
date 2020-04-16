@@ -414,7 +414,7 @@ $( document ).ready(function() {
                         }?>
                         <?=htmlspecialchars($if);?>
                         <?=!isset($ph1ent['mobile'])?
-                        $ph1ent['remote-gateway']
+                        idn_to_utf8($ph1ent['remote-gateway'])
                         :
                         "<strong>" . gettext("Mobile Client") . "</strong>";
                         ?>
