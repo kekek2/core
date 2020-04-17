@@ -6,6 +6,4 @@ fi
 
 if service flowd_aggregate onestatus > /dev/null; then
     service flowd_aggregate onestop
-    rm -f /var/run/flowd_aggregate.pid
-    rm -f /var/run/flowd.socket
 fi
