@@ -48,6 +48,8 @@ flowd_aggregate_stop()
     do
        kill -9 $flowd_aggregate_pid >/dev/null 2>&1
     done
+    rm -f /var/run/flowd_aggregate.pid
+    rm -f /var/run/flowd.socket
 
     echo  "..done"
 }
