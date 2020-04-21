@@ -30,7 +30,8 @@
 
 require_once("guiconfig.inc");
 require_once("filter.inc");
-require_once("logs.inc");
+
+use \SmartSoft\Firewall\Syslog;
 
 $dayArray = array (gettext('Mon'),gettext('Tues'),gettext('Wed'),gettext('Thur'),gettext('Fri'),gettext('Sat'),gettext('Sun'));
 $monthArray = array (gettext('January'),gettext('February'),gettext('March'),gettext('April'),gettext('May'),gettext('June'),gettext('July'),gettext('August'),gettext('September'),gettext('October'),gettext('November'),gettext('December'));
@@ -62,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             unset($a_schedules[$id]);
             write_config();
-            firewall_syslog("Delete Firewall/Settings/Shedule", $id);
+            Syslog::log("Delete Firewall/Settings/Shedule", $id);
             header(url_safe('Location: /firewall_schedule.php'));
             exit;
         }

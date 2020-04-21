@@ -32,7 +32,8 @@
 require_once("guiconfig.inc");
 require_once("interfaces.inc");
 require_once("filter.inc");
-require_once("logs.inc");
+
+use \SmartSoft\Firewall\Syslog;
 
 /**
  * delete virtual ip
@@ -140,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $input_errors = deleteVIPEntry($id);
         if (count($input_errors) == 0) {
             write_config();
-            firewall_syslog("Delete Firewall/Virtual IPs", $id);
+            Syslog::log("Delete Firewall/Virtual IPs", $id);
             header(url_safe('Location: /firewall_virtual_ip.php'));
             exit;
         }
@@ -155,7 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         write_config();
         foreach ($id_for_delete as $idk)
-            firewall_syslog("Delete Firewall/Virtual IPs", $idk);
+            Syslog::log("Delete Firewall/Virtual IPs", $idk);
         header(url_safe('Location: /firewall_virtual_ip.php'));
         exit;
     }  elseif (isset($pconfig['act']) && $pconfig['act'] == 'move' && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
@@ -166,7 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $a_vip = legacy_move_config_list_items($a_vip, $id,  $pconfig['rule']);
         write_config();
-        firewall_syslog("Move Firewall/Virtual IPs", $id);
+        Syslog::log("Move Firewall/Virtual IPs", $id);
         header(url_safe('Location: /firewall_virtual_ip.php'));
         exit;
     }

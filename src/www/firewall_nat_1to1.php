@@ -30,7 +30,8 @@
 require_once("guiconfig.inc");
 require_once("interfaces.inc");
 require_once("filter.inc");
-require_once("logs.inc");
+
+use \SmartSoft\Firewall\Syslog;
 
 $a_1to1 = &config_read_array('nat', 'onetoone');
 
@@ -51,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         unset($a_1to1[$id]);
         write_config();
         mark_subsystem_dirty('natconf');
-        firewall_syslog("Delete Firewall/NAT/One-to-One", $id);
+        Syslog::log("Delete Firewall/NAT/One-to-One", $id);
         header(url_safe('Location: /firewall_nat_1to1.php'));
         exit;
     } elseif (isset($pconfig['action']) && $pconfig['action'] == 'del_x' && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
@@ -64,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         write_config();
         mark_subsystem_dirty('natconf');
         foreach ($id_for_delete as $idk) {
-            firewall_syslog("Delete Firewall/NAT/One-to-One", $idk);
+            Syslog::log("Delete Firewall/NAT/One-to-One", $idk);
         };
         header(url_safe('Location: /firewall_nat_1to1.php'));
         exit;
@@ -87,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             write_config();
             mark_subsystem_dirty('natconf');
-            firewall_syslog("Move Firewall/NAT/One-to-One", $id);
+            Syslog::log("Move Firewall/NAT/One-to-One", $id);
             header(url_safe('Location: /firewall_nat_1to1.php'));
             exit;
         }
@@ -102,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         write_config(gettext('Toggled NAT rule'));
         mark_subsystem_dirty('natconf');
-        firewall_syslog($a_1to1_action, $id);
+        Syslog::log($a_1to1_action, $id);
         header(url_safe('Location: /firewall_nat_1to1.php'));
         exit;
     }

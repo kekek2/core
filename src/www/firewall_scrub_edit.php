@@ -28,7 +28,8 @@
 
 require_once("guiconfig.inc");
 require_once("filter.inc");
-require_once("logs.inc");
+
+use \SmartSoft\Firewall\Syslog;
 
 /**
  * Return array of possible TOS values
@@ -192,7 +193,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // write to config
         write_config();
         mark_subsystem_dirty('filter');
-        firewall_syslog($scub_action, $a_scrub, $scrubent);
+        Syslog::log($scub_action, $a_scrub, $scrubent);
 
         header(url_safe('Location: /firewall_scrub.php'));
         exit;

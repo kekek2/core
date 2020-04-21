@@ -32,7 +32,8 @@
 require_once("guiconfig.inc");
 require_once("interfaces.inc");
 require_once("filter.inc");
-require_once("logs.inc");
+
+use \SmartSoft\Firewall\Syslog;
 
 /****f* itemid/delete_id (duplicate to remove itemid.inc)
  * NAME
@@ -80,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if (isset($pconfig['apply'])) {
         write_config();
-        firewall_syslog("Apply Firewall/NAT/Port Forward");
+        Syslog::log("Apply Firewall/NAT/Port Forward");
         filter_configure();
         $savemsg = get_std_save_message();
         clear_subsystem_dirty('natconf');
@@ -94,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         unset($a_nat[$id]);
         write_config();
         mark_subsystem_dirty('natconf');
-        firewall_syslog("Delete Firewall/NAT/Port Forward", $id);
+        Syslog::log("Delete Firewall/NAT/Port Forward", $id);
         header(url_safe('Location: /firewall_nat.php'));
         exit;
     } elseif (isset($pconfig['act']) && $pconfig['act'] == 'del_x' && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
@@ -115,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         write_config();
         mark_subsystem_dirty('natconf');
         foreach ($id_for_delete as $idk)
-            firewall_syslog("Delete Firewall/NAT/Port Forward", $idk);
+            Syslog::log("Delete Firewall/NAT/Port Forward", $idk);
         header(url_safe('Location: /firewall_nat.php'));
         exit;
     } elseif (isset($pconfig['act']) && in_array($pconfig['act'], array('toggle_enable', 'toggle_disable')) && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
@@ -137,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         write_config();
         mark_subsystem_dirty('natconf');
-        firewall_syslog("Move Firewall/NAT/Port Forward", $id);
+        Syslog::log("Move Firewall/NAT/Port Forward", $id);
         header(url_safe('Location: /firewall_nat.php'));
         exit;
     } elseif (isset($pconfig['act']) && $pconfig['act'] == 'toggle' && isset($id)) {
@@ -165,7 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         write_config('Firewall: NAT: Outbound, toggle NAT rule');
         mark_subsystem_dirty('natconf');
-        firewall_syslog($nat_action, $id);
+        Syslog::log($nat_action, $id);
         header(url_safe('Location: /firewall_nat.php'));
         exit;
     }
