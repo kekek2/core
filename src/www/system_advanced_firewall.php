@@ -32,7 +32,8 @@
 require_once("guiconfig.inc");
 require_once("filter.inc");
 require_once("system.inc");
-require_once("logs.inc");
+
+use \SmartSoft\Firewall\Syslog;
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = array();
@@ -222,7 +223,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
 
         if (write_config())
-            firewall_syslog("Update Firewall/Settings/Advanced");
+            Syslog::log("Update Firewall/Settings/Advanced");
 
         $savemsg = get_std_save_message();
 

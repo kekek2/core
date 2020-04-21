@@ -30,8 +30,9 @@
 
 require_once("guiconfig.inc");
 require_once("filter.inc");
-require_once("logs.inc");
 require_once("system.inc");
+
+use \SmartSoft\Firewall\Syslog;
 
 /***********************************************************************************************************
  * format functions for this page
@@ -243,7 +244,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         unset($a_filter[$id]);
         write_config();
         mark_subsystem_dirty('filter');
-        firewall_syslog("Delete Firewall/Rule", $id);
+        Syslog::log("Delete Firewall/Rule", $id);
         header(url_safe('Location: /firewall_rules.php?if=%s', array($current_if)));
         exit;
     } elseif (isset($pconfig['act']) && $pconfig['act'] == 'del_x' && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
@@ -265,7 +266,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         write_config();
         mark_subsystem_dirty('filter');
         foreach ($deleted_rules as $rule_id)
-            firewall_syslog("Delete Firewall/Rule", $rule_id);
+            Syslog::log("Delete Firewall/Rule", $rule_id);
         header(url_safe('Location: /firewall_rules.php?if=%s', array($current_if)));
         exit;
     } elseif (isset($pconfig['act']) && in_array($pconfig['act'], array('toggle_enable', 'toggle_disable')) && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
@@ -285,7 +286,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $a_filter = legacy_move_config_list_items($a_filter, $id,  $pconfig['rule']);
         write_config();
         mark_subsystem_dirty('filter');
-        firewall_syslog("Move Firewall/Rule", $id);
+        Syslog::log("Move Firewall/Rule", $id);
         header(url_safe('Location: /firewall_rules.php?if=%s', array($current_if)));
         exit;
     } elseif (isset($pconfig['act']) && $pconfig['act'] == 'toggle' && isset($id)) {
@@ -299,7 +300,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         write_config();
         mark_subsystem_dirty('filter');
-        firewall_syslog($alias_action . " Firewall/Rule", $id);
+        Syslog::log($alias_action . " Firewall/Rule", $id);
         $response = array("id" => $id);
         $response["new_label"] = !isset($a_filter[$id]['disabled']) ?  gettext("Disable Rule") : gettext("Enable Rule");
         $response["new_state"] = !isset($a_filter[$id]['disabled']) ;

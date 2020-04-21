@@ -30,7 +30,8 @@
 require_once("guiconfig.inc");
 require_once("filter.inc");
 require_once("interfaces.inc");
-require_once("logs.inc");
+
+use \SmartSoft\Firewall\Syslog;
 
 $a_npt = &config_read_array('nat', 'npt');
 
@@ -50,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         unset($a_npt[$id]);
         write_config();
         mark_subsystem_dirty('natconf');
-        firewall_syslog("Delete Firewall/NAT/NPT (IPv6)", $id);
+        Syslog::log("Delete Firewall/NAT/NPT (IPv6)", $id);
         header(url_safe('Location: /firewall_nat_npt.php'));
         exit;
       } elseif (isset($pconfig['act']) && $pconfig['act'] == 'del_x' && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
@@ -65,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           write_config();
           mark_subsystem_dirty('natconf');
           foreach ($id_for_delete as $idk)
-              firewall_syslog("Delete Firewall/NAT/NPT (IPv6)", $idk);
+              Syslog::log("Delete Firewall/NAT/NPT (IPv6)", $idk);
           header(url_safe('Location: /firewall_nat_npt.php'));
           exit;
         } elseif ( isset($pconfig['act']) && $pconfig['act'] == 'move') {
@@ -79,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         write_config();
         mark_subsystem_dirty('natconf');
-        firewall_syslog("Move Firewall/NAT/NPT (IPv6)", $id);
+        Syslog::log("Move Firewall/NAT/NPT (IPv6)", $id);
         header(url_safe('Location: /firewall_nat_npt.php'));
         exit;
     } elseif (isset($pconfig['act']) && $pconfig['act'] == 'toggle' && isset($id)) {
@@ -93,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         write_config('Toggled NAT NPTv6 rule');
         mark_subsystem_dirty('natconf');
-        firewall_syslog($npt_action, $id);
+        Syslog::log($npt_action, $id);
         header(url_safe('Location: /firewall_nat_npt.php'));
         exit;
     }
