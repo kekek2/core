@@ -150,7 +150,6 @@ class FlowParser:
 
                         record['sys_uptime_ms'] = record['agent_info'][0]
                         record['netflow_ver'] = record['agent_info'][3]
-                        record['recv_sec'] = record['recv_time'][0]
                         record['recv'] = record['recv_sec']
                         record['recv_usec'] = record['recv_time'][1]
                         if 'proto_flags_tos' in record:
@@ -160,6 +159,10 @@ class FlowParser:
                         if 'flow_times' in record:
                             record['flow_start'] = record['flow_times'][0]
                             record['flow_finish'] = record['flow_times'][1]
+                        else:
+                            record['flow_start'] = record['sys_uptime_ms']
+                            record['flow_finish'] = record['sys_uptime_ms']
+
                         if 'if_indices' in record:
                             record['if_ndx_in'] = record['if_indices'][0]
                             record['if_ndx_out'] = record['if_indices'][1]

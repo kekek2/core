@@ -537,7 +537,6 @@ class FirmwareController extends ApiControllerBase
         return $response;
     }
 
-
     /**
      * install missing configured plugins
      * @param string $pkg_name package name to reinstall
@@ -558,7 +557,6 @@ class FirmwareController extends ApiControllerBase
 
         return $response;
     }
-
 
     /**
      * install missing configured plugins
