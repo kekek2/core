@@ -1,4 +1,6 @@
-# Copyright (c) 2016-2020 Franco Fichtner <franco@opnsense.org>
+#!/bin/sh
+# Copyright (c) 2020 Deciso B.V.
+# All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -23,42 +25,12 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-LOCALBASE?=	/usr/local
-PAGER?=		less
+# prepare and startup unbound, so we can easily background it
 
-OPENSSL?=	${LOCALBASE}/bin/openssl
+chroot -u unbound -g unbound / /usr/local/sbin/unbound-anchor -a /var/unbound/root.key
 
-_FLAVOUR!=	if [ -f ${OPENSSL} ]; then ${OPENSSL} version; fi
-FLAVOUR?=	${_FLAVOUR:[1]}
+if [ ! -f /var/unbound/unbound_control.key ]; then
+    chroot -u unbound -g unbound / /usr/local/sbin/unbound-control-setup -d /var/unbound
+fi
 
-PKG!=		which pkg || echo true
-GIT!=		which git || echo true
-ARCH!=		uname -p
-
-REPLACEMENTS=	CORE_ABI \
-		CORE_ARCH \
-		CORE_COMMIT \
-		CORE_COPYRIGHT_HOLDER \
-		CORE_COPYRIGHT_WWW \
-		CORE_COPYRIGHT_YEARS \
-		CORE_FLAVOUR \
-		CORE_HASH \
-		CORE_MAINTAINER \
-		CORE_NAME \
-		CORE_PACKAGESITE \
-		CORE_PKGVERSION \
-		CORE_PRODUCT \
-		CORE_PYTHON_DOT \
-		CORE_REPOSITORY \
-		CORE_SYSLOGNG \
-		CORE_VERSION \
-		CORE_WWW \
-		TING_ABI
-
-MAKE_REPLACE=	# empty
-SED_REPLACE=	# empty
-
-.for REPLACEMENT in ${REPLACEMENTS}
-MAKE_REPLACE+=	${REPLACEMENT}="${${REPLACEMENT}}"
-SED_REPLACE+=	-e "s=%%${REPLACEMENT}%%=${${REPLACEMENT}}=g"
-.endfor
+/usr/local/sbin/unbound -c /var/unbound/unbound.conf

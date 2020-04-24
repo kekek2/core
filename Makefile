@@ -49,15 +49,15 @@ CORE_ABI?=	20.1
 CORE_ARCH?=	${ARCH}
 CORE_FLAVOUR?=	${FLAVOUR}
 
-CORE_OPENVPN?=	# empty
 CORE_PHP?=	72
 CORE_PYTHON?=	37
 CORE_RADVD?=	1
-CORE_SQUID?=	# empty
 CORE_SURICATA?=	# empty
 CORE_SYSLOGD?=	# empty
 CORE_SYSLOGNG?=	3.25
 CORE_UPDATE?=	# empty
+
+CORE_PYTHON_DOT=	${CORE_PYTHON:C/./&./1}
 
 .if "${FLAVOUR}" == OpenSSL || "${FLAVOUR}" == ""
 CORE_REPOSITORY?=	${TING_ABI}/latest
@@ -113,7 +113,7 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			mpd5 \
 			ntp \
 			openssh-portable \
-			openvpn${CORE_OPENVPN} \
+			openvpn \
 			pam_opnsense \
 			pftop \
 			php${CORE_PHP}-ctype \
@@ -151,7 +151,7 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			rate \
 			rrdtool \
 			samplicator \
-			squid${CORE_SQUID} \
+			squid \
 			sshlockout_pf \
 			strongswan \
 			sudo \
@@ -351,6 +351,8 @@ package: plist-check package-check clean-wrksrc
 	    ${REMOTESHELL} "rm -rf $${ENC_TEMP}"; \
 	fi
 	@echo " done"
+	@echo ">>> Generated version info for ${CORE_NAME}-${CORE_PKGVERSION}:"
+	@cat ${WRKSRC}/usr/local/opnsense/version/core
 	@echo ">>> Packaging files for ${CORE_NAME}-${CORE_PKGVERSION}:"
 	@PORTSDIR=${.CURDIR} ${PKG} create -f ${PKG_FORMAT} -v -m ${WRKSRC} \
 	    -r ${WRKSRC} -p ${WRKSRC}/plist -o ${PKGDIR}
@@ -416,7 +418,7 @@ sweep:
 STYLEDIRS?=	src/etc/inc src/opnsense
 
 style-python: want-py${CORE_PYTHON}-pycodestyle
-	@pycodestyle-${CORE_PYTHON:C/./&./1} --ignore=E501 ${.CURDIR}/src || true
+	@pycodestyle-${CORE_PYTHON_DOT} --ignore=E501 ${.CURDIR}/src || true
 
 style-php: want-php${CORE_PHP}-pear-PHP_CodeSniffer
 	@: > ${WRKDIR}/style.out
