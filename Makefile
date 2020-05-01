@@ -46,12 +46,9 @@ CORE_PKGVERSION=	${CORE_VERSION}
 
 TING_ABI?=	1.6
 CORE_ABI?=	20.1
-CORE_ARCH?=	${ARCH}
-CORE_FLAVOUR?=	${FLAVOUR}
-
 CORE_PHP?=	72
 CORE_PYTHON?=	37
-CORE_RADVD?=	1
+CORE_RADVD?=	# empty
 CORE_SURICATA?=	# empty
 CORE_SYSLOGD?=	# empty
 CORE_SYSLOGNG?=	3.25
@@ -59,12 +56,12 @@ CORE_UPDATE?=	# empty
 
 CORE_PYTHON_DOT=	${CORE_PYTHON:C/./&./1}
 
-.if "${FLAVOUR}" == OpenSSL || "${FLAVOUR}" == ""
+.if "${CORE_FLAVOUR}" == OpenSSL
 CORE_REPOSITORY?=	${TING_ABI}/latest
-.elif "${FLAVOUR}" == LibreSSL
+.elif "${CORE_FLAVOUR}" == LibreSSL
 CORE_REPOSITORY?=	${TING_ABI}/libressl
 .else
-CORE_REPOSITORY?=	${FLAVOUR}
+CORE_REPOSITORY?=	unsupported/${CORE_FLAVOUR:tl}
 .endif
 
 CORE_MESSAGE?=		Chirp, chirp
@@ -307,10 +304,10 @@ package: plist-check package-check clean-wrksrc
 	@if ! ${PKG} info ${CORE_DEPEND} > /dev/null; then ${PKG} install -yfA ${CORE_DEPEND}; fi
 .endfor
 	@echo -n ">>> Generating metadata for ${CORE_NAME}-${CORE_PKGVERSION}..."
-	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} metadata
+	@${MAKE} DESTDIR=${WRKSRC} metadata
 	@echo " done"
 	@echo -n ">>> Staging files for ${CORE_NAME}-${CORE_PKGVERSION}..."
-	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} install
+	@${MAKE} DESTDIR=${WRKSRC} install
 	@echo " done"
 	@mkdir -p ${WRKSRC}${LOCALBASE}/version
 	@touch ${WRKSRC}${LOCALBASE}/version/banner
