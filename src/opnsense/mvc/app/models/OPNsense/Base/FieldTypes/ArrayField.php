@@ -136,18 +136,21 @@ class ArrayField extends BaseField
      * retrieve field validators for this field type
      * @param string|array $fieldNames sort by fieldname
      * @param bool $descending sort descending
+     * @param int $sort_flags sorting behavior
      * @return array
      */
-    public function sortedBy($fieldNames, $descending = false)
+    public function sortedBy($fieldNames, $descending = false, $sort_flags = SORT_NATURAL)
     {
         // reserve at least X number of characters for every field to improve sorting of multiple fields
         $MAX_KEY_LENGTH = 30;
 
-        // fieldnames may be a list or a single item, always convert to a list
-        if (!is_array($fieldNames)) {
+        if (empty($fieldNames)) {
+            // unsorted, just return, without any guarantee about the ordering.
+            return $this->internalChildnodes;
+        } elseif (!is_array($fieldNames)) {
+            // fieldnames may be a list or a single item, always convert to a list
             $fieldNames = array($fieldNames);
         }
-
 
         // collect sortable data as key/value store
         $sortedData = array();
@@ -171,9 +174,9 @@ class ArrayField extends BaseField
 
         // sort by key on ascending or descending order
         if (!$descending) {
-            ksort($sortedData);
+            ksort($sortedData, $sort_flags);
         } else {
-            krsort($sortedData);
+            krsort($sortedData, $sort_flags);
         }
 
         return array_values($sortedData);

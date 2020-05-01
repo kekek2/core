@@ -260,6 +260,14 @@ function dhcpd_radvd_configure($verbose = false, $blacklist = array())
             }
         }
 
+        if (!empty($dhcpv6ifconf['AdvLinkMTU'])) {
+            if ($dhcpv6ifconf['AdvLinkMTU'] < $mtu) {
+                $mtu = $dhcpv6ifconf['AdvLinkMTU'];
+            } else {
+                log_error("Warning! AdvLinkMTU set in config is not lower than the interface MTU, therefore can't be applied.");
+            }
+        }
+
         $radvdconf .= "# Generated for DHCPv6 server $dhcpv6if\n";
         $radvdconf .= "interface {$realif} {\n";
         $radvdconf .= "\tAdvSendAdvert on;\n";
