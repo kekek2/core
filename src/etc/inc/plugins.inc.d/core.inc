@@ -132,6 +132,7 @@ function core_cron()
     $jobs[]['autocron'] = array('/usr/local/sbin/expiretable -v -t 3600 sshlockout', '2');
     $jobs[]['autocron'] = array('/usr/local/sbin/expiretable -v -t 3600 virusprot', '3');
     $jobs[]['autocron'] = array('/usr/local/etc/rc.expireaccounts', '5');
+    $jobs[]['autocron'] = array('/usr/local/opnsense/scripts/syslog/log_archive ', '4');
 
     $jobs[]['autocron'] = array('/usr/local/sbin/ping_hosts.sh', '*/4');
 
@@ -189,4 +190,21 @@ function core_cron()
     }
 
     return $jobs;
+}
+
+function core_interfaces()
+{
+    return [
+        'lo0' => [
+            'descr' => gettext('Loopback'),
+            'enable' => true,
+            'if' => 'lo0',
+            'ipaddr' => '127.0.0.1',
+            'ipaddrv6' => '::1',
+            'subnet' => '8',
+            'subnetv6' => '128',
+            'type' => 'none',
+            'virtual' => true,
+        ]
+    ];
 }

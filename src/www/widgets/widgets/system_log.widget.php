@@ -43,9 +43,6 @@ if (is_numeric($_POST['logfiltercount'])) {
    header(url_safe('Location: /index.php'));
    exit;
 }
-
-require_once('diag_logs_common.inc');
-
 ?>
 
 <div id="system_log-settings" class="widgetconfigdiv" style="display:none;">

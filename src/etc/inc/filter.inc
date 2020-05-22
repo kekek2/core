@@ -531,11 +531,13 @@ function filter_configure_sync($verbose = false, $flush_states = false, $load_al
         $Notices = new Notices();
         if (strstr("$rules_error[0]", "busy")) {
             exec('/sbin/pfctl -d; /sbin/pfctl -e; /sbin/pfctl -f /tmp/rules.debug');
+            log_error('PF was wedged/busy and has been reset.');
             $Notices->addNotice(gettext('PF was wedged/busy and has been reset.'));
         } else {
             exec('/sbin/pfctl -o basic -f /tmp/rules.debug.old 2>&1');
         }
 
+        log_error(sprintf('There were error(s) loading the rules: %s%s', $rules_error[0], $config_line));
         $Notices->addNotice(sprintf(gettext('There were error(s) loading the rules: %s%s'), $rules_error[0], $config_line));
         unlock($filterlck);
 
@@ -700,6 +702,7 @@ function filter_generate_aliases()
                 # a bit of a hack, but prevents the ruleset from not being able to load if these types are in
                 # the configuration.
                 $aliases .= "{$aliased['name']} = \"{ 0 <> 65535 }\"\n";
+                log_error(sprintf('URL port aliases types not supported [%s]', $aliased['name']));
                 (new Notices())->addNotice(sprintf(gettext('URL port aliases types not supported [%s]'), $aliased['name']));
                 break;
             case "port":
