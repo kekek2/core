@@ -48,10 +48,9 @@ TING_ABI?=	1.6
 CORE_ABI?=	20.1
 CORE_PHP?=	72
 CORE_PYTHON?=	37
-CORE_RADVD?=	# empty
 CORE_SURICATA?=	# empty
 CORE_SYSLOGD?=	# empty
-CORE_SYSLOGNG?=	3.25
+CORE_SYSLOGNG?=	3.26
 CORE_UPDATE?=	# empty
 
 CORE_PYTHON_DOT=	${CORE_PYTHON:C/./&./1}
@@ -144,7 +143,7 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			py${CORE_PYTHON}-requests \
 			py${CORE_PYTHON}-sqlite3 \
 			py${CORE_PYTHON}-ujson \
-			radvd${CORE_RADVD} \
+			radvd \
 			rate \
 			rrdtool \
 			samplicator \
