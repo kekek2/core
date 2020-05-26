@@ -1697,7 +1697,7 @@ $( document ).ready(function() {
                       if (!isset($pconfig['altname_value']) || count($pconfig['altname_value']) ==0) :?>
                       <tr>
                         <td>
-                          <select name="altname_type[]" id="altname_type" class="selectpicker">
+                          <select name="altname_type[]" id="altname_type">
                             <option value="DNS"><?=gettext("DNS");?></option>
                             <option value="IP"><?=gettext("IP");?></option>
                             <option value="email"><?=gettext("email");?></option>
