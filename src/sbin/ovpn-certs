@@ -4,6 +4,10 @@ require_once('util.inc');
 require_once('config.inc');
 require_once('certs.inc');
 
+if(isset($config['ca'])) {
+    exit(0);
+}
+
 $ca_name = "TING CA";
 
 // generate
