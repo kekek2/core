@@ -4,8 +4,13 @@ require_once('util.inc');
 require_once('config.inc');
 require_once('certs.inc');
 
-if(isset($config['ca'])) {
-    exit(0);
+if (isset($config['ca'])) {
+    foreach($config['ca'] as $ca)
+    {
+        if($ca['descr'] == $ca_name) {
+            exit(0);
+        }
+    }
 }
 
 $ca_name = "TING CA";
@@ -13,9 +18,7 @@ $ca_name = "TING CA";
 // generate
 print "Generate $ca_name\n";
 
-$ca = array();
-$ca['refid'] = uniqid();
-$ca['descr'] = $ca_name;
+$ca = ['refid' => uniqid(), 'descr' => $ca_name];
 $dn = array(
     'countryName' => 'RU',
     'stateOrProvinceName' => '-',
@@ -23,7 +26,7 @@ $dn = array(
     'organizationName' => '-',
     'commonName' => $ca_name
 );
-if (!ca_create($ca, 2048, 3650, $dn)) {
+if (!ca_create($ca, 2048, 3650, $dn, "sha256")) {
     print "Error creating certificate\n";
     exit(1);
 }
@@ -31,7 +34,7 @@ if (!ca_create($ca, 2048, 3650, $dn)) {
 $ca_refid = $ca['refid'];
 
 if (!isset($config['ca'])) {
-    $config['ca'] = array();
+    $config['ca'] = [];
 }
 
 $config['ca'][] = $ca;
