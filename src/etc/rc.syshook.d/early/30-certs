@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Check VPN CA cert
+/usr/local/sbin/ovpn-certs
+
 # Check and create TING client key
 TING_CLIENT_KEY=/usr/local/etc/ssl/ting-client.key
 [ -d /usr/local/etc/ssl ] || mkdir -p /usr/local/etc/ssl

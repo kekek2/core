@@ -1,0 +1,36 @@
+#!/usr/local/bin/php
+<?php
+require_once('util.inc');
+require_once('config.inc');
+require_once('certs.inc');
+
+$ca_name = "TING CA";
+
+// generate
+print "Generate $ca_name\n";
+
+$ca = array();
+$ca['refid'] = uniqid();
+$ca['descr'] = $ca_name;
+$dn = array(
+    'countryName' => 'RU',
+    'stateOrProvinceName' => '-',
+    'localityName' => '-',
+    'organizationName' => '-',
+    'commonName' => $ca_name
+);
+if (!ca_create($ca, 2048, 3650, $dn)) {
+    print "Error creating certificate\n";
+    exit(1);
+}
+
+$ca_refid = $ca['refid'];
+
+if (!isset($config['ca'])) {
+    $config['ca'] = array();
+}
+
+$config['ca'][] = $ca;
+write_config();
+
+?>
