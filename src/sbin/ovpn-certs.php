@@ -4,6 +4,8 @@ require_once('util.inc');
 require_once('config.inc');
 require_once('certs.inc');
 
+$ca_name = "TING CA";
+
 if (isset($config['ca'])) {
     foreach($config['ca'] as $ca)
     {
@@ -12,8 +14,6 @@ if (isset($config['ca'])) {
         }
     }
 }
-
-$ca_name = "TING CA";
 
 // generate
 print "Generate $ca_name\n";
