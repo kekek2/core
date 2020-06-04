@@ -766,9 +766,15 @@ function step12_submitphpaction()
         }
         $rule['direction'] = "in";
         $rule['source']['any'] = true;
-        $rule['destination']['network'] = $server['interface'] . "ip";
         $rule['destination']['port'] = $server['local_port'];
-        $rule['interface'] = $server['interface'];
+        if($server['interface'] === "any") {
+	    $rule['destination']['any'] = true;
+	    $rule['floating'] = "yes";
+        }
+        else {
+	    $rule['interface'] = $server['interface'];
+	    $rule['destination']['network'] = $server['interface'] . "ip";
+        }
         $rule['protocol'] = strtolower($server['protocol']);
         $rule['type'] = "pass";
         $rule['enabled'] = "on";
