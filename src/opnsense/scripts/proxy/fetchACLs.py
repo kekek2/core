@@ -156,6 +156,8 @@ class Downloader(object):
                 line = filehandle.readline().decode(encoding='utf-8', errors='ignore')
                 if not line:
                     break
+                if len(line) > 1022:
+                    line = line[:1022]
                 yield filename, basefilename, file_ext, line
 
 
