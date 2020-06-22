@@ -1736,6 +1736,7 @@
 /usr/local/sbin/opnsense-installer
 /usr/local/sbin/opnsense-shell
 /usr/local/sbin/opnsense-version
+/usr/local/sbin/ovpn-certs
 /usr/local/sbin/ping_hosts.sh
 /usr/local/sbin/pluginctl
 /usr/local/share/apu2/apu2_v4.11.0.3.rom
