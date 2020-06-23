@@ -3035,8 +3035,6 @@ tbody.collapse.in {
   border-radius: 3px;
   -webkit-box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
-  overflow-y: auto;
-  max-height: 669px;
   background-clip: padding-box; }
   .dropdown-menu.pull-right {
     right: 0;
