@@ -117,6 +117,7 @@
 /usr/local/etc/rc.loader.d/00-banner
 /usr/local/etc/rc.loader.d/20-apuled
 /usr/local/etc/rc.loader.d/20-brand
+/usr/local/etc/rc.loader.d/20-ethernet
 /usr/local/etc/rc.loader.d/20-misc
 /usr/local/etc/rc.loader.d/20-modules
 /usr/local/etc/rc.loader.d/20-zfs
