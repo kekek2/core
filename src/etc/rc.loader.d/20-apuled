@@ -1,1 +1,3 @@
 apuled_load=YES
+###Workaround for BIOS 4.10.0.0 and above
+debug.acpi.avoid="\_SB_.PCI0.GPIO"
