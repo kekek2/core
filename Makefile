@@ -157,7 +157,8 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			ting-lang \
 			ting-ioncube \
 			wpa_supplicant \
-			zip
+			zip \
+			intel-igb-kmod
 
 WRKDIR?=${.CURDIR}/work
 WRKSRC?=${WRKDIR}/src
