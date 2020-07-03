@@ -50,7 +50,7 @@ CORE_PHP?=	72
 CORE_PYTHON?=	37
 CORE_SURICATA?=	# empty
 CORE_SYSLOGD?=	# empty
-CORE_SYSLOGNG?=	3.26
+CORE_SYSLOGNG?=	3.25
 CORE_UPDATE?=	# empty
 
 CORE_PYTHON_DOT=	${CORE_PYTHON:C/./&./1}
@@ -484,6 +484,12 @@ mfc: clean-mfcdir
 .endif
 	@git checkout master
 .endfor
+
+stable:
+	@git checkout stable/${CORE_ABI}
+
+master:
+	@git checkout master
 
 test: want-phpunit7-php${CORE_PHP}
 	@if [ "$$(${PKG} query %n-%v ${CORE_NAME})" != "${CORE_NAME}-${CORE_PKGVERSION}" ]; then \

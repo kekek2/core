@@ -190,3 +190,20 @@ function core_cron()
 
     return $jobs;
 }
+
+/**
+ *  sync configuration via xmlrpc
+ * @return array
+ */
+function core_xmlrpc_sync()
+{
+    $result = array();
+
+    $result[] = array(
+        'description' => gettext('Network Time'),
+        'section' => 'ntpd,system.timeservers',
+        'id' => 'ntpd',
+    );
+
+    return $result;
+}
