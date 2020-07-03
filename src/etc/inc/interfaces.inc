@@ -166,7 +166,7 @@ function interfaces_vlan_configure($verbose = false, $realif = '')
         echo 'Configuring VLAN interfaces...';
         flush();
     }
-
+    $ints = legacy_interface_listget();
     foreach ($config['vlans']['vlan'] as $vlan) {
         if (empty($vlan['vlanif'])) {
             $vlan['vlanif'] = "{$vlan['if']}_vlan{$vlan['tag']}";
@@ -176,7 +176,7 @@ function interfaces_vlan_configure($verbose = false, $realif = '')
             continue;
         }
 
-        interface_vlan_configure($vlan);
+        interface_vlan_configure($vlan, $ints);
     }
 
     if ($verbose) {
@@ -184,7 +184,7 @@ function interfaces_vlan_configure($verbose = false, $realif = '')
     }
 }
 
-function interface_vlan_configure(&$vlan)
+function interface_vlan_configure(&$vlan, $intfs = null)
 {
     global $config;
 
@@ -202,47 +202,8 @@ function interface_vlan_configure(&$vlan)
 
     interfaces_bring_up($if);
 
-    $members = array($if);
-
-    /* VLAN may be on top of another type of aggregation */
-    if (isset($config['laggs']['lagg'])) {
-        foreach ($config['laggs']['lagg'] as $lagg) {
-            if ($if == $lagg['laggif']) {
-                $members = explode(',', $lagg['members']);
-                break;
-            }
-        }
-    }
-
-    // disable/enable hardware vlan tags, will be skipped when "Leave default" (option 2) is selected
-    if (!isset($config['system']['disablevlanhwfilter']) || $config['system']['disablevlanhwfilter'] == 1) {
-        foreach ($members as $member) {
-            // probe already selected options
-            $intf_details = legacy_interface_details($member);
-            $selected_opts = array();
-            if (!empty($intf_details['options'])) {
-                foreach ($intf_details['options'] as $opt) {
-                    if ($opt == 'vlan_hwtagging') {
-                        $selected_opts[] = 'vlanhwtag';
-                    } else {
-                        $selected_opts[] = str_replace('_', '', $opt);
-                    }
-                }
-            }
-            // set one tag at a time to avoid driver issues
-            foreach (array('vlanhwtag', 'vlanhwfilter', 'vlanhwtso') as $tag) {
-                if (!isset($config['system']['disablevlanhwfilter'])) {
-                    if (!in_array($tag, $selected_opts)) {
-                        legacy_interface_flags($member, $tag);
-                    }
-                } elseif (in_array($tag, $selected_opts)) {
-                    legacy_interface_flags($member, '-' . $tag);
-                }
-            }
-        }
-    }
-
-    if (!empty($vlanif) && does_interface_exist($vlanif)) {
+    $ints = empty($intfs) ? legacy_interface_listget() : $intfs;
+    if (!empty($vlanif) && in_array($vlanif, $ints)) {
         legacy_interface_destroy($vlanif);
     }
 
@@ -251,7 +212,6 @@ function interface_vlan_configure(&$vlan)
     legacy_vlan_tag($vlanif, $if, $vlan['tag'], $pcp);
 
     interfaces_bring_up($vlanif);
-    interfaces_bring_up($if);
 
     return $vlanif;
 }
@@ -3037,17 +2997,20 @@ function interface_dhcpv6_prepare($interface = 'wan', $wancfg, $linkdownevent = 
     }
 
     $dhcp6cscript = "#!/bin/sh\n";
-    $dhcp6cscript .= "if [ -z \"\${PDINFO}\" ]; then\n";
-    $dhcp6cscript .= "\trm -f /tmp/{$wanif}_pdinfo\n";
-    $dhcp6cscript .= "else\n";
-    $dhcp6cscript .= "\techo \${PDINFO} > /tmp/{$wanif}_pdinfo\n";
-    $dhcp6cscript .= "fi\n";
     $dhcp6cscript .= "if [ -n '" . (!empty($syscfg['dhcp6_debug']) ? 'debug' : '') . "' ]; then\n";
     $dhcp6cscript .= "\t/usr/bin/logger -t dhcp6c \"dhcp6c \$REASON on {$wanif}\"\n";
     $dhcp6cscript .= "fi\n";
     $dhcp6cscript .= "case \$REASON in\n";
-    $dhcp6cscript .= "REQUEST|" . (!empty($syscfg['dhcp6_norelease']) ? 'EXIT' : 'RELEASE') . ")\n";
+    $dhcp6cscript .= "REQUEST)\n";
+    $dhcp6cscript .= "\tif [ -n \"\${PDINFO}\" ]; then\n";
+    $dhcp6cscript .= "\t\techo \${PDINFO} > /tmp/{$wanif}_pdinfo\n";
+    $dhcp6cscript .= "\tfi\n";
     $dhcp6cscript .= "\t/usr/bin/logger -t dhcp6c \"dhcp6c \$REASON on {$wanif} - running newipv6\"\n";
+    $dhcp6cscript .= "\t/usr/local/opnsense/service/configd_ctl.py interface newipv6 {$wanif}\n";
+    $dhcp6cscript .= "\t;;\n";
+    $dhcp6cscript .= "EXIT|RELEASE)\n";
+    $dhcp6cscript .= "\t/usr/bin/logger -t dhcp6c \"dhcp6c \$REASON on {$wanif} - running newipv6\"\n";
+    $dhcp6cscript .= "\trm -f /tmp/{$wanif}_pdinfo\n";
     $dhcp6cscript .= "\t/usr/local/opnsense/service/configd_ctl.py interface newipv6 {$wanif}\n";
     $dhcp6cscript .= "\t;;\n";
     $dhcp6cscript .= "*)\n";

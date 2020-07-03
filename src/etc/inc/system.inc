@@ -75,6 +75,7 @@ function get_default_sysctl_value($id)
     $sysctls = array(
         'hw.ibrs_disable' => '0',
         'hw.syscons.kbd_reboot' => '0',
+        'hw.ixl.enable_head_writeback' => '0',
         'kern.ipc.maxsockbuf' => '4262144',
         'kern.randompid' => '347',
         'net.enc.in.ipsec_bpf_mask' => '2', /* after processing */
@@ -129,6 +130,7 @@ function system_sysctl_get()
     global $config;
 
     $sysctls = array(
+        'hw.ixl.enable_head_writeback' => 'default',
         'net.enc.in.ipsec_bpf_mask' => 'default',
         'net.enc.in.ipsec_filter_mask' => 'default',
         'net.enc.out.ipsec_bpf_mask' => 'default',
@@ -1017,13 +1019,12 @@ function system_login_configure($verbose = false)
     $fd = fopen('/etc/ttys', 'w');
     $on_off_secure_u = $serial_enabled ? 'onifconsole secure' : 'off secure';
     $on_off_secure_v = $virtual_enabled ? 'onifexists secure' : 'off secure';
-    /* XXX serial type uses 3wire nowadays */
     if (isset($config['system']['disableconsolemenu'])) {
         $console_type = 'Pc';
-        $serial_type = 'std.' . $serialspeed;
+        $serial_type = '3wire.' . $serialspeed;
     } else {
         $console_type = 'al.Pc';
-        $serial_type = 'al.' . $serialspeed;
+        $serial_type = 'al.3wire.' . $serialspeed;
     }
     foreach ($etc_ttys_lines as $tty) {
         /* virtual terminals */
