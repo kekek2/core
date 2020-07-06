@@ -404,12 +404,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     });
                 });
             } else if (e.target.id == 'alert_tab') {
-                var search = "<div class=\"search form-group\">\n"
-		+ "                        <div class=\"input-group\">\n"
-		+ "                            <input class=\"search-field form-control\" placeholder=\"{{ lang._('Search') }}\" type=\"text\" id=\"inputSearchAlerts\">\n"
-		+ "                        </div>\n"
-		+ "                    </div>";
-
+                updateAlertLogs();
                 /**
                  * grid query alerts
                  */
@@ -422,7 +417,7 @@ POSSIBILITY OF SUCH DAMAGE.
                                 selection:false,
                                 rowCount:[7,50,100,250,500,1000,-1],
                                 templates : {
-                                    header: "<div id=\"{" + "{ctx.id}" + "}\" class=\"{" + "{css.header}" + "}\"><div class=\"row\"><div class=\"col-sm-12 actionBar\"><select id=\"alert-logfile\" class=\"selectpicker\" data-width=\"200px\"></select><span id=\"actDeleteLog\" class=\"btn btn-lg fa fa-trash\" style=\"cursor: pointer;\" title=\"{{ lang._('Delete Alert Log') }}\"></span><p class=\"{" + "{css.actions}" + "}\"></p>" + search + "</div></div></div>"
+                                    header: ""
                                 },
                                 requestHandler:addAlertQryFilters,
                                 formatters:{
@@ -452,44 +447,6 @@ POSSIBILITY OF SUCH DAMAGE.
                             grid_td.html($(this).html());
                             grid_td.tooltip({title: $(this).text()});
                             $(this).html(grid_td);
-                        }
-                    });
-                });
-                // alert log processing
-                grid_alerts.on("loaded.rs.jquery.bootgrid", function(){
-                    updateAlertLogs();
-
-                    // delete selected alert log
-                    $("#actDeleteLog").click(function(){
-                        var selected_log = $("#alert-logfile > option:selected");
-                        BootstrapDialog.show({
-                            type:BootstrapDialog.TYPE_DANGER,
-                            title: '{{ lang._('Remove log file ') }} ' + selected_log.html(),
-                            message: '{{ lang._('Removing this file will cleanup disk space, but cannot be undone.') }}',
-                            buttons: [{
-                                icon: 'fa fa-trash-o',
-                                label: '{{ lang._('Yes') }}',
-                                cssClass: 'btn-primary',
-                                action: function(dlg){
-                                    ajaxCall("/api/ids/service/dropAlertLog/", {filename: selected_log.data('filename')}, function(data,status){
-                                        updateAlertLogs();
-                                    });
-                                    dlg.close();
-                                }
-                            }, {
-                                label: '{{ lang._('Close') }}',
-                                action: function(dlg){
-                                    dlg.close();
-                                }
-                            }]
-                        });
-                    });
-                });
-                // search alerts processing
-                grid_alerts.on("loaded.rs.jquery.bootgrid", function(){
-                    $("#inputSearchAlerts").keypress(function (e) {
-                        if (e.which == 13) {
-                            $('#grid-alerts').bootgrid('reload');
                         }
                     });
                 });
