@@ -69,7 +69,7 @@ class Template(object):
         self._j2_env.filters['get_subnet_mask'] = self._get_subnet_mask
         self._j2_env.filters['openvpn_get_interface_ip'] = self._openvpn_get_interface_ip
         self._j2_env.filters['openvpn_get_routes'] = self._openvpn_get_routes
-        self._j2_env.filters['base64_decode'] = lambda x: base64.b64decode(x.replace("\r", "").replace("\n\n", "\n"))
+        self._j2_env.filters['base64_decode'] = lambda x: base64.b64decode(x).decode("UTF-8")
 
     @staticmethod
     def _encode_idna(x):
