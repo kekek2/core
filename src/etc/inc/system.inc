@@ -233,7 +233,6 @@ function get_locale_list()
     $locales['de_DE'] = gettext('German');
     $locales['it_IT'] = gettext('Italian');
     $locales['ja_JP'] = gettext('Japanese');
-    $locales['no_NO'] = gettext('Norwegian');
     $locales['pt_BR'] = gettext('Portuguese (Brazil)');
     $locales['pt_PT'] = gettext('Portuguese (Portugal)');
     $locales['ru_RU'] = gettext('Russian');
@@ -584,6 +583,7 @@ function system_syslogd_fixup_server($server)
 
 function system_syslogd_start($verbose = false, $restart = false)
 {
+    global $config;
     if ($verbose) {
         echo 'Configuring system logging...';
         flush();
