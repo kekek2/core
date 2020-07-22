@@ -584,6 +584,7 @@ function system_syslogd_fixup_server($server)
 
 function system_syslogd_start($verbose = false, $restart = false)
 {
+    global $config;
     if ($verbose) {
         echo 'Configuring system logging...';
         flush();
