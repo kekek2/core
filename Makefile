@@ -31,6 +31,22 @@ all:
 # TING overrides
 .include "Mk/ting.mk"
 
+TING_ABI?=	1.7
+CORE_ABI?=	20.7
+CORE_PHP?=	72
+CORE_PYTHON?=	37
+CORE_SYSLOGNG?=	3.27
+
+.if exists(${GIT}) && exists(${GITVERSION})
+. if ${CORE_ABI} == "20.7"
+CORE_COMMIT!=	${GITVERSION} --exclude=21.1.r\*
+. else
+CORE_COMMIT!=	${GITVERSION}
+. endif
+.else
+CORE_COMMIT=	unknown 0 undefined
+.endif
+
 CORE_VERSION?=	${CORE_COMMIT:[1]}
 CORE_REVISION?=	${CORE_COMMIT:[2]}
 CORE_HASH?=	${CORE_COMMIT:[3]}
@@ -40,12 +56,6 @@ CORE_PKGVERSION=	${CORE_VERSION}_${CORE_REVISION}
 .else
 CORE_PKGVERSION=	${CORE_VERSION}
 .endif
-
-TING_ABI?=	1.7
-CORE_ABI?=	20.7
-CORE_PHP?=	72
-CORE_PYTHON?=	37
-CORE_SYSLOGNG?=	3.27
 
 CORE_PYTHON_DOT=	${CORE_PYTHON:C/./&./1}
 
@@ -57,7 +67,7 @@ CORE_REPOSITORY?=	${TING_ABI}/libressl
 CORE_REPOSITORY?=	unsupported/${CORE_FLAVOUR:tl}
 .endif
 
-CORE_MESSAGE?=		TBA
+CORE_MESSAGE?=		The lion sleeps tonight
 CORE_NAME?=		opnsense
 CORE_TYPE?=		release
 
@@ -76,8 +86,6 @@ CORE_DEPENDS_amd64?=	beep \
 			bsdinstaller \
 			secadm \
 			suricata
-
-CORE_DEPENDS_i386?=	${CORE_DEPENDS_amd64}
 
 CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			apuledctld \
