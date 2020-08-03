@@ -986,7 +986,6 @@
 /usr/local/opnsense/service/templates/OPNsense/Syslog/local/wireless.conf
 /usr/local/opnsense/service/templates/OPNsense/Syslog/newsyslog.conf
 /usr/local/opnsense/service/templates/OPNsense/Syslog/rc.conf.d
-/usr/local/opnsense/service/templates/OPNsense/Syslog/syslog-ng-local.conf
 /usr/local/opnsense/service/templates/OPNsense/Syslog/syslog-ng-lockout.conf
 /usr/local/opnsense/service/templates/OPNsense/Syslog/syslog-ng.conf
 /usr/local/opnsense/service/templates/OPNsense/Unbound/core/+TARGETS
