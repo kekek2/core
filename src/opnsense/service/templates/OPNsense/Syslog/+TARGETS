@@ -1,4 +1,4 @@
 newsyslog.conf:/etc/newsyslog.conf
 syslog-ng.conf:/usr/local/etc/syslog-ng.conf
 rc.conf.d:/etc/rc.conf.d/syslog_ng
-syslog-ng-lockout.conf:/usr/local/etc/syslog-ng.conf.d/syslog-ng-lockout.conf
+syslog-ng-lockout.conf:/usr/local/etc/syslog-ng.d/syslog-ng-lockout.conf
