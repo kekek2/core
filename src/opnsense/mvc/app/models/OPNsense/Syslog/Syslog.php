@@ -44,7 +44,7 @@
  *          )
  *      );
  *
- *      
+ *
  */
 namespace OPNsense\Syslog;
 
@@ -94,7 +94,6 @@ class Syslog extends BaseModel
         array('program' => null,  'filter' => 'local7.*',                             'type' => 'file',   'target' => self::$LOGS_DIRECTORY.'/dhcpd.log', 'category' => 'dhcp'),
         array('program' => null,  'filter' => '*.notice;kern.debug;lpr.info;mail.crit;daemon.none;news.err;local0.none;local3.none;local4.none;local7.none;security.*;auth.info;authpriv.info;daemon.info',
                                                                                       'type' => 'file',   'target' => self::$LOGS_DIRECTORY.'/system.log','category' => 'system'),
-        array('program' => null,  'filter' => 'auth.info;authpriv.info;user.*',       'type' => 'pipe',   'target' => 'exec /usr/local/sbin/sshlockout_pf 15','category' => null),
         array('program' => null,  'filter' => '*.emerg',                              'type' => 'all',    'target' => '*',                                'category' => 'system'),
         );
     }
@@ -126,9 +125,9 @@ class Syslog extends BaseModel
 
         $this->setSource($source);
 
-        // we would not add category if it not exists 
+        // we would not add category if it not exists
 
-        foreach($this->LogTargets->Target->__items as $uuid => $item) 
+        foreach($this->LogTargets->Target->__items as $uuid => $item)
         {
             if($item->Source->__toString() == $source
             && $item->Filter->__toString() == $filter
@@ -172,7 +171,7 @@ class Syslog extends BaseModel
         $type = trim($type);
         $target = trim($target);
 
-        foreach($this->LogTargets->Target->__items as $uuid => $item) 
+        foreach($this->LogTargets->Target->__items as $uuid => $item)
         {
             if($item->Source->__toString() == $source
             && $item->Filter->__toString() == $filter
@@ -197,7 +196,7 @@ class Syslog extends BaseModel
         $name = trim($name);
         $description = trim($description);
 
-        foreach($this->LogCategories->Category->__items as $uuid => $category) 
+        foreach($this->LogCategories->Category->__items as $uuid => $category)
         {
             if($category->Name->__toString() == $name)
             {
@@ -231,7 +230,7 @@ class Syslog extends BaseModel
     {
         $path = trim($path);
 
-        foreach($this->LocalSockets->Socket->__items as $uuid => $socket) 
+        foreach($this->LocalSockets->Socket->__items as $uuid => $socket)
         {
             if($socket->Path->__toString() == $path)
                 return;
@@ -320,7 +319,7 @@ class Syslog extends BaseModel
         $this->checkPredefinedTargets();
 
         // cleanup old targets
-        foreach($this->LogTargets->Target->__items as $uuid => $item) 
+        foreach($this->LogTargets->Target->__items as $uuid => $item)
         {
             if(!in_array($uuid, $this->AllTargets)) {
                 $this->LogTargets->Target->del($uuid);
@@ -328,7 +327,7 @@ class Syslog extends BaseModel
             }
         }
         // cleanup old categories
-        foreach($this->LogCategories->Category->__items as $uuid => $item) 
+        foreach($this->LogCategories->Category->__items as $uuid => $item)
         {
             if(!in_array($uuid, $this->AllCategories)) {
                 $this->LogCategories->Category->del($uuid);
@@ -336,7 +335,7 @@ class Syslog extends BaseModel
             }
         }
         $this->BatchMode = false;
-        
+
         $this->saveIfModified();
     }
 
@@ -408,7 +407,7 @@ class Syslog extends BaseModel
         if($program == '')
             return;
 
-        foreach($this->LogSources->Source->__items as $uuid => $source) 
+        foreach($this->LogSources->Source->__items as $uuid => $source)
         {
             if($source->Program->__toString() == $program)
                 return;
@@ -427,10 +426,10 @@ class Syslog extends BaseModel
     */
     private function saveIfModified()
     {
-       
+
         if($this->BatchMode === true)
             return;
-        
+
         if($this->Modified === false)
             return;
 
