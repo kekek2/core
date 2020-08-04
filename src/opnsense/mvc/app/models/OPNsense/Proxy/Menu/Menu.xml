@@ -15,9 +15,9 @@
             <RemoteACL VisibleName="Remote ACL" url="/ui/proxy#remote_acls"/>
             <TrafficManagement VisibleName="Traffic Mgmt" url="/ui/proxy#subtab_proxy-general-traffic"/>
           </Administration>
-          <Log VisibleName="Log File" url="/diag_logs_proxy.php?type=cache" order="100">
-              <More url="/diag_logs_proxy.php*" visibility="hidden"/>
-          </Log>
+          <Cache order="20" VisibleName="Cache Log" url="/ui/diagnostics/log/squid/cache"/>
+          <Access order="30" VisibleName="Access Log" url="/ui/diagnostics/log/squid/access"/>
+          <Store order="40" VisibleName="Store Log" url="/ui/diagnostics/log/squid/store"/>
       </WebProxy>
     </Services>
 </menu>

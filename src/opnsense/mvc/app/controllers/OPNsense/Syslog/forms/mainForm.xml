@@ -1,18 +1,6 @@
 <form>
 <tab id="syslog-general" description="General Syslog Settings">
 	<field>
-		<id>syslog.Reverse</id>
-		<label>Reverse Display</label>
-		<type>checkbox</type>
-		<help>Show log entries in reverse order (newest entries on top).</help>
-	</field>
-	<field>
-		<id>syslog.NumEntries</id>
-		<label>GUI Log Entries to Display</label>
-		<type>text</type>
-		<help>Hint: This is only the number of log entries displayed in the GUI. It does not affect how many entries are contained in the actual log files.</help>
-	</field>
-	<field>
 		<id>syslog.DisableLogFiles</id>
 		<label>Disable Local Logging</label>
 		<type>checkbox</type>
