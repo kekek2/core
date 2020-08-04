@@ -44,7 +44,7 @@ class SysLogFormat(BaseLogFormat):
         if (self._startup_timestamp - ts).days < 0:
             # likely previous year, (month for this year not reached yet)
             ts = ts.replace(year=ts.year - 1)
-        return ts.isoformat()
+        return ts.strftime("%b %d %H:%M:%S")
 
     @staticmethod
     def line(line):
