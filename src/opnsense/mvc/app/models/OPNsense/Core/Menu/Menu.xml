@@ -9,6 +9,7 @@
         <Password order="2" url="/system_usermanager_passwordmg.php" cssClass="fa fa-key fa-fw">
             <Edit url="/system_usermanager_passwordmg.php*" visibility="hidden"/>
         </Password>
+        <Logout order="3" url="/index.php?logout" cssClass="fa fa-sign-out fa-fw"/>
     </Lobby>
     <Reporting order="15" cssClass="fa fa-area-chart">
         <Settings url="/reporting_settings.php" cssClass="fa fa-cog fa-fw"/>
@@ -43,7 +44,7 @@
             <Changelog order="40" url="/ui/core/firmware#changelog"/>
             <Settings order="50" url="/ui/core/firmware#settings"/>
             <Reporter order="60" url="/crash_reporter.php"/>
-            <LogFile order="100" VisibleName="Log File" url="/ui/syslog/logview/showlog/pkg"/>
+            <LogFile order="100" VisibleName="Log File" url="/ui/diagnostics/log/core/pkg"/>
         </Firmware>
         <Gateways cssClass="fa fa-location-arrow fa-fw">
             <Single order="10" url="/system_gateways.php">
@@ -54,7 +55,7 @@
                 <List url="/system_gateway_groups.php*" visibility="hidden"/>
                 <Edit url="/system_gateway_groups_edit.php*" visibility="hidden"/>
             </Group>
-            <LogFile VisibleName="Log File" order="30" url="/ui/syslog/logview/showlog/routing"/>
+            <LogFile VisibleName="Log File" order="30" url="/ui/diagnostics/log/core/gateways"/>
         </Gateways>
         <HighAvailability VisibleName="High Availability" cssClass="fa fa-refresh fa-fw">
             <Settings order="100" url="/system_hasync.php"/>
@@ -62,7 +63,7 @@
         </HighAvailability>
         <Routes cssClass="fa fa-map-signs fa-fw">
             <Configuration order="10" url="/ui/routes" />
-            <LogFile order="100" VisibleName="Log File" url="/ui/syslog/logview/showlog/routing"/>
+            <LogFile order="100" VisibleName="Log File" url="/ui/diagnostics/log/core/routing"/>
         </Routes>
         <Settings cssClass="fa fa-cogs fa-fw">
             <Administration url="/system_advanced_admin.php"/>
@@ -87,10 +88,10 @@
         </Trust>
         <Wizard url="/wizard.php?xml=system" cssClass="fa fa-magic fa-fw"/>
         <LogFiles order="150" VisibleName="Log Files" cssClass="fa fa-eye fa-fw">
-            <General order="100" VisibleName="System Log" url="/ui/syslog/logview/showlog/system"/>
-            <Backend order="150" url="/ui/syslog/logview/showlog/configd"/>
-            <WebGUI order="200" VisibleName="Web GUI" url="/ui/syslog/logview/showlog/lighttpd"/>
-            <Administrative order="250" VisibleName="Administration" url="/ui/syslog/logview/showlog/administrative"/>
+            <Backend url="/ui/diagnostics/log/core/configd"/>
+            <General VisibleName="System Log" url="/ui/diagnostics/log/core/system"/>
+            <WebGUI VisibleName="Web GUI" url="/ui/diagnostics/log/core/lighttpd"/>
+            <Administrative order="250" VisibleName="Administration" url="/ui/diagnostics/log/core/administrative"/>
         </LogFiles>
         <Diagnostics order="160" cssClass="fa fa-medkit fa-fw">
             <Services url="/status_services.php">
@@ -114,13 +115,13 @@
             <Devices url="/interfaces_wireless.php">
                 <Edit url="/interfaces_wireless_edit.php*" visibility="hidden"/>
             </Devices>
-            <LogFile VisibleName="Log File" url="/ui/syslog/logview/showlog/wireless"/>
+            <LogFile VisibleName="Log File" url="/ui/diagnostics/log/core/wireless"/>
         </Wireless>
         <PPP order="950" VisibleName="Point-to-Point" cssClass="fa fa-tty fa-fw">
             <Devices url="/interfaces_ppps.php">
                 <Edit url="/interfaces_ppps_edit.php*" visibility="hidden"/>
             </Devices>
-            <LogFile VisibleName="Log File" url="/ui/syslog/logview/showlog/ppps"/>
+            <LogFile VisibleName="Log File" url="/ui/diagnostics/log/core/ppps"/>
         </PPP>
         <Types VisibleName="Other Types" order="960" cssClass="fa fa-archive fa-fw">
             <Bridge url="/interfaces_bridge.php">
@@ -193,7 +194,7 @@
         <LogFiles order="400" VisibleName="Log Files" cssClass="fa fa-eye fa-fw">
             <Live VisibleName="Live View" url="/ui/diagnostics/firewall/log"/>
             <Overview url="/ui/diagnostics/firewall/stats"/>
-            <Plain VisibleName="Plain View" url="/ui/syslog/logview/showlog/filter"/>
+            <Plain VisibleName="Plain View" url="/ui/diagnostics/log/core/filter"/>
         </LogFiles>
     </Firewall>
     <Services order="60" cssClass="fa fa-cog">
@@ -202,7 +203,7 @@
             <Leases order="300" url="/status_dhcp_leases.php">
                 <Details url="/status_dhcp_leases.php?*" visibility="hidden"/>
             </Leases>
-            <LogFile VisibleName="Log File" order="400" url="/ui/syslog/logview/showlog/dhcpd"/>
+            <LogFile VisibleName="Log File" order="400" url="/ui/diagnostics/log/core/dhcpd"/>
         </DHCPv4>
         <DHCPv6 cssClass="fa fa-bullseye fa-fw">
             <Relay order="300" url="/services_dhcpv6_relay.php"/>
@@ -229,7 +230,7 @@
                 <Edit url="/ui/openvpn/export?*" visibility="hidden"/>
             </ClientExport>
             <Status order="60" VisibleName="Connection Status" url="/status_openvpn.php"/>
-            <LogFile order="70" VisibleName="Log File" url="/ui/syslog/logview/showlog/openvpn"/>
+            <LogFile order="70" VisibleName="Log File" url="/ui/diagnostics/log/core/openvpn"/>
         </OpenVPN>
     </VPN>
     <Power order="70" cssClass="fa fa-plug">
