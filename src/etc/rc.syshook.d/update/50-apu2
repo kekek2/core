@@ -3,4 +3,4 @@
 if [ "`dmidecode -s baseboard-manufacturer`" != "PC Engines" -o "`dmidecode -s baseboard-product-name | tr '[:upper:]' '[:lower:]'`" != "apu2" -o "`dmidecode -s bios-version`" = "v4.11.0.3" ]; then
   exit 0
 fi
-flashrom -w /usr/local/share/apu2/apu2_v4.11.0.3.rom -p internal:boardmismatch=force
+flashrom -w /usr/local/share/apu2/apu2_v4.12.0.3.rom -p internal:boardmismatch=force
