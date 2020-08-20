@@ -57,7 +57,7 @@ class SettingsController extends ApiControllerBase
         curl_close($ch);
 
         $company = ($code == '200' && preg_match('/^[\w\s.-]{0,48}$/', $body)) ? $body : " ";
-        $company = preg_replace('/[^\w\d- ]/', '', $company);
+        $company = preg_replace('/[^\w\d\-\s]/', '', $company);
         if ($company == "") {
             $company = " ";
         }
