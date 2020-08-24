@@ -172,6 +172,7 @@
 /usr/local/etc/rc.syshook.d/update/60-repo
 /usr/local/etc/rc.syshook.d/update/70-igb
 /usr/local/etc/secadm.conf.d/syslog-ng
+/usr/local/etc/secadm.rules
 /usr/local/etc/squid/errors/en/ERR_BANNED_ACCESS_DENIED
 /usr/local/etc/squid/errors/en/ERR_BLACKLIST_ACCESS_DENIED
 /usr/local/etc/squid/errors/en/ERR_BLOCKMIMETYPES_ACCESS_DENIED
@@ -586,6 +587,7 @@
 /usr/local/opnsense/mvc/app/models/OPNsense/Unbound/Menu/Menu.xml
 /usr/local/opnsense/mvc/app/models/OPNsense/Unboundplus/Dnsbl.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Unboundplus/Dnsbl.xml
+/usr/local/opnsense/mvc/app/models/OPNsense/Unboundplus/Migrations/M0_0_2.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Unboundplus/Miscellaneous.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Unboundplus/Miscellaneous.xml
 /usr/local/opnsense/mvc/app/models/SmartSoft/License/ACL/ACL.xml
