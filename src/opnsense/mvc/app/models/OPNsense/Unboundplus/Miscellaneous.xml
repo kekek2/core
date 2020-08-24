@@ -7,7 +7,6 @@
             <Required>N</Required>
         </privatedomain>
         <dotservers type="CSVListField">
-            <default>176.103.130.131@853</default>
             <Required>N</Required>
             <mask>/^[a-fA-F0-9\.\,\:\@]{1,512}$/</mask>
         </dotservers>
