@@ -85,6 +85,7 @@ CORE_COPYRIGHT_YEARS?=	2014-2020
 CORE_DEPENDS_amd64?=	beep \
 			bsdinstaller \
 			secadm \
+			secadm-kmod \
 			suricata
 
 CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
