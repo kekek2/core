@@ -105,7 +105,6 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			flock \
 			flowd \
 			hostapd \
-			intel-igb-kmod \
 			isc-dhcp44-relay \
 			isc-dhcp44-server \
 			lighttpd \
