@@ -170,7 +170,6 @@
 /usr/local/etc/rc.syshook.d/stop/99-config
 /usr/local/etc/rc.syshook.d/update/50-apu2
 /usr/local/etc/rc.syshook.d/update/60-repo
-/usr/local/etc/rc.syshook.d/update/70-igb
 /usr/local/etc/secadm.conf.d/syslog-ng
 /usr/local/etc/secadm.rules
 /usr/local/etc/squid/errors/en/ERR_BANNED_ACCESS_DENIED
