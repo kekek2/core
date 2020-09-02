@@ -13,7 +13,7 @@ class M0_0_2 extends BaseModelMigration
     {
         parent::run($model);
 
-        if ((new Backend())->getLastRestart()) {
+        if (file_exists('/.probe.for.install.media')) {
             return;
         }
 
