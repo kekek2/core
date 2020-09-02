@@ -4,6 +4,7 @@ namespace OPNsense\Unboundplus\Migrations;
 
 use OPNsense\Base\BaseModelMigration;
 use OPNsense\Core\Config;
+use OPNsense\Core\Backend;
 
 
 class M0_0_2 extends BaseModelMigration
@@ -11,6 +12,10 @@ class M0_0_2 extends BaseModelMigration
     public function run($model)
     {
         parent::run($model);
+
+        if ((new Backend())->getLastRestart()) {
+            return;
+        }
 
         if (get_class($model) != 'OPNsense\\Unboundplus\\Miscellaneous') {
             return;
