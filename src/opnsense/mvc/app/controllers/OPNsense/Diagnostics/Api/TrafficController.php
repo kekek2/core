@@ -26,29 +26,26 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+namespace OPNsense\Diagnostics\Api;
+
+use OPNsense\Base\ApiControllerBase;
+use OPNsense\Core\Config;
+use OPNsense\Core\Backend;
+
 /**
- * widget temperature data
+ * Class TrafficController
+ * @package OPNsense\Diagnostics\Api
  */
-function temperature_api()
+class TrafficController extends ApiControllerBase
 {
-    $result = array();
 
-    foreach (explode("\n", configd_run('system temp')) as $sysctl) {
-        $parts = explode('=', $sysctl);
-        if (count($parts) >= 2) {
-            $tempItem = array();
-            $tempItem['device'] = $parts[0];
-            $tempItem['device_seq'] = filter_var($tempItem['device'], FILTER_SANITIZE_NUMBER_INT);
-            $tempItem['temperature'] = trim(str_replace('C', '', $parts[1]));
-            $tempItem['type'] = strpos($tempItem['device'], 'hw.acpi') !== false ? "zone" : "core";
-            $tempItem['type_translated'] = $tempItem['type'] == "zone" ? gettext("Zone") : gettext("Core");
-            $result[] = $tempItem;
-        }
+    /**
+     * retrieve interface traffic stats
+     * @return array
+     */
+    public function InterfaceAction()
+    {
+        $response = (new Backend())->configdRun('interface show traffic');
+        return json_decode($response, true);
     }
-
-    usort($result, function ($item1, $item2) {
-        return strcmp(strtolower($item1['device']), strtolower($item2['device']));
-    });
-
-    return $result;
 }

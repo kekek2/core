@@ -124,8 +124,8 @@ class Main(object):
                 if do_vacuum:
                     syslog.syslog(syslog.LOG_NOTICE, 'vacuum done')
             except:
-                syslog.syslog(syslog.LOG_ERR, 'flowd aggregate died with message %s' % (traceback.format_exc()))
-                return
+                syslog.syslog(syslog.LOG_ERR, 'flowd aggregate died with message %s' % (traceback.format_exc().replace('\n', ' ')))
+                raise
             # wait for next pass, exit on sigterm
             if Main.config.single_pass:
                 break

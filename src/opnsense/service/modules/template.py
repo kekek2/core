@@ -32,6 +32,7 @@
 import os
 import os.path
 import glob
+import re
 import stat
 import syslog
 import collections
@@ -66,6 +67,7 @@ class Template(object):
         # register additional filters
         self._j2_env.filters['decode_idna'] = lambda x:x.decode('idna')
         self._j2_env.filters['encode_idna'] = self._encode_idna
+        self._j2_env.filters['regex_replace'] = lambda value, pattern, replacement: re.sub(pattern, replacement, value)
         self._j2_env.filters['get_interface_ip'] = self._get_interface_ip
         self._j2_env.filters['get_subnet_mask'] = self._get_subnet_mask
         self._j2_env.filters['openvpn_get_interface_ip'] = self._openvpn_get_interface_ip
