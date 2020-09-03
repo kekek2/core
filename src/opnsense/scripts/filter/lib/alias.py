@@ -35,6 +35,7 @@ import dns.resolver
 import syslog
 from hashlib import md5
 from . import geoip
+from .arpcache import ArpCache
 
 class Alias(object):
     def __init__(self, elem, known_aliases=[], ttl=-1, ssl_no_verify=False, timeout=120):
@@ -147,9 +148,7 @@ class Alias(object):
                 # only handle content if response is correct
                 req.raw.decode_content = True
                 lines = req.raw.read().decode().splitlines()
-                if len(lines) > 100:
-                    # when larger alias lists are downloaded, make sure we log before handling.
-                    syslog.syslog(syslog.LOG_ERR, 'fetch alias url %s (lines: %s)' % (url, len(lines)))
+                syslog.syslog(syslog.LOG_NOTICE, 'fetch alias url %s (lines: %s)' % (url, len(lines)))
                 for line in lines:
                     raw_address = re.split(r'[\s,;|#]+', line)[0]
                     if raw_address and not raw_address.startswith('//'):
@@ -269,6 +268,8 @@ class Alias(object):
             return self._fetch_url
         elif self._type == 'geoip':
             return self._fetch_geo
+        elif self._type == 'mac':
+            return ArpCache().iter_addresses
         else:
             return None
 

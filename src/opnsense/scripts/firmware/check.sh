@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (C) 2015-2019 Franco Fichtner <franco@opnsense.org>
+# Copyright (C) 2015-2020 Franco Fichtner <franco@opnsense.org>
 # Copyright (C) 2014 Deciso B.V.
 # All rights reserved.
 #
@@ -27,7 +27,7 @@
 
 # This script generates a json structured file with the following content:
 # connection: error|timeout|unauthenticated|misconfigured|unresolved|busy|ok
-# repository: error|untrusted|revoked|ok
+# repository: error|untrusted|unsigned|revoked|ok
 # last_ckeck: <date_time_stamp>
 # updates: <num_of_updates>
 # download_size: <size_of_total_downloads>

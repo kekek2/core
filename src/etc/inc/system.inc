@@ -570,15 +570,17 @@ function system_staticroutes_configure($interface = '')
     }
 }
 
-function system_syslogd_fixup_server($server)
+function system_syslogd_extra_local($logsocket)
 {
-    global $config;
+    $logdir = dirname($logsocket);
 
-    set_sysctl(array(
-      "net.inet.ip.forwarding" => "1",
-      "net.inet6.ip6.forwarding" => "1"
-    ));
+    if (!is_dir($logdir)) {
+        /* create if needed to avoid startup error */
+        mwexecf('/bin/mkdir -p %s', $logdir);
+    }
 
+    /* emit extra args for syslogd invoke */
+    return exec_safe('-l %s ', $logsocket);
 }
 
 function system_syslogd_start($verbose = false, $restart = false)
@@ -872,6 +874,7 @@ function system_cron_configure($verbose = false, $defer = false)
     $crontab_contents .= "# /etc/crontab, see the crontab(5) manual page.\n";
     $crontab_contents .= "SHELL=/bin/sh\n";
     $crontab_contents .= "PATH=/etc:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin\n";
+    $crontab_contents .= "REQUESTS_CA_BUNDLE=/etc/ssl/cert.pem\n";
     $crontab_contents .= "#minute\thour\tmday\tmonth\twday\tcommand\n";
 
     foreach ($autocron as $item) {
