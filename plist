@@ -84,9 +84,9 @@
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20180614
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20181218
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20190702
+/usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20200119
 /usr/local/etc/pkg/fingerprints/OPNsense/trusted/opnsense-update.deciso.com.20180627
 /usr/local/etc/pkg/fingerprints/OPNsense/trusted/opnsense-update.deciso.com.20200122
-/usr/local/etc/pkg/fingerprints/OPNsense/trusted/pkg.opnsense.org.20200119
 /usr/local/etc/pkg/fingerprints/OPNsense/trusted/pkg.opnsense.org.20200313
 /usr/local/etc/pkg/fingerprints/TING/revoked/smart-soft.20180207
 /usr/local/etc/pkg/fingerprints/TING/revoked/smart-soft.ru.2017
@@ -155,6 +155,7 @@
 /usr/local/etc/rc.syshook.d/monitor/10-dpinger
 /usr/local/etc/rc.syshook.d/start/10-newwanip
 /usr/local/etc/rc.syshook.d/start/20-freebsd
+/usr/local/etc/rc.syshook.d/start/21-syslog-ng
 /usr/local/etc/rc.syshook.d/start/25-flowd
 /usr/local/etc/rc.syshook.d/start/90-carp
 /usr/local/etc/rc.syshook.d/start/90-cron
@@ -685,6 +686,7 @@
 /usr/local/opnsense/scripts/filter/kill_table.py
 /usr/local/opnsense/scripts/filter/lib/__init__.py
 /usr/local/opnsense/scripts/filter/lib/alias.py
+/usr/local/opnsense/scripts/filter/lib/arpcache.py
 /usr/local/opnsense/scripts/filter/lib/geoip.py
 /usr/local/opnsense/scripts/filter/list_counters.py
 /usr/local/opnsense/scripts/filter/list_osfp.py
@@ -841,6 +843,7 @@
 /usr/local/opnsense/scripts/system/list_interrupts.py
 /usr/local/opnsense/scripts/system/rfc5246_cipher_suites.csv
 /usr/local/opnsense/scripts/system/ssl_ciphers.py
+/usr/local/opnsense/scripts/system/temperature.sh
 /usr/local/opnsense/scripts/systemhealth/activity.py
 /usr/local/opnsense/scripts/systemhealth/clearlog
 /usr/local/opnsense/scripts/systemhealth/definitions/gateway-quality.xml
