@@ -409,7 +409,7 @@ class LDAP extends Base implements IAuthConnector
     {
         $result = array();
         if ($this->ldapHandle !== false) {
-            $searchResults = $this->search("(|(ou=*)(cn=Users))");
+            $searchResults = $this->search("(|(ou=*)(cn=Users)(cn=Groups))");
             if ($searchResults !== false) {
                 for ($i = 0; $i < $searchResults["count"]; $i++) {
                     $result[] = $searchResults[$i]['dn'];
