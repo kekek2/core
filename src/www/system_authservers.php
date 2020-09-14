@@ -371,6 +371,9 @@ $( document ).ready(function() {
             case 'msad':
               $("#ldap_attr_user").val('sAMAccountName');
               break;
+            case 'astra':
+                $("#ldap_attr_user").val('uid');
+                break;
         }
     });
 
@@ -711,6 +714,7 @@ endif; ?>
                       <option value="open"><?=gettext('OpenLDAP');?></option>
                       <option value="msad"><?=gettext('Microsoft AD');?></option>
                       <option value="edir"><?=gettext('Novell eDirectory');?></option>
+                      <option value="astra"><?=gettext('Astra Linux FreeIPA');?></option>
                     </select>
                   </td>
                 </tr>
