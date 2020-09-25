@@ -248,7 +248,10 @@
     <bogons>
       <interval>monthly</interval>
     </bogons>
-    <backupcount>60</backupcount>
+    <backupcount>100</backupcount>
+    <crypto_hardware>aesni</crypto_hardware>
+    <pf_share_forward>1</pf_share_forward>
+    <lb_use_sticky>1</lb_use_sticky>
     <ssh>
       <enabled>enabled</enabled>
       <passwordauth>1</passwordauth>
@@ -301,12 +304,6 @@
   </dhcpd>
   <unbound>
     <enable>1</enable>
-    <custom_options>do-not-query-localhost: no
-
-      forward-zone:
-      name: "."
-      forward-addr: 127.0.0.1@5353
-    </custom_options>
   </unbound>
   <snmpd>
     <syslocation/>
