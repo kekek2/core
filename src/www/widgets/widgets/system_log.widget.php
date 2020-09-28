@@ -31,7 +31,7 @@ require_once("guiconfig.inc");
 $system_logfile = '/var/log/system.log';
 
 if (!$config['widgets']['systemlogfiltercount']){
-  $syslogEntriesToFetch = isset($config['OPNsense']['Syslog']['NumEntries']) ?$config['OPNsense']['Syslog']['NumEntries'] : 20;
+  $syslogEntriesToFetch = 20;
 } else {
   $syslogEntriesToFetch = $config['widgets']['systemlogfiltercount'];
 }
@@ -67,7 +67,22 @@ if (is_numeric($_POST['logfiltercount'])) {
 
 <div id="system_log-widgets" class="content-box" style="overflow:scroll;">
   <table class="table table-striped">
-    <?php dump_log($system_logfile, $syslogEntriesToFetch, '', 250); ?>
+      <tbody>
+<?php
+        $logdata = json_decode(
+            configdp_run("system diag log", [$syslogEntriesToFetch, 0, "", "core", "system"]),
+            true
+        );
+        $records = !empty($logdata) && !empty($logdata['rows']) ? $logdata['rows'] : [];
+        foreach($records as $record):?>
+        <tr>
+            <td style="width:150px;" class="text-nowrap"><?=$record['timestamp'];?></td>
+            <td><?=html_safe($record['line']);?></td>
+        </tr>
+
+<?php
+        endforeach;?>
+      </tbody>
   </table>
 </div>
 
