@@ -12,7 +12,6 @@
             </enabled>
             <error_pages type="OptionField">
                 <Required>N</Required>
-                <Default>opnsense</Default>
                 <BlankDesc>Squid</BlankDesc>
                 <OptionValues>
                     <opnsense>OPNsense</opnsense>
