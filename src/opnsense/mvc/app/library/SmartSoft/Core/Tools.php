@@ -111,10 +111,18 @@ class Tools
 
             if (isset($cert["subject"]["UNDEF"][1])) {
                 $license = $cert["subject"]["UNDEF"][1];
-            } elseif (isset($cert["subject"]["tingAddress"])) {
+            } elseif (isset($cert["subject"]["tingLicense"])) {
                 $license = $cert["subject"]["tingLicense"];
             } else {
                 $license = "";
+            }
+
+            if (isset($cert["subject"]["UNDEF"][3])) {
+                $usersCount = $cert["subject"]["UNDEF"][3];
+            } elseif (isset($cert["subject"]["tingUsers"])) {
+                $usersCount = $cert["subject"]["tingUsers"];
+            } else {
+                $usersCount = "";
             }
 
             if ($cert_mac != Tools::getCurrentMacAddress()) {
@@ -131,6 +139,7 @@ class Tools
                 "expires" => ($cert["validTo_time_t"] > time()) ? strftime("%Y-%m-%d",
                     $cert["validTo_time_t"]) : gettext("Expired"),
                 "license" => $license,
+                "users" => $usersCount,
             ];
         }
         return $installed_crt_info;

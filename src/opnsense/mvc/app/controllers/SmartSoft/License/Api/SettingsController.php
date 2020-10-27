@@ -62,6 +62,17 @@ class SettingsController extends ApiControllerBase
             $company = " ";
         }
 
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, LICENSE_API_URL . "/{$licenseKey}/users");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+        $body = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        $usersCount = ($code == '200') ? $body : null;
+
         $pkey_path = tools::installed_key_path;
         $pkey = openssl_get_privatekey("file://{$pkey_path}");
 
@@ -72,6 +83,7 @@ class SettingsController extends ApiControllerBase
             'tingAddress' => Tools::getCurrentMacAddress(),
             'tingLicense' => $licenseKey,
             'tingModule' => $module,
+            'tingUsers' => $usersCount,
         ];
 
         $csr_resource = openssl_csr_new($csrData, $pkey, ['config' => '/usr/local/etc/ssl/opnsense.cnf']);
