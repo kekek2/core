@@ -37,6 +37,7 @@ import gzip
 import zipfile
 import syslog
 import urllib3
+import re
 from configparser import ConfigParser
 from urllib.request import urlopen
 from urllib.error import URLError
@@ -262,7 +263,7 @@ class DomainSorter(object):
                         # duplicate, skip
                         continue
                     if self._Type == 'url_regex':
-                        f_out.write((line.strip().replace('\\', '/').replace('.', '\.').replace('[', '\[').replace(']', '\]').replace('?', '\?').replace('(', '\(').replace(')', '\)').replace('+', '\+').replace('|', '\|') + '\n').encode())
+                        f_out.write((re.escape(line.strip()) + '\n').encode())
                     else:
                         if self.is_domain(line):
                             # prefix domain, if this domain is different then the previous one
