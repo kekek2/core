@@ -152,12 +152,6 @@ class FlowParser:
                             # XXX invalid (empty?) flow record.
                             continue
                         record['recv_sec'] = record['recv_time'][0]
-                        if self._recv_stamp is not None and record['recv_sec'] < self._recv_stamp:
-                            # self._recv_stamp can contain the last received timestamp, in which case
-                            # we should not return older data. The exact timestamp will be returned, so the
-                            # consumer knows it doesn't have to read other, older, flowd log files
-                            continue
-
                         record['sys_uptime_ms'] = record['agent_info'][0]
                         record['netflow_ver'] = record['agent_info'][3]
                         record['recv'] = record['recv_sec']
