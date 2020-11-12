@@ -30,6 +30,8 @@
 require_once("guiconfig.inc");
 require_once("interfaces.inc");
 
+use \SmartSoft\Firewall\Syslog;
+
 $a_npt = &config_read_array('nat', 'npt');
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -114,14 +116,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
       if (isset($id)) {
           $a_npt[$id] = $natent;
+          $npt_action = "Update Firewall/NAT/NPT (IPv6)";
       } elseif (isset($after)) {
           array_splice($a_npt, $after+1, 0, array($natent));
       } else {
           $a_npt[] = $natent;
+          $npt_action = "Add Firewall/NAT/NPT (IPv6)";
       }
 
       write_config();
       mark_subsystem_dirty('natconf');
+      Syslog::log($npt_action, $a_npt, $natent);
       header(url_safe('Location: /firewall_nat_npt.php'));
       exit;
     }

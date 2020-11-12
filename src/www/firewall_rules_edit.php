@@ -32,6 +32,8 @@ require_once("guiconfig.inc");
 require_once("interfaces.inc");
 require_once("filter.inc");
 
+use \SmartSoft\Firewall\Syslog;
+
 /* TCP flags */
 $tcpflags = array("syn", "ack", "fin", "rst", "psh", "urg", "ece", "cwr");
 
@@ -521,6 +523,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $filterent['created'] = $a_filter[$id]['created'];
             }
             $a_filter[$id] = $filterent;
+            $alias_action = "Update Firewall/Rule";
         } else {
             $filterent['created'] = make_config_revision_entry();
             if (isset($after)) {
@@ -528,12 +531,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             } else {
                 $a_filter[] = $filterent;
             }
+            $alias_action = "Add Firewall/Rule";
         }
         // sort filter items per interface, not really necessary but leaves a bit nicer sorted config.xml behind.
         filter_rules_sort();
         // write to config
         write_config();
         mark_subsystem_dirty('filter');
+        Syslog::log($alias_action, $a_filter, $filterent);
 
         header(url_safe('Location: /firewall_rules.php?if=%s', array(
             !empty($pconfig['floating']) ? 'FloatingRules' : $pconfig['interface']

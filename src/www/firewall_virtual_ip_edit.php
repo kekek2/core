@@ -32,6 +32,8 @@
 require_once("guiconfig.inc");
 require_once("interfaces.inc");
 
+use \SmartSoft\Firewall\Syslog;
+
 /**
  * find max vhid
  */
@@ -211,11 +213,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // update or insert item in config
         if (isset($id)) {
             $a_vip[$id] = $vipent;
+            $vip_action = "Update Firewall/Virtual IPs";
         } else {
             $a_vip[] = $vipent;
+            $vip_action = "Add Firewall/Virtual IPs";
         }
         write_config();
         mark_subsystem_dirty('vip');
+        Syslog::log($vip_action, $a_vip, $vipent);
         file_put_contents('/tmp/.firewall_virtual_ip.apply', serialize($toapplylist));
         header(url_safe('Location: /firewall_virtual_ip.php'));
         exit;

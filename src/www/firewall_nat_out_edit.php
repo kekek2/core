@@ -31,6 +31,8 @@
 require_once("guiconfig.inc");
 require_once("filter.inc");
 
+use \SmartSoft\Firewall\Syslog;
+
 /**
  * return option array for valid translation networks
  */
@@ -318,6 +320,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $natent['updated'] = make_config_revision_entry();
         if (isset($id)) {
             $a_out[$id] = $natent;
+            $out_action = "Update Firwall/NAT/Outbound";
         } else {
             $natent['created'] = make_config_revision_entry();
             if (isset($after)) {
@@ -325,9 +328,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             } else {
                 $a_out[] = $natent;
             }
+            $out_action = "Add Firwall/NAT/Outbound";
         }
         write_config();
         mark_subsystem_dirty('natconf');
+        Syslog::log($out_action, $a_out, $natent);
         header(url_safe('Location: /firewall_nat_out.php'));
         exit;
     }
