@@ -29,6 +29,8 @@
 require_once("guiconfig.inc");
 require_once("filter.inc");
 
+use \SmartSoft\Firewall\Syslog;
+
 $a_scrub = &config_read_array('filter', 'scrub', 'rule');
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -64,6 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         write_config();
         mark_subsystem_dirty('filter');
+        Syslog::log("Change settings Firewall/Settings/Normalization");
         header(url_safe('Location: /firewall_scrub.php'));
         exit;
     } elseif (isset($pconfig['apply'])) {
@@ -76,15 +79,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         unset($a_scrub[$id]);
         write_config();
         mark_subsystem_dirty('filter');
+        Syslog::log("Delete Firewall/Settings/Normalization", $id);
         header(url_safe('Location: /firewall_scrub.php'));
         exit;
     } elseif (isset($pconfig['act']) && $pconfig['act'] == 'del_x' && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
         // delete selected rules
+        $id_for_delete = [];
         foreach ($pconfig['rule'] as $rule_index) {
             unset($a_scrub[$rule_index]);
+            $id_for_delete[] = $rule_index;
         }
         write_config();
         mark_subsystem_dirty('filter');
+        foreach ($id_for_delete as $idk) {
+            Syslog::log("Delete Firewall/Settings/Normalization", $idk);
+        }
         header(url_safe('Location: /firewall_scrub.php'));
         exit;
     } elseif ( isset($pconfig['act']) && $pconfig['act'] == 'move' && isset($pconfig['rule']) && count($pconfig['rule']) > 0) {
@@ -96,6 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $a_scrub = legacy_move_config_list_items($a_scrub, $id,  $pconfig['rule']);
         write_config();
         mark_subsystem_dirty('filter');
+        Syslog::log("Move Firewall/Settings/Normalization", $id);
         header(url_safe('Location: /firewall_scrub.php'));
         exit;
 
@@ -103,11 +113,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // toggle item
         if(isset($a_scrub[$id]['disabled'])) {
             unset($a_scrub[$id]['disabled']);
+            $scub_action = "Enable Firewall/Settings/Normalization";
         } else {
             $a_scrub[$id]['disabled'] = true;
+            $scub_action = "Disable Firewall/Settings/Normalization";
         }
         write_config();
         mark_subsystem_dirty('filter');
+        Syslog::log($scub_action, $id);
         header(url_safe('Location: /firewall_scrub.php'));
         exit;
     }

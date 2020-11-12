@@ -32,6 +32,8 @@
 require_once("guiconfig.inc");
 require_once("filter.inc");
 
+use \SmartSoft\Firewall\Syslog;
+
 /****f* legacy/is_schedule_inuse
  * NAME
  *   checks to see if a schedule is currently in use by a rule
@@ -197,12 +199,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         if (isset($id)) {
             $a_schedules[$id] = $schedule;
+            $shedule_action = "Update Firewall/Settings/Shedule";
         } else {
             $a_schedules[] = $schedule;
+            $shedule_action = "Add Firewall/Settings/Shedule";
         }
 
         schedule_sort();
         write_config();
+        Syslog::log($shedule_action, $a_schedules, $schedule);
         filter_configure();
 
         header(url_safe('Location: /firewall_schedule.php'));
