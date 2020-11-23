@@ -584,9 +584,10 @@ function system_syslogd_extra_local($logsocket)
     return exec_safe('-l %s ', $logsocket);
 }
 
-function system_syslogd_start($verbose = false, $restart = false)
+function system_syslogd_start($verbose = false, $restart = false, $async = false)
 {
     global $config;
+
     if ($verbose) {
         echo 'Configuring system logging...';
         flush();
