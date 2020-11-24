@@ -476,6 +476,7 @@
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/AuthenticationServerField.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/AuthGroupField.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/AutoNumberField.php
+/usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/Base64Field.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/BaseField.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/BaseListField.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/BooleanField.php
@@ -501,6 +502,7 @@
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/UniqueIdField.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/UpdateOnlyTextField.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/UrlField.php
+/usr/local/opnsense/mvc/app/models/OPNsense/Base/FieldTypes/VirtualIPField.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/Menu/MenuInitException.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/Menu/MenuItem.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Base/Menu/MenuSystem.php
@@ -662,6 +664,7 @@
 /usr/local/opnsense/mvc/tests/app/models/OPNsense/Base/FieldTypes/AuthGroupFieldTest.php
 /usr/local/opnsense/mvc/tests/app/models/OPNsense/Base/FieldTypes/AuthGroupFieldTest/config.xml
 /usr/local/opnsense/mvc/tests/app/models/OPNsense/Base/FieldTypes/AutoNumberFieldTest.php
+/usr/local/opnsense/mvc/tests/app/models/OPNsense/Base/FieldTypes/Base64FieldTest.php
 /usr/local/opnsense/mvc/tests/app/models/OPNsense/Base/FieldTypes/BooleanFieldTest.php
 /usr/local/opnsense/mvc/tests/app/models/OPNsense/Base/FieldTypes/CertificateFieldTest.php
 /usr/local/opnsense/mvc/tests/app/models/OPNsense/Base/FieldTypes/CertificateFieldTest/config.xml
@@ -677,6 +680,8 @@
 /usr/local/opnsense/mvc/tests/app/models/OPNsense/Base/FieldTypes/OptionFieldTest.php
 /usr/local/opnsense/mvc/tests/app/models/OPNsense/Base/FieldTypes/PortFieldTest.php
 /usr/local/opnsense/mvc/tests/app/models/OPNsense/Base/FieldTypes/ProtocolFieldTest.php
+/usr/local/opnsense/mvc/tests/app/models/OPNsense/Base/FieldTypes/VirtualIPFieldTest.php
+/usr/local/opnsense/mvc/tests/app/models/OPNsense/Base/FieldTypes/VirtualIPFieldTest/config.xml
 /usr/local/opnsense/mvc/tests/PHPunit.xml
 /usr/local/opnsense/mvc/tests/setup.php
 /usr/local/opnsense/scripts/dhcp/get_leases.py
