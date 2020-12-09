@@ -1,7 +1,7 @@
 <?php
 
 /**
- *    Copyright (C) 2020 Deciso B.V.
+ *    Copyright (C) 2015 Deciso B.V.
  *
  *    All rights reserved.
  *
@@ -28,43 +28,18 @@
  *
  */
 
-namespace OPNsense\Base\FieldTypes;
+namespace OPNsense\Diagnostics;
 
-use OPNsense\Base\Validators\CallbackValidator;
+use OPNsense\Base\IndexController;
 
 /**
- * Class Base64Field
+ * Class TrafficController
+ * @package OPNsense\Diagnostics
  */
-class Base64Field extends TextField
+class TrafficController extends IndexController
 {
-    protected $internalValidationMessage = "invalid base64 encoded string";
-
-    /**
-     * @param string $value to validate
-     * @return array messages
-     */
-    private function validateBase64($value)
+    public function indexAction()
     {
-        $messages = [];
-        if (base64_encode(base64_decode($value, true)) != str_replace("\n", "", $value)) {
-            $messages[] = $this->internalValidationMessage;
-        }
-        return $messages;
-    }
-
-    /**
-     * retrieve field validators for this field type
-     * @return array
-     */
-    public function getValidators()
-    {
-        $validators = parent::getValidators();
-        if ($this->internalValue != null) {
-            $validators[] = new CallbackValidator(["callback" => function ($data) {
-                return $this->validateBase64($data);
-            }
-            ]);
-        }
-        return $validators;
+        $this->view->pick('OPNsense/Diagnostics/traffic');
     }
 }

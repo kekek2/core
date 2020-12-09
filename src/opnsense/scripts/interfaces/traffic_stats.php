@@ -1,7 +1,8 @@
+#!/usr/local/bin/php
 <?php
 
 /*
- * Copyright (C) 2015 Deciso B.V.
+ * Copyright (C) 2016-2020 Deciso B.V.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,22 +26,19 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+require_once("interfaces.inc");
+require_once("config.inc");
 
-/**
- * request functions which may be registered by the xmlrpc system
- * every registrable module should include a file with this pattern xmlrpc_publishable_{filename without .inc}
- * @return array
- */
-function xmlrpc_publishable_test()
-{
-    return array("test");
+$result = array("interfaces" => array());
+$interfaces = legacy_interface_stats();
+$temp = gettimeofday();
+$result['time'] = (double)$temp["sec"] + (double)$temp["usec"] / 1000000.0;
+// collect user friendly interface names
+foreach (legacy_config_get_interfaces(array("virtual" => false)) as $interfaceKey => $itf) {
+    if (array_key_exists($itf['if'], $interfaces)) {
+        $result['interfaces'][$interfaceKey] = $interfaces[$itf['if']];
+        $result['interfaces'][$interfaceKey]['name'] = !empty($itf['descr']) ? $itf['descr'] : $interfaceKey;
+    }
 }
 
-/**
- * test function
- * @return string
- */
-function test($message = "test")
-{
-    return $message;
-}
+echo json_encode($result);
