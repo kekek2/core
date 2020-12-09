@@ -299,19 +299,13 @@ POSSIBILITY OF SUCH DAMAGE.
                     }
                 });
                 /**
-                 * disable/enable[with optional filter] selected rulesets
+                 * disable/enable selected rulesets
                  */
                 $("#disableSelectedRuleSets").unbind('click').click(function(){
                     actionToggleSelected('grid-rule-files', '/api/ids/settings/toggleRuleset/', 0, 20);
                 });
                 $("#enableSelectedRuleSets").unbind('click').click(function(){
                     actionToggleSelected('grid-rule-files', '/api/ids/settings/toggleRuleset/', 1, 20);
-                });
-                $("#enabledropSelectedRuleSets").unbind('click').click(function(){
-                    actionToggleSelected('grid-rule-files', '/api/ids/settings/toggleRuleset/', "drop", 20);
-                });
-                $("#enableclearSelectedRuleSets").click(function(){
-                    actionToggleSelected('grid-rule-files', '/api/ids/settings/toggleRuleset/', "clear", 20);
                 });
             } else if (e.target.id == 'rule_tab'){
                 //
@@ -351,7 +345,7 @@ POSSIBILITY OF SUCH DAMAGE.
                                     if (payload.frm_DialogRule) {
                                         $.each(payload.frm_DialogRule, function(key, value){
                                             // ignore fixed fields and empty values
-                                            if (['sid', 'rev', 'action', 'action_default', 'installed_action',
+                                            if (['sid', 'rev', 'action', 'action_default',
                                                  'enabled', 'enabled_default', 'msg', 'reference'].includes(key)
                                                  || value === null) {
                                                 return;
@@ -549,7 +543,7 @@ POSSIBILITY OF SUCH DAMAGE.
                                             );
 
                                             var row = $("<tr/>");
-                                            row.append( $("<td colspan=2/>").append($("<pre/>").html($("<code/>").text(data['payload_printable']))));
+                                            row.append( $("<td colspan=2/>").append($("<pre style='width:1100px'/>").html($("<code/>").text(data['payload_printable']))));
                                             tbl_tbody.append(row);
                                         }
 
@@ -790,12 +784,6 @@ POSSIBILITY OF SUCH DAMAGE.
                               <button data-toggle="tooltip" id="enableSelectedRuleSets" type="button" class="btn btn-xs btn-default btn-primary">
                                   {{ lang._('Enable selected') }}
                               </button>
-                              <button data-toggle="tooltip" id="enabledropSelectedRuleSets" type="button" class="btn btn-xs btn-default btn-primary">
-                                  {{ lang._('Enable (drop filter)') }}
-                              </button>
-                              <button data-toggle="tooltip" id="enableclearSelectedRuleSets" type="button" class="btn btn-xs btn-default btn-primary">
-                                  {{ lang._('Enable (clear filter)') }}
-                              </button>
                               <button data-toggle="tooltip" id="disableSelectedRuleSets" type="button" class="btn btn-xs btn-default btn-primary">
                                   {{ lang._('Disable selected') }}
                               </button>
@@ -816,7 +804,6 @@ POSSIBILITY OF SUCH DAMAGE.
                             <th data-column-id="description" data-type="string" data-sortable="false" data-visible="true">{{ lang._('Description') }}</th>
                             <th data-column-id="modified_local" data-type="rulets" data-sortable="false" data-visible="true">{{ lang._('Last updated') }}</th>
                             <th data-column-id="enabled" data-formatter="boolean" data-sortable="false" data-width="10em">{{ lang._('Enabled') }}</th>
-                            <th data-column-id="filter_str" data-type="string" data-identifier="true">{{ lang._('Filter') }}</th>
                             <th data-column-id="edit" data-formatter="editor" data-sortable="false" data-width="10em">{{ lang._('Edit') }}</th>
                         </tr>
                         </thead>

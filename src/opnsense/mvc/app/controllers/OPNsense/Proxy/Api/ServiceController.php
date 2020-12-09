@@ -29,6 +29,7 @@
 namespace OPNsense\Proxy\Api;
 
 use \OPNsense\Base\ApiMutableServiceControllerBase;
+use \OPNsense\Base\UserException;
 use \OPNsense\Core\Backend;
 use \OPNsense\Proxy\Proxy;
 use \OPNsense\Core\Config;
@@ -87,6 +88,26 @@ class ServiceController extends ApiMutableServiceControllerBase
         return (((string)$mdlProxy->forward->sslcertificate) != $prev_sslbump_cert) ||
             (!empty((string)$mdlProxy->general->cache->local->enabled) != $prev_cache_active) ||
             ($this->request->isPost() && $this->request->hasPost("force_restart") && $this->request->getPost("force_restart"));
+    }
+
+    private function hookStartErrorHandler($result)
+    {
+        if (preg_match('/__ok__$/', $result['response'])) {
+            $result['response'] = "ok";
+        } else {
+            throw new UserException($result['response'], gettext("proxy load error"));
+        }
+        return $result;
+    }
+
+    public function startAction()
+    {
+        return $this->hookStartErrorHandler(parent::startAction());
+    }
+
+    public function restartAction()
+    {
+        return $this->hookStartErrorHandler(parent::restartAction());
     }
 
     /**
