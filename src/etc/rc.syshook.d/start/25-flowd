@@ -6,10 +6,12 @@ require_once('script/load_phalcon.php');
 
 use \OPNsense\Diagnostics\Netflow;
 use \OPNsense\Core\Backend;
+use Phalcon\Logger\Adapter\Syslog;
 
 $mdlNetflow = new Netflow();
-if ((string)$mdlNetflow->collect->enable != 1)
+if ((string)$mdlNetflow->collect->enable != 1) {
     return;
+}
 
 $backend = new Backend();
 $backend->configdRun("netflow aggregate start");
@@ -19,7 +21,10 @@ while (!file_exists(Netflow::$socket_path)) {
     sleep(1);
     $timeout_wait -= 1;
     if ($timeout_wait <= 0) {
-        $this->getLogger()->error("failed waiting for starting flowd_aggregate.py");
+        (new Syslog("configd", array(
+            'facility' => LOG_LOCAL4,
+            'option' => LOG_PID,
+        )))->error("failed waiting for starting flowd_aggregate.py");
         return array("status" => "error");
     }
 }
