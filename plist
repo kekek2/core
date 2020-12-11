@@ -1858,7 +1858,7 @@
 /usr/local/sbin/ovpn-certs
 /usr/local/sbin/ping_hosts.sh
 /usr/local/sbin/pluginctl
-/usr/local/share/apu2/apu2_v4.12.0.3.rom
+/usr/local/share/apu2/apu2_v4.13.0.1.rom
 /usr/local/share/man/man8/opnsense-importer.8.gz
 /usr/local/share/man/man8/opnsense-installer.8.gz
 /usr/local/share/man/man8/opnsense-shell.8.gz
