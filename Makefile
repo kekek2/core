@@ -317,7 +317,6 @@ package: plist-check package-check clean-wrksrc
 	@echo "<span class="navbar-text"><span class="text-danger"><b>DEMO expired at " > ${BANNER}
 	@date -v "+${DEMO}" "+ %d.%m.%Y %H:%M:%S" >> ${BANNER}
 	@echo "</b></span></span>" >> ${BANNER}
-	patch -p1 < /usr/tools/patches/demo_time.patch
 	@echo ">>> Encoding all files for DEMO..."
 	@if [ -f /root/.ssh/encoder_rsa ]; then \
             touch ${WRKSRC}${LOCALBASE}/bin/python3.7; \
