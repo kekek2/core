@@ -196,11 +196,13 @@ EOF
 
 echo "***GOT REQUEST TO AUDIT HEALTH***" >> ${PKG_PROGRESS_FILE}
 
+echo "Currently running $(opnsense-version) at $(date)" >> ${PKG_PROGRESS_FILE}
+
 set_check kernel
 set_check base
 
 echo ">>> Check for and install missing package dependencies" >> ${PKG_PROGRESS_FILE}
-pkg check -da >> ${PKG_PROGRESS_FILE} 2>&1
+pkg check -dan >> ${PKG_PROGRESS_FILE} 2>&1
 
 echo ">>> Check for missing or altered package files" >> ${PKG_PROGRESS_FILE}
 pkg check -sa >> ${PKG_PROGRESS_FILE} 2>&1
