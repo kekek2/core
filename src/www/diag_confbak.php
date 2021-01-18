@@ -35,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $cnf = OPNsense\Core\Config::getInstance();
     $confvers = $cnf->getBackups(true);
+    array_shift($confvers);
 
     if (!empty($_GET['getcfg']) && ($_SESSION['Username'] == 'root' || $acl->isPageAccessible($_SESSION['Username'], "/diag_backup.php"))) {
         foreach ($confvers as $filename => $revision) {
@@ -109,6 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $cnf = OPNsense\Core\Config::getInstance();
     $confvers = $cnf->getBackups(true);
+    array_shift($confvers);
 
     $user = getUserEntry($_SESSION['Username']);
     $readonly = userHasPrivilege($user, 'user-config-readonly');

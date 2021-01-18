@@ -31,14 +31,14 @@ all:
 # TING overrides
 .include "Mk/ting.mk"
 
-TING_ABI?=	1.7
-CORE_ABI?=	20.7
+TING_ABI?=	1.8
+CORE_ABI?=	21.1
 CORE_PHP?=	73
 CORE_PYTHON?=	37
 
 .if exists(${GIT}) && exists(${GITVERSION})
-. if ${CORE_ABI} == "20.7"
-CORE_COMMIT!=	${GITVERSION} --exclude=21.1.r\*
+. if ${CORE_ABI} == "21.1"
+CORE_COMMIT!=	${GITVERSION} --exclude=21.7.r\*
 . else
 CORE_COMMIT!=	${GITVERSION}
 . endif
@@ -66,11 +66,11 @@ CORE_REPOSITORY?=	${TING_ABI}/libressl
 CORE_REPOSITORY?=	unsupported/${CORE_FLAVOUR:tl}
 .endif
 
-CORE_MESSAGE?=		Carry on my wayward son
-CORE_NAME?=		opnsense-devel
-CORE_TYPE?=		development
+CORE_MESSAGE?=		TBA
+CORE_NAME?=		opnsense
+CORE_TYPE?=		production
 
-CORE_COMMENT?=		${CORE_PRODUCT} ${CORE_TYPE} package
+CORE_COMMENT?=		${CORE_PRODUCT} ${CORE_TYPE} release
 CORE_MAINTAINER?=	project@opnsense.org
 CORE_ORIGIN?=		opnsense/${CORE_NAME}
 CORE_PACKAGESITE?=	https://pkg.opnsense.org

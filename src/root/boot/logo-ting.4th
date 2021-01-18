@@ -2,7 +2,7 @@
 \ Copyright (c) 2003 Aleksander Fafula <alex@fafula.com>
 \ Copyright (c) 2006-2015 Devin Teske <dteske@FreeBSD.org>
 \ Copyright (c) 2016-2017 Deciso B.V.
-\ Copyright (c) 2017 Smart-Soft Ltd.
+\ Copyright (c) 2021 Smart-Soft Ltd.
 \ All rights reserved.
 \
 \ Redistribution and use in source and binary forms, with or without
