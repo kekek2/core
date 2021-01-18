@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2020 Franco Fichtner <franco@opnsense.org>
+# Copyright (c) 2014-2021 Franco Fichtner <franco@opnsense.org>
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -33,7 +33,7 @@ all:
 
 TING_ABI?=	1.7
 CORE_ABI?=	20.7
-CORE_PHP?=	72
+CORE_PHP?=	73
 CORE_PYTHON?=	37
 
 .if exists(${GIT}) && exists(${GITVERSION})
@@ -79,7 +79,7 @@ CORE_WWW?=		https://opnsense.org/
 
 CORE_COPYRIGHT_HOLDER?=	Deciso B.V.
 CORE_COPYRIGHT_WWW?=	https://www.deciso.com/
-CORE_COPYRIGHT_YEARS?=	2014-2020
+CORE_COPYRIGHT_YEARS?=	2014-2021
 
 CORE_DEPENDS_amd64?=	beep \
 			bsdinstaller \
@@ -465,10 +465,17 @@ ${_TARGET}_ARG=		${${_TARGET}_ARGS:[0]}
 .endif
 .endfor
 
-diff:
+ensure-stable:
+	@if ! git show-ref --verify --quiet refs/heads/stable/${CORE_ABI}; then \
+		git update-ref refs/heads/stable/${CORE_ABI} refs/remotes/origin/stable/${CORE_ABI}; \
+		git config branch.stable/${CORE_ABI}.merge refs/heads/stable/${CORE_ABI}; \
+		git config branch.stable/${CORE_ABI}.remote origin; \
+	fi
+
+diff: ensure-stable
 	@git diff --stat -p stable/${CORE_ABI} ${.CURDIR}/${diff_ARGS:[1]}
 
-mfc: clean-mfcdir
+mfc: ensure-stable clean-mfcdir
 .for MFC in ${mfc_ARGS}
 .if exists(${MFC})
 	@cp -r ${MFC} ${MFCDIR}

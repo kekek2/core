@@ -235,11 +235,14 @@ function _dnsmasq_add_host_entries()
                         continue;
                     }
 
-                    $domain = $config['system']['domain'];
-                    if ($host['domain']) {
+                    if (!empty($host['domain'])) {
                         $domain = $host['domain'];
-                    } elseif ($dhcpifconf['domain']) {
+                    } elseif (!empty($dhcpifconf['domain'])) {
                         $domain = $dhcpifconf['domain'];
+                    } elseif (!empty($config['dnsmasq']['regdhcpdomain'])) {
+                        $domain = $config['dnsmasq']['regdhcpdomain'];
+                    } else {
+                        $domain = $config['system']['domain'];
                     }
 
                     $dhosts .= "{$host['ipaddr']}\t{$host['hostname']}.{$domain} {$host['hostname']}\n";
@@ -255,7 +258,6 @@ function _dnsmasq_add_host_entries()
                     if (!$host['ipaddrv6'] || !$host['hostname']) {
                         continue;
                     }
-                    $domain = $config['system']['domain'];
                     // XXX: dhcpdv6 domain entries have been superseded by domainsearchlist,
                     //      for backward compatibilty support both here.
                     if (!empty($host['domainsearchlist'])) {
@@ -266,7 +268,12 @@ function _dnsmasq_add_host_entries()
                         $domain = $dhcpifconf['domainsearchlist'];
                     } elseif (!empty($dhcpifconf['domain'])) {
                         $domain = $dhcpifconf['domain'];
+                    } elseif (!empty($config['dnsmasq']['regdhcpdomain'])) {
+                        $domain = $config['dnsmasq']['regdhcpdomain'];
+                    } else {
+                        $domain = $config['system']['domain'];
                     }
+
                     $domain = explode(";", $domain)[0]; // XXX: first entry of domainsearchlist
                     $dhosts .= "{$host['ipaddrv6']}\t{$host['hostname']}.{$domain} {$host['hostname']}\n";
                 }

@@ -331,6 +331,29 @@ function sign_cert_csr(&$cert, $caref, $csr, $lifetime, $digest_alg, $dn)
     return true;
 }
 
+function certs_build_name($dn)
+{
+    if (empty($dn) || !is_array($dn)) {
+        return 'unknown';
+    }
+
+    $subject = '';
+    ksort($dn);
+
+    foreach ($dn as $a => $v) {
+        if (is_array($v)) {
+            ksort($v);
+            foreach ($v as $w) {
+                $subject = strlen($subject) ? "{$a}={$w}, {$subject}" : "{$a}={$w}";
+            }
+        } else {
+            $subject = strlen($subject) ? "{$a}={$v}, {$subject}" : "{$a}={$v}";
+        }
+    }
+
+    return $subject;
+}
+
 function csr_get_subject($str_crt, $decode = true)
 {
     if ($decode) {
@@ -338,20 +361,8 @@ function csr_get_subject($str_crt, $decode = true)
     }
 
     $components = openssl_csr_get_subject($str_crt);
-    if (empty($components) || !is_array($components)) {
-        return "unknown";
-    }
 
-    ksort($components);
-    foreach ($components as $a => $v) {
-        if (!strlen($subject)) {
-            $subject = "{$a}={$v}";
-        } else {
-            $subject = "{$a}={$v}, {$subject}";
-        }
-    }
-
-    return $subject;
+    return certs_build_name($components);
 }
 
 function cert_get_subject($str_crt, $decode = true)
@@ -363,26 +374,7 @@ function cert_get_subject($str_crt, $decode = true)
     $inf_crt = openssl_x509_parse($str_crt);
     $components = $inf_crt['subject'];
 
-    if (empty($components) || !is_array($components)) {
-        return "unknown";
-    }
-
-    ksort($components);
-    $subject = '';
-    foreach ($components as $a => $v) {
-        if (is_array($v)) {
-            ksort($v);
-            foreach ($v as $w) {
-                $asubject = "{$a}={$w}";
-                $subject = (isset($subject)) ? "{$asubject}, {$subject}" : $asubject;
-            }
-        } else {
-            $asubject = "{$a}={$v}";
-            $subject = (isset($subject)) ? "{$asubject}, {$subject}" : $asubject;
-        }
-    }
-
-    return $subject;
+    return certs_build_name($components);
 }
 
 function cert_get_subject_array($crt)
@@ -404,34 +396,16 @@ function cert_get_subject_array($crt)
     return $subject_array;
 }
 
-
 function cert_get_issuer($str_crt, $decode = true)
 {
     if ($decode) {
         $str_crt = base64_decode($str_crt);
     }
+
     $inf_crt = openssl_x509_parse($str_crt);
     $components = $inf_crt['issuer'];
 
-    if (empty($components) || !is_array($components)) {
-        return "unknown";
-    }
-    ksort($components);
-    $issuer = '';
-    foreach ($components as $a => $v) {
-        if (is_array($v)) {
-            ksort($v);
-            foreach ($v as $w) {
-                $aissuer = "{$a}={$w}";
-                $issuer = (isset($issuer)) ? "{$aissuer}, {$issuer}" : $aissuer;
-            }
-        } else {
-            $aissuer = "{$a}={$v}";
-            $issuer = (isset($issuer)) ? "{$aissuer}, {$issuer}" : $aissuer;
-        }
-    }
-
-    return $issuer;
+    return certs_build_name($components);
 }
 
 /* this function works on x509 (crt), rsa key (prv), and req(csr) */

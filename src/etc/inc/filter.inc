@@ -747,18 +747,15 @@ function filter_rules_legacy(&$FilterIflist)
     $log['block'] = $config['OPNsense']['Syslog']['Firewall']['LogDefaultBlock'] == 1 ? "log" : "";
 
     $ipfrules = "";
-    $isbridged = false;
-    if (isset($config['bridges']['bridged'])) {
+    $bridge_interfaces = [];
+    if (!empty($config['bridges']['bridged'])) {
         foreach ($config['bridges']['bridged'] as $oc2) {
-            if (stristr($oc2['members'], $on)) {
-                $isbridged = true;
-                break;
-            }
+            $bridge_interfaces = array_merge(explode(',', $oc2['members']), $bridge_interfaces);
         }
     }
     foreach ($FilterIflist as $on => $oc) {
-        if (!$isbridged && !isset($oc['internal_dynamic']) && $oc['if'] != 'lo0') {
-            $ipfrules .= "antispoof {$log['block']} for {$oc['if']} \n";
+        if (!in_array($on, $bridge_interfaces) && !isset($oc['internal_dynamic']) && $oc['if'] != 'lo0') {
+            $ipfrules .= "antispoof {$log} for {$oc['if']} \n";
         }
     }
     return $ipfrules;
