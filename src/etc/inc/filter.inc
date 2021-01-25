@@ -755,7 +755,7 @@ function filter_rules_legacy(&$FilterIflist)
     }
     foreach ($FilterIflist as $on => $oc) {
         if (!in_array($on, $bridge_interfaces) && !isset($oc['internal_dynamic']) && $oc['if'] != 'lo0') {
-            $ipfrules .= "antispoof {$log} for {$oc['if']} \n";
+            $ipfrules .= "antispoof {$log['block']} for {$oc['if']} \n";
         }
     }
     return $ipfrules;
