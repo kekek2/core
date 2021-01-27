@@ -1110,4 +1110,23 @@ class FirmwareController extends ApiControllerBase
 
         return $response;
     }
+
+    public function uploadRepositoryAction()
+    {
+        $this->sessionClose(); // long running action, close session
+        if (!$this->request->hasFiles())
+            return ["status" => "failure"];
+        foreach ($this->request->getUploadedFiles() as $file)
+        {
+            $fileName = $file->getName();
+            if ($fileName == "")
+                return ["status" => "failure"];
+            $file->moveTo("/tmp/" . $fileName);
+            $backend = new Backend();
+            $ret = trim($backend->configdpRun("firmware repository", array("/tmp/" . $fileName), false));
+            unlink("/tmp/" . $fileName);
+            return ['status' => $ret == "OK" ? "ok" : "failure"];
+        }
+        return ["status" => "failure"];
+    }
 }

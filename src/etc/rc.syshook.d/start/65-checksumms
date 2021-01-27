@@ -1,0 +1,3 @@
+#!/bin/sh
+
+/usr/local/bin/php /usr/local/etc/checksum.php

@@ -390,6 +390,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
     }
 
+    if (!empty($pconfig['pre-shared-key'])) {
+        if (!preg_match('/^[a-zA-Z0-9\/\r\n+]*$/', $pconfig['pre-shared-key'])) {
+            $input_errors[] = sprintf(gettext("Invalid characters in Pre-Shared Key"));
+        }
+    }
+
+    if (!empty($pconfig['pre-shared-key'])) {
+        if (!preg_match('/^[a-zA-Z0-9\/\r\n+]*$/', $pconfig['pre-shared-key'])) {
+            $input_errors[] = sprintf(gettext("Invalid characters in Pre-Shared Key"));
+        }
+    }
+
     if (count($input_errors) == 0) {
         $copy_fields = "ikeid,iketype,interface,mode,protocol,myid_type,myid_data
         ,peerid_type,peerid_data,encryption-algorithm,margintime,rekeyfuzz,inactivity_timeout

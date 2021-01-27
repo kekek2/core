@@ -34,11 +34,9 @@ import gzip
 import zipfile
 import tempfile
 import requests
-import json
 import hashlib
 import os
 import re
-
 
 class Downloader(object):
     def __init__(self, target_dir):
@@ -147,13 +145,10 @@ class Downloader(object):
         if check_url is not None:
             # when no check url provided, assume different
             if self.is_supported(check_url):
-                version_fetch = self.fetch(url=check_url, auth=auth, headers=headers)
+                version_fetch = self.fetch(url=check_url + ".sha256", auth=auth, headers=headers)
                 if version_fetch:
                     version_response = version_fetch['handle'].read().decode()
-                    hash_value = [json.dumps(auth), json.dumps(headers), version_response]
-                    if not version_fetch['cached']:
-                        syslog.syslog(syslog.LOG_NOTICE, 'version response for %s : %s' % (check_url, version_response))
-                    return hashlib.md5(('\n'.join(hash_value)).encode()).hexdigest()
+                    return version_response
         return None
 
     def installed_file_hash(self, filename):
@@ -161,15 +156,12 @@ class Downloader(object):
             :param filename: target filename
             :return: None or hash
         """
-        target_filename = '%s/%s' % (self._target_dir, filename)
+        target_filename = '%s.sha256' % (filename)
         if os.path.isfile(target_filename):
-            with open(target_filename, 'r') as f_in:
-                line = f_in.readline()
-                if line.find("#@opnsense_download_hash:") == 0:
-                    return line.split(':')[1].strip()
+            return open(target_filename, 'r').read()
         return None
 
-    def download(self, url, url_filename, filename, auth=None, headers=None, version=None):
+    def download(self, url, url_filename, filename, auth=None, headers=None):
         """ download ruleset file
             :param url: download url
             :param url_filename: if provided the filename within the (packet) resource
@@ -183,15 +175,12 @@ class Downloader(object):
         if fetch_result is not None:
             try:
                 target_filename = '%s/%s' % (self._target_dir, filename)
-                if version:
-                    save_data = "#@opnsense_download_hash:%s\n" % version
-                else:
-                    save_data = ""
-                save_data += self._unpack(
+                save_data = self._unpack(
                     src=fetch_result['handle'], source_filename=fetch_result['filename'],
                     filename=url_filename
                 )
                 open(target_filename, 'w', buffering=10240).write(save_data)
+                open(target_filename + ".sha256", 'w', buffering=10240).write(hashlib.sha256(save_data.encode()).hexdigest())
             except IOError:
                 syslog.syslog(syslog.LOG_ERR, 'cannot write to %s' % target_filename)
                 return None

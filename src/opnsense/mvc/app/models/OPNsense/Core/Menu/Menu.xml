@@ -90,6 +90,7 @@
             <General order="100" VisibleName="System Log" url="/ui/syslog/logview/showlog/system"/>
             <Backend order="150" url="/ui/syslog/logview/showlog/configd"/>
             <WebGUI order="200" VisibleName="Web GUI" url="/ui/syslog/logview/showlog/lighttpd"/>
+            <Administrative order="250" VisibleName="Administration" url="/ui/syslog/logview/showlog/administrative"/>
         </LogFiles>
         <Diagnostics order="160" cssClass="fa fa-medkit fa-fw">
             <Services url="/status_services.php">

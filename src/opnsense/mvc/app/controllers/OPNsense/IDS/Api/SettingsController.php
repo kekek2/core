@@ -33,7 +33,7 @@ use OPNsense\Base\ApiMutableModelControllerBase;
 use OPNsense\Base\Filters\QueryFilter;
 use OPNsense\Core\Backend;
 use OPNsense\Core\Config;
-use OPNsense\Base\UIModelGrid;
+use \SmartSoft\Firewall\Syslog;
 
 /**
  * Class SettingsController Handles settings related API actions for the IDS module
@@ -114,9 +114,12 @@ class SettingsController extends ApiMutableModelControllerBase
 
             // request list of installed rules
             $backend = new Backend();
-            $response = $backend->configdpRun("ids query rules", array($itemsPerPage,
+            $response = $backend->configdpRun("ids query rules", array(
+                $itemsPerPage,
                 ($currentPage - 1) * $itemsPerPage,
-                $searchPhrase, $sortStr));
+                $searchPhrase,
+                $sortStr
+            ));
 
             $data = json_decode($response, true);
 
@@ -155,7 +158,7 @@ class SettingsController extends ApiMutableModelControllerBase
         if (!empty($sid)) {
             $this->sessionClose();
             $backend = new Backend();
-            $response = $backend->configdpRun("ids query rules", array(1, 0,'sid/' . $sid));
+            $response = $backend->configdpRun("ids query rules", array(1, 0, 'sid/' . $sid));
             $data = json_decode($response, true);
         } else {
             $data = null;
@@ -362,7 +365,7 @@ class SettingsController extends ApiMutableModelControllerBase
         usort($result['rows'], function ($item1, $item2) {
             return strcmp(strtolower($item1['description']), strtolower($item2['description']));
         });
-        $result['rowCount'] = empty($result['rows']) ? 0 :  count($result['rows']);
+        $result['rowCount'] = empty($result['rows']) ? 0 : count($result['rows']);
         $result['total'] = empty($result['rows']) ? 0 : count($result['rows']);
         $result['current'] = 1;
         return $result;
@@ -619,7 +622,7 @@ class SettingsController extends ApiMutableModelControllerBase
      */
     public function delUserRuleAction($uuid)
     {
-        return  $this->delBase("userDefinedRules.rule", $uuid);
+        return $this->delBase("userDefinedRules.rule", $uuid);
     }
 
     /**
@@ -702,5 +705,42 @@ class SettingsController extends ApiMutableModelControllerBase
     public function togglePolicyAction($uuid, $enabled = null)
     {
         return $this->toggleBase("policies.policy", $uuid, $enabled);
+    }
+
+    protected function setActionHook()
+    {
+        $mdl = $this->getModel();
+        $config = Config::getInstance()->object()->OPNsense->IDS;
+
+        foreach ([
+                     'enabled' => 'IDS/IPS',
+                     'ips' => 'IDS/IPS mode IPS',
+                     'promisc' => 'IDS/IPS mode promisc',
+                     'syslog' => 'IDS/IPS syslog alerts',
+                     'syslog_eve' => 'IDS/IPS eve syslog output',
+                     'LogPayload' => 'IDS/IPS log package payload'
+                 ] as $field => $message) {
+            if ($mdl->general->{$field}->__toString() !== $config->general->{$field}->__toString()) {
+                if ($mdl->general->{$field}->__toString() == "1") {
+                    Syslog::log($message . " enabled");
+                } else {
+                    Syslog::log($message . " disabled");
+                }
+            }
+        }
+
+        foreach ([
+                     'MPMAlgo' => 'IDS/IPS pattern matcher',
+                     'interfaces' => 'IDS/IPS interfaces',
+                     'homenet' => 'IDS/IPS home networks',
+                     'defaultPacketSize' => 'IDS/IPS default packet size',
+                     'AlertLogrotate' => 'IDS/IPS rotate log',
+                     'AlertSaveLogs' => 'IDS/IPS save logs'
+                 ] as $field => $message) {
+            $new_value = $mdl->general->{$field}->__toString();
+            if ($new_value !== $config->general->{$field}->__toString()) {
+                Syslog::log($message . " changed to " . ($new_value === "" ? "default" : $new_value));
+            }
+        }
     }
 }

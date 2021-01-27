@@ -38,6 +38,8 @@ from configparser import ConfigParser
 from lib import metadata
 from lib import downloader
 from lib import rule_source_directory
+sys.path.insert(0, "/usr/local/opnsense/site-python")
+from params import update_params
 
 # check for a running update process, this may take a while so it's better to check...
 try:
@@ -48,6 +50,13 @@ except IOError:
     sys.exit(99)
 
 if __name__ == '__main__':
+    parameters = {'print': '0'}
+    update_params(parameters)
+    if parameters['print'].isdigit():
+        print_updates = parameters['print'] == "1"
+    else:
+        print_updates = False
+
     # load list of configured rules from generated config
     enabled_rulefiles = dict()
     rule_properties = dict()
@@ -66,12 +75,17 @@ if __name__ == '__main__':
 
     # download / remove rules
     md = metadata.Metadata()
-    dl = downloader.Downloader(target_dir=rule_source_directory)
+    if print_updates:
+        source_directory = rule_source_directory
+    else:
+        source_directory = "/tmp/rules"
+        os.makedirs(source_directory, exist_ok=True)
+    dl = downloader.Downloader(target_dir=source_directory)
     for rule in md.list_rules(rule_properties):
         if rule['metadata_source'] not in metadata_sources:
             metadata_sources[rule['metadata_source']] = 0
         if 'url' in rule['source']:
-            full_path = ('%s/%s' % (rule_source_directory, rule['filename'])).replace('//', '/')
+            full_path = ('%s/%s' % (source_directory, rule['filename'])).replace('//', '/')
             if dl.is_supported(url=rule['source']['url']):
                 if rule['required']:
                     # Required files are always sorted last in list_rules(), add required when there's at least one
@@ -88,21 +102,25 @@ if __name__ == '__main__':
                     else:
                         auth = None
                     # when metadata supports versioning, check if either version or settings changed before download
-                    remote_hash = dl.fetch_version_hash(check_url=rule['version_url'],
+                    remote_hash = dl.fetch_version_hash(check_url=rule['url'],
                                                         auth=auth, headers=rule['http_headers'])
-                    local_hash = dl.installed_file_hash(rule['filename'])
+                    local_hash = dl.installed_file_hash(rule_source_directory + "/" + rule['filename'])
                     if remote_hash is None or remote_hash != local_hash:
-                        dl.download(url=rule['url'], url_filename=rule['url_filename'],
-                                    filename=rule['filename'], auth=auth,
-                                    headers=rule['http_headers'], version=remote_hash)
-                        # count number of downloaded files/rules from this metadata package
-                        metadata_sources[rule['metadata_source']] += 1
+                        if print_updates:
+                            print(rule['filename'])
+                        else:
+                            dl.download(url=rule['url'], url_filename=rule['url_filename'],
+                                        filename=rule['filename'], auth=auth,
+                                        headers=rule['http_headers'])
+                            # count number of downloaded files/rules from this metadata package
+                            print('rule sets: %s\nremote hash: %s\nlocal hash: %s\n' % (rule['filename'], remote_hash, dl.installed_file_hash(source_directory + "/" + rule['filename'])))
+                            metadata_sources[rule['metadata_source']] += 1
                     else:
                         syslog.syslog(syslog.LOG_INFO, 'download skipped %s, same version' % rule['filename'])
 
     # cleanup: match all installed rulesets against the configured ones and remove uninstalled rules
     md_filenames = [x['filename'] for x in md.list_rules(rule_properties)]
     for filename in enabled_rulefiles:
-        full_path = ('%s/%s' % (rule_source_directory, filename)).replace('//', '/')
+        full_path = ('%s/%s' % (source_directory, filename)).replace('//', '/')
         if filename not in md_filenames and os.path.isfile(full_path):
             os.remove(full_path)

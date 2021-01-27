@@ -1,6 +1,7 @@
 @sample /usr/local/etc/bogons.sample
 @sample /usr/local/etc/bogonsv6.sample
 @sample /usr/local/etc/config.xml.sample
+@sample /usr/local/etc/config.xml.sum.sample
 @sample /usr/local/etc/dh-parameters.1024.sample
 @sample /usr/local/etc/dh-parameters.2048.sample
 @sample /usr/local/etc/dh-parameters.4096.sample
@@ -11,6 +12,8 @@
 /boot/brand-ting.4th
 /boot/logo-ting.4th
 /usr/local/bin/python3
+/usr/local/etc/checkflags.php
+/usr/local/etc/checksum.php
 /usr/local/etc/devd/carp.conf
 /usr/local/etc/devd/ifnet.conf
 /usr/local/etc/dh-parameters.2048.rfc7919
@@ -36,6 +39,7 @@
 /usr/local/etc/inc/plugins.inc.d/dhcpd.inc
 /usr/local/etc/inc/plugins.inc.d/dnsmasq.inc
 /usr/local/etc/inc/plugins.inc.d/dpinger.inc
+/usr/local/etc/inc/plugins.inc.d/fstec.inc
 /usr/local/etc/inc/plugins.inc.d/ipfw.inc
 /usr/local/etc/inc/plugins.inc.d/ipsec.inc
 /usr/local/etc/inc/plugins.inc.d/lighttpd.inc
@@ -159,6 +163,7 @@
 /usr/local/etc/rc.syshook.d/start/20-freebsd
 /usr/local/etc/rc.syshook.d/start/21-syslog-ng
 /usr/local/etc/rc.syshook.d/start/25-flowd
+/usr/local/etc/rc.syshook.d/start/65-checksumms
 /usr/local/etc/rc.syshook.d/start/90-carp
 /usr/local/etc/rc.syshook.d/start/90-cron
 /usr/local/etc/rc.syshook.d/start/95-beep
@@ -938,6 +943,7 @@
 /usr/local/opnsense/service/templates/OPNsense/Filter/filter_geoip.conf
 /usr/local/opnsense/service/templates/OPNsense/Filter/filter_tables.conf
 /usr/local/opnsense/service/templates/OPNsense/IDS/+TARGETS
+/usr/local/opnsense/service/templates/OPNsense/IDS/anomaly.rules
 /usr/local/opnsense/service/templates/OPNsense/IDS/classification.config
 /usr/local/opnsense/service/templates/OPNsense/IDS/newsyslog.conf
 /usr/local/opnsense/service/templates/OPNsense/IDS/OPNsense.rules
@@ -946,6 +952,7 @@
 /usr/local/opnsense/service/templates/OPNsense/IDS/rule-policies.config
 /usr/local/opnsense/service/templates/OPNsense/IDS/rule-updater.config
 /usr/local/opnsense/service/templates/OPNsense/IDS/rules.config
+/usr/local/opnsense/service/templates/OPNsense/IDS/SmartSoft.rules
 /usr/local/opnsense/service/templates/OPNsense/IDS/suricata.yaml
 /usr/local/opnsense/service/templates/OPNsense/IPFW/+TARGETS
 /usr/local/opnsense/service/templates/OPNsense/IPFW/ipfw.conf

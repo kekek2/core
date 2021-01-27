@@ -612,8 +612,64 @@ POSSIBILITY OF SUCH DAMAGE.
          * update rule definitions
          */
         $("#updateRulesAct").SimpleActionButton({
-            onAction: function(){
-                $('#grid-rule-files').bootgrid('reload');
+            onAction: function (data) {
+                if (data['rules'] == "") {
+                    BootstrapDialog.show({
+                        type: BootstrapDialog.TYPE_RELOAD,
+                        title: "{{ lang._('Check rules') }}",
+                        message: "{{ lang._('There no new updates') }}",
+                        buttons: [{
+                            label: "{{ lang._('Close') }}",
+                            action: function (dialogRef) {
+                                dialogRef.close();
+                            }
+                        }]
+                    })
+                } else {
+                    BootstrapDialog.show({
+                        type: BootstrapDialog.TYPE_RELOAD,
+                        title: "{{ lang._('Check rules') }}",
+                        message: "{{ lang._('Updates are available for the following rule sets') }}:\n\n" + data['rules'],
+                        closable: false,
+                        buttons: [{
+                            label: "{{ lang._('Cancel') }}",
+                            action: function (dialogRef) {
+                                dialogRef.close();
+                                //$("#updateRulesAct_progress").removeClass("fa fa-spinner fa-pulse");
+                            }
+                        }, {
+                            label: "{{ lang._('Load') }}",
+                            action: function (dialogRef) {
+                                dialogRef.close();
+                                $("#updateRulesAct").find('.reload_progress').addClass("fa fa-spinner fa-pulse");
+                                ajaxCall("/api/ids/service/downloadRules", {}, function (data, status) {
+                                    $("#updateRulesAct").find('.reload_progress').removeClass("fa fa-spinner fa-pulse");
+                                    BootstrapDialog.show({
+                                        type: BootstrapDialog.TYPE_RELOAD,
+                                        title: "{{ lang._('Download rules') }}",
+                                        message: data['rules'],
+                                        closable: false,
+                                        buttons: [{
+                                            label: "{{ lang._('Cancel') }}",
+                                            action: function (dialogRef) {
+                                                dialogRef.close();
+                                            }
+                                        }, {
+                                            label: "{{ lang._('Update') }}",
+                                            action: function (dialogRef) {
+                                                dialogRef.close();
+                                                ajaxCall("/api/ids/service/updateRules", {}, function (data, status) {
+                                                    $('#grid-rule-files').bootgrid('reload');
+                                                    updateStatus();
+                                                });
+                                            }
+                                        }]
+                                    });
+                                });
+                            }
+                        }]
+                    });
+                }
             }
         });
 
@@ -836,9 +892,9 @@ POSSIBILITY OF SUCH DAMAGE.
           <button class="btn btn-primary" style="display:none" id="updateSettings" type="button"><b>{{ lang._('Save') }}</b> <i id="updateSettings_progress" class=""></i></button>
 
           <button class="btn btn-primary" id="updateRulesAct"
-                  data-endpoint='/api/ids/service/updateRules'
+                  data-endpoint='/api/ids/service/checkRules'
                   data-label="{{ lang._('Download & Update Rules') }}"
-                  data-error-title="{{ lang._('Error reconfiguring IDS') }}"
+                  data-error-title="{{ lang._('Error checking updates') }}"
                   data-service-widget="ids"
                   type="button"
           ></button>
@@ -963,15 +1019,15 @@ POSSIBILITY OF SUCH DAMAGE.
         <table id="grid-alerts" data-store-selection="true" class="table table-condensed table-hover table-clean-form table-responsive">
             <thead>
               <tr>
-                  <th data-column-id="timestamp" data-type="string" data-sortable="false">{{ lang._('Timestamp') }}</th>
-                  <th data-column-id="alert_sid" data-type="string" data-sortable="false"  data-width="70px">{{ lang._('SID') }}</th>
-                  <th data-column-id="alert_action" data-type="string" data-sortable="false" data-width="70px">{{ lang._('Action') }}</th>
+                  <th data-column-id="timestamp" data-type="string">{{ lang._('Timestamp') }}</th>
+                  <th data-column-id="alert_sid" data-type="string" data-width="70px">{{ lang._('SID') }}</th>
+                  <th data-column-id="alert_action" data-type="string" data-width="70px">{{ lang._('Action') }}</th>
                   <th data-column-id="in_iface" data-type="interface" data-sortable="false" data-width="100px">{{ lang._('Interface') }}</th>
-                  <th data-column-id="src_ip" data-type="string" data-sortable="false" data-width="150px">{{ lang._('Source') }}</th>
-                  <th data-column-id="src_port" data-type="string" data-sortable="false" data-width="70px">{{ lang._('Port') }}</th>
-                  <th data-column-id="dest_ip" data-type="string" data-sortable="false" data-width="150px">{{ lang._('Destination') }}</th>
-                  <th data-column-id="dest_port" data-type="string" data-sortable="false" data-width="70px">{{ lang._('Port') }}</th>
-                  <th data-column-id="alert" data-type="string" data-sortable="false" >{{ lang._('Alert') }}</th>
+                  <th data-column-id="src_ip" data-type="string" data-width="150px">{{ lang._('Source') }}</th>
+                  <th data-column-id="src_port" data-type="string" data-width="70px">{{ lang._('Port') }}</th>
+                  <th data-column-id="dest_ip" data-type="string" data-width="150px">{{ lang._('Destination') }}</th>
+                  <th data-column-id="dest_port" data-type="string" data-width="70px">{{ lang._('Port') }}</th>
+                  <th data-column-id="alert" data-type="string">{{ lang._('Alert') }}</th>
                   <th data-column-id="info" data-formatter="info" data-sortable="false" data-width="4em">{{ lang._('Info') }}</th>
               </tr>
             </thead>

@@ -49,6 +49,7 @@ class Config extends Singleton
      * @var null|file
      */
     private $config_file_handle = null;
+    private $config_sum_handle = null;
 
     /**
      * SimpleXML type reference to config
@@ -164,7 +165,8 @@ class Config extends Singleton
     public function toArrayFromFile($filename, $forceList = null)
     {
         $fp = fopen($filename, "r");
-        $xml = $this->loadFromStream($fp);
+        $fp_sum = fopen($filename . ".sum", "r");
+        $xml = $this->loadFromStream($fp, $fp_sum);
         fclose($fp);
         return $this->toArray($forceList, $xml);
     }
@@ -284,22 +286,25 @@ class Config extends Singleton
         } catch (\Exception $e) {
             $this->simplexml = null;
             // there was an issue with loading the config, try to restore the last backup
-            $backups = $this->getBackups();
+            $backups = $this->getBackups(true, true);
             $logger = new Syslog("config", array('option' => LOG_PID, 'facility' => LOG_LOCAL4));
             if (count($backups) > 0) {
                 // load last backup
                 $logger->error(gettext('No valid config.xml found, attempting last known config restore.'));
+                (new Notices())->addNotice(gettext('No valid config.xml found, attempting last known config restore.'));
                 foreach ($backups as $backup) {
                     try {
                         $this->restoreBackup($backup);
                         return;
                     } catch (ConfigException $e) {
                         $logger->error("failed restoring " . $backup);
+                        (new Notices())->addNotice(gettext('failed restoring ') . $backup);
                     }
                 }
             }
             // in case there are no backups, restore defaults.
             $logger->error(gettext('No valid config.xml found, attempting to restore factory config.'));
+            (new Notices())->addNotice(gettext('No valid config.xml found, attempting to restore factory config.'));
             $this->restoreBackup('/usr/local/etc/config.xml');
         }
     }
@@ -309,9 +314,11 @@ class Config extends Singleton
      */
     public function forceReload()
     {
-        if ($this->config_file_handle !== null) {
+        if ($this->config_file_handle !== null && $this->config_sum_handle !== null) {
             fclose($this->config_file_handle);
+            fclose($this->config_sum_handle);
             $this->config_file_handle = null;
+            $this->config_sum_handle = null;
         }
         $this->init();
     }
@@ -322,12 +329,18 @@ class Config extends Singleton
      * @return \SimpleXMLElement root node
      * @throws ConfigException when config could not be parsed
      */
-    private function loadFromStream($fp)
+    private function loadFromStream($fp, $fp_sum)
     {
         fseek($fp, 0);
         $xml = stream_get_contents($fp);
         if (trim($xml) == '') {
             throw new ConfigException('empty file');
+        }
+
+        if (!self::check_sha1($fp_sum, $xml)) {
+            (new Notices())->addNotice(sprintf(gettext("Interface specified for the virtual IP address %s does not exist. Skipping this VIP."),
+                $vip['subnet']));
+            throw new ConfigException('checksum not match');
         }
 
         set_error_handler(
@@ -364,13 +377,15 @@ class Config extends Singleton
         if (!is_resource($this->config_file_handle)) {
             if (is_writable($this->config_file)) {
                 $this->config_file_handle = fopen($this->config_file, "r+");
+                $this->config_sum_handle = fopen($this->config_file . ".sum", "r+");
             } else {
                 // open in read-only mode
                 $this->config_file_handle = fopen($this->config_file, "r");
+                $this->config_sum_handle = fopen($this->config_file . ".sum", "r");
             }
         }
 
-        $this->simplexml = $this->loadFromStream($this->config_file_handle);
+        $this->simplexml = $this->loadFromStream($this->config_file_handle, $this->config_sum_handle);
         $this->statusIsValid = true;
     }
 
@@ -476,6 +491,7 @@ class Config extends Singleton
             $target_filename = "config-" . $timestamp . ".xml";
         }
         copy($this->config_file, $target_dir . $target_filename);
+        copy($this->config_file . ".sum", $target_dir . $target_filename . ".sum");
 
         return $target_dir . $target_filename;
     }
@@ -486,7 +502,7 @@ class Config extends Singleton
      * @return array list of backups
      * @throws ConfigException when config could not be parsed
      */
-    public function getBackups($fetchRevisionInfo = false)
+    public function getBackups($fetchRevisionInfo = false, $onlyChecksum = false)
     {
         $target_dir = dirname($this->config_file) . "/backup/";
         if (file_exists($target_dir)) {
@@ -496,8 +512,15 @@ class Config extends Singleton
             if (!$fetchRevisionInfo) {
                 return $backups;
             } else {
-                $result = array ();
+                $result = array();
                 foreach ($backups as $filename) {
+                    if ($onlyChecksum) {
+                        if (!file_exists($filename . ".sum") || !self::check_sha1(fopen($filename . ".sum", "r"), file_get_contents($filename))) {
+                            continue;
+                        }
+                        $result[] = $filename;
+                        continue;
+                    }
                     // try to read backup info from xml
                     $xmlNode = @simplexml_load_file($filename, "SimpleXMLElement", LIBXML_NOERROR | LIBXML_ERR_NONE);
                     if (isset($xmlNode->revision)) {
@@ -527,22 +550,26 @@ class Config extends Singleton
             // if current config is valid,
             $simplexml = $this->simplexml;
             $config_file_handle = $this->config_file_handle;
+            $config_sum_handle = $this->config_sum_handle;
             try {
                 // try to restore config
-                copy($filename, $this->config_file);
+                copy($filename, $this->config_file) ;
+                copy($filename . ".sum", $this->config_file . ".sum") ;
                 $this->load();
                 return true;
             } catch (ConfigException $e) {
                 // copy / load failed, restore previous version
                 $this->simplexml = $simplexml;
                 $this->config_file_handle = $config_file_handle;
+                $this->config_sum_handle = $config_sum_handle;
                 $this->statusIsValid = true;
                 $this->save(null, true);
                 return false;
             }
         } else {
             // we don't have a valid config loaded, just copy and load the requested one
-            copy($filename, $this->config_file);
+            copy($filename, $this->config_file) ;
+            copy($filename . ".sum", $this->config_file . ".sum") ;
             $this->load();
             return true;
         }
@@ -590,6 +617,7 @@ class Config extends Singleton
         foreach ($this->getBackups() as $filename) {
             if ($cnt > $revisions) {
                 @unlink($filename);
+                @unlink($filename . ".sum");
             }
             ++$cnt;
         }
@@ -605,14 +633,16 @@ class Config extends Singleton
     {
         $this->checkvalid();
 
+        // serialize to text
+        $xml_text = $this->__toString();
         // update revision information ROOT.revision tag, align timestamp to backup output
         $this->updateRevision($revision, null, microtime(true));
 
-        if ($this->config_file_handle !== null) {
+        if ($this->config_file_handle !== null && $this->config_sum_handle !== null) {
             if (flock($this->config_file_handle, LOCK_EX)) {
                 fseek($this->config_file_handle, 0);
                 ftruncate($this->config_file_handle, 0);
-                fwrite($this->config_file_handle, (string)$this);
+                fwrite($this->config_file_handle, $xml_text);
                 // flush, unlock, but keep the handle open
                 fflush($this->config_file_handle);
                 $backup_filename = $backup ? $this->backup() : null;
@@ -626,6 +656,17 @@ class Config extends Singleton
                 flock($this->config_file_handle, LOCK_UN);
             } else {
                 throw new ConfigException("Unable to lock config");
+            }
+
+            if (flock($this->config_sum_handle, LOCK_EX)) {
+                fseek($this->config_sum_handle, 0);
+                ftruncate($this->config_sum_handle, 0);
+                fwrite($this->config_sum_handle, sha1($xml_text));
+                // flush, unlock, but keep the handle open
+                fflush($this->config_sum_handle);
+                flock($this->config_sum_handle, LOCK_UN);
+            } else {
+                throw new ConfigException("Unable to lock config sum");
             }
         }
 
@@ -641,6 +682,9 @@ class Config extends Singleton
         if ($this->config_file_handle !== null) {
             fclose($this->config_file_handle);
         }
+        if ($this->config_sum_handle !== null) {
+            fclose($this->config_sum_handle);
+        }
     }
 
 
@@ -650,8 +694,9 @@ class Config extends Singleton
      */
     public function lock($reload = true)
     {
-        if ($this->config_file_handle !== null) {
+        if ($this->config_file_handle !== null && $this->config_sum_handle !== null) {
             flock($this->config_file_handle, LOCK_EX);
+            flock($this->config_sum_handle, LOCK_EX);
             if ($reload) {
                 $this->load();
             }
@@ -664,9 +709,16 @@ class Config extends Singleton
      */
     public function unlock()
     {
-        if (is_resource($this->config_file_handle)) {
+        if (is_resource($this->config_file_handle) && is_resource($this->config_sum_handle)) {
             flock($this->config_file_handle, LOCK_UN);
+            flock($this->config_sum_handle, LOCK_UN);
         }
         return $this;
+    }
+
+    public static function check_sha1($fp_sum, $xml)
+    {
+        fseek($fp_sum, 0);
+        return str_replace(array("\r", "\n"), '', stream_get_contents($fp_sum)) == sha1($xml);
     }
 }

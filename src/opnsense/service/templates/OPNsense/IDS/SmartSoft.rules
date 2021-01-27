@@ -1,0 +1,28 @@
+# SmartSoft.rules
+#
+
+# Команды Unix FTP-клиента.
+
+# Блокировка команды put
+#drop tcp any any -> any 21 (msg:"STOR FTP command"; flow:established,to_server; content:"STOR"; nocase; classtype:misc-activity; sid:666; rev:1;)
+
+# Блокировка команды delete
+#drop tcp any any -> any 21 (msg:"DELE FTP command"; flow:established,to_server; content:"DELE"; nocase; classtype:misc-activity; sid:667; rev:1;)
+
+# Блокировка команды cd
+#drop tcp any any -> any 21 (msg:"CWD FTP command"; flow:established,to_server; content:"CWD"; nocase; classtype:misc-activity; sid:668; rev:1;)
+
+# Блокировка команды ls или dir
+#drop tcp any any -> any 21 (msg:"NLST FTP command"; flow:established,to_server; content:"NLST"; nocase; classtype:misc-activity; sid:669; rev:1;)
+
+# Заблокировать возможность пассивного режима, команда passive
+#drop tcp any any -> any 21 (msg:"PASV FTP command"; flow:established,to_server; content:"PASV"; nocase; classtype:misc-activity; sid:670; rev:1;)
+
+# Блокировка команды get
+#drop tcp any any -> any 21 (msg:"RETR FTP command"; flow:established,to_server; content:"RETR"; nocase; classtype:misc-activity; sid:671; rev:1;)
+
+# Блокировка команды mkdir
+#drop tcp any any -> any 21 (msg:"MKD FTP command"; flow:established,to_server; content:"MKD"; nocase; classtype:misc-activity; sid:672; rev:1;)
+
+# Блокировка команды rmdir
+#drop tcp any any -> any 21 (msg:"RMD FTP command"; flow:established,to_server; content:"RMD"; nocase; classtype:misc-activity; sid:673; rev:1;)

@@ -23,6 +23,9 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+
+SHA1!=          which sha1 || echo true
+
 all:
 	@cat ${.CURDIR}/README.md | ${PAGER}
 
@@ -31,7 +34,7 @@ all:
 # TING overrides
 .include "Mk/ting.mk"
 
-TING_ABI?=	1.8
+TING_ABI?=	1.8-fstec
 CORE_ABI?=	21.1
 CORE_PHP?=	73
 CORE_PYTHON?=	37
@@ -159,7 +162,8 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			ting-lang \
 			ting-ioncube \
 			wpa_supplicant \
-			zip
+			zip \
+			intel-igb-kmod
 
 WRKDIR?=${.CURDIR}/work
 WRKSRC?=${WRKDIR}/src
@@ -265,6 +269,7 @@ bootstrap:
 	    NO_SAMPLE=please ${MAKE_REPLACE}
 
 plist:
+	@${SHA1} -q ${.CURDIR}/src/etc/config.xml.sample > ${.CURDIR}/src/etc/config.xml.sum.sample
 	@(${MAKE} -C ${.CURDIR}/contrib plist && \
 	    ${MAKE} -C ${.CURDIR}/src plist) | sort
 

@@ -35,6 +35,7 @@ use OPNsense\Core\Config;
 use OPNsense\Cron\Cron;
 use OPNsense\IDS\IDS;
 use Phalcon\Filter;
+use \SmartSoft\Firewall\Syslog;
 
 /**
  * Class ServiceController
@@ -112,32 +113,57 @@ class ServiceController extends ApiMutableServiceControllerBase
      * @return array result status
      * @throws \Exception when configd action fails
      */
-    public function updateRulesAction($wait = null)
+    public function checkRulesAction()
     {
-        $status = "failed";
-        if ($this->request->isPost()) {
-            // close session for long running action
-            $this->sessionClose();
-            $backend = new Backend();
-            // we have to trigger a template reload to be sure we have the right download configuration
-            // ideally we should only regenerate the download config, but that's not supported at the moment.
-            // (not sure if it should be supported)
-            $bckresult = trim($backend->configdRun('template reload OPNsense/IDS'));
+        if (!$this->request->isPost()) {
+            return ["status" => "failed", "rules" => []];
+        }
+        $this->sessionClose();
+        $backend = new Backend();
+        // we have to trigger a template reload to be sure we have the right download configuration
+        // ideally we should only regenerate the download config, but that's not supported at the moment.
+        // (not sure if it should be supported)
+        $bckresult = trim($backend->configdRun('template reload OPNsense/IDS'));
 
-            if ($bckresult == "OK") {
-                if ($wait != null) {
-                    $detach = true;
-                } else {
-                    $detach = false;
-                }
-
-                $status = $backend->configdRun("ids update", $detach);
-            } else {
-                $status = "template error";
-            }
+        if ($bckresult != "OK") {
+            return ["status" => "template error", "rules" => []];
         }
 
-        return array("status" => $status);
+        return ["status" => "Ok", "rules" => trim($backend->configdRun("ids check"))];
+    }
+
+    public function downloadRulesAction()
+    {
+        if (!$this->request->isPost()) {
+            return ["status" => "failed", "rules" => []];
+        }
+        $this->sessionClose();
+        return ["status" => "Ok", "rules" => trim((new Backend())->configdRun("ids download"))];
+    }
+
+    public function updateRulesAction()
+    {
+        if (!$this->request->isPost()) {
+            return ["status" => "failed", "rules" => []];
+        }
+        // close session for long running action
+        $this->sessionClose();
+        $backend = new Backend();
+
+        $backend->configdRun("ids update");
+        $enable_rules = [];
+        $data = json_decode($backend->configdRun("ids list installablerulesets"), true);
+        if ($data != null && array_key_exists("items", $data)) {
+            foreach ($data['items'] as $filename => $fileinfo) {
+                $fileNode = $this->getModel()->getFileNode($fileinfo['filename']);
+                if ((string)$fileNode->enabled == "1") {
+                    $enable_rules[] = $fileinfo['filename'];
+                }
+            }
+            Syslog::log("IDS/IPS enable rulsets: " . implode(", ", $enable_rules));
+        }
+
+        return ["status" => "Ok"];
     }
 
     /**
@@ -156,6 +182,18 @@ class ServiceController extends ApiMutableServiceControllerBase
             $bckresult = trim($backend->configdRun('template reload OPNsense/IDS'));
             if ($bckresult == "OK") {
                 $status = $backend->configdRun("ids reload");
+
+                $response = $backend->configdpRun("ids query rules");
+                $data = json_decode($response, true);
+                if ($data != null && array_key_exists("rows", $data)) {
+                    $result = array();
+                    $result['rows'] = $data['rows'];
+                    // update rule status with own administration
+                    foreach ($result['rows'] as $row) {
+                        $enabled = $this->getModel()->getRuleStatus($row['sid'], $row['enabled']);
+                        Syslog::log("IDS/IPS rule " . $row['sid'] . ": " . ($enabled ? "enabled": "disabled") . ", " . $this->getModel()->getRuleAction($row['sid'], $row['action'], true) . ", " . $row["msg"]);
+                    }
+                }
             } else {
                 $status = "template error";
             }
@@ -176,6 +214,25 @@ class ServiceController extends ApiMutableServiceControllerBase
             $filter = new Filter();
             $filter->add('query', new QueryFilter());
 
+            if ($this->request->hasPost('sort') && is_array($this->request->getPost("sort"))) {
+                $sortStr = '';
+                $sortBy = array_keys($this->request->getPost("sort"));
+                if ($this->request->getPost("sort")[$sortBy[0]] == "desc") {
+                    $sortOrd = 'desc';
+                } else {
+                    $sortOrd = 'asc';
+                }
+
+                foreach ($sortBy as $sortKey) {
+                    if ($sortStr != '') {
+                        $sortStr .= ',';
+                    }
+                    $sortStr .= $filter->sanitize($sortKey, "string") . ' ' . $sortOrd . ' ';
+                }
+            } else {
+                $sortStr = 'timestamp desc';
+            }
+
             // fetch query parameters (limit results to prevent out of memory issues)
             $itemsPerPage = $this->request->getPost('rowCount', 'int', 9999);
             $currentPage = $this->request->getPost('current', 'int', 1);
@@ -188,15 +245,15 @@ class ServiceController extends ApiMutableServiceControllerBase
             }
 
 
-            if ($this->request->getPost('fileid', 'string', '') != "") {
+            if (!in_array($this->request->getPost('fileid', 'string', ''), ["", "none"])) {
                 $fileid = $this->request->getPost('fileid', 'int', -1);
             } else {
-                $fileid = null;
+                $fileid = 0;
             }
 
             $backend = new Backend();
             $response = $backend->configdpRun("ids query alerts", array($itemsPerPage,
-                ($currentPage - 1) * $itemsPerPage, $searchPhrase, $fileid));
+                ($currentPage - 1) * $itemsPerPage, $searchPhrase, $sortStr, $fileid));
             $result = json_decode($response, true);
             if ($result != null) {
                 $result['rowCount'] = count($result['rows']);

@@ -64,6 +64,7 @@ class SettingsController extends ApiMutableModelControllerBase
      */
     public function setPipeAction($uuid)
     {
+        firewall_syslog("Update Firewall/Traffic Shaper/Pipe", $uuid);
         Syslog::log("Update Firewall/Traffic Shaper/Pipe", $uuid);
         return $this->setBase("pipe", "pipes.pipe", $uuid);
     }
@@ -77,6 +78,7 @@ class SettingsController extends ApiMutableModelControllerBase
     public function addPipeAction()
     {
         $newPipeNumber = (new TrafficShaper())->newPipeNumber();
+        firewall_syslog("Add Firewall/Traffic Shaper/Pipe", $newPipeNumber);
         Syslog::log("Add Firewall/Traffic Shaper/Pipe", $newPipeNumber);
         return $this->addBase("pipe", "pipes.pipe", [
             "origin" => "TrafficShaper",
@@ -93,6 +95,7 @@ class SettingsController extends ApiMutableModelControllerBase
      */
     public function delPipeAction($uuid)
     {
+        firewall_syslog("Delete Firewall/Traffic Shaper/Pipe", $uuid);
         Syslog::log("Delete Firewall/Traffic Shaper/Pipe", $uuid);
         return  $this->delBase("pipes.pipe", $uuid);
     }
@@ -108,6 +111,7 @@ class SettingsController extends ApiMutableModelControllerBase
      */
     public function togglePipeAction($uuid, $enabled = null)
     {
+        firewall_syslog("Toggle Firewall/Traffic Shaper/Pipe", $uuid);
         Syslog::log("Toggle Firewall/Traffic Shaper/Pipe", $uuid);
         return $this->toggleBase("pipes.pipe", $uuid, $enabled);
     }
@@ -161,6 +165,7 @@ class SettingsController extends ApiMutableModelControllerBase
      */
     public function setQueueAction($uuid)
     {
+        firewall_syslog("Update Firewall/Traffic Shaper/Queue", $uuid);
         Syslog::log("Update Firewall/Traffic Shaper/Queue", $uuid);
         return $this->setBase("queue", "queues.queue", $uuid);
     }
@@ -173,6 +178,7 @@ class SettingsController extends ApiMutableModelControllerBase
     public function addQueueAction()
     {
         $newQueueNumber = (new TrafficShaper())->newQueueNumber();
+        firewall_syslog("Add Firewall/Traffic Shaper/Queue", $newQueueNumber);
         Syslog::log("Add Firewall/Traffic Shaper/Queue", $newQueueNumber);
         return $this->addBase("queue", "queues.queue", [
             "origin" => "TrafficShaper",
@@ -188,6 +194,7 @@ class SettingsController extends ApiMutableModelControllerBase
      */
     public function delQueueAction($uuid)
     {
+        firewall_syslog("Delete Firewall/Traffic Shaper/Queue", $uuid);
         Syslog::log("Delete Firewall/Traffic Shaper/Queue", $uuid);
         return  $this->delBase("queues.queue", $uuid);
     }
@@ -202,6 +209,7 @@ class SettingsController extends ApiMutableModelControllerBase
      */
     public function toggleQueueAction($uuid, $enabled = null)
     {
+        firewall_syslog("Toggle Firewall/Traffic Shaper/Queue", $uuid);
         Syslog::log("Toggle Firewall/Traffic Shaper/Queue", $uuid);
         return $this->toggleBase("queues.queue", $uuid, $enabled);
     }
@@ -247,6 +255,7 @@ class SettingsController extends ApiMutableModelControllerBase
      */
     public function setRuleAction($uuid)
     {
+        firewall_syslog("Update Firewall/Traffic Shaper/Rule", $uuid);
         Syslog::log("Update Firewall/Traffic Shaper/Rule", $uuid);
         return $this->setBase("rule", "rules.rule", $uuid);
     }
@@ -260,6 +269,7 @@ class SettingsController extends ApiMutableModelControllerBase
     public function addRuleAction()
     {
         $result = $this->addBase('rule', 'rules.rule', [ "origin" => "TrafficShaper"]);
+        firewall_syslog("Add Firewall/Traffic Shaper/Rule", $result["uuid"]);
         Syslog::log("Add Firewall/Traffic Shaper/Rule", $result["uuid"]);
         return $result;
     }
@@ -272,6 +282,7 @@ class SettingsController extends ApiMutableModelControllerBase
      */
     public function delRuleAction($uuid)
     {
+        firewall_syslog("Delete Firewall/Traffic Shaper/Rule", $uuid);
         Syslog::log("Delete Firewall/Traffic Shaper/Rule", $uuid);
         return  $this->delBase("rules.rule", $uuid);
     }

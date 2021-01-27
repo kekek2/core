@@ -40,10 +40,11 @@ sys.path.insert(0, "/usr/local/opnsense/site-python")
 from log_helper import reverse_log_reader
 from params import update_params
 from lib import suricata_alert_log
+from operator import itemgetter
 
 if __name__ == '__main__':
     # handle parameters
-    parameters = {'limit': '0', 'offset': '0', 'filter': '', 'fileid': ''}
+    parameters = {'limit': '0', 'offset': '0', 'sort_by': '', 'filter': '', 'fileid': ''}
     update_params(parameters)
 
     # choose logfile by number
@@ -61,6 +62,17 @@ if __name__ == '__main__':
         offset = int(parameters['offset'])
     else:
         offset = 0
+
+    split = parameters['sort_by'].split(' ')
+    if len(split) == 2:
+        sort_by = split[0]
+        order = split[1] == 'asc'
+    elif len(split) == 1:
+        sort_by = split[0]
+        order = False
+    else:
+        sort_by = 'timestamp'
+        order = False
 
     data_filters = {}
     data_filters_comp = {}
@@ -86,6 +98,7 @@ if __name__ == '__main__':
 
     # query suricata eve log
     result = {'filters': data_filters, 'rows': [], 'total_rows': 0, 'origin': suricata_log.split('/')[-1]}
+    to_sorted = []
     if os.path.exists(suricata_log):
         for line in reverse_log_reader(filename=suricata_log, start_pos=log_start_pos):
             try:
@@ -116,16 +129,18 @@ if __name__ == '__main__':
                     if not filter_hit:
                         do_output = False
                 if do_output:
-                    result['total_rows'] += 1
-                    if (len(result['rows']) < limit or limit == 0) and result['total_rows'] >= offset:
-                        result['rows'].append(record)
-                    elif result['total_rows'] > offset + limit:
-                        # do not fetch data until end of file...
-                        break
+                    to_sorted.append(record)
 
             # only try to fetch one line when filepos is given
             if log_start_pos is not None:
                 break
 
     # output results
+    try:
+        to_sorted.sort(key=itemgetter(sort_by), reverse=order)
+    except KeyError:
+        pass
+    result['total_rows'] = len(to_sorted)
+    if len(to_sorted) >= offset + limit:
+        result['rows'] = to_sorted[offset:offset + limit]
     print(ujson.dumps(result))
