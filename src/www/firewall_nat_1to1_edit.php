@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['type'] = 'binat';
     if (isset($configId)) {
         // copy settings from config
-        foreach (array('disabled','interface','external','descr','natreflection', 'type') as $fieldname) {
+        foreach (array('disabled','interface','external','descr','natreflection', 'type', 'category') as $fieldname) {
           if (isset($a_1to1[$configId][$fieldname])) {
               $pconfig[$fieldname] = $a_1to1[$configId][$fieldname];
           } else {
@@ -80,6 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
         }
     }
+    $pconfig['category'] = !empty($pconfig['category']) ? explode(",", $pconfig['category']) : [];
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $input_errors = array();
     $pconfig = $_POST;
@@ -131,6 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $natent = array();
         // 1-on-1 copy
         $natent['external'] = $pconfig['external'];
+        $natent['category'] = implode(",", $pconfig['category']);
         $natent['descr'] = $pconfig['descr'];
         $natent['interface'] = $pconfig['interface'];
         $natent['type'] = $pconfig['type'];
@@ -156,6 +158,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $a_1to1_action = "Add Firewall/NAT/One-to-One";
         }
 
+        OPNsense\Core\Config::getInstance()->fromArray($config);
+        $catmdl = new OPNsense\Firewall\Category();
+        if ($catmdl->sync()) {
+            $catmdl->serializeToConfig();
+            $config = OPNsense\Core\Config::getInstance()->toArray(listtags());
+        }
         write_config();
         mark_subsystem_dirty('natconf');
         Syslog::log($a_1to1_action, $a_1to1, $natent);
@@ -171,6 +179,9 @@ include("head.inc");
 ?>
 
 <body>
+  <script src="<?= cache_safe('/ui/js/tokenize2.js') ?>"></script>
+  <link rel="stylesheet" type="text/css" href="<?= cache_safe(get_themed_filename('/css/tokenize2.css')) ?>">
+  <script src="<?= cache_safe('/ui/js/opnsense_ui.js') ?>"></script>
   <script>
   $( document ).ready(function() {
 
@@ -225,6 +236,7 @@ include("head.inc");
         $("#src").selectpicker('refresh');
     });
     $("#nattype").change();
+    formatTokenizersUI();
 
   });
   </script>
@@ -409,6 +421,21 @@ include("head.inc");
                         <?=gettext("Hint: this is usually 'any'."); ?>
                       </div>
                     </td>
+                  </tr>
+                  <tr>
+                    <td><a id="help_for_category" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Category"); ?></td>
+                    <td>
+                      <select name="category[]" id="category" multiple="multiple" class="tokenize" data-allownew="true" data-width="334px" data-live-search="true">
+  <?php
+                      foreach ((new OPNsense\Firewall\Category())->iterateCategories() as $category):
+                        $catname = htmlspecialchars($category['name'], ENT_QUOTES | ENT_HTML401);?>
+                        <option value="<?=$catname;?>" <?=in_array($catname, $pconfig['category']) ? 'selected="selected"' : '';?> ><?=$catname;?></option>
+  <?php
+                      endforeach;?>
+                      </select>
+                      <div class="hidden" data-for="help_for_category">
+                        <?=gettext("You may enter or select a category here to group firewall rules (not parsed)."); ?>
+                      </div>
                   </tr>
                   <tr>
                     <td><a id="help_for_descr" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description"); ?></td>
