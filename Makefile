@@ -31,14 +31,27 @@ all:
 # TING overrides
 .include "Mk/ting.mk"
 
+CORE_MESSAGE?=	What are you looking at?
+CORE_NAME?=	opnsense
+CORE_TYPE?=	production
+
 TING_ABI?=	1.8
 CORE_ABI?=	21.1
 CORE_PHP?=	73
 CORE_PYTHON?=	37
 
+_CORE_NEXT=	${CORE_ABI:C/\./ /}
+.if ${_CORE_NEXT:[2]} == 7
+CORE_NEXT!=	expr ${_CORE_NEXT:[1]} + 1
+CORE_NEXT:=	${CORE_NEXT}.1
+.else
+CORE_NEXT=	${_CORE_NEXT:[1]}
+CORE_NEXT:=	${CORE_NEXT}.7
+.endif
+
 .if exists(${GIT}) && exists(${GITVERSION})
 . if ${CORE_ABI} == "21.1"
-CORE_COMMIT!=	${GITVERSION} --exclude=21.7.r\*
+CORE_COMMIT!=	${GITVERSION} --match=21.1\*
 . else
 CORE_COMMIT!=	${GITVERSION}
 . endif
@@ -65,10 +78,6 @@ CORE_REPOSITORY?=	${TING_ABI}/libressl
 .else
 CORE_REPOSITORY?=	unsupported/${CORE_FLAVOUR:tl}
 .endif
-
-CORE_MESSAGE?=		What are you looking at?
-CORE_NAME?=		opnsense
-CORE_TYPE?=		production
 
 CORE_COMMENT?=		${CORE_PRODUCT} ${CORE_TYPE} release
 CORE_MAINTAINER?=	project@opnsense.org

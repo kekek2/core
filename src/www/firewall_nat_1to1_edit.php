@@ -132,7 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $natent = array();
         // 1-on-1 copy
         $natent['external'] = $pconfig['external'];
-        $natent['category'] = implode(",", $pconfig['category']);
+        $natent['category'] = !empty($pconfig['category']) ? implode(",", $pconfig['category']) : null;
         $natent['descr'] = $pconfig['descr'];
         $natent['interface'] = $pconfig['interface'];
         $natent['type'] = $pconfig['type'];
@@ -429,7 +429,7 @@ include("head.inc");
   <?php
                       foreach ((new OPNsense\Firewall\Category())->iterateCategories() as $category):
                         $catname = htmlspecialchars($category['name'], ENT_QUOTES | ENT_HTML401);?>
-                        <option value="<?=$catname;?>" <?=in_array($catname, $pconfig['category']) ? 'selected="selected"' : '';?> ><?=$catname;?></option>
+                        <option value="<?=$catname;?>" <?=!empty($pconfig['category']) && in_array($catname, $pconfig['category']) ? 'selected="selected"' : '';?> ><?=$catname;?></option>
   <?php
                       endforeach;?>
                       </select>

@@ -105,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
       $natent = array();
 
       $natent['disabled'] = isset($pconfig['disabled']) ? true:false;
-      $natent['category'] = implode(",", $pconfig['category']);
+      $natent['category'] = !empty($pconfig['category']) ? implode(",", $pconfig['category']) : null;
       $natent['descr'] = $pconfig['descr'];
       $natent['interface'] = $pconfig['interface'];
       pconfig_to_address(
@@ -273,7 +273,7 @@ $( document ).ready(function() {
   <?php
                       foreach ((new OPNsense\Firewall\Category())->iterateCategories() as $category):
                         $catname = htmlspecialchars($category['name'], ENT_QUOTES | ENT_HTML401);?>
-                        <option value="<?=$catname;?>" <?=in_array($catname, $pconfig['category']) ? 'selected="selected"' : '';?> ><?=$catname;?></option>
+                        <option value="<?=$catname;?>" <?=!empty($pconfig['category']) && in_array($catname, $pconfig['category']) ? 'selected="selected"' : '';?> ><?=$catname;?></option>
   <?php
                       endforeach;?>
                       </select>

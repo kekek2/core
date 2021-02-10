@@ -309,14 +309,14 @@ include("head.inc");
                     endif;
                     if (!empty($ifinfo['gateway'])): ?>
                     <tr>
-                      <td><?= gettext("Gateway IPv4") ?></td>
+                      <td><?= gettext('IPv4 gateway') ?></td>
                       <td><?= htmlspecialchars($config['interfaces'][$ifdescr]['gateway']) ?> <?= $ifinfo['gateway'] ?></td>
                     </tr>
 <?php
                     endif;
                     if (!empty($ifinfo['linklocal'])): ?>
                     <tr>
-                      <td><?= gettext("IPv6 Link Local") ?></td>
+                      <td><?= gettext("IPv6 link-local") ?></td>
                       <td><?= $ifinfo['linklocal'] ?>/64
                     </tr>
 <?php
@@ -327,7 +327,7 @@ include("head.inc");
                       <td>
 <?php
                         foreach($ifinfo['ipv6'] as $ipv6):
-                            if ($ipv6['ipaddr'] != $ifinfo['ipaddrv6'] && !$ipv6['link-local']):?>
+                            if (!$ipv6['link-local']):?>
                             <?=$ipv6['ipaddr'];?>/<?=$ipv6['subnetbits'];?> <?= !empty($ipv6['vhid']) ? 'vhid ' . $ipv6['vhid'] : "" ;?> <?= $ipv6['deprecated'] ? 'deprecated' : '' ?>
                             <br />
 <?php
@@ -338,13 +338,13 @@ include("head.inc");
 <?php endif ?>
 <?php if (array_key_exists('pdinfo', $ifinfo)): ?>
                     <tr>
-                      <td><?= gettext('Delegated prefix') ?></td>
+                      <td><?= gettext('IPv6 delegated prefix') ?></td>
                       <td><?= $ifinfo['pdinfo'] ?></td>
                     </tr>
 <?php endif ?>
 <?php if (!empty($ifinfo['gatewayv6'])): ?>
                     <tr>
-                      <td><?= gettext("Gateway IPv6") ?></td>
+                      <td><?= gettext('IPv6 gateway') ?></td>
                       <td><?= htmlspecialchars($config['interfaces'][$ifdescr]['gatewayv6']) ?> <?= $ifinfo['gatewayv6'] ?></td>
                     </tr>
 <?php
