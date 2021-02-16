@@ -1,8 +1,0 @@
-#!/bin/sh
-
-if [ ! -f /usr/local/etc/rc.loader.d/20-ethernet ]; then
-  cat >> /usr/local/etc/rc.loader.d/20-ethernet << EOF
-if_em_load="YES"
-EOF
-  /usr/local/etc/rc.loader
-fi
