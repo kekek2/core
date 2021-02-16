@@ -78,7 +78,7 @@ function get_default_sysctl_value($id)
         'hw.ibrs_disable' => '0',
         'hw.ixl.enable_head_writeback' => '0',
         'hw.syscons.kbd_reboot' => '0',
-        'hw.uart.console' => 'io:0x3f8,br:' . system_console_speed(),
+        'hw.uart.console' => 'io:0x3f8,br:' . system_console_speed(), /* XXX support comconsole_port if needed */
         'kern.ipc.maxsockbuf' => '4262144',
         'kern.randompid' => '347',
         'net.enc.in.ipsec_bpf_mask' => '2', /* after processing */
@@ -1084,7 +1084,7 @@ function reset_factory_defaults($sync = true)
     mwexec('/bin/rm -fr /conf/* /var/log/* /root/.history /usr/local/etc/ssl/ting-client.* /var/db/notices.db');
     disable_security_checks();
 
-    mwexec('/usr/local/sbin/beep.sh stop');
+    mwexec('/usr/local/sbin/opnsense-beep stop');
 
     /* as we go through a special case directly shut down */
     $shutdown_cmd = '/sbin/shutdown -op now';

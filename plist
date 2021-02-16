@@ -151,7 +151,7 @@
 /usr/local/etc/rc.syshook.d/backup/20-rrd
 /usr/local/etc/rc.syshook.d/boot/01-apuledctld
 /usr/local/etc/rc.syshook.d/carp/20-openvpn
-/usr/local/etc/rc.syshook.d/early/05-update
+/usr/local/etc/rc.syshook.d/early/05-upgrade
 /usr/local/etc/rc.syshook.d/early/10-configd
 /usr/local/etc/rc.syshook.d/early/15-templates
 /usr/local/etc/rc.syshook.d/early/20-backup
@@ -179,6 +179,7 @@
 /usr/local/etc/rc.syshook.d/update/10-refresh
 /usr/local/etc/rc.syshook.d/update/50-apu2
 /usr/local/etc/rc.syshook.d/update/60-repo
+/usr/local/etc/rc.syshook.d/update/70-igb
 /usr/local/etc/secadm.conf.d/syslog-ng
 /usr/local/etc/squid/errors/en/ERR_BANNED_ACCESS_DENIED
 /usr/local/etc/squid/errors/en/ERR_BLACKLIST_ACCESS_DENIED
@@ -355,6 +356,7 @@
 /usr/local/opnsense/mvc/app/controllers/OPNsense/IDS/Api/ServiceController.php
 /usr/local/opnsense/mvc/app/controllers/OPNsense/IDS/Api/SettingsController.php
 /usr/local/opnsense/mvc/app/controllers/OPNsense/IDS/forms/dialogPolicy.xml
+/usr/local/opnsense/mvc/app/controllers/OPNsense/IDS/forms/dialogPolicyRule.xml
 /usr/local/opnsense/mvc/app/controllers/OPNsense/IDS/forms/dialogRule.xml
 /usr/local/opnsense/mvc/app/controllers/OPNsense/IDS/forms/dialogRuleset.xml
 /usr/local/opnsense/mvc/app/controllers/OPNsense/IDS/forms/dialogUserDefined.xml
@@ -737,6 +739,7 @@
 /usr/local/opnsense/scripts/firmware/license.sh
 /usr/local/opnsense/scripts/firmware/lock.sh
 /usr/local/opnsense/scripts/firmware/plugin.sh
+/usr/local/opnsense/scripts/firmware/product.php
 /usr/local/opnsense/scripts/firmware/reboot.sh
 /usr/local/opnsense/scripts/firmware/reinstall.sh
 /usr/local/opnsense/scripts/firmware/remove.sh
@@ -1877,9 +1880,9 @@
 /usr/local/opnsense/www/themes/ting/build/images/login-logo.png
 /usr/local/opnsense/www/themes/ting/LICENSE
 /usr/local/sbin/3gstats.php
-/usr/local/sbin/beep.sh
 /usr/local/sbin/carp_service_status
 /usr/local/sbin/configctl
+/usr/local/sbin/opnsense-beep
 /usr/local/sbin/opnsense-importer
 /usr/local/sbin/opnsense-installer
 /usr/local/sbin/opnsense-shell
@@ -1888,6 +1891,7 @@
 /usr/local/sbin/ping_hosts.sh
 /usr/local/sbin/pluginctl
 /usr/local/share/apu2/apu2_v4.13.0.2.rom
+/usr/local/share/man/man8/opnsense-beep.8.gz
 /usr/local/share/man/man8/opnsense-importer.8.gz
 /usr/local/share/man/man8/opnsense-installer.8.gz
 /usr/local/share/man/man8/opnsense-shell.8.gz

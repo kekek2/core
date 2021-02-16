@@ -214,8 +214,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if ($pconfig['protocol'] != 'any') {
             $natent['protocol'] = $pconfig['protocol'];
         }
-        $natent['interface'] = implode(",", $pconfig['interface']);
-        $natent['category'] = implode(",", $pconfig['category']);
+        $natent['interface'] = !empty($pconfig['interface']) ? implode(",", $pconfig['interface']) : null;
+        $natent['category'] = !empty($pconfig['category']) ? implode(",", $pconfig['category']) : null;
         $natent['ipprotocol'] = $pconfig['ipprotocol'];
         $natent['descr'] = $pconfig['descr'];
         $natent['tag'] = $pconfig['tag'];
@@ -994,7 +994,7 @@ $( document ).ready(function() {
 <?php
                     foreach ((new OPNsense\Firewall\Category())->iterateCategories() as $category):
                       $catname = htmlspecialchars($category['name'], ENT_QUOTES | ENT_HTML401);?>
-                      <option value="<?=$catname;?>" <?=in_array($catname, $pconfig['category']) ? 'selected="selected"' : '';?> ><?=$catname;?></option>
+                      <option value="<?=$catname;?>" <?=!empty($pconfig['category']) && in_array($catname, $pconfig['category']) ? 'selected="selected"' : '';?> ><?=$catname;?></option>
 <?php
                     endforeach;?>
                     </select>
