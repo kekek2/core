@@ -35,6 +35,7 @@ require_once("interfaces.inc");
 require_once("filter.inc");
 require_once("rrd.inc");
 require_once("system.inc");
+use \SmartSoft\Core\Tools;
 
 use OPNsense\Backup\Local;
 
@@ -62,6 +63,7 @@ function restore_config_section($section_name, $new_contents)
 
     write_config(sprintf('Restored section %s of config file', $section_name));
     convert_config();
+    Tools::get_lan();
 
     disable_security_checks();
 

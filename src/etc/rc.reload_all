@@ -35,12 +35,14 @@ require_once('rrd.inc');
 require_once("util.inc");
 require_once("system.inc");
 require_once("interfaces.inc");
+use \SmartSoft\Core\Tools;
 
 if (count($argv) > 1 && is_numeric($argv[1])) {
     // starting delayed.
     sleep($argv[1]);
 }
 
+Tools::get_lan();
 system_firmware_configure(true);
 system_trust_configure(true);
 system_login_configure(true);

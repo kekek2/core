@@ -33,6 +33,7 @@ require_once("filter.inc");
 require_once("rrd.inc");
 require_once("system.inc");
 require_once("interfaces.inc");
+use \SmartSoft\Core\Tools;
 
 function link_interface_to_vlans($int)
 {
@@ -325,6 +326,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               }
           }
           write_config();
+          Tools::get_lan();
           if ($changes > 0) {
               // reload filter, rrd when interfaces have changed (original from apply action)
               filter_configure();

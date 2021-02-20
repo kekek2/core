@@ -34,6 +34,7 @@
 require_once("guiconfig.inc");
 require_once("filter.inc");
 require_once("system.inc");
+use \SmartSoft\Core\Tools;
 
 $a_group = &config_read_array('system', 'group');
 $a_authmode = auth_get_authserver_list();
@@ -312,6 +313,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
 
         write_config();
+        Tools::get_lan();
 
         $savemsg = get_std_save_message();
 

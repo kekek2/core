@@ -29,6 +29,7 @@
  */
 
 require_once("guiconfig.inc");
+use \SmartSoft\Core\Tools;
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['backupcount'] = isset($config['system']['backupcount']) ? $config['system']['backupcount'] : null;
@@ -105,6 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
             write_config('Changed backup revision count');
             $savemsg = get_std_save_message();
+            Tools::get_lan();
         }
     }
 

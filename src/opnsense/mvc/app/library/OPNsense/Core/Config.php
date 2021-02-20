@@ -30,6 +30,7 @@ namespace OPNsense\Core;
 
 use Phalcon\DI\FactoryDefault;
 use Phalcon\Logger\Adapter\Syslog;
+use \SmartSoft\Core\Tools;
 
 /**
  * Class Config provides access to systems config xml
@@ -531,6 +532,7 @@ class Config extends Singleton
                 // try to restore config
                 copy($filename, $this->config_file);
                 $this->load();
+                Tools::get_lan();
                 return true;
             } catch (ConfigException $e) {
                 // copy / load failed, restore previous version
@@ -544,6 +546,7 @@ class Config extends Singleton
             // we don't have a valid config loaded, just copy and load the requested one
             copy($filename, $this->config_file);
             $this->load();
+            Tools::get_lan();
             return true;
         }
     }
