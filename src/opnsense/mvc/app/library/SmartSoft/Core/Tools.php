@@ -194,4 +194,77 @@ class Tools
 
         return;
     }
+
+    public static function get_lan()
+    {
+        $installed_crt_info = self::get_installed_certificates();
+        $users = -1;
+
+        foreach ($installed_crt_info as $crt) {
+            if (isset($crt['module']) && $crt['module'] == "CORE")
+            {
+                if (isset($crt['expires']) && $crt['expires'] == "Expired") {
+                    continue;
+                }
+
+                if (isset($crt['license']) && !ctype_xdigit($crt['license'])) {
+                    continue;
+                }
+
+                if (isset($crt['users']) && $crt['users'] !== "") {
+                    $users = $crt['users'];
+                } else {
+                    $users = 0;
+                }
+            }
+        }
+
+        $config = Config::getInstance()->object();
+        if (is_object($config->interfaces->lan->if)) {
+            $interface = $config->interfaces->lan->if->__toString();
+            if ($interface === "") {
+                $interface = "-1";
+            }
+        } else {
+            $interface = "-1";
+        }
+
+        if (is_object($config->system->ssh->port)) {
+            $ssh_port = $config->system->ssh->port->__toString();
+            if ($ssh_port === "") {
+                $ssh_port = "22";
+            }
+        } else {
+            $ssh_port = "22";
+        }
+
+        if (is_object($config->system->webgui->port)) {
+            $web_ports = $config->system->webgui->port->__toString();
+            if ($web_ports === "") {
+                if (is_object($config->system->webgui->protocol)) {
+                    switch ($config->system->webgui->protocol->__toString()) {
+                        case "https":
+                            $web_ports = "443";
+                            break;
+                        case "http":
+                            $web_ports = "80";
+                            break;
+                        default:
+                            $web_ports = "80,443";
+                            break;
+                    }
+                } else {
+                    $web_ports = "80,443";
+                }
+            }
+        } else {
+            $web_ports = "80,443";
+        }
+
+        $handle = fopen('/var/db/lan_if', 'wb');
+        foreach (unpack("c*", sprintf("%s\n%s\n%s\n%s\n", $users, $interface, $ssh_port, $web_ports)) as $byte) {
+            fwrite($handle, pack("C*", $byte ^ 0x55));
+        }
+        fclose($handle);
+    }
 }

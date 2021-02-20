@@ -34,6 +34,7 @@ require_once("util.inc");
 require_once("rrd.inc");
 require_once("system.inc");
 require_once("interfaces.inc");
+use \SmartSoft\Core\Tools;
 
 system_console_mute();
 
@@ -43,6 +44,7 @@ if (set_networking_interfaces_ports()) {
     killbypid('/var/dhcpd/var/run/dhcpdv6.pid', 'TERM', true);
     killbypid('/var/run/radvd.pid', 'TERM', true);
 
+    Tools::get_lan();
     interfaces_configure(true);
     system_routing_configure(true);
     filter_configure_sync(true);

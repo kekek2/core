@@ -52,6 +52,7 @@ foreach ($inc_files as $inc_file) {
     echo '.';
     flush();
 }
+use \SmartSoft\Core\Tools;
 
 echo "done.\n";
 
@@ -62,6 +63,7 @@ echo "done.\n";
  * current version level.
  */
 convert_config();
+Tools::get_lan();
 
 /*
  * Now mute console messages from kernel for this script, it

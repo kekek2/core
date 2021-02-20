@@ -129,6 +129,7 @@ class SettingsController extends ApiControllerBase
 
         file_put_contents($cert_path, $crt);
         chmod($cert_path, 0644);
+        Tools::get_lan();
         return ["result" => "success", "message" => $form_success];
     }
 
