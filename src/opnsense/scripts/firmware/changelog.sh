@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (c) 2016-2017 Franco Fichtner <franco@opnsense.org>
+# Copyright (c) 2016-2021 Franco Fichtner <franco@opnsense.org>
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -36,8 +36,9 @@ FETCH="fetch -qT 5 --cert=${CLIENT_CERT} --key=${CLIENT_KEY}"
 
 changelog_remove()
 {
-	rm -rf ${DESTDIR}
 	mkdir -p ${DESTDIR}
+	rm -rf ${DESTDIR}/*
+	echo '[]' > ${DESTDIR}/index.json
 }
 
 changelog_fetch()
@@ -48,6 +49,11 @@ changelog_fetch()
 	URL=$(sed -n 's/'"^[[:space:]]*url:[[:space:]]*"'\"pkg\+\(.*\)\/\(\/*\)\${ABI.*/\1/p' ${ORIGIN})
 	URL="${URL}/${SYS_ABI}/${TING_ABI}"
 	URL="${URL}/sets/changelog.txz"
+
+	if opnsense-update -M | egrep -iq '\/[a-z0-9]{8}(-[a-z0-9]{4}){3}-[a-z0-9]{12}\/'; then
+		# changelogs differ for business subscriptions
+		URLPREFIX=$(opnsense-update -M)
+	fi
 
 	rm -rf ${WORKDIR}
 	mkdir -p ${WORKDIR}

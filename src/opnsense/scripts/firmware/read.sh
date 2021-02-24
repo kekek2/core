@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (C) 2016-2021 Franco Fichtner <franco@opnsense.org>
+# Copyright (C) 2021 Franco Fichtner <franco@opnsense.org>
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -25,11 +25,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 LOCKFILE="/tmp/pkg_upgrade.progress"
-TEE="/usr/bin/tee -a"
 
-: > ${LOCKFILE}
-
-echo "***GOT REQUEST TO AUDIT SECURITY***" >> ${LOCKFILE}
-echo "Currently running $(opnsense-version) at $(date)" >> ${LOCKFILE}
-(pkg audit -F 2>&1) | ${TEE} ${LOCKFILE}
-echo '***DONE***' >> ${LOCKFILE}
+if [ -f ${LOCKFILE} ]; then
+	cat ${LOCKFILE}
+fi
