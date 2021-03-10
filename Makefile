@@ -55,6 +55,7 @@ CORE_COMMIT!=	${GITVERSION}
 CORE_COMMIT=	unknown 0 undefined
 .endif
 
+CORE_COMMIT?=	unknown 0 undefined
 CORE_VERSION?=	${CORE_COMMIT:[1]}
 CORE_REVISION?=	${CORE_COMMIT:[2]}
 CORE_HASH?=	${CORE_COMMIT:[3]}
