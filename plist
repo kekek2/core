@@ -176,6 +176,7 @@
 /usr/local/etc/rc.syshook.d/update/60-repo
 /usr/local/etc/rc.syshook.d/update/70-igb
 /usr/local/etc/secadm.conf.d/syslog-ng
+/usr/local/etc/secadm.rules
 /usr/local/etc/squid/errors/en/ERR_BANNED_ACCESS_DENIED
 /usr/local/etc/squid/errors/en/ERR_BLACKLIST_ACCESS_DENIED
 /usr/local/etc/squid/errors/en/ERR_BLOCKMIMETYPES_ACCESS_DENIED
