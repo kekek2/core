@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
   /**
    * page setup
    */
-  $(window).on("load", function() {
+  $("#dashboard_container").on("WidgetsReady", function() {
         function format_field(value) {
             if (!isNaN(value) && value > 0) {
                 let fileSizeTypes = ["", "K", "M", "G", "T", "P", "E", "Z", "Y"];
@@ -195,7 +195,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
           (function traffic_poller(){
               ajaxGet("/api/diagnostics/traffic/interface", {}, function(data, status) {
                   if (data.interfaces !== undefined) {
-                      console.log(data);
                       $( document ).trigger( "updateTrafficCharts", [ data ] );
                   }
               });

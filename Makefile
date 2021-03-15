@@ -58,6 +58,7 @@ CORE_COMMIT!=	${GITVERSION}
 CORE_COMMIT=	unknown 0 undefined
 .endif
 
+CORE_COMMIT?=	unknown 0 undefined
 CORE_VERSION?=	${CORE_COMMIT:[1]}
 CORE_REVISION?=	${CORE_COMMIT:[2]}
 CORE_HASH?=	${CORE_COMMIT:[3]}
@@ -92,6 +93,7 @@ CORE_COPYRIGHT_YEARS?=	2014-2021
 CORE_DEPENDS_amd64?=	beep \
 			bsdinstaller \
 			secadm \
+			secadm-kmod \
 			suricata
 
 CORE_DEPENDS_i386?=	${CORE_DEPENDS_amd64}

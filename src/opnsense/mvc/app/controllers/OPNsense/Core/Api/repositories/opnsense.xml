@@ -13,10 +13,14 @@
             <description>Local repository</description>
         </mirror>
     </mirrors>
-    <flavours>
+    <flavours allow_custom="true">
         <flavour>
             <name/>
             <description>(default)</description>
+        </flavour>
+        <flavour>
+            <name>libressl</name>
+            <description>LibreSSL</description>
         </flavour>
         <flavour>
             <name>latest</name>
@@ -24,6 +28,10 @@
         </flavour>
     </flavours>
     <families>
+        <family has_subscription="true">
+            <name>business</name>
+            <description>Business</description>
+        </family>
         <family>
             <name/>
             <description>Production</description>

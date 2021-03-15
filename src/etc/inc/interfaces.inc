@@ -213,8 +213,6 @@ function interfaces_vlan_configure($verbose = false, $realif = '')
 
 function interface_vlan_configure(&$vlan, $intfs = null)
 {
-    global $config;
-
     if (!is_array($vlan)) {
         log_error('VLAN: called with wrong options. Problems with config!');
         return;
@@ -1036,6 +1034,25 @@ function interface_bring_down($interface = "wan", $ifacecfg = false)
         kill_hostapd($realif);
     }
 
+    $track6 = link_interface_to_track6($interface);
+    if (count($track6)) {
+        /* bring down radvd and dhcp6 on these interfaces */
+        plugins_configure('dhcp', false, array('inet6', $track6));
+    }
+
+    switch ($ifcfg['ipaddrv6']) {
+        case 'slaac':
+        case 'dhcp6':
+            interface_dhcpv6_prepare($interface, $ifcfg, true);
+            killbypid('/var/run/dhcp6c.pid', 'HUP');
+            break;
+        case 'track6':
+            interface_track6_configure($interface, $ifcfg, false, true);
+            break;
+        default:
+            break;
+    }
+
     switch ($ifcfg['ipaddr']) {
         case 'ppp':
         case 'pppoe':
@@ -1053,30 +1070,10 @@ function interface_bring_down($interface = "wan", $ifacecfg = false)
                         break;
                     }
                 }
-                return;
             }
             break;
         case 'dhcp':
             killbypid("/var/run/dhclient.{$realif}.pid", 'TERM', true);
-            break;
-        default:
-            break;
-    }
-
-    $track6 = link_interface_to_track6($interface);
-    if (count($track6)) {
-        /* bring down radvd and dhcp6 on these interfaces */
-        plugins_configure('dhcp', false, array('inet6', $track6));
-    }
-
-    switch ($ifcfg['ipaddrv6']) {
-        case 'slaac':
-        case 'dhcp6':
-            interface_dhcpv6_prepare($interface, $ifcfg, true);
-            killbypid('/var/run/dhcp6c.pid', 'HUP');
-            break;
-        case 'track6':
-            interface_track6_configure($interface, $ifcfg, false, true);
             break;
         default:
             break;
@@ -1700,8 +1697,6 @@ function interface_ipalias_configure(&$vip)
 
 function interface_carp_configure(&$vip)
 {
-    global $config;
-
     if ($vip['mode'] != 'carp') {
         return;
     }
@@ -4075,8 +4070,6 @@ function get_interface_ip($interface = 'wan', $ifconfig_details = null)
 
 function get_interface_ipv6($interface = 'wan', $ifconfig_details = null)
 {
-    global $config;
-
     /* XXX maybe we should make a proper lookup */
     if (strstr($interface, '_vip')) {
         return get_configured_carp_interface_list($interface, 'inet6');

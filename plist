@@ -80,6 +80,7 @@
 /usr/local/etc/pkg.conf
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/opnsense-update.deciso.com.20160725
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/opnsense-update.deciso.com.20170721
+/usr/local/etc/pkg/fingerprints/OPNsense/revoked/opnsense-update.deciso.com.20180627
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20150402
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20160104
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20160630
@@ -90,7 +91,6 @@
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20181218
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20190702
 /usr/local/etc/pkg/fingerprints/OPNsense/revoked/pkg.opnsense.org.20200119
-/usr/local/etc/pkg/fingerprints/OPNsense/trusted/opnsense-update.deciso.com.20180627
 /usr/local/etc/pkg/fingerprints/OPNsense/trusted/opnsense-update.deciso.com.20200122
 /usr/local/etc/pkg/fingerprints/OPNsense/trusted/pkg.opnsense.org.20200313
 /usr/local/etc/pkg/fingerprints/OPNsense/trusted/pkg.opnsense.org.20210104
@@ -180,6 +180,7 @@
 /usr/local/etc/rc.syshook.d/update/50-apu2
 /usr/local/etc/rc.syshook.d/update/60-repo
 /usr/local/etc/secadm.conf.d/syslog-ng
+/usr/local/etc/secadm.rules
 /usr/local/etc/squid/errors/en/ERR_BANNED_ACCESS_DENIED
 /usr/local/etc/squid/errors/en/ERR_BLACKLIST_ACCESS_DENIED
 /usr/local/etc/squid/errors/en/ERR_BLOCKMIMETYPES_ACCESS_DENIED
@@ -741,14 +742,16 @@
 /usr/local/opnsense/scripts/firmware/product.php
 /usr/local/opnsense/scripts/firmware/read.sh
 /usr/local/opnsense/scripts/firmware/reboot.sh
+/usr/local/opnsense/scripts/firmware/register.php
 /usr/local/opnsense/scripts/firmware/reinstall.sh
 /usr/local/opnsense/scripts/firmware/remove.sh
+/usr/local/opnsense/scripts/firmware/resync.sh
 /usr/local/opnsense/scripts/firmware/running.sh
 /usr/local/opnsense/scripts/firmware/security.sh
 /usr/local/opnsense/scripts/firmware/sets.sh
 /usr/local/opnsense/scripts/firmware/sync.sh
-/usr/local/opnsense/scripts/firmware/type.sh
 /usr/local/opnsense/scripts/firmware/unlock.sh
+/usr/local/opnsense/scripts/firmware/update.sh
 /usr/local/opnsense/scripts/firmware/upgrade.sh
 /usr/local/opnsense/scripts/interfaces/dhclient-script
 /usr/local/opnsense/scripts/interfaces/list_arp.py
