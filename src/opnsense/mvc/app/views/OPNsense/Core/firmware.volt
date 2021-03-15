@@ -283,6 +283,15 @@
                 } else {
                     packagesInfo(true);
                 }
+                $.ajax({
+                    type: 'GET',
+                    url: '/ui/core/firmware',
+                    dataType:'html',
+                    contentType: 'text/html',
+                    complete: function(data,status) {
+                        $('#mainmenu').html($('#mainmenu', data.responseText));
+                    }
+                });
             } else if (data['status'] == 'reboot') {
                 BootstrapDialog.show({
                     type:BootstrapDialog.TYPE_INFO,
@@ -531,7 +540,7 @@
                 event.preventDefault();
                 let package_name = $(this).data('package');
                 /* XXX temporary placeholder to inform the user that he/she is installing from a different (external) source */
-                if ($(this).data('repository') !== 'OPNsense') {
+                if ($(this).data('repository') !== 'TING') {
                     BootstrapDialog.show({
                         type:BootstrapDialog.TYPE_INFO,
                         title: "{{ lang._('Third party software') }}",
