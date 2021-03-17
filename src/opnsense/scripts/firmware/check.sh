@@ -68,7 +68,7 @@ fi
 last_check=$(date)
 os_version=$(uname -sr)
 product_id=$(opnsense-version -n)
-product_target=opnsense${product_suffix}
+product_target=ting${product_suffix}
 product_version=$(opnsense-version -v)
 
 echo "***GOT REQUEST TO CHECK FOR UPDATES***" >> ${LOCKFILE}
