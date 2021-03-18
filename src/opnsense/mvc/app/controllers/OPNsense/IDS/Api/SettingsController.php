@@ -627,6 +627,7 @@ class SettingsController extends ApiMutableModelControllerBase
      */
     public function searchPolicyAction()
     {
+
         return $this->searchBase("policies.policy", array("enabled", "prio", "description"), "description");
     }
 
@@ -639,7 +640,9 @@ class SettingsController extends ApiMutableModelControllerBase
      */
     public function setPolicyAction($uuid)
     {
-        return $this->setBase("policy", "policies.policy", $uuid);
+        $ret = $this->setBase("policy", "policies.policy", $uuid);
+        $this->PolicyLog("edited", $uuid);
+        return $ret;
     }
 
     /**
@@ -650,7 +653,9 @@ class SettingsController extends ApiMutableModelControllerBase
      */
     public function addPolicyAction()
     {
-        return $this->addBase("policy", "policies.policy");
+        $res = $this->addBase("policy", "policies.policy");
+        $this->PolicyLog("added", $res["uuid"]);
+        return $res;
     }
 
     /**
@@ -673,7 +678,8 @@ class SettingsController extends ApiMutableModelControllerBase
      */
     public function delPolicyAction($uuid)
     {
-        return  $this->delBase("policies.policy", $uuid);
+        $this->PolicyLog("deleted", $uuid);
+        return $this->delBase("policies.policy", $uuid);
     }
 
     /**
@@ -686,7 +692,9 @@ class SettingsController extends ApiMutableModelControllerBase
      */
     public function togglePolicyAction($uuid, $enabled = null)
     {
-        return $this->toggleBase("policies.policy", $uuid, $enabled);
+        $ret = $this->toggleBase("policies.policy", $uuid, $enabled);
+        $this->PolicyLog("toggled", $uuid);
+        return $ret;
     }
 
     /**
@@ -708,7 +716,9 @@ class SettingsController extends ApiMutableModelControllerBase
      */
     public function setPolicyRuleAction($uuid)
     {
-        return $this->setBase("rule", "rules.rule", $uuid);
+        $ret = $this->setBase("rule", "rules.rule", $uuid);
+        $this->PolicyRuleLog("edited", $uuid);
+        return $ret;
     }
 
     /**
@@ -719,7 +729,9 @@ class SettingsController extends ApiMutableModelControllerBase
      */
     public function addPolicyRuleAction()
     {
-        return $this->addBase("rule", "rules.rule");
+        $ret = $this->addBase("rule", "rules.rule");
+        $this->PolicyRuleLog("added", $ret["uuid"]);
+        return $ret;
     }
 
     /**
@@ -742,6 +754,7 @@ class SettingsController extends ApiMutableModelControllerBase
      */
     public function delPolicyRuleAction($uuid)
     {
+        $this->PolicyRuleLog("deleted", $uuid);
         return  $this->delBase("rules.rule", $uuid);
     }
 
@@ -755,7 +768,9 @@ class SettingsController extends ApiMutableModelControllerBase
      */
     public function togglePolicyRuleAction($uuid, $enabled = null)
     {
-        return $this->toggleBase("rules.rule", $uuid, $enabled);
+        $ret = $this->toggleBase("rules.rule", $uuid, $enabled);
+        $this->PolicyRuleLog("toggled", $uuid);
+        return $ret;
     }
 
     /**
@@ -817,6 +832,34 @@ class SettingsController extends ApiMutableModelControllerBase
                 Syslog::log($message . " changed to " . ($new_value === "" ? "default" : $new_value));
             }
         }
+    }
+
+    private function PolicyLog($action, $uuid)
+    {
+        $mdl = $this->getModel();
+        if (!$uuid || !($policy = $mdl->policies->policy->{$uuid})) {
+            return;
+        }
+        $rulsets_uuid = $policy->rulesets->__toString();
+        if (($rulsets = $mdl->files->file->{$rulsets_uuid})) {
+            $rulsets_name = $rulsets->filename->__toString();
+        } else {
+            $rulsets_name = "";
+        }
+        Syslog::log(sprintf("IDS/IPS %s polycy %s: enabled: %s, priority: %s, action: %s, rulesets: %s, content: %s, new_action: %s, description: %s",
+            $uuid, $action, $policy->enabled->__toString(), $policy->prio->__toString(),
+            $policy->action->__toString(), $rulsets_name, $policy->content->__toString(),
+            $policy->new_action->__toString(), $policy->description->__toString()));
+    }
+
+    private function PolicyRuleLog($action, $uuid)
+    {
+        $mdl = $this->getModel();
+        if (!$uuid || !($rule = $mdl->rules->rule->{$uuid})) {
+            return;
+        }
+        Syslog::log(sprintf("IDS/IPS %s rule %s: sid: %s, enabled: %s, action: %s", $action, $uuid,
+            $rule->sid->__toString(), $rule->enabled->__toString(), $rule->action->__toString()));
     }
 }
 
