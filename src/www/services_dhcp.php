@@ -383,19 +383,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $input_errors[] = sprintf(gettext("You must disable the DHCP relay on the %s interface before enabling the DHCP server."),
                                   !empty($config['interfaces'][$if]['descr']) ? htmlspecialchars($config['interfaces'][$if]['descr']) : strtoupper($if));
             }
-
-            $dynsubnet_start = ip2ulong($pconfig['range_from']);
-            $dynsubnet_end = ip2ulong($pconfig['range_to']);
-            foreach ($a_maps as $map) {
-                if (empty($map['ipaddr'])) {
-                    continue;
-                }
-                if ((ip2ulong($map['ipaddr']) > $dynsubnet_start) &&
-                  (ip2ulong($map['ipaddr']) < $dynsubnet_end)) {
-                    $input_errors[] = sprintf(gettext("The DHCP range cannot overlap any static DHCP mappings."));
-                    break;
-                }
-            }
         }
         // save data
         if (count($input_errors) == 0) {
@@ -1143,7 +1130,7 @@ include("head.inc");
                             </tfoot>
                           </table>
                           <div class="hidden" data-for="help_for_numberoptions">
-                          <?= sprintf(gettext("Enter the DHCP option number and the value for each item you would like to include in the DHCP lease information. For a list of available options please visit this %sURL%s."), '<a href="http://www.iana.org/assignments/bootp-dhcp-parameters/" target="_blank">', '</a>') ?>
+                          <?= sprintf(gettext("Enter the DHCP option number and the value for each item you would like to include in the DHCP lease information. For a list of available options please visit this %sURL%s."), '<a href="https://www.iana.org/assignments/bootp-dhcp-parameters/" target="_blank">', '</a>') ?>
                           </div>
                         </div>
                       </td>

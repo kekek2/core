@@ -495,7 +495,9 @@ mfc: ensure-stable clean-mfcdir
 	fi
 .else
 	@git checkout stable/${CORE_ABI}
-	@git cherry-pick -x ${MFC}
+	@if ! git cherry-pick -x ${MFC}; then \
+		git cherry-pick --abort; \
+	fi
 .endif
 	@git checkout master
 .endfor
@@ -504,6 +506,11 @@ stable:
 	@git checkout stable/${CORE_ABI}
 
 master:
+	@git checkout master
+
+rebase:
+	@git checkout stable/${CORE_ABI}
+	@git rebase -i
 	@git checkout master
 
 test: want-phpunit7-php${CORE_PHP}
