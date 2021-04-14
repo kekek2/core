@@ -113,7 +113,7 @@ function core_services()
                 "start" => array('system_syslogd_start'),
                 "restart" => array('system_syslogd_start')
             ),
-            'pidfile' => '/var/run/syslog-ng.pid',
+            'pidfile' => '/var/run/syslog.pid',
             'name' => 'syslogd',
         );
     }
