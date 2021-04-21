@@ -384,9 +384,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
     }
 
-    if (!empty($pconfig['pre-shared-key'])) {
-        if (!preg_match('/^[a-zA-Z0-9\/\r\n+]*$/', $pconfig['pre-shared-key'])) {
-            $input_errors[] = sprintf(gettext("Invalid characters in Pre-Shared Key"));
+    if (!empty($pconfig['ikeid']) && !empty($pconfig['installpolicy'])) {
+        foreach ($config['ipsec']['phase2'] as $phase2ent) {
+            if ($phase2ent['ikeid'] == $pconfig['ikeid'] && $phase2ent['mode'] == 'route-based') {
+                $input_errors[] = gettext(
+                    "Install policy on phase1 is not a valid option when using Route-based phase 2 entries."
+                );
+                break;
+            }
         }
     }
 

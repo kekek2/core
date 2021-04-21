@@ -32,8 +32,9 @@ all:
 .include "Mk/ting.mk"
 
 CORE_MESSAGE?=	What are you looking at?
+CORE_NICKNAME?=	Marvelous Meerkat
 CORE_NAME?=	opnsense
-CORE_TYPE?=	production
+CORE_TYPE?=	community
 
 TING_ABI?=	1.8
 CORE_ABI?=	21.1
@@ -59,6 +60,9 @@ CORE_COMMIT?=	unknown 0 undefined
 CORE_VERSION?=	${CORE_COMMIT:[1]}
 CORE_REVISION?=	${CORE_COMMIT:[2]}
 CORE_HASH?=	${CORE_COMMIT:[3]}
+
+_CORE_SERIES=	${CORE_VERSION:S/./ /g}
+CORE_SERIES?=	${_CORE_SERIES:[1]}.${_CORE_SERIES:[2]}
 
 .if "${CORE_REVISION}" != "" && "${CORE_REVISION}" != "0"
 CORE_PKGVERSION=	${CORE_VERSION}_${CORE_REVISION}
@@ -120,7 +124,7 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			mpd5 \
 			ntp \
 			openssh-portable \
-			openvpn$ \
+			openvpn \
 			pam_opnsense \
 			pftop \
 			php${CORE_PHP}-ctype \

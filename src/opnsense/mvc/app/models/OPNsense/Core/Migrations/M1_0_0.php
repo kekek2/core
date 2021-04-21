@@ -1,7 +1,7 @@
 <?php
 
 /**
- *    Copyright (C) 2015 Deciso B.V.
+ *    Copyright (C) 2021 Deciso B.V.
  *
  *    All rights reserved.
  *
@@ -28,37 +28,25 @@
  *
  */
 
-namespace OPNsense\Auth;
+namespace OPNsense\Core\Migrations;
 
-/**
- * Interface IAuthConnector for authenticator connectors
- * @package OPNsense\Auth
- */
-interface IAuthConnector
+use OPNsense\Base\BaseModelMigration;
+
+class M1_0_0 extends BaseModelMigration
 {
     /**
-     * set connector properties
-     * @param array $config set configuration for this connector to use
+     * Migrate BE release type
+     * @param $model
      */
-    public function setProperties($config);
+    public function run($model)
+    {
 
-    /**
-     * after authentication, you can call this method to retrieve optional return data from the authenticator
-     * @return mixed named list of authentication properties, may be returned by the authenticator
-     */
-    public function getLastAuthProperties();
-
-    /**
-     * after authentication, you can call this method to retrieve optional authentication errors
-     * @return array of auth errors
-     */
-    public function getLastAuthErrors();
-
-    /**
-     * authenticate user
-     * @param string $username username to authenticate
-     * @param string $password user password
-     * @return bool
-     */
-    public function authenticate($username, $password);
+        if ((empty((string)$model->type) || (string)$model->type == "devel") && !empty((string)$model->mirror) ) {
+            $is_business = stripos((string)$model->mirror, "opnsense-update.deciso.com") > 1;
+            if ($is_business) {
+                $model->type = "business";
+                $model->flavour = "latest";
+            }
+        }
+    }
 }
