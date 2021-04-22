@@ -3,7 +3,7 @@ CORE_NAME=		ting
 CORE_TYPE=		release
 
 CORE_COMMENT=		${CORE_PRODUCT} ${CORE_TYPE} package
-CORE_MAINTAINER=	evbevz@gmail.com
+CORE_MAINTAINER=	a.shursha@smart-soft.ru
 CORE_ORIGIN=		${CORE_NAME}
 CORE_PACKAGESITE=	https://update0.smart-soft.ru
 CORE_PRODUCT=		TING
