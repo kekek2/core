@@ -1,5 +1,5 @@
 .\"
-.\" Copyright (c) 2018-2021 Franco Fichtner <franco@opnsense.org>
+.\" Copyright (c) 2018 Franco Fichtner <franco@opnsense.org>
 .\"
 .\" Redistribution and use in source and binary forms, with or without
 .\" modification, are permitted provided that the following conditions
@@ -24,7 +24,7 @@
 .\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 .\" SUCH DAMAGE.
 .\"
-.Dd April 13, 2021
+.Dd May 19, 2018
 .Dt OPNSENSE-INSTALLER 8
 .Os
 .Sh NAME
@@ -36,26 +36,22 @@
 The
 .Nm
 utility will launch the graphical installation process.
+The installation is driven by a frontend connected to the backend
+process via local socket.
 .Pp
 The purpose of the installer is to install the system on a target
-disk using UFS or ZFS.
+disk using several options like UFS, ZFS, GEOM mirror, GPT, MBR, etc.
 It may also carry out tasks such as configuration import or password
 recovery.
 .Sh SEE ALSO
-.Xr bsdinstall 8 ,
-.Xr opnsense-importer 8 ,
-.Xr opnsense-shell 8
+.Xr opnsense-importer 8
 .Sh HISTORY
 The
 .Nm
-utility operated the historical
+utility operates the historical
 .Nm bsdinstaller ,
 which first appeared in
-.Dx ,
-until OPNsense 21.1.
-Due to modern incompatibilities in the graphical library and missing
-features it has been migrated to
-.Nm bsdinstall
-in OPNsense 21.7.
+.Dx .
+Both projects no longer use these programs.
 .Sh AUTHORS
 .An Scott Ullrich Aq Mt sullrich@gmail.com
