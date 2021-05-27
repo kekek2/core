@@ -187,6 +187,7 @@ class AuthenticationFactory
      */
     public function authenticate($service_name, $username, $password)
     {
+        openlog("audit", LOG_ODELAY, LOG_AUTH);
         $service = $this->getService($service_name);
         if ($service !== null) {
             $user_split = explode('@', $username);
@@ -216,6 +217,7 @@ class AuthenticationFactory
                                 get_class($service),
                                 get_class($authenticator)
                             ));
+                            closelog();
                             return true;
                         } else {
                             // since checkConstraints() is defined on the service, who doesn't know about the
@@ -227,6 +229,7 @@ class AuthenticationFactory
                                 get_class($service),
                                 get_class($authenticator)
                             ));
+                            closelog();
                             return false;
                         }
                     } else {
@@ -242,12 +245,13 @@ class AuthenticationFactory
             }
         }
         syslog(LOG_WARNING, sprintf(
-            "user %s could not authenticate for %s. [using %s + %s]\n",
+            "user %s could not authenticate for %s. [using %s + %s]",
             $username,
             $service_name,
             !empty($service) ? get_class($service) : '-',
             !empty($authenticator) ? get_class($authenticator) : '-'
         ));
+        closelog();
         return false;
     }
 
