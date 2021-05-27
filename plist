@@ -331,6 +331,7 @@
 /usr/local/opnsense/mvc/app/controllers/OPNsense/Diagnostics/Api/FirewallController.php
 /usr/local/opnsense/mvc/app/controllers/OPNsense/Diagnostics/Api/InterfaceController.php
 /usr/local/opnsense/mvc/app/controllers/OPNsense/Diagnostics/Api/LogController.php
+/usr/local/opnsense/mvc/app/controllers/OPNsense/Diagnostics/Api/LvtemplateController.php
 /usr/local/opnsense/mvc/app/controllers/OPNsense/Diagnostics/Api/NetflowController.php
 /usr/local/opnsense/mvc/app/controllers/OPNsense/Diagnostics/Api/NetworkinsightController.php
 /usr/local/opnsense/mvc/app/controllers/OPNsense/Diagnostics/Api/SystemhealthController.php
@@ -546,6 +547,8 @@
 /usr/local/opnsense/mvc/app/models/OPNsense/Cron/Migrations/M1_0_0.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Cron/Migrations/M1_0_2.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Diagnostics/ACL/ACL.xml
+/usr/local/opnsense/mvc/app/models/OPNsense/Diagnostics/Lvtemplate.php
+/usr/local/opnsense/mvc/app/models/OPNsense/Diagnostics/Lvtemplate.xml
 /usr/local/opnsense/mvc/app/models/OPNsense/Diagnostics/Menu/Menu.xml
 /usr/local/opnsense/mvc/app/models/OPNsense/Diagnostics/Migrations/M1_0_0.php
 /usr/local/opnsense/mvc/app/models/OPNsense/Diagnostics/Netflow.php
@@ -1012,6 +1015,7 @@
 /usr/local/opnsense/service/templates/OPNsense/Sample/sub2/+TARGETS
 /usr/local/opnsense/service/templates/OPNsense/Sample/sub2/example_sub2.txt
 /usr/local/opnsense/service/templates/OPNsense/Syslog/+TARGETS
+/usr/local/opnsense/service/templates/OPNsense/Syslog/local/audit.conf
 /usr/local/opnsense/service/templates/OPNsense/Syslog/local/configd.conf
 /usr/local/opnsense/service/templates/OPNsense/Syslog/local/dhcpd.conf
 /usr/local/opnsense/service/templates/OPNsense/Syslog/local/dnsmasq.conf
@@ -1895,7 +1899,7 @@
 /usr/local/sbin/ovpn-certs
 /usr/local/sbin/ping_hosts.sh
 /usr/local/sbin/pluginctl
-/usr/local/share/apu2/apu2_v4.13.0.5.rom
+/usr/local/share/apu2/apu2_v4.13.0.6.rom
 /usr/local/share/man/man8/opnsense-beep.8.gz
 /usr/local/share/man/man8/opnsense-importer.8.gz
 /usr/local/share/man/man8/opnsense-installer.8.gz
