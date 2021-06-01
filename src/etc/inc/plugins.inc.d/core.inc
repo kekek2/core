@@ -108,10 +108,10 @@ function core_services()
     if (empty($config['syslog']['disable_clog'])) {
         $services[] = array(
             'description' => gettext('Legacy Syslog Daemon'),
-            'php' => array(
-                "stop" => array('system_syslogd_stop'),
-                "start" => array('system_syslogd_start'),
-                "restart" => array('system_syslogd_start')
+            'configd' => array(
+                "stop" => array('syslog stop'),
+                "start" => array('syslog start'),
+                "restart" => array('syslog start')
             ),
             'pidfile' => '/var/run/syslog.pid',
             'name' => 'syslogd',
