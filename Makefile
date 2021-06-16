@@ -97,11 +97,11 @@ CORE_DEPENDS_amd64?=	beep \
 			secadm-kmod \
 			suricata
 
-CORE_DEPENDS_i386?=	${CORE_DEPENDS_amd64}
+CORE_DEPENDS_PHP73=	php73-hash # XXX not needed with 7.4
 
-CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
+CORE_DEPENDS?=		ca_root_nss \
 			apuledctld \
-			ca_root_nss \
+            ca_root_nss \
 			choparp \
 			cpustats \
 			dhcp6c \
@@ -133,7 +133,6 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			php${CORE_PHP}-filter \
 			php${CORE_PHP}-gettext \
 			php${CORE_PHP}-google-api-php-client \
-			php${CORE_PHP}-hash \
 			php${CORE_PHP}-intl \
 			php${CORE_PHP}-json \
 			php${CORE_PHP}-ldap \
@@ -142,7 +141,7 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			php${CORE_PHP}-pecl-http \
 			php${CORE_PHP}-pecl-radius \
 			php${CORE_PHP}-pdo_sqlite \
-			php${CORE_PHP}-phalcon \
+			php${CORE_PHP}-phalcon4 \
 			php${CORE_PHP}-phpseclib \
 			php${CORE_PHP}-session \
 			php${CORE_PHP}-simplexml \
@@ -170,7 +169,9 @@ CORE_DEPENDS?=		${CORE_DEPENDS_${CORE_ARCH}} \
 			ting-lang \
 			ting-ioncube \
 			wpa_supplicant \
-			zip
+			zip \
+			${CORE_DEPENDS_PHP${CORE_PHP}} \
+			${CORE_DEPENDS_${CORE_ARCH}}
 
 WRKDIR?=${.CURDIR}/work
 WRKSRC?=${WRKDIR}/src

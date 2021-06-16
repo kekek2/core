@@ -868,8 +868,10 @@ function interfaces_configure($verbose = false)
     interfaces_create_wireless_clones($verbose);
     interfaces_lagg_configure($verbose);
     interfaces_vlan_configure($verbose);
-    // XXX: temporary plugin spot for device creation (independent of other devices)
+
+    /* XXX: temporary plugin spot for device creation (independent of other devices) */
     plugins_configure('loopback_prepare', $verbose);
+    plugins_configure('openvpn_prepare', $verbose);
 
     /*
      * Queues are set up to order interfaces according to their
@@ -946,7 +948,6 @@ function interfaces_configure($verbose = false)
 
     /* XXX temporary plugin spot for device creation, see plugins_devices() */
     plugins_configure('ipsec_prepare', $verbose);
-    plugins_configure('openvpn_prepare', $verbose);
     plugins_configure('vxlan_prepare', $verbose);
 }
 
@@ -4665,9 +4666,15 @@ function interfaces_primary_address6($interface, $realif = null, $ifconfig_detai
         $addrparts = explode('/', $tmpaddr);
 
         foreach (config_read_array('virtualip', 'vip') as $vip) {
-            if ($vip['interface'] == $interface && $vip['mode'] == 'ipalias' && $vip['subnet'] == $addrparts[0]) {
-                /* do not care about alias */
-                continue 2;
+            if ($vip['interface'] == $interface && $vip['mode'] == 'ipalias' && strpos($vip['subnet'], ':') !== false) {
+                /*
+                 * Since we do not know what subnet value was given by user
+                 * uncompress/compress to match correctly compressed system
+                 * value.  Matching alias cannot be primary address.
+                 */
+                if (Net_IPv6::compress(Net_IPv6::uncompress($vip['subnet'])) == $addrparts[0]) {
+                    continue 2;
+                }
             }
         }
 
